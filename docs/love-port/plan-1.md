@@ -223,3 +223,22 @@ None.
   plan-review judged them code cleanup; it added the "nothing from `src/`"
   rule and its check to step 6.
 
+### Step 3.6
+
+- `fake-love-guard` (in `make test`) fails on a fake-side object from `src/`,
+  a `.d` naming a `src/` header, or a `src/` include; a planted
+  `#include "p8/palette.h"` turned it red. `canvas.c` (16 RGBA canvases,
+  component = float clamp ×255 rounded half to even), `graphics.c`
+  (`newCanvas`/`setCanvas`/`clear`, nil in conf.lua; a canvas selected after
+  draw is fatal, as real LÖVE).
+- `tmp/love_capture_check` runs a capture program in the fake's host and
+  compares all four channels of canvas 0 with the PNG; one
+  `love-capture-check-<name>` per program; both harnesses call
+  `program(canvas)`. `png_check` deleted; `love-check` is the LuaJIT probe.
+  Nine programs (`clear`, `canvas_*`, `clear_*`) match; a second
+  `make love-capture` changes no PNG.
+- Proof: pixel (37, 81) of `clear_transparent.png` changed → `make test` red
+  naming it; restored. CI run 39501734124 green without `png_check`.
+- `make test`: before bee1cb3 7.53 s, reference 7.57 s, current 7.59 s;
+  paired +1.30 % / +1.67 %, 11 rounds, 4 cores; new checks 4 ms each.
+

@@ -23,7 +23,7 @@
     - [x] Chunk 3 — love.filesystem in the run
     - [x] Chunk 4 — arguments, docs, timing
 - [ ] Phase 3 — Drawing, one function at a time
-  - [ ] Step 3.6 — newCanvas/setCanvas/clear and the comparison harness
+  - [x] Step 3.6 — newCanvas/setCanvas/clear and the comparison harness
     - [x] Chunk 1 — nothing from src/ guard
     - [x] Chunk 2 — canvas store
     - [x] Chunk 3 — love.graphics in the host
