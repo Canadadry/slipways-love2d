@@ -260,6 +260,36 @@ component computed any other way can lose a whole byte. Never pass an
 alpha: translucent colours blend in real LÖVE and are refused by the fake.
 Captures: `color_bytes`, `color_precision`, `color_state`.
 
+**Image data.** `love.image` is nil while `conf.lua` runs, then holds
+exactly `newImageData`; an ImageData holds exactly `setPixel` and
+`getPixel`, lives from `love.load` on like any Lua value and is freed by
+the garbage collector. `love.image.newImageData(w, h)` takes two Lua
+numbers, each an integer from 1 to 1024, and returns an ImageData that is
+`00000000` everywhere; the file form `newImageData(file)` is not
+implemented yet.
+`data:setPixel(x, y, r, g, b)` stores alpha `FF`,
+`data:setPixel(x, y, r, g, b, a)` stores any alpha as given (alpha 0 keeps
+the RGB bytes: an ImageData blends nothing). `data:getPixel(x, y)` returns
+four numbers. Both methods floor x and y, as real LÖVE 11.5 does
+(`0.99` is pixel 0, `-0` is pixel 0, `-0.5` is outside), and a floored
+pixel outside the ImageData (NaN, infinities and 2^32 + 3 included) is an
+error in both. Each component becomes a byte as real LÖVE does, in a third
+way: clamped to [0, 1], times 255 plus 0.5 in **double** precision,
+floored, i.e. half up: `0.5` stores 128 where `setColor(0.5)` draws 127,
+and `2.5/255` stores 3 where `clear(2.5/255)` gives 2. `getPixel` returns
+each byte as `byte / 255` in double, exactly the Lua expression, so a
+`getPixel` value written back with `setPixel` keeps its byte and passed to
+`setColor` draws it. Every refusal leaves the ImageData unchanged and is an
+error starting `love.image.newImageData: `, `ImageData:setPixel: ` or
+`ImageData:getPixel: `: another argument count (an extra argument too), a
+non-number (no string coercion, no table form of `setPixel`), a
+non-finite component, a size that is not an integer from 1 to 1024, a
+format argument, a dot call instead of a colon call. **The rule for the
+game: write palette bytes as `byte / 255`; read a byte back as
+`math.floor(v * 255 + 0.5)` or compare it with `byte / 255`; a `getPixel`
+value may go straight to `setPixel` or `setColor`; use integer
+coordinates.** Captures: `imagedata_rounding`, `imagedata_forms`.
+
 ### The LÖVE functions the game may use
 
 The fake implements exactly this list; extending it is a decision recorded
@@ -274,7 +304,7 @@ here, with its real-LÖVE capture.
   `draw(image, quad, x, y)`, `setDefaultFilter("nearest", "nearest")`,
   `push`, `pop`, `translate`.
 - Images: `love.image.newImageData(w, h)`, `love.image.newImageData(file)`,
-  `ImageData:setPixel`, `ImageData:getPixel`.
+  `ImageData:setPixel(x, y, r, g, b[, a])`, `ImageData:getPixel(x, y)`.
 - Pad: `love.joystick.getJoysticks`, `Joystick:isGamepadDown`, the callbacks
   `love.gamepadpressed` and `love.gamepadreleased`.
 - Files: `love.filesystem.read`, `write`, `getInfo`.
