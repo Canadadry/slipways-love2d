@@ -41,7 +41,7 @@
     - [x] Chunk 1 — store colour
     - [x] Chunk 2 — setColor binding
     - [x] Chunk 3 — captures, docs, timing
-  - [ ] Step 3.10 — newImageData/setPixel/getPixel
+  - [x] Step 3.10 — newImageData/setPixel/getPixel
     - [x] Chunk 1 — image data module
     - [x] Chunk 2 — love.image and ImageData methods
     - [x] Chunk 3 — captures, docs, timing

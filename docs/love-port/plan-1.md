@@ -283,3 +283,17 @@ None.
 - `make test`: before c157572 7.61 s, reference 7.58 s, current 7.66 s;
   paired +0.09 % / +1.20 %, 11 rounds, 4 cores.
 
+### Step 3.10
+
+- `image_data.c`: RGBA8 up to 1024×1024, zeroed; `setPixel` stores
+  clamp ×255 +0.5 floored in double (0.5 → 128, a third rule beside `clear`
+  and `setColor`), `getPixel` returns `byte / 255`; coordinates floored.
+  `image.c`: `love.image.newImageData(w, h)`, `ImageData:setPixel/getPixel`,
+  nil in conf.lua, freed by the GC, `image_find_data()` for step 11.
+  Stricter than LÖVE: no table form, strings, extra arguments, sizes > 1024.
+- Captures `imagedata_rounding`, `imagedata_forms` match (values shown
+  through `setColor` and 1×1 rectangles); design.md "Image data".
+- Tests: `test_fake_love_image_data` (4 ms), `test_fake_love_image` (15 ms).
+- `make test`: before c1ba7d8 7.55 s, reference 7.24 s, current 7.49 s;
+  paired −1.69 % / +2.79 % (close to the cap), 11 rounds, 4 cores.
+
