@@ -1,0 +1,22 @@
+- [ ] Phase 1 — Real LÖVE in the container and CI
+  - [ ] Step 1.1 — install script, love-capture, CI trigger, Xvfb exception
+  - [ ] Step 1.2 — CI capture job
+- [ ] Phase 2 — The fake's skeleton
+  - [ ] Step 2.3 — fake_love runs the loop
+  - [ ] Step 2.4 — pad
+  - [ ] Step 2.5 — fake disk and arguments
+- [ ] Phase 3 — Drawing, one function at a time
+  - [ ] Step 3.6 — newCanvas/setCanvas/clear and the comparison harness
+  - [ ] Step 3.7 — points
+  - [ ] Step 3.8 — rectangle("fill")
+  - [ ] Step 3.9 — setColor
+  - [ ] Step 3.10 — newImageData/setPixel/getPixel
+  - [ ] Step 3.11 — newImage, newQuad and draw
+  - [ ] Step 3.12 — newImageData(file)
+  - [ ] Step 3.13 — push/pop/translate
+  - [ ] Step 3.14 — setDefaultFilter
+  - [ ] Step 3.15 — combined capture program
+- [ ] Phase 4 — Capture and errors
+  - [ ] Step 4.16 — capture
+  - [ ] Step 4.17 — fatal errors
+  - [ ] Step 4.18 — make love-e2e
