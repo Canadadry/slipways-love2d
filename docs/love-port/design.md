@@ -159,6 +159,42 @@ colours, `setCanvas` tables or mipmaps, other sizes, settings, non-finite
 or non-number components, a wrong count) raises an error naming the
 function.
 
+**Points.** `points(x1, y1, …, xn, yn)` takes zero or an even number of
+Lua numbers; `points(t)` takes one flat table of them, its elements
+1 … `#t`. `points()` and `points({})` draw nothing. Each point lights one
+pixel of the selected canvas with the current colour, opaque white
+(`FFFFFFFF`) until `setColor` exists, replacing its four bytes, also over
+a transparent pixel; a pixel lit twice is lit once. The pixel, per axis
+(size 160 for x, 120 for y), is the one real LÖVE 11.5 on Mesa llvmpipe
+lights: column n when n < x′ ≤ n + 1, x′ being the coordinate through
+LÖVE's single-precision projection and Mesa's viewport, snapped to 1/256
+pixel. In C, each rounding separate, the viewport fused:
+
+```
+v = (float) x;  s = 2.0f / (float) size;  p = v * s;  ndc = p + (-1.0f);
+win = fmaf(ndc, size / 2, size / 2);  fix = lrintf(win * 256.0f);
+pixel = floor((fix - 1) / 256.0)    // lit only if 0 <= pixel < size
+```
+
+**The rule for the game: to light pixel (x, y), call
+`points(x + 0.5, y + 0.5)`.** Integer coordinates light (x − 1, y − 1),
+so `points(0, y)` and `points(x, 0)` light nothing; a fraction up to
+1/1024 behaves like 0. Fractions within 1/512 of an integer land on a
+pixel that depends on the position (at c + 1/512 some columns light c,
+others c − 1, and rows differ from columns): the game must not produce
+them. Points off the canvas draw nothing and raise no error; 160 + 1/1024
+still lights column 159, 160 + 3/1024 nothing, likewise for row 119. With
+no canvas selected, points touch nothing the fake models. Every refusal is
+an error starting `love.graphics.points: ` and draws none of the call's
+points: an odd number of coordinates, a non-number argument or element
+(no string coercion; this catches LÖVE's pairs and per-point-colour
+tables and a table with a hole), a table followed by more arguments, a
+non-finite coordinate, and a magnitude of 2^20 or more, because llvmpipe
+does not clip before its fixed-point conversion and wraps coordinates
+from 2^23 up back onto the canvas. Captures: `points_landing`,
+`points_subpixel`, `points_columns`, `points_rows`, `points_offcanvas`,
+`points_forms`.
+
 ### The LÖVE functions the game may use
 
 The fake implements exactly this list; extending it is a decision recorded
@@ -167,7 +203,8 @@ here, with its real-LÖVE capture.
 - Loop: `love.load(arg)`, `love.update(dt)`, `love.draw()`. The game ignores
   `dt`: one `update` is one game frame (60 per second).
 - Drawing: `love.graphics.newCanvas(160, 120)`, `setCanvas`, `clear`,
-  `setColor`, `points`, `rectangle("fill", …)`, `newImage`, `newQuad`,
+  `setColor`, `points(x1, y1, …)` or `points({x1, y1, …})`,
+  `rectangle("fill", …)`, `newImage`, `newQuad`,
   `draw(image, quad, x, y)`, `setDefaultFilter("nearest", "nearest")`,
   `push`, `pop`, `translate`.
 - Images: `love.image.newImageData(w, h)`, `love.image.newImageData(file)`,
