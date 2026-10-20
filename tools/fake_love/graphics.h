@@ -5,9 +5,9 @@
 
 #include "canvas.h"
 
-/* Sets love.graphics, holding only newCanvas, setCanvas, clear and points,
- * on the global `love` table. The store is not owned and must outlive the
- * Lua state. */
+/* Sets love.graphics, holding only clear, draw, newCanvas, newImage,
+ * newQuad, points, rectangle, setCanvas and setColor, on the global `love`
+ * table. The store is not owned and must outlive the Lua state. */
 void graphics_install(lua_State *lua, canvas_store_t *store);
 
 #endif

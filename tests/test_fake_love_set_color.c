@@ -19,7 +19,7 @@ static void test_set_color_misuse_is_refused_with_a_message_and_opaque_colours_s
     assert(status == 0 && "the setColor log game must run");
     fake_love_cli_assert_text(
         STATE,
-        "graphics clear newCanvas points rectangle setCanvas setColor\n"
+        "graphics clear draw newCanvas newImage newQuad points rectangle setCanvas setColor\n"
         "none: love.graphics.setColor: takes 3 numbers or 4 with alpha 1, not 0 arguments\n"
         "two: love.graphics.setColor: takes 3 numbers or 4 with alpha 1, not 2 arguments\n"
         "five: love.graphics.setColor: takes 3 numbers or 4 with alpha 1, not 5 arguments\n"

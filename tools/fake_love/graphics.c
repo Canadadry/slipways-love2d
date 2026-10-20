@@ -5,9 +5,19 @@
 
 #include <lauxlib.h>
 
+#include "image.h"
+#include "image_rules.h"
 #include "point.h"
 
 #define METATABLE "Canvas"
+#define IMAGE_METATABLE "Image"
+#define QUAD_METATABLE "Quad"
+
+typedef struct quad_object {
+    canvas_area_t area;
+    int reference_width;
+    int reference_height;
+} quad_object_t;
 
 typedef struct {
     int handle;
@@ -163,6 +173,112 @@ static int rectangle(lua_State *lua) {
     return 0;
 }
 
+/* "a number", "an ImageData", "a Canvas"...: the value at `index` as the
+ * refusals name it. The string may live on the Lua stack: only for an
+ * error raised at once. */
+static const char *describe(lua_State *lua, int index) {
+    if (image_find_data(lua, index) != NULL)
+        return "an ImageData";
+    if (luaL_testudata(lua, index, IMAGE_METATABLE) != NULL)
+        return "an Image";
+    if (luaL_testudata(lua, index, QUAD_METATABLE) != NULL)
+        return "a Quad";
+    if (luaL_testudata(lua, index, METATABLE) != NULL)
+        return "a Canvas";
+    return lua_pushfstring(lua, "a %s", luaL_typename(lua, index));
+}
+
+static int new_image(lua_State *lua) {
+    int top = lua_gettop(lua);
+    if (top != 1)
+        return luaL_error(lua, "love.graphics.newImage: takes 1 argument, an ImageData, not %d arguments", top);
+    const image_data_t *data = image_find_data(lua, 1);
+    if (data == NULL)
+        return luaL_error(lua, "love.graphics.newImage: argument 1 is %s, not an ImageData", describe(lua, 1));
+    int translucent = image_rules_find_translucent_pixel(data->pixels, data->width * data->height);
+    if (translucent != IMAGE_RULES_NONE)
+        return luaL_error(lua, "love.graphics.newImage: pixel (%d, %d) has alpha %d, not 0 or 255 (translucent "
+                               "texels are not modelled)",
+                          translucent % data->width, translucent / data->width, data->pixels[4 * translucent + 3]);
+    size_t size = image_data_byte_count(data->width, data->height);
+    image_data_t *image = lua_newuserdata(lua, size);
+    memcpy(image, data, size);
+    luaL_getmetatable(lua, IMAGE_METATABLE);
+    lua_setmetatable(lua, -2);
+    return 1;
+}
+
+/* luaL_error does not return: it raises, or the verdict was accepted. */
+static void refuse_verdict(lua_State *lua, const char *function, int argument, image_rules_verdict_t verdict,
+                           const char *range) {
+    if (verdict == IMAGE_RULES_NOT_FINITE)
+        luaL_error(lua, "love.graphics.%s: argument %d is not finite", function, argument);
+    if (verdict == IMAGE_RULES_NOT_INTEGER)
+        luaL_error(lua, "love.graphics.%s: argument %d is not an integer", function, argument);
+    if (verdict == IMAGE_RULES_OUT_OF_RANGE)
+        luaL_error(lua, "love.graphics.%s: argument %d is out of range (%s)", function, argument, range);
+}
+
+static int new_quad(lua_State *lua) {
+    static const char *const ranges[IMAGE_RULES_QUAD_VALUES] = {
+        "x from 0 to sw - 1", "y from 0 to sh - 1", "w from 1 to sw - x",
+        "h from 1 to sh - y", "sw from 1 to 1024", "sh from 1 to 1024",
+    };
+    int top = lua_gettop(lua);
+    if (top != IMAGE_RULES_QUAD_VALUES)
+        return luaL_error(lua, "love.graphics.newQuad: takes 6 numbers, x, y, w, h, sw and sh, not %d arguments",
+                          top);
+    double values[IMAGE_RULES_QUAD_VALUES];
+    for (int index = 1; index <= IMAGE_RULES_QUAD_VALUES; index++) {
+        if (lua_type(lua, index) != LUA_TNUMBER)
+            return luaL_error(lua, "love.graphics.newQuad: argument %d is a %s, not a number", index,
+                              luaL_typename(lua, index));
+        values[index - 1] = lua_tonumber(lua, index);
+    }
+    int refused = 0;
+    image_rules_verdict_t verdict = image_rules_check_quad(values, &refused);
+    refuse_verdict(lua, "newQuad", refused + 1, verdict, ranges[refused]);
+    quad_object_t *quad = lua_newuserdata(lua, sizeof *quad);
+    quad->area = (canvas_area_t){(int)values[0], (int)values[1], (int)values[2], (int)values[3]};
+    quad->reference_width = (int)values[4];
+    quad->reference_height = (int)values[5];
+    luaL_getmetatable(lua, QUAD_METATABLE);
+    lua_setmetatable(lua, -2);
+    return 1;
+}
+
+static int draw(lua_State *lua) {
+    int top = lua_gettop(lua);
+    if (top != 4)
+        return luaL_error(lua, "love.graphics.draw: takes 4 arguments, an Image, a Quad, x and y, not %d", top);
+    const image_data_t *image = luaL_testudata(lua, 1, IMAGE_METATABLE);
+    if (image == NULL)
+        return luaL_error(lua, "love.graphics.draw: argument 1 is %s, not an Image", describe(lua, 1));
+    const quad_object_t *quad = luaL_testudata(lua, 2, QUAD_METATABLE);
+    if (quad == NULL)
+        return luaL_error(lua, "love.graphics.draw: argument 2 is %s, not a Quad", describe(lua, 2));
+    for (int index = 3; index <= 4; index++) {
+        if (lua_type(lua, index) != LUA_TNUMBER)
+            return luaL_error(lua, "love.graphics.draw: argument %d is a %s, not a number", index,
+                              luaL_typename(lua, index));
+        refuse_verdict(lua, "draw", index, image_rules_check_position(lua_tonumber(lua, index)), "|v| >= 2^20");
+    }
+    if (quad->reference_width != image->width || quad->reference_height != image->height)
+        return luaL_error(lua, "love.graphics.draw: the quad's reference size %dx%d differs from the image's %dx%d",
+                          quad->reference_width, quad->reference_height, image->width, image->height);
+    canvas_source_t source = {image->pixels, image->width, image->height};
+    canvas_draw_texels(upvalue_store(lua), &source, &quad->area, (int)lua_tonumber(lua, 3),
+                       (int)lua_tonumber(lua, 4));
+    return 0;
+}
+
+static void new_metatable_without_methods(lua_State *lua, const char *name) {
+    luaL_newmetatable(lua, name);
+    lua_newtable(lua);
+    lua_setfield(lua, -2, "__index");
+    lua_pop(lua, 1);
+}
+
 static void set_function(lua_State *lua, canvas_store_t *store, lua_CFunction function, const char *name) {
     lua_pushlightuserdata(lua, store);
     lua_pushcclosure(lua, function, 1);
@@ -172,14 +288,19 @@ static void set_function(lua_State *lua, canvas_store_t *store, lua_CFunction fu
 void graphics_install(lua_State *lua, canvas_store_t *store) {
     luaL_newmetatable(lua, METATABLE);
     lua_pop(lua, 1);
+    new_metatable_without_methods(lua, IMAGE_METATABLE);
+    new_metatable_without_methods(lua, QUAD_METATABLE);
     lua_getglobal(lua, "love");
-    lua_createtable(lua, 0, 6);
+    lua_createtable(lua, 0, 9);
     set_function(lua, store, new_canvas, "newCanvas");
     set_function(lua, store, set_canvas, "setCanvas");
     set_function(lua, store, clear, "clear");
     set_function(lua, store, points, "points");
     set_function(lua, store, rectangle, "rectangle");
     set_function(lua, store, set_color, "setColor");
+    set_function(lua, store, new_image, "newImage");
+    set_function(lua, store, new_quad, "newQuad");
+    set_function(lua, store, draw, "draw");
     lua_setfield(lua, -2, "graphics");
     lua_pop(lua, 1);
 }
