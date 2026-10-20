@@ -38,6 +38,10 @@ typedef struct {
 struct replay {
     const node_t *frames;
     unsigned *held;
+    unsigned char *initial_save;
+    size_t initial_save_count;
+    const char *bindings;
+    int attract_after;
     size_t node_count;
     node_t nodes[];
 };
@@ -542,6 +546,150 @@ static int read_held(replay_t *replay, parser_t *parser) {
     return 1;
 }
 
+static int hex_digit_value(char c) {
+    if (c >= '0' && c <= '9') {
+        return c - '0';
+    }
+    if (c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    }
+    if (c >= 'A' && c <= 'F') {
+        return c - 'A' + 10;
+    }
+    return -1;
+}
+
+/* Writes the value as the replay spells it: quoted for a string (cut at
+ * 40 characters), digits for an integer, the kind otherwise. */
+static const char *describe_value(const node_t *value, char *out, size_t size) {
+    if (value->kind == NODE_STRING) {
+        snprintf(out, size, "\"%.40s\"%s", value->string, value->string_length > 40 ? "..." : "");
+    } else if (value->kind == NODE_INTEGER) {
+        snprintf(out, size, "%lld", value->integer);
+    } else {
+        snprintf(out, size, "%s", kind_name(value->kind));
+    }
+    return out;
+}
+
+static int read_initial_save(replay_t *replay, parser_t *parser, const node_t *member) {
+    char value[64];
+    describe_value(member, value, sizeof(value));
+    if (member->kind != NODE_STRING) {
+        fail_at(parser, member->offset, "\"initial_save\" %s is not a string of hex digits", value);
+        return 0;
+    }
+    if (member->string_length == 0) {
+        fail_at(parser, member->offset, "\"initial_save\" %s is empty", value);
+        return 0;
+    }
+    if (member->string_length % 2 != 0) {
+        fail_at(parser, member->offset, "\"initial_save\" %s has an odd number of digits", value);
+        return 0;
+    }
+    for (size_t i = 0; i < member->string_length; i++) {
+        if (hex_digit_value(member->string[i]) < 0) {
+            fail_at(parser, member->offset, "\"initial_save\" %s holds a character that is not a hex digit", value);
+            return 0;
+        }
+    }
+    size_t count = member->string_length / 2;
+    replay->initial_save = malloc(count);
+    if (replay->initial_save == NULL) {
+        fail_at(parser, member->offset, "out of memory");
+        return 0;
+    }
+    for (size_t i = 0; i < count; i++) {
+        int high = hex_digit_value(member->string[2 * i]);
+        int low = hex_digit_value(member->string[2 * i + 1]);
+        replay->initial_save[i] = (unsigned char)(high * 16 + low);
+    }
+    replay->initial_save_count = count;
+    return 1;
+}
+
+#define FIXTURE_NAME_MAX_LENGTH 64
+
+static int is_fixture_name(const char *name, size_t length) {
+    if (length < 5 || length > FIXTURE_NAME_MAX_LENGTH || name[0] == '.' || strcmp(name + length - 4, ".cfg") != 0
+        || strcmp(name, "bindings.cfg") == 0) {
+        return 0;
+    }
+    for (size_t i = 0; i < length; i++) {
+        char c = name[i];
+        int allowed = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '.'
+                      || c == '-';
+        if (!allowed) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static int read_bindings(replay_t *replay, parser_t *parser, const node_t *member) {
+    char value[64];
+    describe_value(member, value, sizeof(value));
+    if (member->kind == NODE_STRING && strcmp(member->string, "personal") == 0) {
+        fail_at(parser, member->offset,
+                "\"bindings\" %s: recorded with a personal bindings.cfg; only a fixture next to the replay runs", value);
+        return 0;
+    }
+    if (member->kind != NODE_STRING || !is_fixture_name(member->string, member->string_length)) {
+        fail_at(parser, member->offset,
+                "\"bindings\" %s is not a .cfg file name of 5-%d characters A-Za-z0-9_.- next to the replay", value,
+                FIXTURE_NAME_MAX_LENGTH);
+        return 0;
+    }
+    replay->bindings = member->string;
+    return 1;
+}
+
+static int read_attract_after(replay_t *replay, parser_t *parser, const node_t *member) {
+    if (member->kind != NODE_INTEGER || member->integer < 1 || member->integer > INT_MAX) {
+        char value[64];
+        fail_at(parser, member->offset, "\"attract_after\" %s is not an integer 1-%d",
+                describe_value(member, value, sizeof(value)), INT_MAX);
+        return 0;
+    }
+    replay->attract_after = (int)member->integer;
+    return 1;
+}
+
+typedef int (*member_reader_t)(replay_t *replay, parser_t *parser, const node_t *member);
+
+static int read_start_state(replay_t *replay, parser_t *parser) {
+    static const struct {
+        const char *key;
+        member_reader_t read;
+    } MEMBERS[] = {
+        {"initial_save", read_initial_save},
+        {"bindings", read_bindings},
+        {"attract_after", read_attract_after},
+    };
+    const node_t *root = &replay->nodes[0];
+    const node_t *start = object_member(replay, root, "start");
+    if (start != NULL) {
+        fail_at(parser, start->offset, "\"start\" is not supported: the fake plays from the title screen only");
+        return 0;
+    }
+    for (size_t k = 0; k < sizeof(MEMBERS) / sizeof(MEMBERS[0]); k++) {
+        const node_t *member = object_member(replay, root, MEMBERS[k].key);
+        if (member == NULL) {
+            continue;
+        }
+        for (size_t i = member->next; i != NO_NODE; i = replay->nodes[i].next) {
+            if (strcmp(replay->nodes[i].key, MEMBERS[k].key) == 0) {
+                fail_at(parser, replay->nodes[i].offset, "\"%s\" given twice", MEMBERS[k].key);
+                return 0;
+            }
+        }
+        if (!MEMBERS[k].read(replay, parser, member)) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 replay_t *replay_parse(const char *name, const char *text, size_t length, char *error, size_t error_size) {
     assert(name != NULL && (text != NULL || length == 0));
     parser_t parser = {
@@ -573,7 +721,12 @@ replay_t *replay_parse(const char *name, const char *text, size_t length, char *
     assert(!parser.failed && parser.node_count == node_count && parser.char_count == char_count
            && "the filling pass reads the text the counting pass accepted");
     replay->held = NULL;
-    if (!find_frames(replay, &parser) || !check_input(replay, &parser) || !read_held(replay, &parser)) {
+    replay->initial_save = NULL;
+    replay->initial_save_count = 0;
+    replay->bindings = NULL;
+    replay->attract_after = 0;
+    if (!find_frames(replay, &parser) || !check_input(replay, &parser) || !read_held(replay, &parser)
+        || !read_start_state(replay, &parser)) {
         replay_free(replay);
         return NULL;
     }
@@ -628,9 +781,26 @@ unsigned replay_frame_held(const replay_t *replay, size_t frame) {
     return replay->held[frame];
 }
 
+const unsigned char *replay_initial_save(const replay_t *replay, size_t *count) {
+    assert(replay != NULL && count != NULL);
+    *count = replay->initial_save_count;
+    return replay->initial_save;
+}
+
+const char *replay_bindings(const replay_t *replay) {
+    assert(replay != NULL);
+    return replay->bindings;
+}
+
+int replay_attract_after(const replay_t *replay) {
+    assert(replay != NULL);
+    return replay->attract_after;
+}
+
 void replay_free(replay_t *replay) {
     if (replay != NULL) {
         free(replay->held);
+        free(replay->initial_save);
     }
     free(replay);
 }

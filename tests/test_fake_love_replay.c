@@ -70,6 +70,42 @@ static void test_reads_the_held_buttons_of_pad_title(void) {
     replay_free(replay);
 }
 
+/* Read with `jq`, not by the reader under test. */
+static void test_reads_the_start_state_members_of_e2e_replays(void) {
+    static const struct {
+        const char *path;
+        int attract_after;
+        size_t save_count;
+        const char *bindings;
+    } EXPECTED[] = {
+        {"tests/e2e/attract.json", 3, 3921, NULL},
+        {"tests/e2e/pad_swap_aim_menu.json", 0, 0, "swap_aim_menu.cfg"},
+        {"tests/e2e/pad_unbound_enter_aim.json", 0, 4186, "unbound_enter_aim.cfg"},
+        {"tests/e2e/pad_title.json", 0, 0, NULL},
+    };
+    for (size_t i = 0; i < sizeof(EXPECTED) / sizeof(EXPECTED[0]); i++) {
+        char error[256] = "";
+        replay_t *replay = replay_read(EXPECTED[i].path, error, sizeof(error));
+        assert(replay != NULL);
+        assert(replay_attract_after(replay) == EXPECTED[i].attract_after);
+        size_t save_count = 99;
+        const unsigned char *save = replay_initial_save(replay, &save_count);
+        assert(save_count == EXPECTED[i].save_count);
+        if (save_count == 0) {
+            assert(save == NULL);
+        } else {
+            assert(memcmp(save, "SLWY", 4) == 0);
+        }
+        const char *bindings = replay_bindings(replay);
+        if (EXPECTED[i].bindings == NULL) {
+            assert(bindings == NULL);
+        } else {
+            assert(bindings != NULL && strcmp(bindings, EXPECTED[i].bindings) == 0);
+        }
+        replay_free(replay);
+    }
+}
+
 static void test_every_e2e_replay_is_listed(void) {
     glob_t found;
     assert(glob("tests/e2e/*.json", 0, NULL, &found) == 0);
@@ -105,8 +141,8 @@ static void test_an_empty_frames_array_has_no_frame(void) {
 }
 
 static void test_unknown_keys_and_every_value_kind_are_accepted(void) {
-    assert(frame_count_of("{ \"input\": \"pad\", \"attract_after\": -3, \"x\": [true, false, null, 0, {}],\n"
-                          "  \"initial_save\": {}, \"bindings\": \"\",\n"
+    assert(frame_count_of("{ \"input\": \"pad\", \"after\": -3, \"x\": [true, false, null, 0, {}],\n"
+                          "  \"save\": {}, \"binding\": \"\",\n"
                           "  \"escapes\": \"\\\" \\\\ \\/ \\b \\f \\n \\r \\t \\u00e9 \\ud83d\\ude00\",\n"
                           "  \"frames\": [ {\"pad\": [1, 12]}, {\"pad\": []} ] }\n") == 2);
 }
@@ -164,6 +200,87 @@ static void test_a_frame_with_another_key_is_refused(void) {
     assert_frame_1_refused("{\"dpad\": 1, \"pad\": []}", "\"dpad\"");
 }
 
+static void assert_member_refused(const char *member, const char *problem) {
+    char text[256];
+    snprintf(text, sizeof(text), "{\"input\": \"pad\", %s, \"frames\": []}", member);
+    assert_refused(text, problem);
+}
+
+static void test_initial_save_is_decoded_in_either_case(void) {
+    const char *text = "{\"input\": \"pad\", \"initial_save\": \"aBcD\", \"frames\": []}";
+    char error[256] = "";
+    replay_t *replay = replay_parse("memory.json", text, strlen(text), error, sizeof(error));
+    assert(replay != NULL);
+    size_t count = 0;
+    const unsigned char *save = replay_initial_save(replay, &count);
+    assert(count == 2 && save[0] == 0xab && save[1] == 0xcd);
+    replay_free(replay);
+}
+
+static void test_a_bad_initial_save_is_refused(void) {
+    assert_member_refused("\"initial_save\": 12", "\"initial_save\"");
+    assert_member_refused("\"initial_save\": 12", "12");
+    assert_member_refused("\"initial_save\": \"\"", "\"initial_save\" \"\"");
+    assert_member_refused("\"initial_save\": \"abc\"", "\"initial_save\" \"abc\"");
+    assert_member_refused("\"initial_save\": \"zz\"", "\"initial_save\" \"zz\"");
+    assert_member_refused("\"initial_save\": \"ab\", \"initial_save\": \"cd\"", "\"initial_save\"");
+    assert_member_refused("\"initial_save\": \"ab\", \"initial_save\": \"cd\"", "twice");
+}
+
+static void test_a_bad_bindings_name_is_refused(void) {
+    static const char *const BAD[] = {"personal", "../x.cfg", "bindings.cfg", ".x.cfg", "x.txt", "a b.cfg", ".cfg"};
+    for (size_t i = 0; i < sizeof(BAD) / sizeof(BAD[0]); i++) {
+        char member[128];
+        char problem[128];
+        snprintf(member, sizeof(member), "\"bindings\": \"%s\"", BAD[i]);
+        snprintf(problem, sizeof(problem), "\"bindings\" \"%s\"", BAD[i]);
+        assert_member_refused(member, problem);
+    }
+    assert_member_refused("\"bindings\": \"personal\"", "personal bindings.cfg");
+    char long_name[66];
+    memset(long_name, 'a', 61);
+    memcpy(long_name + 61, ".cfg", 5);
+    char member[128];
+    snprintf(member, sizeof(member), "\"bindings\": \"%s\"", long_name);
+    assert_member_refused(member, "\"bindings\" \"aaaa");
+    assert_member_refused(member, "64");
+    assert_member_refused("\"bindings\": 3", "\"bindings\" 3");
+    assert_member_refused("\"bindings\": \"a.cfg\", \"bindings\": \"b.cfg\"", "\"bindings\" given twice");
+}
+
+static void test_a_fixture_name_of_64_characters_is_accepted(void) {
+    char text[256];
+    char name[65];
+    memset(name, 'a', 60);
+    memcpy(name + 60, ".cfg", 5);
+    snprintf(text, sizeof(text), "{\"input\": \"pad\", \"bindings\": \"%s\", \"frames\": []}", name);
+    char error[256] = "";
+    replay_t *replay = replay_parse("memory.json", text, strlen(text), error, sizeof(error));
+    assert(replay != NULL && strcmp(replay_bindings(replay), name) == 0);
+    replay_free(replay);
+}
+
+static void test_attract_after_is_read_up_to_the_largest_int(void) {
+    const char *text = "{\"input\": \"pad\", \"attract_after\": 2147483647, \"frames\": []}";
+    char error[256] = "";
+    replay_t *replay = replay_parse("memory.json", text, strlen(text), error, sizeof(error));
+    assert(replay != NULL && replay_attract_after(replay) == 2147483647);
+    replay_free(replay);
+}
+
+static void test_a_bad_attract_after_is_refused(void) {
+    assert_member_refused("\"attract_after\": 0", "\"attract_after\" 0 ");
+    assert_member_refused("\"attract_after\": -1", "\"attract_after\" -1 ");
+    assert_member_refused("\"attract_after\": 2147483648", "\"attract_after\" 2147483648 ");
+    assert_member_refused("\"attract_after\": \"3\"", "\"attract_after\" \"3\"");
+    assert_member_refused("\"attract_after\": 3, \"attract_after\": 4", "\"attract_after\" given twice");
+}
+
+static void test_a_replay_with_start_is_refused(void) {
+    assert_member_refused("\"start\": \"resume\"", "\"start\"");
+    assert_member_refused("\"start\": \"resume\"", "not supported");
+}
+
 static void test_a_malformed_replay_is_refused_with_its_problem_named(void) {
     assert_refused("", "unexpected end of text");
     assert_refused("frames", "not JSON");
@@ -194,12 +311,20 @@ int main(void) {
     test_reads_the_frame_count_of_every_e2e_replay();
     test_every_e2e_replay_is_listed();
     test_reads_the_held_buttons_of_pad_title();
+    test_reads_the_start_state_members_of_e2e_replays();
     test_an_empty_frames_array_has_no_frame();
     test_unknown_keys_and_every_value_kind_are_accepted();
     test_the_buttons_of_a_frame_are_read_in_any_order();
     test_a_replay_without_pad_input_is_refused();
     test_a_frame_with_wrong_buttons_is_refused();
     test_a_frame_with_another_key_is_refused();
+    test_initial_save_is_decoded_in_either_case();
+    test_a_bad_initial_save_is_refused();
+    test_a_bad_bindings_name_is_refused();
+    test_a_fixture_name_of_64_characters_is_accepted();
+    test_attract_after_is_read_up_to_the_largest_int();
+    test_a_bad_attract_after_is_refused();
+    test_a_replay_with_start_is_refused();
     test_a_malformed_replay_is_refused_with_its_problem_named();
     test_the_error_gives_the_byte_offset_of_the_problem();
     test_a_missing_file_is_refused_with_its_path();

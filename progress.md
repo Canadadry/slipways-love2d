@@ -18,6 +18,10 @@
     - [x] Chunk 2 — reader pad checks
     - [x] Chunk 3 — joystick binding, host, logging game
   - [ ] Step 2.5 — fake disk and arguments
+    - [x] Chunk 1 — replay members
+    - [ ] Chunk 2 — fake disk
+    - [ ] Chunk 3 — love.filesystem in the run
+    - [ ] Chunk 4 — arguments, docs, timing
 - [ ] Phase 3 — Drawing, one function at a time
   - [ ] Step 3.6 — newCanvas/setCanvas/clear and the comparison harness
   - [ ] Step 3.7 — points
