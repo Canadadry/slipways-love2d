@@ -68,7 +68,7 @@ static bool write_state(host_t *host, const char *path) {
 static bool run_game(host_t *host, const arguments_t *arguments, const replay_t *replay) {
     bool ok = host_open(host, arguments->game_dir) && host_load(host);
     for (size_t frame = 0; ok && frame < replay_frame_count(replay); frame++)
-        ok = host_frame(host, frame);
+        ok = host_frame(host, frame, replay_frame_held(replay, frame));
     if (!ok)
         fprintf(stderr, "fake_love: %s\n", host_error(host));
     return ok && (arguments->state_path == NULL || write_state(host, arguments->state_path));

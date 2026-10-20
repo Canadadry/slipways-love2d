@@ -341,11 +341,11 @@ $(TMP_DIR)/test_fake_love_pad: $(call objs,tests/test_fake_love_pad.c tools/fake
 luajit_flags = $(if $(filter LUAJIT_MISSING,$(1)),$(error pkg-config luajit failed: run tools/love_install.sh),$(1))
 LUAJIT_CFLAGS = $(call luajit_flags,$(shell pkg-config --cflags luajit 2>/dev/null || echo LUAJIT_MISSING))
 LUAJIT_LIBS = $(call luajit_flags,$(shell pkg-config --libs luajit 2>/dev/null || echo LUAJIT_MISSING))
-FAKE_LOVE_LUA_SRCS := tools/fake_love/fake_love.c tools/fake_love/host.c
+FAKE_LOVE_LUA_SRCS := tools/fake_love/fake_love.c tools/fake_love/host.c tools/fake_love/joystick.c
 
 $(call objs,$(FAKE_LOVE_LUA_SRCS)): override CFLAGS += $(LUAJIT_CFLAGS)
 
-$(TMP_DIR)/fake_love: $(call objs,$(FAKE_LOVE_LUA_SRCS) tools/fake_love/replay.c) | $(TMP_DIR)
+$(TMP_DIR)/fake_love: $(call objs,$(FAKE_LOVE_LUA_SRCS) tools/fake_love/replay.c tools/fake_love/pad.c) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS)
 
 fake-love: $(TMP_DIR)/fake_love ## builds tmp/fake_love, the headless LÖVE that plays a Lua game on a replay
@@ -358,6 +358,9 @@ $(TMP_DIR)/test_fake_love: $(call objs,tests/test_fake_love.c tests/fake_love_cl
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_fake_love_failures: $(call objs,tests/test_fake_love_failures.c tests/fake_love_cli.c) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+$(TMP_DIR)/test_fake_love_joystick: $(call objs,tests/test_fake_love_joystick.c tests/fake_love_cli.c) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_frames_check: $(call objs,tests/test_frames_check.c) tools/frames_check.sh | $(TMP_DIR)
@@ -868,7 +871,8 @@ UNIT_TESTS := \
     test_fake_love_replay \
     test_fake_love_pad \
     test_fake_love \
-    test_fake_love_failures
+    test_fake_love_failures \
+    test_fake_love_joystick
 
 # One run per test, each its own target: that is what `-j` runs in parallel.
 UNIT_RUNS := $(addprefix unit-run-,$(UNIT_TESTS))
@@ -932,7 +936,7 @@ replay: $(TMP_DIR)/replay ## EVENTS=<events> [SAVE_HEX=<file>] [DIGEST=<file>]: 
 
 # Each check that runs the fake is its own target, listed here, so that `-j`
 # runs it beside the unit tests instead of after them.
-FAKE_LOVE_CHECKS := unit-run-test_fake_love unit-run-test_fake_love_failures
+FAKE_LOVE_CHECKS := unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick
 
 test: unit $(FAKE_LOVE_CHECKS) constants-check float-grep float-guard alloc-guard pointer-guard random-guard button-guard data-guard p8-guard ## fast loop: unit tests and static guards (~8 s)
 

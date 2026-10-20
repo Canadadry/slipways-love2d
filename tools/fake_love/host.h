@@ -17,7 +17,9 @@ const char *host_runtime_version(host_t *host);
  * host_error, valid until the next call. */
 bool host_open(host_t *host, const char *game_dir);
 bool host_load(host_t *host);
-bool host_frame(host_t *host, size_t frame);
+/* Calls the pad callbacks for the changes from the previous frame's `held`
+ * (nothing held before frame 0), then love.update and love.draw. */
+bool host_frame(host_t *host, size_t frame, unsigned held);
 /* `*text` is owned by the host, valid until the next call. */
 bool host_debug_state(host_t *host, const char **text, size_t *length);
 

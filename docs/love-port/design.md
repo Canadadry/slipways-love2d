@@ -33,8 +33,9 @@ For one replay it:
    has `"attract_after": N`;
 4. for each frame of `frames`: compares the held buttons with the previous
    frame's, calls `love.gamepadreleased` then `love.gamepadpressed` for those
-   that changed, answers `Joystick:isGamepadDown` from the current list, calls
-   `love.update(1/60)` then `love.draw()`;
+   that changed, each in ascending button number, answers
+   `Joystick:isGamepadDown` from the current list, calls `love.update(1/60)`
+   then `love.draw()`;
 5. after each `love.draw()`, reads the 160×120 canvas, turns each pixel's RGB
    into its palette number 0–15 and appends the 19 200 bytes to the capture.
    The capture format is the C replay's: its sha256 is compared with the
@@ -95,6 +96,25 @@ of `docs/psx-game.md`:
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | PSX | Up | Down | Left | Right | Cross | Circle | Square | Triangle | L1 | R1 | Start | Select |
 | LÖVE | `dpup` | `dpdown` | `dpleft` | `dpright` | `a` | `b` | `x` | `y` | `leftshoulder` | `rightshoulder` | `start` | `back` |
+
+**Pad semantics.** Nothing is held before frame 0, so frame 0 presses
+every button its list holds. Each frame, the fake first makes the frame's
+list current, then calls `love.gamepadreleased` for each button that went
+up, then `love.gamepadpressed` for each that went down, each group in
+ascending button number, then `love.update(1/60)` and `love.draw()`. A
+button held over several frames is pressed once: no auto-repeat; only set
+changes count, not the order of a frame's list. Nothing is called after the
+last frame except `debug_state()`, so a button still held then is never
+released. `love.joystick.getJoysticks()` returns a new list holding one
+joystick, always the same object, also passed to the callbacks;
+`love.joystick` is nil while `conf.lua` runs. `Joystick:isGamepadDown`
+answers from the current frame, from the start of its callbacks to the
+start of the next frame: false for everything during `love.load`, the last
+frame during `debug_state()`. With several names it is true when any is
+held; `guide`, `leftstick` and `rightstick` are never held; any other name
+fails with `Invalid gamepad button: <name>`. The ascending order is the
+fake's convention, not LÖVE's: the game must not depend on the order within
+a frame.
 
 ### The LÖVE functions the game may use
 

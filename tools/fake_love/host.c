@@ -10,11 +10,15 @@
 #include <lua.h>
 #include <lualib.h>
 
+#include "joystick.h"
+#include "pad.h"
+
 #define NO_FRAME ((size_t)-1)
 #define FRAME_DT (1.0 / 60.0)
 
 struct host {
     lua_State *lua;
+    unsigned held;
     char *game_dir;
     char *state_text;
     char error[8192];
@@ -112,7 +116,7 @@ static bool run_file(host_t *host, const char *name) {
 
 /* False when love.<name> is set but is not a function. Otherwise pushes it
  * when it is set, and `*defined` tells the caller whether to call it. */
-static bool push_callback(host_t *host, const char *name, bool *defined) {
+static bool push_callback(host_t *host, const char *name, size_t frame, bool *defined) {
     lua_State *lua = host->lua;
     lua_getglobal(lua, "love");
     lua_getfield(lua, -1, name);
@@ -123,7 +127,10 @@ static bool push_callback(host_t *host, const char *name, bool *defined) {
         return true;
     }
     if (!lua_isfunction(lua, -1)) {
-        set_error(host, "love.%s is a %s, not a function", name, luaL_typename(lua, -1));
+        if (frame == NO_FRAME)
+            set_error(host, "love.%s is a %s, not a function", name, luaL_typename(lua, -1));
+        else
+            set_error(host, "love.%s is a %s, not a function (f%zu)", name, luaL_typename(lua, -1), frame);
         lua_pop(lua, 1);
         return false;
     }
@@ -146,7 +153,7 @@ static bool run_conf(host_t *host) {
     if (file_exists(path) && !run_file(host, "conf.lua"))
         return false;
     bool defined;
-    if (!push_callback(host, "conf", &defined))
+    if (!push_callback(host, "conf", NO_FRAME, &defined))
         return false;
     if (!defined)
         return true;
@@ -172,12 +179,15 @@ bool host_open(host_t *host, const char *game_dir) {
     set_package_paths(host);
     lua_newtable(host->lua);
     lua_setglobal(host->lua, "love");
-    return run_conf(host) && run_file(host, "main.lua");
+    if (!run_conf(host))
+        return false;
+    joystick_install(host->lua);
+    return run_file(host, "main.lua");
 }
 
 bool host_load(host_t *host) {
     bool defined;
-    if (!push_callback(host, "load", &defined))
+    if (!push_callback(host, "load", NO_FRAME, &defined))
         return false;
     if (!defined)
         return true;
@@ -185,16 +195,35 @@ bool host_load(host_t *host) {
     return call(host, 1, 0, "love.load", NO_FRAME);
 }
 
-bool host_frame(host_t *host, size_t frame) {
+static bool call_pad_callback(host_t *host, const pad_change_t *change, size_t frame) {
+    const char *callback = change->kind == PAD_PRESSED ? "love.gamepadpressed" : "love.gamepadreleased";
     bool defined;
-    if (!push_callback(host, "update", &defined))
+    if (!push_callback(host, callback + strlen("love."), frame, &defined))
+        return false;
+    if (!defined)
+        return true;
+    joystick_push(host->lua);
+    lua_pushstring(host->lua, pad_button_name(change->button));
+    return call(host, 2, 0, callback, frame);
+}
+
+bool host_frame(host_t *host, size_t frame, unsigned held) {
+    pad_change_t changes[PAD_MAX_CHANGES];
+    size_t change_count = pad_list_changes(host->held, held, changes);
+    host->held = held;
+    joystick_set_held(host->lua, held);
+    for (size_t i = 0; i < change_count; i++)
+        if (!call_pad_callback(host, &changes[i], frame))
+            return false;
+    bool defined;
+    if (!push_callback(host, "update", frame, &defined))
         return false;
     if (defined) {
         lua_pushnumber(host->lua, FRAME_DT);
         if (!call(host, 1, 0, "love.update", frame))
             return false;
     }
-    if (!push_callback(host, "draw", &defined))
+    if (!push_callback(host, "draw", frame, &defined))
         return false;
     return !defined || call(host, 0, 0, "love.draw", frame);
 }
