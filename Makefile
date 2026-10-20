@@ -1155,8 +1155,26 @@ asset-export: $(TMP_DIR)/asset_export ## writes game/sprites.png and game/font.p
 $(TMP_DIR)/luajit_version: tools/love_capture/luajit_version.c | $(TMP_DIR)
 	$(CC) $(CFLAGS) $$(pkg-config --cflags luajit) -o $@ $< $$(pkg-config --libs luajit)
 
-love-check: $(TMP_DIR)/luajit_version ## builds a probe against the system LuaJIT, fails unless header and library are both 2.1
+LOVE_CAPTURE_DIR := $(CURDIR)/tools/love_capture
+
+# One xvfb-run wraps the whole loop: it starts Xvfb and stops it on exit.
+love-capture: ## runs the tools/love_capture/ programs in real LÖVE 11.5 under Xvfb, rewrites their PNGs
+	@command -v love >/dev/null && command -v xvfb-run >/dev/null || \
+		{ echo "love-capture: love or xvfb-run missing, run tools/love_install.sh" >&2; exit 1; }
+	xvfb-run -a -s '-screen 0 640x480x24' sh -c ' \
+		for program in $(LOVE_CAPTURE_DIR)/*.lua; do \
+			LIBGL_ALWAYS_SOFTWARE=1 timeout 60 love $(LOVE_CAPTURE_DIR)/harness "$$program" "$${program%.lua}.png" \
+				|| { echo "love-capture: $$program failed" >&2; exit 1; }; \
+		done'
+
+.PHONY: love-capture
+
+$(TMP_DIR)/png_check: tools/love_capture/png_check.c tools/fake_love/stb_image.h | $(TMP_DIR)
+	$(CC) $(CFLAGS) -Wno-unused-function -Itools/fake_love -o $@ $<
+
+love-check: $(TMP_DIR)/luajit_version $(TMP_DIR)/png_check ## checks the LuaJIT 2.1 probe and that the clear capture is 160×120 of 1D2B53
 	./$(TMP_DIR)/luajit_version
+	./$(TMP_DIR)/png_check tools/love_capture/clear.png 160 120 1D2B53
 
 .PHONY: love-check
 
