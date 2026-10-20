@@ -25,6 +25,11 @@ int canvas_get_target(const canvas_store_t *store);
 /* With the screen as target, nothing: the screen is not modelled. */
 void canvas_clear(canvas_store_t *store, const unsigned char rgba[4]);
 
+/* Writes the current colour, opaque white (LÖVE's default) until a setter
+ * exists, over pixel (x, y) of the target; with the screen as target,
+ * nothing. Asserts (x, y) is on the canvas. */
+void canvas_plot(canvas_store_t *store, int x, int y);
+
 /* Row-major RGBA8, owned by the store and valid until it is freed; NULL
  * for a handle that was never created. */
 const unsigned char *canvas_read_pixels(const canvas_store_t *store, int canvas);

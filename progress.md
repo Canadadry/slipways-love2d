@@ -31,7 +31,7 @@
     - [x] Chunk 5 — captures, png_check retired, proof
   - [ ] Step 3.7 — points
     - [x] Chunk 1 — point rule
-    - [ ] Chunk 2 — points in the fake
+    - [x] Chunk 2 — points in the fake
     - [ ] Chunk 3 — captures, docs, proof
   - [ ] Step 3.8 — rectangle("fill")
   - [ ] Step 3.9 — setColor

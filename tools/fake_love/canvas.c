@@ -11,12 +11,14 @@ struct canvas_store {
     unsigned char *pixels[CANVAS_MAX_COUNT];
     int count;
     int target;
+    unsigned char color[4];
 };
 
 canvas_store_t *canvas_create_store(void) {
     canvas_store_t *store = calloc(1, sizeof(*store));
     assert(store != NULL && "canvas store: out of memory");
     store->target = CANVAS_NONE;
+    memset(store->color, 0xFF, sizeof store->color);
     return store;
 }
 
@@ -54,6 +56,15 @@ void canvas_clear(canvas_store_t *store, const unsigned char rgba[4]) {
     for (int pixel = 0; pixel < PIXEL_COUNT; pixel++) {
         memcpy(pixels + 4 * pixel, rgba, 4);
     }
+}
+
+void canvas_plot(canvas_store_t *store, int x, int y) {
+    assert(x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT && "canvas_plot: pixel off the canvas");
+    assert(store->color[3] == 0xFF && "canvas_plot: a translucent colour needs blending, which step 9 decides");
+    if (store->target == CANVAS_NONE) {
+        return;
+    }
+    memcpy(store->pixels[store->target] + 4 * (y * CANVAS_WIDTH + x), store->color, 4);
 }
 
 const unsigned char *canvas_read_pixels(const canvas_store_t *store, int canvas) {

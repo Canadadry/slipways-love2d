@@ -86,6 +86,76 @@ static void test_clearing_the_target_fills_it_and_leaves_the_other_canvas(void) 
     canvas_free_store(store);
 }
 
+static const unsigned char OPAQUE_WHITE[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+
+static void assert_pixel(const canvas_store_t *store, int canvas, int x, int y, const unsigned char rgba[4]) {
+    const unsigned char *pixel = canvas_read_pixels(store, canvas) + 4 * (y * CANVAS_WIDTH + x);
+    for (int channel = 0; channel < 4; channel++) {
+        if (pixel[channel] != rgba[channel]) {
+            fprintf(stderr, "canvas %d pixel (%d, %d) byte %d: expected %02X, got %02X\n", canvas, x, y, channel,
+                    rgba[channel], pixel[channel]);
+        }
+        assert(pixel[channel] == rgba[channel]);
+    }
+}
+
+/* Every pixel of `canvas` is `background` except (x, y), which is `rgba`. */
+static void assert_one_pixel(const canvas_store_t *store, int canvas, int x, int y, const unsigned char rgba[4],
+                             const unsigned char background[4]) {
+    for (int row = 0; row < CANVAS_HEIGHT; row++) {
+        for (int column = 0; column < CANVAS_WIDTH; column++) {
+            assert_pixel(store, canvas, column, row, column == x && row == y ? rgba : background);
+        }
+    }
+}
+
+static void test_a_plot_lights_one_pixel_of_the_target_in_opaque_white(void) {
+    canvas_store_t *store = canvas_create_store();
+    int first = canvas_create(store);
+    int second = canvas_create(store);
+    canvas_select(store, first);
+    canvas_plot(store, 37, 81);
+    assert_one_pixel(store, first, 37, 81, OPAQUE_WHITE, TRANSPARENT_BLACK);
+    assert_filled(store, second, TRANSPARENT_BLACK);
+
+    canvas_plot(store, 37, 81);
+    assert_one_pixel(store, first, 37, 81, OPAQUE_WHITE, TRANSPARENT_BLACK);
+    canvas_free_store(store);
+}
+
+static void test_a_plot_reaches_every_corner(void) {
+    canvas_store_t *store = canvas_create_store();
+    canvas_select(store, canvas_create(store));
+    canvas_plot(store, 0, 0);
+    canvas_plot(store, CANVAS_WIDTH - 1, 0);
+    canvas_plot(store, 0, CANVAS_HEIGHT - 1);
+    canvas_plot(store, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1);
+    assert_pixel(store, 0, 0, 0, OPAQUE_WHITE);
+    assert_pixel(store, 0, CANVAS_WIDTH - 1, 0, OPAQUE_WHITE);
+    assert_pixel(store, 0, 0, CANVAS_HEIGHT - 1, OPAQUE_WHITE);
+    assert_pixel(store, 0, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1, OPAQUE_WHITE);
+    assert_pixel(store, 0, 1, 0, TRANSPARENT_BLACK);
+    canvas_free_store(store);
+}
+
+static void test_a_plot_over_a_transparent_colour_replaces_all_four_bytes(void) {
+    static const unsigned char CLEAR_TEAL[4] = {0x33, 0x66, 0x99, 0x00};
+    canvas_store_t *store = canvas_create_store();
+    canvas_select(store, canvas_create(store));
+    canvas_clear(store, CLEAR_TEAL);
+    canvas_plot(store, 10, 2);
+    assert_one_pixel(store, 0, 10, 2, OPAQUE_WHITE, CLEAR_TEAL);
+    canvas_free_store(store);
+}
+
+static void test_a_plot_on_the_screen_changes_no_canvas(void) {
+    canvas_store_t *store = canvas_create_store();
+    canvas_create(store);
+    canvas_plot(store, 30, 2);
+    assert_filled(store, 0, TRANSPARENT_BLACK);
+    canvas_free_store(store);
+}
+
 static void assert_byte(double component, int expected) {
     int got = canvas_convert_component(component);
     if (got != expected) {
@@ -128,6 +198,10 @@ int main(void) {
     test_a_canvas_not_created_has_no_pixels();
     test_clearing_the_screen_changes_no_canvas();
     test_clearing_the_target_fills_it_and_leaves_the_other_canvas();
+    test_a_plot_lights_one_pixel_of_the_target_in_opaque_white();
+    test_a_plot_reaches_every_corner();
+    test_a_plot_over_a_transparent_colour_replaces_all_four_bytes();
+    test_a_plot_on_the_screen_changes_no_canvas();
     test_every_byte_over_255_comes_back_as_that_byte();
     test_a_tie_rounds_to_even_in_single_precision();
     test_other_values_round_to_nearest();
