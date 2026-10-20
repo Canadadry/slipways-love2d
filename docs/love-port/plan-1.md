@@ -355,3 +355,15 @@ None.
 - `make test`: before 434db23 5.19 s, reference 7.21 s, current 5.15 s;
   paired +0.62 % / −28.42 %, 11 rounds, 4 cores.
 
+### Step 3.15
+
+- `game_frame` (29 colours, 92 deliberately off-palette from a tinted
+  coloured sprite) matches the fake on all 19 200 pixels with interacting
+  state: colour before draw, nested translate over points, rectangles and
+  draws, transparent texels over content, canvas switches. A one-off probe of
+  60 random scenes × 400 calls matched 60/60. No fake code changed.
+- `files/sprites.png` and `files/font.png` are byte copies of `game/`, not
+  kept in sync. design.md "In combination".
+- `make test`: before a3aa0e0 5.04 s, reference 7.03 s, current 5.07 s;
+  paired −0.70 % / −28.17 %, 11 rounds, 4 cores.
+

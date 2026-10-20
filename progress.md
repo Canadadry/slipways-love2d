@@ -22,7 +22,7 @@
     - [x] Chunk 2 — fake disk
     - [x] Chunk 3 — love.filesystem in the run
     - [x] Chunk 4 — arguments, docs, timing
-- [ ] Phase 3 — Drawing, one function at a time
+- [x] Phase 3 — Drawing, one function at a time
   - [x] Step 3.6 — newCanvas/setCanvas/clear and the comparison harness
     - [x] Chunk 1 — nothing from src/ guard
     - [x] Chunk 2 — canvas store
@@ -61,7 +61,7 @@
   - [x] Step 3.14 — setDefaultFilter
     - [x] Chunk 1 — setDefaultFilter binding
     - [x] Chunk 2 — capture, nearest re-run, docs, timing
-  - [ ] Step 3.15 — combined capture program
+  - [x] Step 3.15 — combined capture program
     - [x] Chunks 1–2 — game_frame capture, probes, docs
 - [ ] Phase 4 — Capture and errors
   - [ ] Step 4.16 — capture
