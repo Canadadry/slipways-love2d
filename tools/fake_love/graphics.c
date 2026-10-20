@@ -138,8 +138,8 @@ static int points(lua_State *lua) {
     for (int index = 1; index <= count; index += 2) {
         push_coordinate(lua, table_form, index);
         push_coordinate(lua, table_form, index + 1);
-        int x = point_find_pixel(lua_tonumber(lua, -2), CANVAS_WIDTH);
-        int y = point_find_pixel(lua_tonumber(lua, -1), CANVAS_HEIGHT);
+        int x = point_find_pixel(lua_tonumber(lua, -2), 0, CANVAS_WIDTH);
+        int y = point_find_pixel(lua_tonumber(lua, -1), 0, CANVAS_HEIGHT);
         lua_pop(lua, 2);
         if (x != POINT_OFF && y != POINT_OFF)
             canvas_plot(store, x, y);
@@ -167,8 +167,8 @@ static int rectangle(lua_State *lua) {
             return luaL_error(lua, "love.graphics.rectangle: argument %d is out of range (|v| >= 2^20)", index);
     }
     int first_column, last_column, first_row, last_row;
-    if (point_find_span(lua_tonumber(lua, 2), lua_tonumber(lua, 4), CANVAS_WIDTH, &first_column, &last_column) &&
-        point_find_span(lua_tonumber(lua, 3), lua_tonumber(lua, 5), CANVAS_HEIGHT, &first_row, &last_row))
+    if (point_find_span(lua_tonumber(lua, 2), lua_tonumber(lua, 4), 0, CANVAS_WIDTH, &first_column, &last_column) &&
+        point_find_span(lua_tonumber(lua, 3), lua_tonumber(lua, 5), 0, CANVAS_HEIGHT, &first_row, &last_row))
         canvas_fill_range(upvalue_store(lua), first_column, first_row, last_column, last_row);
     return 0;
 }

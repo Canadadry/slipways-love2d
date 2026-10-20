@@ -10,6 +10,11 @@ bool point_accepts_coordinate(double coordinate) {
     return isfinite(coordinate) && fabs(coordinate) < POINT_COORDINATE_LIMIT;
 }
 
+bool point_accepts_translated(double coordinate, int offset) {
+    return point_accepts_coordinate(coordinate) && point_accepts_coordinate(offset) &&
+           point_accepts_coordinate(coordinate + offset);
+}
+
 /* The window coordinate in 1/256 of a pixel. */
 static long snap_to_window(float value, int size) {
     float half = (float)size / 2.0f;
@@ -28,10 +33,13 @@ static long divide_rounding_down(long numerator, long denominator) {
     return numerator % denominator < 0 ? quotient - 1 : quotient;
 }
 
-int point_find_pixel(double coordinate, int size) {
+int point_find_pixel(double coordinate, int offset, int size) {
     assert(size > 0);
-    assert(point_accepts_coordinate(coordinate));
-    long fixed = snap_to_window((float)coordinate, size);
+    assert(point_accepts_translated(coordinate, offset));
+    /* LÖVE translates each vertex in single precision; a double sum moves
+     * it across a 1/512 tie. */
+    float translated = (float)coordinate + (float)offset;
+    long fixed = snap_to_window(translated, size);
     if (fixed < 1) {
         return POINT_OFF;
     }
@@ -39,16 +47,17 @@ int point_find_pixel(double coordinate, int size) {
     return pixel < size ? (int)pixel : POINT_OFF;
 }
 
-bool point_find_span(double start, double extent, int size, int *first, int *last) {
+bool point_find_span(double start, double extent, int offset, int size, int *first, int *last) {
     assert(size > 0);
-    assert(point_accepts_coordinate(start));
+    assert(point_accepts_translated(start, offset));
     assert(isfinite(extent) && fabs(extent) < 2.0 * POINT_COORDINATE_LIMIT &&
-           "an edge below 2^20 plus an extent below 2^21 keeps every snapped value below 2^31");
-    float near_edge = (float)start;
-    float added = (float)extent;
-    /* LÖVE adds the far edge in single precision; a double sum moves it
-     * across a 1/512 tie. */
-    float far_edge = near_edge + added;
+           "a translated edge below 2^20 plus an extent below 2^21 keeps every snapped value below 2^31");
+    /* LÖVE adds the far edge in single precision before translating each
+     * vertex; a double sum, or (start + offset) + extent, moves it across a
+     * 1/512 tie. */
+    float translation = (float)offset;
+    float near_edge = (float)start + translation;
+    float far_edge = ((float)start + (float)extent) + translation;
     long near_fixed = snap_to_window(near_edge, size);
     long far_fixed = snap_to_window(far_edge, size);
     long low = near_fixed < far_fixed ? near_fixed : far_fixed;
