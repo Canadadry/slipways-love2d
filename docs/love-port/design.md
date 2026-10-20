@@ -330,7 +330,7 @@ ImageData holding a translucent alpha.** Capture: `imagedata_files`.
 
 **Images.** `love.graphics` holds exactly `clear`, `draw`, `newCanvas`,
 `newImage`, `newQuad`, `points`, `pop`, `push`, `rectangle`, `setCanvas`,
-`setColor` and `translate` from `main.lua` on. `newImage(imagedata)` takes exactly one ImageData and
+`setColor`, `setDefaultFilter` and `translate` from `main.lua` on. `newImage(imagedata)` takes exactly one ImageData and
 copies its size and bytes at the call: a later `setPixel` on the ImageData
 leaves the Image as it was, as in LÖVE. `newQuad(x, y, w, h, sw, sh)` takes
 six integers: reference sides 1 to 1024, origin from 0, size from 1, the
@@ -363,10 +363,8 @@ positions): the fake does not model filtering and needs no `nearest` to be
 exact. From
 1/512 of a pixel off an integer, `linear` blends texels into colours
 outside the palette, and `nearest` drops or doubles texel columns near
-half a pixel: hence the refusals. So `setDefaultFilter("nearest",
-"nearest")`, once the fake has it, is a call that changes
-nothing the fake draws, and fractional positions stay refused under
-`nearest` too. A translucent texel blends with llvmpipe's 8-bit
+half a pixel: hence the refusals. `setDefaultFilter`: see Default
+filter. A translucent texel blends with llvmpipe's 8-bit
 arithmetic (`min(255, mul(s, a) + mul(d, 255 − a))`,
 `mul(p, q) = (p·q + (p·q >> 8) + 128) >> 8`), never into a palette byte,
 hence its refusal. **The rule for the game: build
@@ -419,6 +417,37 @@ NaN are not modelled. **The rule for the game: port `camera(x, y)` as
 camera; keep `points(x + 0.5, y + 0.5)`, integer rectangles and integer
 draws under it; never translate by a fraction; pair every `push` with a
 `pop` in the same frame.** Capture: `translate_stack`.
+
+**Default filter.** `setDefaultFilter("nearest", "nearest")` is the only
+form. It is accepted at any time and any number of times (in any
+callback, with a canvas or the screen selected, before or after any
+Image or Canvas exists), checks its arguments and stores nothing. Real
+LÖVE 11.5 on llvmpipe: the default is `linear linear 1`; the call gives
+`nearest` only to Images and Canvases created after it, and an existing
+one keeps its filter. Every pixel the fake models is byte-identical
+under both filters: every capture re-run with `nearest` set in the
+harness's `love.load` (31 of 31), and 3 000 random integer quad draws
+from images created under either filter, tinted or not. Fractional
+shifts still differ under `nearest` (a 0.5 shift drops or doubles texels
+in 7 249 pixels of those draws, −0.5 in 14 945), so fractional positions
+stay refused. Every refusal is an error starting
+`love.graphics.setDefaultFilter: ` and changes nothing, checked in this
+order: another argument count (one name, an anisotropy third argument,
+a trailing nil), a non-string (no number coercion), an unknown name
+with LÖVE's message `Invalid filter mode '<v>', expected one of: 'none',
+'linear', 'nearest'` (case-sensitive), then `"linear"` or `"none"`. Real
+LÖVE accepts one name, an unchecked anisotropy, mixed pairs, `linear`
+and `none`: the fake refuses them because `linear` and `none` would blur
+the window it cannot see, and anisotropy is not measured. A capture
+program may call it at its top level, unlike `translate`: the fake
+stores nothing, and in real LÖVE the program's images are all created
+after its own top-level call in either harness, while the harness
+canvas is only read back, never sampled. **The rule for the game: call
+`setDefaultFilter("nearest", "nearest")` once, as the first graphics
+call of `love.load`, before `newCanvas` and every `newImage`, so the
+canvas is `nearest` when it is scaled up to the window; the fake cannot
+check this order. Integer draws are unchanged by the call, and
+fractional draws stay refused.** Capture: `filter_nearest`.
 
 ### The LÖVE functions the game may use
 
