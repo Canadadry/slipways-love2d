@@ -359,6 +359,10 @@ test_fake_love_disk_objs := $(call objs,tests/test_fake_love_disk.c tools/fake_l
 $(TMP_DIR)/test_fake_love_disk: $(test_fake_love_disk_objs) $(wildcard tests/fixtures/fake_love/disk_tree/* tests/fixtures/fake_love/disk_tree/*/*) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
+test_fake_love_png_file_objs := $(call objs,tests/test_fake_love_png_file.c tools/fake_love/png_file.c)
+$(TMP_DIR)/test_fake_love_png_file: $(test_fake_love_png_file_objs) game/sprites.png game/font.png | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
+
 # Recursive (`=`): only a target that builds the fake runs pkg-config.
 luajit_flags = $(if $(filter LUAJIT_MISSING,$(1)),$(error pkg-config luajit failed: run tools/love_install.sh),$(1))
 LUAJIT_CFLAGS = $(call luajit_flags,$(shell pkg-config --cflags luajit 2>/dev/null || echo LUAJIT_MISSING))
@@ -951,6 +955,7 @@ UNIT_TESTS := \
     test_fake_love_image_rules \
     test_fake_love_point \
     test_fake_love_disk \
+    test_fake_love_png_file \
     test_fake_love \
     test_fake_love_failures \
     test_fake_love_joystick \
@@ -1271,7 +1276,7 @@ random-guard: tools/random_guard.sh $(RANDOM_GUARD_EXCEPTIONS) ## ratchet on the
 # `<binary> <objects>` per binary of the fake side: each name below has its
 # `<name>_objs` beside its link rule. tmp/luajit_version has no object: the
 # include scan of tools/love_capture/ covers it.
-FAKE_SIDE_BINARIES := fake_love love_capture_check test_fake_love_replay test_fake_love_pad test_fake_love_canvas test_fake_love_image_data test_fake_love_image_rules test_fake_love_point test_fake_love_disk test_fake_love test_fake_love_failures test_fake_love_joystick test_fake_love_files test_fake_love_graphics test_fake_love_points test_fake_love_rectangle test_fake_love_set_color test_fake_love_image test_fake_love_image_draw test_fake_love_capture test_fake_love_guard
+FAKE_SIDE_BINARIES := fake_love love_capture_check test_fake_love_replay test_fake_love_pad test_fake_love_canvas test_fake_love_image_data test_fake_love_image_rules test_fake_love_point test_fake_love_disk test_fake_love_png_file test_fake_love test_fake_love_failures test_fake_love_joystick test_fake_love_files test_fake_love_graphics test_fake_love_points test_fake_love_rectangle test_fake_love_set_color test_fake_love_image test_fake_love_image_draw test_fake_love_capture test_fake_love_guard
 FAKE_SIDE_LINKS := $(foreach binary,$(FAKE_SIDE_BINARIES),$(TMP_DIR)/$(binary) $($(binary)_objs))
 FAKE_SIDE_SRCS := tools/fake_love tools/love_capture $(wildcard tests/test_fake_love*.c tests/fake_love_*.[ch])
 
