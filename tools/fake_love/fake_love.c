@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +7,7 @@
 #include <luajit.h>
 
 #include "disk.h"
+#include "frame_capture.h"
 #include "host.h"
 #include "replay.h"
 
@@ -42,14 +44,58 @@ static bool check_version(host_t *host) {
     return false;
 }
 
-static bool create_empty_file(const char *path) {
-    FILE *file = fopen(path, "wb");
-    if (file == NULL) {
+typedef struct capture_writer {
+    const char *path;
+    FILE *file;
+    long foreign;
+    size_t first_frame;
+    frame_capture_foreign_t first;
+} capture_writer_t;
+
+static bool capture_open(capture_writer_t *writer, const char *path) {
+    *writer = (capture_writer_t){.path = path, .file = fopen(path, "wb")};
+    if (writer->file == NULL)
         fprintf(stderr, "fake_love: %s: cannot create\n", path);
-        return false;
-    }
-    fclose(file);
-    return true;
+    return writer->file != NULL;
+}
+
+static bool capture_append(capture_writer_t *writer, host_t *host, size_t frame) {
+    int width;
+    int height;
+    const unsigned char *pixels = host_read_canvas(host, 0, &width, &height);
+    assert((pixels == NULL || (width == FRAME_CAPTURE_WIDTH && height == FRAME_CAPTURE_HEIGHT)) &&
+           "newCanvas accepts only 160x120");
+    unsigned char bytes[FRAME_CAPTURE_FRAME_SIZE];
+    bool found_before = writer->first.found;
+    writer->foreign += frame_capture_pack(pixels, bytes, &writer->first);
+    if (!found_before && writer->first.found)
+        writer->first_frame = frame;
+    if (fwrite(bytes, 1, sizeof bytes, writer->file) == sizeof bytes)
+        return true;
+    fprintf(stderr, "fake_love: %s: cannot write\n", writer->path);
+    return false;
+}
+
+static bool capture_close(capture_writer_t *writer) {
+    bool closed = writer->file == NULL || fclose(writer->file) == 0;
+    writer->file = NULL;
+    if (!closed)
+        fprintf(stderr, "fake_love: %s: cannot write\n", writer->path);
+    return closed;
+}
+
+/* TODO step 17: a foreign pixel becomes a fatal error instead of this warning. */
+static void capture_warn(const capture_writer_t *writer) {
+    if (writer->foreign == 0)
+        return;
+    const frame_capture_foreign_t *first = &writer->first;
+    fprintf(stderr, "fake_love: warning: %ld pixels outside the palette written as colour 0, first f%zu ",
+            writer->foreign, writer->first_frame);
+    if (first->no_canvas)
+        fprintf(stderr, "no canvas\n");
+    else
+        fprintf(stderr, "pixel (%d, %d) %02X%02X%02X%02X\n", first->x, first->y, first->rgba[0], first->rgba[1],
+                first->rgba[2], first->rgba[3]);
 }
 
 static bool write_state(host_t *host, const char *path) {
@@ -78,13 +124,24 @@ static bool load_game(host_t *host, const replay_t *replay) {
     return host_load(host, load_arguments, 2);
 }
 
-static bool run_game(host_t *host, const arguments_t *arguments, const replay_t *replay, disk_t *disk) {
+static bool run_game(host_t *host, const arguments_t *arguments, const replay_t *replay, disk_t *disk,
+                     capture_writer_t *capture) {
     bool ok = host_open(host, arguments->game_dir, disk) && load_game(host, replay);
-    for (size_t frame = 0; ok && frame < replay_frame_count(replay); frame++)
+    for (size_t frame = 0; ok && frame < replay_frame_count(replay); frame++) {
         ok = host_frame(host, frame, replay_frame_held(replay, frame));
-    if (!ok)
+        if (!ok)
+            break;
+        if (!capture_append(capture, host, frame))
+            return false;
+    }
+    if (!ok) {
         fprintf(stderr, "fake_love: %s\n", host_error(host));
-    return ok && (arguments->state_path == NULL || write_state(host, arguments->state_path));
+        return false;
+    }
+    if (!capture_close(capture))
+        return false;
+    capture_warn(capture);
+    return arguments->state_path == NULL || write_state(host, arguments->state_path);
 }
 
 /* The fixture's bytes in a buffer the caller frees; NULL after printing the
@@ -148,8 +205,10 @@ static bool run(const arguments_t *arguments) {
     host_t *host = host_new();
     if (host == NULL)
         fprintf(stderr, "fake_love: out of memory\n");
-    bool ok = host != NULL && check_version(host) && create_empty_file(arguments->capture_path);
-    if (ok && !run_game(host, arguments, replay, disk)) {
+    capture_writer_t capture = {0};
+    bool ok = host != NULL && check_version(host) && capture_open(&capture, arguments->capture_path);
+    if (ok && !run_game(host, arguments, replay, disk, &capture)) {
+        capture_close(&capture);
         remove(arguments->capture_path);
         if (arguments->state_path != NULL)
             remove(arguments->state_path);

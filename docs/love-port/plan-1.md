@@ -114,13 +114,19 @@ implementation, the comparison in `make test`, and the settled convention in
     the capture; `debug_state()` written after the last frame. Verified by a
     test game drawing known colours and the capture's bytes.
 17. Fatal errors: unlisted function, colour outside the 16, foreign pixel on
-    the canvas, each with its message. Verified by one test game per error.
+    the canvas, each with its message. Verified by one test game per error,
+    by every `love-capture-check-*` staying green, and by a test game that
+    follows design.md's drawing rules (white before images, tinted texels,
+    scratch canvases with non-palette content) running without error.
 18. `make love-e2e`: runs `tmp/fake_love game/` on every replay of
     `tests/e2e/`, in parallel, and checks each capture's sha256 with
     `tools/frames_check.sh`. Verified with a stub game drawing a fixed frame:
     all 20 replays run, each capture has the replay's frame count of frames,
     each reports a sha256 mismatch rather than a crash, and a game that fails
-    to load reports a distinct, named error.
+    to load reports a distinct, named error. Also verified positively: a stub
+    game that reads the C replay's own capture (`tmp/frames/…bin`) from the
+    fake disk and redraws each frame with listed functions makes all 20
+    replays match their `.json.sha256`.
 
 ## 4. Done when
 
@@ -366,4 +372,10 @@ None.
   kept in sync. design.md "In combination".
 - `make test`: before a3aa0e0 5.04 s, reference 7.03 s, current 5.07 s;
   paired −0.70 % / −28.17 %, 11 rounds, 4 cores.
+- Phase 3 end: warn-review flagged repeated limits and sizes, two harness
+  copies, duplicated CRC/PNG writers and Lua helpers, the hand-kept
+  `FAKE_SIDE_BINARIES` list. plan-review judged them code cleanup; it added a
+  positive control to step 18 (redrawing the C captures must match all 20
+  hashes) and verification to step 17 (every capture check stays green, the
+  game's own drawing rules stay accepted).
 

@@ -37,12 +37,15 @@ For one replay it:
    that changed, each in ascending button number, answers
    `Joystick:isGamepadDown` from the current list, calls `love.update(1/60)`
    then `love.draw()`;
-5. after each `love.draw()`, reads the 160×120 canvas, turns each pixel's RGB
-   into its palette number 0–15 and appends the 19 200 bytes to the capture.
-   The capture format is the C replay's: its sha256 is compared with the
+5. after each frame's draw step, even without `love.draw`, reads canvas 0
+   (the first created), turns each opaque pixel's RGB into its palette
+   number 0–15, packs two pixels per byte (even x in the low nibble), row by
+   row, and appends the 9 600 bytes to the capture (see Capture). The
+   capture format is the C replay's: its sha256 is compared with the
    replay's `.json.sha256`;
-6. after the last frame, calls the game's `debug_state()` and writes the text
-   it returns next to the capture, compared with the replay's `.end-state`.
+6. after the last frame, once the capture is closed, calls the game's
+   `debug_state()` and writes the text it returns next to the capture,
+   compared with the replay's `.end-state`.
 
 Anything outside the contract below is a **fatal error** that names the
 function (or the frame and pixel): a LÖVE function not on the list, a colour
@@ -144,6 +147,29 @@ error naming the function and the path. Any other form (read's size or
 container argument, a third argument to write, non-string data, the
 info-table forms) raises an error naming the function. `love.load` gets its
 arguments as its parameter only: the global `arg` is nil.
+
+**Capture.** A capture is the frames one after the other, no header, so
+its size is the replay's frame count × 9 600 bytes (a replay of no frame
+gives an empty file). A frame is canvas 0, the first canvas the game
+created, as it stands after the draw step, whatever canvas was selected
+last and including pixels kept from earlier frames; other canvases and the
+screen never reach it. For each row y from 0 to 119, for each even x from
+0 to 158, one byte `n(x, y) | n(x + 1, y) << 4`. A pixel is colour n when
+its alpha is `FF` and its RGB equals triple n byte for byte:
+
+| n | RGB | n | RGB | n | RGB | n | RGB |
+|---|---|---|---|---|---|---|---|
+| 0 | `000000` | 4 | `AB5236` | 8 | `FF004D` | 12 | `29ADFF` |
+| 1 | `1D2B53` | 5 | `5F574F` | 9 | `FFA300` | 13 | `83769C` |
+| 2 | `7E2553` | 6 | `C2C3C7` | 10 | `FFEC27` | 14 | `FF77A8` |
+| 3 | `008751` | 7 | `FFF1E8` | 11 | `00E436` | 15 | `FFCCAA` |
+
+Any other pixel is not a palette colour: alpha `00`, even over a palette
+RGB (a fresh canvas's `00000000` included), and every RGB outside the
+table; a frame drawn while no canvas exists has no palette pixel. **The
+rule for the game: create the game canvas first, in `love.load`, before any
+other canvas; end every frame with every pixel of it opaque and one of the
+16 triples, drawn as `byte / 255`.**
 
 **Canvas and clear.** `love.graphics` is nil in `conf.lua`, like
 `love.joystick`. `newCanvas(160, 120)` is the only size accepted; a fresh
@@ -517,8 +543,8 @@ checks the installed LuaJIT.
 The game only uses functions LÖVE draws pixel-exact, so what the e2e check is
 what the player sees:
 
-- **Colours:** a 16-entry table holding the C palette's RGB values
-  (`src/p8/palette.c`), passed exactly to `setColor` (byte/255).
+- **Colours:** a 16-entry table holding the RGB values of the Capture
+  table, passed exactly to `setColor` (byte/255).
 - **Circles and lines:** drawn by the game itself, pixel by pixel (`points`)
   or in spans (`rectangle`), with the C game's algorithms.
 - **Fill patterns** (PICO-8 `fillp`): the game builds them as images and draws

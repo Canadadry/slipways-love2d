@@ -66,7 +66,7 @@
 - [ ] Phase 4 — Capture and errors
   - [ ] Step 4.16 — capture
     - [x] Chunk 1 — frame_capture module
-    - [ ] Chunk 2 — command writes the capture
+    - [x] Chunk 2 — command writes the capture
     - [ ] Chunk 3 — timing, note
   - [ ] Step 4.17 — fatal errors
   - [ ] Step 4.18 — make love-e2e

@@ -25,11 +25,14 @@ static void assert_state(const char *expected) {
     free(state);
 }
 
-static void assert_capture_empty(void) {
+/* These games create no canvas: every frame is written as colour 0. */
+static void assert_capture_black_frames(long frames) {
     long size = -1;
     char *capture = fake_love_cli_read_file(CAPTURE, &size);
     assert(capture != NULL && "the capture file must be created");
-    assert(size == 0 && "nothing draws yet: the capture stays empty");
+    assert(size == frames * 9600 && "one capture frame of 9 600 bytes per frame");
+    for (long i = 0; i < size; i++)
+        assert(capture[i] == 0);
     free(capture);
 }
 
@@ -47,7 +50,7 @@ static void test_counting_game_runs_three_frames(void) {
                  "draw\n"
                  "update 1/60\n"
                  "draw\n");
-    assert_capture_empty();
+    assert_capture_black_frames(3);
 }
 
 static void test_zero_frames_only_loads(void) {
@@ -58,7 +61,7 @@ static void test_zero_frames_only_loads(void) {
                  "love.conf\n"
                  "main\n"
                  "load table\n");
-    assert_capture_empty();
+    assert_capture_black_frames(0);
 }
 
 static void test_game_without_conf_nor_draw_runs(void) {
@@ -89,7 +92,7 @@ static void test_require_ignores_modules_outside_the_game_directory(void) {
 static void test_no_state_path_leaves_debug_state_uncalled(void) {
     int status = run_fake_love(FIXTURES "state_raises " FIXTURES "three_frames.json " CAPTURE);
     assert(status == 0);
-    assert_capture_empty();
+    assert_capture_black_frames(3);
 }
 
 int main(void) {
