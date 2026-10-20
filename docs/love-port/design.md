@@ -195,6 +195,49 @@ from 2^23 up back onto the canvas. Captures: `points_landing`,
 `points_subpixel`, `points_columns`, `points_rows`, `points_offcanvas`,
 `points_forms`.
 
+**Rectangles.** `rectangle("fill", x, y, w, h)` is the only form: exactly
+five arguments, the string `"fill"` and four Lua numbers. It fills with
+the current colour, opaque white (`FFFFFFFF`) until `setColor` exists,
+replacing each pixel's four bytes, also over a transparent pixel, and
+pixels around keep their bytes; overlaps and repeats leave one opaque
+fill. Coverage, per axis (size 160 for x with w, 120 for y with h), is
+real LÖVE 11.5 on Mesa llvmpipe: each argument to single precision, the
+far edge added in single precision, both edges through the points
+projection, viewport and 1/256 snap, then a pixel is filled when its
+centre lies between the edges, the low edge inclusive and the high edge
+exclusive (the top-left rule):
+
+```
+a = (float) x;  b = a + (float) w;      // float addition, never double
+A = snap(a, size);  B = snap(b, size);  // fix of the points rule above
+lo = min(A, B);  hi = max(A, B);
+pixel i is filled iff lo <= 256 * i + 128 < hi   // clipped to 0 … size − 1
+```
+
+**The rule for the game: pass integers.** An integer rectangle fills
+columns x … x + w − 1 and rows y … y + h − 1 at every position, so a
+PICO-8 `rectfill(x0, y0, x1, y1)` with integer corners is
+`rectangle("fill", min(x0, x1), min(y0, y1), |x1 − x0| + 1,
+|y1 − y0| + 1)`, and `rectangle("fill", x, y, 1, 1)` fills pixel (x, y).
+A negative size fills the same pixels as the positive rectangle spanning
+the same edges; a zero size fills nothing and raises no error. Edges
+within 1/512 of a pixel centre are position-dependent (at
+c + 0.5 + 1/512 some columns include c, others not, and rows differ from
+columns), and a far edge near such a tie depends on the float sum: the
+game must not produce them. Parts off the canvas are clipped:
+`(−0.49, y, 1, 1)` fills column 0, `(−0.5, y, 1, 1)` and
+`(159.51, y, 1, 1)` nothing. With no canvas selected, rectangles touch
+nothing the fake models. Every refusal is an error starting
+`love.graphics.rectangle: ` and draws nothing: another argument count (a
+sixth argument too, even 0 or nil, so no rounded rectangle), a mode that
+is not a string, any mode but `"fill"` (`"line"` is antialiased in real
+LÖVE), a non-number (no string coercion), a non-finite value, and a
+magnitude of 2^20 or more for any of x, y, w, h, the bound of `points`;
+it keeps every snapped value in a `long` and both edges far inside the
+2^31 where llvmpipe's clipper breaks down. Captures:
+`rectangle_integers`, `rectangle_subpixel`, `rectangle_columns`,
+`rectangle_rows`, `rectangle_offcanvas`, `rectangle_forms`.
+
 ### The LÖVE functions the game may use
 
 The fake implements exactly this list; extending it is a decision recorded
@@ -204,7 +247,7 @@ here, with its real-LÖVE capture.
   `dt`: one `update` is one game frame (60 per second).
 - Drawing: `love.graphics.newCanvas(160, 120)`, `setCanvas`, `clear`,
   `setColor`, `points(x1, y1, …)` or `points({x1, y1, …})`,
-  `rectangle("fill", …)`, `newImage`, `newQuad`,
+  `rectangle("fill", x, y, w, h)`, `newImage`, `newQuad`,
   `draw(image, quad, x, y)`, `setDefaultFilter("nearest", "nearest")`,
   `push`, `pop`, `translate`.
 - Images: `love.image.newImageData(w, h)`, `love.image.newImageData(file)`,
