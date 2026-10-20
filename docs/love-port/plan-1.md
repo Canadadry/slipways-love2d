@@ -379,3 +379,17 @@ None.
   hashes) and verification to step 17 (every capture check stays green, the
   game's own drawing rules stay accepted).
 
+### Step 4.16
+
+- `frame_capture.c`: the fake's own 16-colour table; a pixel is colour n
+  only if opaque and exactly its RGB. Each frame, canvas 0 is packed as the C
+  replay writes it: 9 600 bytes, two pixels per byte, even x in the low
+  nibble (design.md said 19 200: corrected). The capture is closed before
+  `debug_state()`. Until step 17, foreign pixels and frames with no canvas
+  are written as 0 with one end-of-run warning.
+- Tests: `test_fake_love_frame_capture` (1 ms), `test_fake_love_frames`
+  (13 ms, every byte of a 4-frame capture); `test_fake_love` now expects
+  frames × 9 600 bytes.
+- `make test`: before 56b69a4 4.97 s, reference 6.95 s, current 5.05 s;
+  paired −1.11 % / −28.25 %, 11 rounds, 4 cores.
+
