@@ -162,9 +162,9 @@ function.
 **Points.** `points(x1, y1, …, xn, yn)` takes zero or an even number of
 Lua numbers; `points(t)` takes one flat table of them, its elements
 1 … `#t`. `points()` and `points({})` draw nothing. Each point lights one
-pixel of the selected canvas with the current colour, opaque white
-(`FFFFFFFF`) until `setColor` exists, replacing its four bytes, also over
-a transparent pixel; a pixel lit twice is lit once. The pixel, per axis
+pixel of the selected canvas with the current colour (see Colour),
+replacing its four bytes, also over a transparent pixel; a pixel lit twice
+is lit once. The pixel, per axis
 (size 160 for x, 120 for y), is the one real LÖVE 11.5 on Mesa llvmpipe
 lights: column n when n < x′ ≤ n + 1, x′ being the coordinate through
 LÖVE's single-precision projection and Mesa's viewport, snapped to 1/256
@@ -197,8 +197,8 @@ from 2^23 up back onto the canvas. Captures: `points_landing`,
 
 **Rectangles.** `rectangle("fill", x, y, w, h)` is the only form: exactly
 five arguments, the string `"fill"` and four Lua numbers. It fills with
-the current colour, opaque white (`FFFFFFFF`) until `setColor` exists,
-replacing each pixel's four bytes, also over a transparent pixel, and
+the current colour (see Colour), replacing each pixel's four bytes, also
+over a transparent pixel, and
 pixels around keep their bytes; overlaps and repeats leave one opaque
 fill. Coverage, per axis (size 160 for x with w, 120 for y with h), is
 real LÖVE 11.5 on Mesa llvmpipe: each argument to single precision, the
@@ -238,6 +238,28 @@ it keeps every snapped value in a `long` and both edges far inside the
 `rectangle_integers`, `rectangle_subpixel`, `rectangle_columns`,
 `rectangle_rows`, `rectangle_offcanvas`, `rectangle_forms`.
 
+**Colour.** `setColor(r, g, b)` and `setColor(r, g, b, 1)` are the only
+forms: three Lua numbers, or four whose fourth equals 1. The current colour
+is opaque white (`FFFFFFFF`) until the first `setColor`, then the last one
+set, for the whole run: from `love.load` on (before any canvas exists),
+across frames, canvas switches, `setCanvas()` and `clear`, which ignores
+it and leaves it unchanged. Each component becomes a byte as real LÖVE
+11.5 does: to single precision, clamped to [0, 1], times 255 in single
+precision, **truncated**, unlike `clear`, which rounds: a component 0.5
+gives 127 with `setColor` and 128 with `clear`, 0.3 gives 76, and
+`128/255 × (1 − 2^-30)`, one float step below `128/255`, gives 127. A
+point or rectangle drawn takes the colour's four bytes, alpha `FF`, over
+any pixel, transparent included. Every refusal is an error starting
+`love.graphics.setColor: ` and leaves the current colour unchanged: another
+argument count (a fifth argument too), a non-number (no string coercion,
+no table form), a non-finite component, and an alpha other than 1, because
+real LÖVE blends a translucent colour with the pixels under it and the fake
+does not model the blender. **The rule for the game: pass each palette
+byte as the Lua expression `byte / 255`**, which always gives that byte; a
+component computed any other way can lose a whole byte. Never pass an
+alpha: translucent colours blend in real LÖVE and are refused by the fake.
+Captures: `color_bytes`, `color_precision`, `color_state`.
+
 ### The LÖVE functions the game may use
 
 The fake implements exactly this list; extending it is a decision recorded
@@ -246,7 +268,8 @@ here, with its real-LÖVE capture.
 - Loop: `love.load(arg)`, `love.update(dt)`, `love.draw()`. The game ignores
   `dt`: one `update` is one game frame (60 per second).
 - Drawing: `love.graphics.newCanvas(160, 120)`, `setCanvas`, `clear`,
-  `setColor`, `points(x1, y1, …)` or `points({x1, y1, …})`,
+  `setColor(r, g, b)` or `setColor(r, g, b, 1)`, `points(x1, y1, …)` or
+  `points({x1, y1, …})`,
   `rectangle("fill", x, y, w, h)`, `newImage`, `newQuad`,
   `draw(image, quad, x, y)`, `setDefaultFilter("nearest", "nearest")`,
   `push`, `pop`, `translate`.
