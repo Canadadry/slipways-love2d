@@ -28,7 +28,7 @@
     - [x] Chunk 2 — canvas store
     - [x] Chunk 3 — love.graphics in the host
     - [x] Chunk 4 — the comparison
-    - [ ] Chunk 5 — captures, png_check retired, proof
+    - [x] Chunk 5 — captures, png_check retired, proof
   - [ ] Step 3.7 — points
   - [ ] Step 3.8 — rectangle("fill")
   - [ ] Step 3.9 — setColor

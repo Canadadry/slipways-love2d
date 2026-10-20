@@ -1284,12 +1284,8 @@ love-capture: ## runs the tools/love_capture/ programs in real LÖVE 11.5 under 
 
 .PHONY: love-capture
 
-$(TMP_DIR)/png_check: tools/love_capture/png_check.c tools/fake_love/stb_image.h | $(TMP_DIR)
-	$(CC) $(CFLAGS) -Wno-unused-function -Itools/fake_love -o $@ $<
-
-love-check: $(TMP_DIR)/luajit_version $(TMP_DIR)/png_check ## checks the LuaJIT 2.1 probe and that the clear capture is 160×120 of 1D2B53
+love-check: $(TMP_DIR)/luajit_version ## checks that the installed LuaJIT is 2.1; make test compares the captures
 	./$(TMP_DIR)/luajit_version
-	./$(TMP_DIR)/png_check tools/love_capture/clear.png 160 120 1D2B53
 
 .PHONY: love-check
 

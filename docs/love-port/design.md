@@ -139,6 +139,26 @@ container argument, a third argument to write, non-string data, the
 info-table forms) raises an error naming the function. `love.load` gets its
 arguments as its parameter only: the global `arg` is nil.
 
+**Canvas and clear.** `love.graphics` is nil in `conf.lua`, like
+`love.joystick`. `newCanvas(160, 120)` is the only size accepted; a fresh
+canvas is transparent black (`00000000`) everywhere, and at most 16
+canvases exist in a run. `setCanvas(canvas)` selects a canvas,
+`setCanvas()` and `setCanvas(nil)` select the screen; switching leaves the
+previous canvas untouched, and a canvas keeps its pixels across frames
+until cleared or drawn over. After the draw step of every frame, even
+without `love.draw`, a selected canvas is fatal:
+`love.draw f<N>: present cannot be called while a Canvas is active.`, as
+in LÖVE. `clear(r, g, b, a)` fills the selected canvas, `clear(r, g, b)`
+uses alpha 1, `clear()` is transparent black; at alpha 0 the RGB bytes are
+kept (no premultiplication). Each component becomes a byte as Mesa does:
+to single precision, clamped to [0, 1], times 255 in single precision,
+rounded to nearest with ties to even (`1.5/255` gives 2, `2.5/255` gives
+2, 0.3 gives 76), so `byte/255` gives back that byte. `clear` with the
+screen selected changes nothing the fake models. Any other form (table
+colours, `setCanvas` tables or mipmaps, other sizes, settings, non-finite
+or non-number components, a wrong count) raises an error naming the
+function.
+
 ### The LÖVE functions the game may use
 
 The fake implements exactly this list; extending it is a decision recorded
@@ -174,6 +194,18 @@ allowed (see `CLAUDE.md`), agents and CI may run it, and it is outside
 `make test` and `make e2e`. CI runs it on every push and fails when a PNG
 changes. `make test` runs the same programs in the fake LÖVE and compares
 pixel for pixel with the PNGs.
+
+A capture program returns its draw function. Both harnesses (the real one
+in `tools/love_capture/harness/`, the fake one in `tools/fake_love/harness/`)
+create the 160×120 canvas before loading the program, so the program's top
+level may create other canvases and the harness canvas is the fake's
+canvas 0; they select it, call the draw function once with the canvas as
+argument, and unselect it. `tmp/love_capture_check` compares all four
+channels of all 19 200 pixels, RGB included where alpha is 0, and names the
+program, the first differing pixel, both RGBA values and the count of
+differing pixels. Each program is its own `love-capture-check-<name>`
+target of `make test`; a `.lua` without its `.png`, or the reverse, fails
+its target. `make love-check` only checks the installed LuaJIT.
 
 ## How the Lua game draws
 
