@@ -1,0 +1,177 @@
+Six years and "nanomaterials" on the tech panel, an earth-like planet's
+menu at x0.85; then the cheat, "space folding" and "xenofoods", the same
+menu with improved recipes at x1.5. Then a mine linked to three people
+suppliers, a colony needing ore and two labs, rich at the year, ended
+by a Select hold. 558 frames.
+
+Resumed from a record: plan 12 step 9 cut this file after the six
+years, the record of the last one (year 3407), so its year's 30-frame
+Select hold fits (D-3 of the step's PRD: accepted up to 570 frames).
+The six years, X taps on `end turn` (the tab ring), moved into the
+record; the title with the file's own galaxy too, still played by the
+step 8 file. "nanomaterials" is invented after the resume. Every later
+frame of the old file is kept, 19 frames earlier up to the year, and at
+its old frame after it, but for 8 idle frames dropped at f108 (every
+frame after them 8 earlier).
+
+The record is cut, never typed, from this file at 4382824 replayed to
+f35 (no wormhole lives there, so the record is written):
+
+    make replay EVENTS=<4382824's pad_tech_costs.json cut to f0-35> SAVE_HEX=tmp/tech_costs.hex
+
+which prints `save: clock year 3407 month 1`, `save: resources credits
+100`, `save: count nodes 90`; the hex is the header's initial_save. The
+cheat comes after the cut (cheat activations 1).
+
+The resumed record knows no object, so the game starts in aim mode,
+as a new game does (plan 12 step 17). The menus open
+from jump mode (plan 12 step 7: triangle does nothing in aim mode): f97
+and f225 square leave aim mode for jump mode on the planet under the
+centre, and the cheat is typed in jump mode, where its chords' X and O
+do nothing.
+
+The galaxy is the one of a game started at f16 of the old title (Down
+at f10, X on "reasonable" at f16, 4 frames later than pad_title's): the
+title draws one game-stream number per frame. Near the start it has
+pad_probe's planets at the same places (other ids), and its first
+reveal rolls are earth-like, forgeworld, empty, xeno, empty, ocean,
+mineral, as this file needs. Readings come from `make state` of the
+file cut after the frame and from the capture.
+
+- f10: Up onto "resume", f12: X: the record's game, year 3407, research
+  6. The title's X is a lone X, which leaves the cheat matcher at 0.
+- f13-16: idle in aim mode, the crosshair at the centre (no object is
+  known). f17: R1 from the map: `tech` (until plan 12 step 11, R1 R1 R1
+  round the ring at f13, f15, f17). f21-25: Down x3, f27: X:
+  "nanomaterials" (cost 6), research 0, back on the map in aim mode,
+  the crosshair back on f28. f29: idle (it was square into aim mode
+  until plan 12 step 17, and f17's square before the cut).
+- f31-36: Up 6, f38: X: the starting probe at (256, 250). f41-58:
+  Down+Left 10, Down 8: centre world (246, 276). f60-79: X held 20: a
+  fold, $97, month 2 at f80. p31 turns known at f88 (type e,
+  earth-like), p47 at f91 (type f) and p84 at f94 (empty, gone from
+  f148).
+- f81-96: Left 16: p31 under the centre (screen 79.89, 60.36, camera
+  144 216). f97: square: jump mode on p31. f98: triangle on the
+  hovered p31: its menu, drawn f99-104. Row 2 (agroworld,
+  base 5) ends in a colour-2 price tag at x144-156 whose first digit
+  reads 4 (x148-153, y84-88): 5 x 0.85.
+- f105: O closes it, jump mode still on p31. f107: idle (it was O,
+  leaving network mode, before plan 12 step 7). f108: idle (four X
+  taps on p31 that opened no menu before plan 12 step 8, where X on a
+  known planet came to open its menu; their 8 idle frames became one in
+  step 9); a colour-8 label beside the centre, x96-106, y43-47, drawn
+  from f108, and nothing charged ($97, month 2 up to f114).
+  f109-115: the cheat, four X + O chords one every two frames; f115:
+  $200, research 99.
+- f117-127: f117-120 idle, f121: R1 from the map: `tech`, Down, X:
+  "space folding" (research 95). f131-141: the same, R1 at f135: the
+  first row is now "xenofoods" (era 2): research 85. Until plan 12 step
+  11, f117, f119 and f131, f133 were the ring's R1 R1 (`build`, `end
+  turn`).
+- f143: idle (it was square into aim mode before plan 12 step 7).
+  f145: triangle on the hovered p31: from f146 row 2's recipe icons change
+  (from x97, y83-89) and its tag reads 6 (5 x 1.5 x 0.85); row 1 is
+  pixel-identical to f104, row 3 but for 3 pixels of row 2's tag
+  border (x143-145, y91).
+
+`make state` at f151: year 3407 month 2, credits 200, research 85,
+techs nanomaterials, space folding, xenofoods; camera 144 216, p31
+known e, p47 known f, planets 89, colonies 0, slipways 0.
+
+Replaces tech_nanomaterials_discount (6 years, "nanomaterials", a build
+menu at x0.85) and tech_xenofoods_recipes (cheat, "space folding",
+"geneseeds", "xenofoods", an earth-like menu with improved recipes and
+x1.5): `research_project_cost` x0.85 and x1.5, the upgraded production
+entry. Two era-1 inventions open era 2 here, so "geneseeds" is not
+needed.
+
+Rich mine, f152-557 (remove-mouse-mode PRD, chunk 7; appended here to
+share the cheat, the techs and the probe instead of a separate
+pad_rich_mine file).
+
+- f152-154: O closes p31's menu, square: aim mode, the camera unmoved
+  (144 216; network mode used to centre it at 143 216).
+- f156-170: Up+Left 6, Left 9, f172: Left 1, a separate tap (one frame
+  inserted): camera 123 210, centre world (204, 270), the fold's
+  reference point. f173-200: X held 28 (the radius grows with the hold, space
+  folding widens it): a second fold, $197 at f201. p1 turns type x at
+  f207, p55 empty at f208 (gone from f270), p37 type o at f214, p54
+  type m at f215.
+- f202-224: Down+Left 16, Down 6 onto p54. f225: square: jump mode on
+  p54. f227: triangle on the hovered p54, Down, X (f233): p54 as "mine",
+  $193.
+
+The slipways are built the cross way (plan 12 step 6), each in its
+direction, the colonies through the planet's menu from jump mode, and
+network travel only used to get somewhere is replaced by jumps.
+
+- f235: idle (it was O, leaving network mode). Camera 101 243. f237:
+  Right onto p31, inside the inner rectangle. f240:
+  triangle: its menu; f244: Down;
+  f246: X on "hiveworld": p31 colonised, $193 -> $189.
+- f252, f254: Left, Down onto p54. f257: X on p54, f259: Right onto
+  p31, f262: X: `slipway p54 p31`, $181. f265: O: jump mode on p31.
+- f267: Left onto p1. f270: triangle, f274: Down, f276: X on "colony":
+  $174; the year box is up from f277. f282: Down onto p54. f285: X on
+  p54, f287: Up onto p1, f288: O closes the year box, the slipway still
+  held (plan 12 step 8: O closes a box before it backs out), f290: X:
+  `slipway p54 p1`, $164. f293: O: jump mode on p1.
+- f295: Right onto p37. f298: triangle, f302: Down, f304: X on
+  "colony" (needs ore): $156. f310, f312: Left, Down onto p54. f315: X
+  on p54, f317, f319: Up, Right onto p37, f322: X: `slipway p54 p37`,
+  $141. f325: O: jump mode on p37.
+- f327: square: aim mode, camera 101 216. f329-346: Down 18, f347-354
+  idle: camera 101 242, the camera the old file's network mode centred
+  on p54 before each lab was taken (rule 8).
+  (Before plan 12 step 7, f226's triangle on the centre left aim mode
+  with p31 as its starting planet, the menu's close resumed it, and
+  f234's circle returned to p31 in network mode, the camera centred on
+  it (143 216): that return is gone with the starting planet, so the
+  route jumps from p54 to p31 and the pan before the lab is Down
+  only.) f356-359: L1, X: a lab carried, the
+  camera unmoved. f361-381: the old file's pan (Down+Right 10, Down 6,
+  Down 1), X: the lab s1 built at (191, 325), $126.
+- f384: square: aim mode left for jump mode on s1, the target nearest
+  the centre. f386: idle (it was O, leaving network mode, before plan 12
+  step 7). f388: X on s1, f390: Up onto p54, f393: X: `slipway s1
+  p54`, $123. f396: O: jump mode on p54.
+- f398: square: aim mode. f400-424: Up+Left 10, Up 10, Up 3:
+  camera 101 242 again. f426-429: L1, X: a second lab carried.
+  f432-452: the old file's pan (Up+Right 4, Right 14), X: s2 built at
+  (207, 298), $108.
+- f454: square: aim mode left for jump mode on s2. f456: idle (it was O,
+  leaving network mode). f458: X
+  on s2, f460: Up onto p31, f463: X: `slipway s2 p31`, $105: p31 feeds
+  s2 people. f466: O: jump mode on p31. f468: Down onto s2. f471: X on
+  s2, f473: Left onto p54, f476: X: `slipway s2 p54`; the year passes on
+  its own on the way ($119, year 3409), its box up from f477. f477: O
+  closes it, the slipway still held. f479: O: jump mode on p54.
+- f480-509: Select held 30 frames in jump mode on p54: on f509, its
+  30th frame, the cursor on the year-skip button (154 5), pressed: year
+  3410, the "year 3410" box. f510: the release, the cursor back on p54.
+  Until plan 12 step 9 this year was R1 R1, X on `end turn`, L1 L1.
+- f513: square: aim mode. f515-532: Down+Left 4, Left 14: camera
+  101 242, p54 under the centre. f534: square: aim mode left for jump
+  mode on p54, the target nearest the centre.
+- f537: triangle on the hovered p54: "rich", "receives:" three people,
+  "exports: 3/3". f543: O closes it, jump mode on p54. f545: Right onto
+  s2, inside the inner rectangle: the camera stays 101 242. f552:
+  triangle on s2: "laboratory", "wants more:", "receives:", "makes: 1".
+  (Before plan 12 step 7, f534's square selected p54 into network mode,
+  f545 and f547 turned its selected slipway with Left and f549's X
+  travelled along it to s2, the camera centred there (127 234): network
+  travel is gone with its mechanic.)
+
+`make state` at f557: year 3410 month 1, credits 136, research 90,
+income 17; camera 101 242; p54 colonized m, p31 colonized e, p1
+colonized x, p37 colonized o, s1 and s2 colonized structure; slipways
+p54 p31, p54 p1, p54 p37, s1 p54, s2 p31, s2 p54; planets 90, colonies
+6, transit dots live at the end. Peak: transit_dots 39 (29 before the
+plan 12 step 9 hold, 25 before the cross route: the slipways age
+differently before the year).
+
+Replaces trade_rich_mine (a mine linked to three people suppliers and
+three labs, rich at the year, its "exports:" panel, a served lab's
+panel). Same effects; here the third export is a colony's ore need and
+one of the two labs is served by the hiveworld.

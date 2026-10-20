@@ -1,0 +1,137 @@
+cheat activations 0
+clock year 3426 month 1
+count colonies 32
+count nodes 76
+count planets 74
+count slipways 40
+count structures 2
+count techs 9
+difficulty reasonable
+planet p10 unknown planet - world 140.11 113.98
+planet p11 colonized planet e world 193.46 174.25
+planet p12 unknown planet - world 347.14 314.27
+planet p13 unknown planet - world 273.36 313.29
+planet p16 known planet x world 104.08 336.36
+planet p19 colonized planet e world 31.77 214.80
+planet p2 known planet s world 74.45 360.31
+planet p20 unknown planet - world 83.63 285.42
+planet p21 unknown planet - world 16.89 361.58
+planet p22 known planet i world 302.64 156.67
+planet p23 colonized planet m world 150.35 178.97
+planet p24 known planet g world 132.29 366.87
+planet p25 colonized planet x world 280.01 229.19
+planet p27 colonized planet f world 301.50 100.18
+planet p28 unknown planet - world 297.98 336.29
+planet p29 unknown planet - world 58.85 34.53
+planet p30 known planet m world 191.30 75.94
+planet p31 colonized planet f world 217.94 152.90
+planet p32 colonized planet i world 223.89 276.36
+planet p33 colonized planet r world 168.61 212.76
+planet p34 colonized planet f world 333.41 211.12
+planet p35 unknown planet - world 334.38 279.41
+planet p37 unknown planet - world 102.85 60.02
+planet p39 colonized protostar - world 68.70 167.40
+planet p4 unknown planet - world 159.28 30.36
+planet p40 unknown planet - world 67.94 122.35
+planet p42 colonized protostar - world 186.75 105.63
+planet p43 unknown planet - world 34.81 88.45
+planet p44 known planet o world 358.89 49.04
+planet p45 unknown planet - world 336.59 357.39
+planet p48 known planet i world 134.72 330.03
+planet p49 unknown planet - world 17.23 266.48
+planet p5 colonized planet e world 115.24 210.95
+planet p50 unknown planet - world 42.99 317.79
+planet p51 unknown planet - world 260.28 342.62
+planet p52 unknown planet - world 136.22 50.66
+planet p53 colonized planet r world 263.96 113.19
+planet p55 colonized planet x world 176.01 270.71
+planet p56 unknown planet - world 76.05 93.18
+planet p57 colonized planet f world 106.74 307.25
+planet p58 known planet g world 328.21 182.33
+planet p59 colonized planet s world 220.19 186.90
+planet p6 colonized planet e world 253.17 208.55
+planet p60 colonized protostar - world 35.27 177.38
+planet p62 unknown planet - world 97.43 22.17
+planet p64 unknown planet - world 237.17 360.47
+planet p65 known planet j world 359.79 252.08
+planet p67 colonized planet o world 274.58 166.96
+planet p69 unknown planet - world 105.64 103.70
+planet p7 unknown planet - world 304.89 303.19
+planet p70 unknown planet - world 159.80 70.41
+planet p72 unknown planet - world 132.78 82.99
+planet p73 unknown planet - world 25.50 140.34
+planet p74 colonized planet o world 255.77 64.67
+planet p75 known planet m world 335.83 137.33
+planet p76 colonized planet f world 170.70 344.59
+planet p77 unknown planet - world 62.16 257.91
+planet p78 colonized planet f world 148.38 251.73
+planet p79 unknown planet - world 68.58 64.58
+planet p80 unknown planet - world 189.05 16.31
+planet p81 known planet r world 349.78 20.90
+planet p82 unknown planet - world 28.07 44.07
+planet p85 colonized planet e world 57.85 196.18
+planet p86 unknown planet - world 304.72 367.57
+planet p9 colonized planet r world 326.51 70.94
+planet p90 known planet x world 364.93 81.02
+planet s1 colonized processor - world 134 231
+planet s10 colonized ascension - world 101 235
+planet s2 colonized structure - world 250 179
+planet s4 colonized structure - world 152 283
+planet s5 colonized trading_hub - world 200 288
+planet s6 colonized structure - world 150 151
+planet s7 colonized structure - world 253 237
+planet s8 colonized synthesizer - world 79 211
+resources credits 179
+resources income 56
+resources science 16
+slipway p11 p33 normal
+slipway p11 p42 normal
+slipway p11 s2 normal
+slipway p19 p60 normal
+slipway p23 p78 normal
+slipway p23 s6 normal
+slipway p25 p67 normal
+slipway p25 s7 normal
+slipway p27 p53 normal
+slipway p31 p11 normal
+slipway p31 p67 normal
+slipway p32 p55 normal
+slipway p32 s5 normal
+slipway p33 p55 normal
+slipway p33 p78 normal
+slipway p33 s6 normal
+slipway p34 p25 normal
+slipway p34 p67 normal
+slipway p39 p85 normal
+slipway p42 s6 normal
+slipway p5 p23 normal
+slipway p5 s6 normal
+slipway p53 p67 normal
+slipway p53 s3 normal
+slipway p55 p78 normal
+slipway p57 s4 normal
+slipway p59 s2 normal
+slipway p6 p33 normal
+slipway p6 p67 normal
+slipway p6 s7 normal
+slipway p74 p53 normal
+slipway p76 s4 normal
+slipway p85 p5 normal
+slipway p9 p27 normal
+slipway p9 p74 normal
+slipway s2 p6 normal
+slipway s2 p67 normal
+slipway s3 p74 normal
+slipway s4 p55 normal
+slipway s4 p78 normal
+structure s3 slipgate world 250 92 links 2
+structure s9 infragate world 101 187 links 0
+techs ascension
+techs autoassemblers
+techs geneseeds
+techs infraspace
+techs slipgates
+techs space folding
+techs starbirth
+techs trade league
+techs void synthesis

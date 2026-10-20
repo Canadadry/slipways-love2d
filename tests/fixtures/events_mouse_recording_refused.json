@@ -1,0 +1,6 @@
+{
+  "input": "mouse",
+  "frames": [
+    { "mouse_x": 64, "mouse_y": 64, "mouse_buttons": 0, "dpad": [false, false, false, false, false, false] }
+  ]
+}

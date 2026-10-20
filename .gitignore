@@ -1,0 +1,6 @@
+tmp/
+save/
+third_party/
+.claude/worktrees/
+save/slipways.sav
+.claude/skills/plan-progress/.claude-plugin/types/

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "deny": [
+      "AskUserQuestion",
+      "mcp__github__merge_pull_request",
+      "mcp__github__enable_pr_auto_merge",
+      "Bash(gh pr merge:*)"
+    ]
+  }
+}

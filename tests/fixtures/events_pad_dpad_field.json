@@ -1,0 +1,7 @@
+{
+  "input": "pad",
+  "frames": [
+    { "pad": [] },
+    { "pad": [], "dpad": [false, false, false, false, false, false] }
+  ]
+}

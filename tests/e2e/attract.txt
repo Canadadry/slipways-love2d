@@ -1,0 +1,96 @@
+The attract mode, interrupted: the title with a player's save on disk
+and "attract_after": 3 in the header, the demo started after 3 idle
+frames with its first caption and its `demo` tag, played 150 frames,
+X held to bring the title back and swallowed, then Up onto "resume"
+and X: the player's own game, untouched by the demo. 176 frames.
+
+The four frames plan 18 step 12 names:
+
+- demo start: f3 (the idle count reaches 3 on the title's 4th frame);
+- first caption: f3, "build a trading empire / across the stars" and
+  the `demo` tag drawn on every frame from f3 to f152;
+- return: f153 (X down while the demo plays);
+- swallowed press: f153-162 (X held 10 frames), released at f163.
+
+The save is pad_tech_costs.json's `initial_save`, copied byte for byte:
+a record cut from a real game, never typed (pad_tech_costs.txt gives
+its cut command), year 3407 month 1, credits 100, 90 nodes, a galaxy
+other than the demo record's (demo/demo_record.hex, year 3412). Not
+the demo record itself: a demo that wrote its own record over the save
+would then go unnoticed. `replay` seeds storage from it, so the boot
+title shows the `resume` row from f0.
+
+The frames, hand-written in the default bindings (X = 5, Up = 1), so
+the file can be rebuilt: empty x153 (f0-152), X x10 (f153-162), empty
+(f163), Up (f164), empty (f165), X (f166), empty x9 (f167-175).
+
+- f0-2: the title, idle count 1, 2, 3; no game (`clock year - month -`).
+- f3: the demo starts at the top of the frame: the compiled record is
+  resumed and demo frame 0 is played. State after f3: year 3412 month
+  1, credits 86, science 12, income 48, techs space folding and
+  geneseeds, 16 colonies, 18 slipways, 75 planets.
+- f4-152: demo frames 1-149, all empty in demo/demo.json and all under
+  caption 0 (demo frames 0-299). State after f152: the same, but 74
+  planets (p46, still vanishing in the record, is gone).
+- f153: X down while playing: the title comes back at the top of the
+  frame and the core plays an empty frame. No game after f153.
+- f153-162: the press is swallowed, the core sees empty frames while
+  the title rows slide in. After f162, read at x=108: "resume" (y42-50)
+  colour 13, "forgiving" (y53-61) colour 12. The focus has not moved
+  and no game started.
+- f163: release: the swallow ends.
+- f164: Up: "resume" colour 12, "forgiving" 13 (also after f165).
+  From "forgiving", Up moves only if the "resume" row exists, and only
+  if the core listens again after the swallow.
+- f166: X on "resume": the player's game is resumed during the frame's
+  update; the title is gone, so the attract mode stays idle from here.
+  f167-175: idle in that game.
+
+The overlay, as plan 18 step 11's note gives it, read in the capture:
+the band is rows 96-108, full width, colour 1; "build a trading empire"
+in colour 7 from x36 at y97, "across the stars" from x48 at y103; the
+tag is a colour-8 box at x143-159, y11-17, `demo` in colour 7 from
+(144, 12). Band and tag are pixel-identical from f3 to f152, on no
+other frame: f0-2 have neither, and f153 (row 100 and the tag box all
+colour 0) and every later frame neither.
+
+`make state` at f166 and at f175, the end state: year 3407 month 1,
+difficulty reasonable, credits 100, science 6, income 0, 90 planets,
+all unknown, colonies, slipways, structures and techs 0, 90 nodes,
+cheat activations 0: the player's record.
+
+The disk save never changes: `make replay EVENTS=<this file cut after
+fN> SAVE_HEX=<file>` gives the `initial_save` byte for byte (3921
+bytes, `save: clock year 3407 month 1`) after f2, f3, f152, f153, f162,
+f164, f165, f166 and f175.
+
+The negative run, never committed: the same file without the
+"attract_after" member (threshold 1200) never starts the demo; X at
+f153 picks "forgiving" and the end state reads year 3401 month 1,
+difficulty forgiving. A press that leaked through, or a lost header
+member, looks like this: the hash and the end state change together.
+
+Not proven here:
+
+- the save cut while actions play: demo frames 0-149 hold no action,
+  and without the cut the first save write lands at demo frame 540.
+  Proven by test_cart's attract cases and step 13's file;
+- frame substitution beyond the start: demo frames 0-149 are empty.
+  Proven by `make demo-check`;
+- a caption change or a command beat: caption 1 starts at demo frame
+  300 and the first command at 450;
+- the full cycle with the default threshold: step 13.
+
+References, for this file alone (never `make e2e-baseline`):
+
+    make tmp/frames/tests/e2e/attract.json.sha256
+    cp tmp/frames/tests/e2e/attract.json.sha256 tests/e2e/attract.json.sha256
+    make end-state-baseline
+
+The second capture, after `rm tmp/frames/tests/e2e/attract.json.*`,
+gives the same hash. end-state-baseline writes only missing references.
+
+No long-replay exception: 176 frames, within 180.
+
+Cost: the replay alone about 105-140 ms (pad_tech_costs about 345-470
+ms), on 4 cores.

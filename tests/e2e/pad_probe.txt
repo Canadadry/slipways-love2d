@@ -1,0 +1,62 @@
+Probe and space fold in aim mode, with the D-pad and X. 79 frames.
+
+A new game knows no object, so it starts in aim mode (plan 12 step 17):
+f15 is idle, and f18-19 show the rule, square and O doing nothing while
+nothing is known. Every capture frame but f18 is the one this file had
+before plan 12 step 17.
+
+In aim mode the cursor is the screen centre (80, 60), marked by the
+colour-7 crosshair (x78-82 on y=60, y58-62 on x=80, the centre pixel
+undrawn), and the D-pad pans the camera (1 px a frame for the first 10
+frames of a held direction, 2 px up to 40). Readings below come from the
+framebuffer dump and `make state` of the file cut after that frame.
+
+- f0-9: idle while the title rows slide in. f10: Down. After f11:
+  reasonable (y64-72, x=108) is the only row in colour 12.
+- f12: X on "reasonable", held through f14. f12-13 are the loading
+  screen (black, "loading" in colour 7 in the bottom-right corner); f14
+  generates the galaxy and draws the new game. Camera at (176, 196), so
+  the centre is world (256, 256).
+- f15-17: idle, aim mode, the crosshair at the centre.
+- f18: square, f19: O, both in aim mode with nothing known: they do
+  nothing (no jump mode to go back to). The crosshair stays; f17, f18
+  and f19 are the same capture frame. (Until plan 12 step 17, f15 was
+  square from jump mode with nothing hovered, f18 O back to jump mode
+  with nothing hovered and f19 square back to aim mode: that
+  mechanic is gone.)
+- f21-26: Up held 6 frames, camera y 196 -> 190, centre world
+  (256, 250). Without it, X at the start centre lands 17 px from p47
+  and the probe is refused (red hatched disk, nothing placed).
+- f28: X tap on empty space: the starting probe (entity count 107 ->
+  108, one particle emitter), dropped on the f29 release. $100, month 1.
+- f31-36: Up+Right held 6 frames, f37-41: Right alone 5 more. After
+  f42 camera (188, 184): centre world (268, 244), 12 px right and 6 px
+  up of the probe, 19 px from p25, the nearest planet. The probe sits
+  at screen (68, 66), its colour-6 particles around it.
+- f43-58: X held 16 frames on empty space: the fold's colour-1 disk
+  grows round the centre (radius ~27 px at f58), the crosshair at its
+  middle and the colour-8 price "3" above it.
+- f59: X released (idle frame): the fold is confirmed, $100 -> $97,
+  month 2, a red "-3" label rises from the fold. f60-69: the unfolding
+  rings (colours 5, d, 6, 7) round (80, 60).
+- f65: p25 (screen 92, 45) turns known, f67: p47 (screen 82, 82),
+  their grey unknown sprites replaced by coloured planets. f68-78:
+  idle. After f14 the game's random stream moves only on these two
+  frames: the probe's particles draw from the visual stream.
+
+`make state` at f78: clock year 3401 month 2, credits 97, income 0,
+planets 90, colonies 0, slipways 0, structures 0, techs 0. Known:
+p25 type f, p47 type r; every other planet unknown.
+
+keyboard_slipway after its fold (its file cut at f70): clock year 3401
+month 2, credits 97, planets 90, colonies 0, slipways 0, structures 0,
+techs 0. Known: p30 type m, p88 type f; p28 revealed empty, vanishing.
+Same cost ($100 -> $97), same clock (month 1 -> 2), two planets known.
+
+The galaxies differ: the galaxy depends on the frame the game starts,
+keyboard_slipway clicks the title at f1 and a pad title needs the rows
+first (X at f12). Planet ids are therefore not compared.
+
+Covers the probe and fold part of keyboard_slipway (f27-69). Its two
+colonies are covered by pad_colonise (step 2.2) and its slipway by
+pad_slipway (step 2.3).

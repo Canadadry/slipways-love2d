@@ -1,0 +1,81 @@
+Act, restart, then resume: pad_probe's probe, pan and fold, an idle
+wait until the save holds the fold, Start, X on "restart", Up and X on
+the title's "resume" row. The resumed game is the game before the
+restart. 157 frames.
+
+A new game knows no object, so it starts in aim mode (plan 12 step 17):
+f15 is idle. The game resumed at f134 knows p25 and p47, so it starts in
+jump mode, and f135's square enters aim mode, the camera unmoved.
+pad_probe's f18-19 (square and O doing nothing in aim mode while nothing
+is known) are shared: every capture frame but f18 is the one this file
+had before plan 12 step 17.
+
+f0-78 are pad_probe's 79 frames verbatim: the first 79 frames of this
+capture equal pad_probe's capture byte for byte (`cmp -n 758400`, both
+start with an empty storage). Readings come from the capture's
+framebuffer at each frame, and the state and the stored record from
+`make state` / `make replay ... SAVE_HEX=<file>` of the file cut after
+that frame. The hovered pause row is read at x=7, the title rows at
+x=108, the crosshair at (78, 60) and (80, 58), as in
+pad_pause_restart.txt.
+
+- f0-78: as pad_probe (f12-13 the loading screen). The stored record up to f85 is the probe's (year
+  3401 month 1, credits 100): the fold is confirmed at f59, but the
+  wormhole lives until f86 and no save is written while one lives.
+- f86: the wormhole is gone, the end-of-frame save lands: month 2,
+  credits 97, 90 nodes. It is the last write of the replay: the record
+  is identical at f86, f113, f134 and f156.
+- f87-110: the fold's red "-3" label (from f59) still rises over the
+  map; gone from f111. f111-113: idle, nothing on screen but the map,
+  the probe and its particles.
+- f114: Start: the pause button colour 12 at (0, 111), the menu slides
+  up, "restart" focused (y100-108 by f118), no crosshair under it.
+- f120: X on "restart": the title. The "resume" row is drawn from f120
+  (y42-50, colour 13), forgiving colour 12 from f121; the rows are
+  settled from f128: resume y42-50, forgiving y53-61, reasonable y64-72,
+  challenging y75-83, tough y86-94.
+- f132: Up: "resume" colour 12, forgiving back to 13 (f132-133).
+- f134: X on "resume": the title rows are gone on f134, the game is
+  resumed during that frame's update; the crosshair is back from f135.
+  f135-156: idle in aim mode.
+
+`make state` at f113, at f134 and at f156, the same lines apart from
+zone and cap: clock year 3401 month 2, difficulty reasonable, credits
+97, science 0, income 0, camera world 188 184, planets 90, colonies 0,
+slipways 0, structures 0, techs 0, nodes 90. Known: p25 type f, p47
+type r; the other 88 planets unknown.
+
+Why not the PRD's plan (BEFORE=78, Start at f79): at f78 the wormhole
+is still live, so the frame fails the save-frame conditions ("save
+frame: a wormhole is live"), and the stored record is still the
+probe's: a resume there brings back camera (176, 190), month 1, $100,
+not the f78 game. Until f110 the "-3" label, which the save never
+holds, differs from the resumed screen. So the recording, not the
+check, moved: 35 idle frames (f79-113) after pad_probe's frames, Start
+at f114, so that the frame before Start holds exactly what the record
+holds.
+
+Check (the save-check criteria: bytes, dump, screen without particles):
+
+    make resume-check EVENTS=tests/e2e/pad_restart_resume.json BEFORE=113 AFTER=135
+    resume-check: tests/e2e/pad_restart_resume.json f113 vs f135 (3939 bytes): ok
+
+AFTER is 135, not 134: the resumed game starts in jump mode and f135's
+press is what brings it back to aim mode, where f113 was. At AFTER=134
+only the pad overlay differs (crosshair against hover circle).
+
+The negative run, never committed, with BEFORE before the fold:
+
+    make resume-check EVENTS=tests/e2e/pad_restart_resume.json BEFORE=42 AFTER=134
+    resume-check: tests/e2e/pad_restart_resume.json f42 vs f134: resumed side: the storage changed before the resume
+
+Covers the act-restart-resume path: the title's "resume" row present
+after a restart with a save on disk, Up onto it, X resuming the saved
+game (camera, revealed planets, credits, clock, the probe). If a change
+hid the row, Up would stay on forgiving, X would start a new game and
+the hash would change.
+
+No long-replay exception: 157 frames, within 180.
+
+Cost: the replay alone about 80 ms (pad_probe's 77 frames about 43 ms),
+on 4 cores.

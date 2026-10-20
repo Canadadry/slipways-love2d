@@ -1,0 +1,2 @@
+# Expected gaps of make constants-check, one literal per line. The commit
+# that fixes these constants empties the list, or the check fails.

@@ -1,0 +1,26 @@
+# Allowed users of each random stream, read by tools/random_guard.sh through
+# make random-guard. One line `<path> <family> <count> | <reason>`, strict
+# counts. After the title the only game draws are the reveal rolls (gen.c):
+# a new game-stream site changes what a replay reveals.
+#
+# game stream
+src/game/galaxy.c game 2 | the galaxy roll, one x and one y per planet
+src/game/gen.c game 1 | the random walk behind the reveal roll and the type picker
+src/game/background.c game 4 | the tile map, kept on the game stream, and the seed it records
+src/game/help.c game 1 | the title's seed tick: one draw per drawn title frame, so a new game's galaxy depends on when the title's X lands
+src/game/save_state.c game 1 | reads the state for the save, draws nothing
+src/game/save_load.c game 2 | restores the background seed and the saved state on a load, draws nothing
+# visual stream
+src/game/particle.c visual 1 | the particles
+src/game/probe.c visual 3 | the probe's emitter
+src/game/planet_family.c visual 4 | the burst particles
+src/game/planet_display.c visual 1 | the vanishing flicker
+src/game/slipway_display.c visual 1 | the transit dots
+# definitions
+src/p8/fixed.c game 5 | the generator and the game stream's state
+src/p8/fixed.c generator 2 | the generator on a caller's state, and the game stream through it
+src/p8/fixed.h game 4 | the generator's declarations
+src/p8/fixed.h generator 1 | the generator's declaration on a caller's state
+src/game/visual_random.c visual 2 | the visual stream's definitions
+src/game/visual_random.c generator 2 | the visual stream drawn on its own state
+src/game/visual_random.h visual 2 | the visual stream's declarations

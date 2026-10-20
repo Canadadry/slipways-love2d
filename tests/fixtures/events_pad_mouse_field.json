@@ -1,0 +1,7 @@
+{
+  "input": "pad",
+  "frames": [
+    { "pad": [] },
+    { "pad": [], "mouse_x": 64 }
+  ]
+}

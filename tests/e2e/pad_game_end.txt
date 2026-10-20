@@ -1,0 +1,85 @@
+25 years ended with Select on the map, a hold and 24 chained presses,
+the "final score" panel, X on "again?", the title. X held into the panel
+and into the title presses nothing. 114 frames.
+
+A new game knows no object, so it starts in aim mode (plan 12 step 17),
+and this file stays in it until the final score panel: the colour-7
+crosshair is drawn at the centre f15-94. X does nothing on the map:
+f92's X press falls on the release frame of f91's year-skip click, so
+it engages nothing (the played mouse button is up on f92), and held
+from then on it is no press edge.
+
+f0-14 are pad_end_turn's frames verbatim (Down f10, X f12 on
+"reasonable"), so the galaxy is pad_end_turn's. Until plan 12 step 9
+this file shared f0-20 and ended its years with X on `end turn`; the
+tab ring's R1 R1 and X taps went with it (plan 12 step 12 removed the
+ring, and pad_end_turn's last ring year with it). HUD buttons are read at one fill pixel each: tech (1, 1), score
+(64, 1), year skip (152, 1). "again?" is read at (70, 98), the title
+rows at x=108 (forgiving y57, reasonable y68, challenging y79, tough
+y90). Readings come from the framebuffer dump of the file cut after
+each frame, the clock from `make state` of the same cut.
+
+- f0-14: as pad_end_turn (f12-13 the loading screen). After f14: year 3401, research 0, aim mode.
+- f16-45: Select held 30 frames: on f45, its 30th frame, the cursor on
+  the year-skip button (154 5), pressed, colour 12 on f45 only (13 on
+  f44 and f46): year 3402, research 1. f46: the release.
+- f47, f49, ..., f93: 24 fresh Select presses, one every other frame,
+  each inside the 15 frames after the year before, one year each:
+  3403 after f47, 3425 after f91, 3426 after f93, research 25, $100.
+  The year boxes from 3421 on block none of them.
+- f92-104: X held 13 frames, from the frame before the 25th press: on
+  the map it presses nothing (aim mode, see above). f94: the
+  final score panel opens (modal_backdrop 1), the curtain covers the
+  HUD (the year skip colour 1 on f94, 0 by f102); "again?" is colour
+  13 on f94. From f95 "again?" is focused and drawn hovered, colour 12
+  (164 colour-12 pixels in rows 96-110, x67-104), while X is still
+  held: X held into a panel on the map presses no row until pressed
+  again (plan 12 step 9). After f104: still 3426, research 25, 90
+  planets, the game running.
+- f105-107: nothing. The panel slides in; "again?" takes a press
+  before it settles (15 idle frames here until plan 12 step 9).
+- f108-111: X held 4 frames. f108: the fresh press clicks "again?": the
+  title (clock "-", 0 planets). The rows slide in, forgiving colour 12
+  (hovered) from f109 while X is still held, the other rows 13 as they
+  arrive. After f111: still the title, no game started: the held X
+  gives the first row no press edge.
+- f112-113: nothing, the title.
+
+`make state` after f93: clock year 3426 month 1, credits 100, research
+25, income 0, camera world 176 196, planets 90, colonies 0, slipways 0,
+structures 0, techs 0; every planet unknown. That is pad_end_turn's
+start with 25 years skipped: year +25, research +25, credits + 25 x
+income (income 0 with no colony). The same lines after f104.
+
+`make state` after f113 (the file's end): clock year - month -, credits
+-, research -, income -, camera world 176 196, planets 0, colonies 0,
+slipways 0, structures 0, techs 0: the title. Same after f108 and f111.
+
+Next to keyboard_game_end's end states:
+
+- keyboard_game_end f93: 3426, research 25 (25 O taps on the year
+  skip). pad_game_end f93: 3426, research 25 (a Select hold and 24
+  Select presses on the year skip).
+- keyboard_game_end f154: O on "again?", the title (clock "-", 0
+  planets). pad_game_end f108: X on "again?", the title (clock "-", 0
+  planets), still the title at f113.
+
+The galaxies differ (keyboard_game_end has its own title click); the
+clock and research effects are equal (+25 years, +25 research), the
+same final score panel opens, and both end on the title through
+"again?".
+
+Covers keyboard_game_end.
+
+The X and O edges never type the cheat (four X + O chords): 3 lone X
+press edges (the title, the X held into the panel, "again?") and no O,
+none a chord; Select is no part of a chord.
+
+No long-replay exception: 114 frames, within 180.
+
+Cost: cold `make e2e` (tmp/frames removed), 13 runs without this file
+(8 of them interleaved) and 8 with it, median about 1310 ms without
+(range 1165-1418) and 1436 ms with it (range 1322-1551); a warm `make
+e2e` stays about 0.6 s. The file adds 104 frames (its replay alone
+about 66 ms); deleting keyboard_game_end (160 frames, about 99 ms) in
+step 4.1 gives more back.

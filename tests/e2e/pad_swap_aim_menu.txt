@@ -1,0 +1,50 @@
+pad_colonise's first frames (probe, fold, a colony on p47, its
+inspection panel opened and closed, aim mode and a fold, back to jump
+mode on p47) played under swap_aim_menu.cfg, which swaps
+jump.enter_aim and jump.open_menu (buttons 7 and 8). 177 frames.
+
+The header names the fixture: "bindings": "swap_aim_menu.cfg", read by
+replay from this directory. The fixture is bindings.default.cfg with
+only those two jump lines changed, so every other mode keeps the
+default table. Buttons 7 and 8 are exchanged only on the frames whose
+press pad_colonise reads in jump mode; every other frame is
+pad_colonise's, byte for byte; f12-13, as there, are the loading screen.
+
+Swapped (pad_colonise's button -> this file's):
+
+- f137: 8 -> 7, jump mode: jump.open_menu on the hovered colony; its
+  inspection panel opens on the f138 release.
+- f143: 8 -> 7, jump mode: jump.open_menu again; the panel opens on
+  the f144 release.
+- f148: 7 -> 8, jump mode: jump.enter_aim, aim mode over p47.
+
+Kept, because the fixture leaves these modes on the default:
+
+- f18: 7 in aim mode, aim.leave_aim, nothing known yet: does nothing.
+- f88: 7 in aim mode, aim.leave_aim: jump mode on p47.
+- f146: 8 in menu mode, menu.open_menu: closes the inspection panel.
+  A swap leaking from jump into menu or aim turns this file red.
+
+The mode of each press is the one it is read in, before the frame
+runs, from the mode log of pad_colonise's frames proof alone:
+
+    ./tmp/pad_author tools/pad_author_proofs/pad_colonise.frames.pad \
+        tmp/pad-author/pad_colonise.frames.json --no-aim-budget
+
+(its JSON is tests/e2e/pad_colonise.json; the log is
+tmp/pad-author/pad_colonise.modes.txt, which `make pad-author-proof`
+overwrites with the end-state proof's log). Its lines `f<N> jump`
+pressing 7 or 8 up to f176 are exactly f137, f143 and f148. f177, a
+jump-mode 7, is past the cut. Every 7 or 8 press here is a one-frame
+tap, so no hold starts in jump mode and continues in another.
+
+Every captured frame is identical to pad_colonise's first 177 frames,
+so pad_colonise.txt's readings for f0-176 apply, and this file's
+.json.sha256 is the hash of pad_colonise cut after f176. With the
+fixture's swap undone, the frames diverge from f137; the end state
+does not, because it records neither the camera nor the nav mode: the
+.sha256 is the proof of the remap, not the .end-state.
+
+`make state` at f176: clock year 3401 month 6, credits 89, income -1,
+colonies 1, slipways 0, structures 0, techs 0. p47 colonized type r,
+p25 known type f; every other planet unknown.

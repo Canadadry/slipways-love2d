@@ -1,0 +1,26 @@
+#ifndef GAME_IMAGE_SLOT_H
+#define GAME_IMAGE_SLOT_H
+
+#include "game/game_data.h"
+#include "p8/image.h"
+
+/* Every p8 image slot the game uses; row slot k is IMAGE_SLOT_ROW_FIRST + k, text slot k
+ * IMAGE_SLOT_TEXT_FIRST + k, ring slot k holds ring colour k, button slots follow the same rule. */
+typedef enum {
+    IMAGE_SLOT_BACKGROUND,
+    IMAGE_SLOT_ROW_FIRST,
+    IMAGE_SLOT_ROW_COUNT = 32,
+    IMAGE_SLOT_TEXT_FIRST = IMAGE_SLOT_ROW_FIRST + IMAGE_SLOT_ROW_COUNT,
+    IMAGE_SLOT_TEXT_COUNT = 32,
+    IMAGE_SLOT_PLANET_DISC = IMAGE_SLOT_TEXT_FIRST + IMAGE_SLOT_TEXT_COUNT,
+    IMAGE_SLOT_PLANET_RING_FIRST,
+    IMAGE_SLOT_BUTTON_ICON_FIRST = IMAGE_SLOT_PLANET_RING_FIRST + PLANET_RING_COLORS_COUNT,
+    IMAGE_SLOT_BUTTON_ICON_COUNT = 8,
+    IMAGE_SLOT_BUTTON_WIDE_FIRST = IMAGE_SLOT_BUTTON_ICON_FIRST + IMAGE_SLOT_BUTTON_ICON_COUNT,
+    IMAGE_SLOT_BUTTON_WIDE_COUNT = 10,
+    IMAGE_SLOT_COUNT = IMAGE_SLOT_BUTTON_WIDE_FIRST + IMAGE_SLOT_BUTTON_WIDE_COUNT
+} image_slot_t;
+
+typedef char image_slot_count_matches_the_runtime[IMAGE_SLOT_COUNT == P8_IMAGE_SLOT_COUNT ? 1 : -1];
+
+#endif

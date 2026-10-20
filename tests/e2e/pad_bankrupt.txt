@@ -1,0 +1,73 @@
+Resumed from a record holding four labs: the cheat, a fifth lab, seven
+years ended by a Select hold and six chained Select presses, a refused
+lab ("-no money-") inside the chain window, a last chained press: the
+bankrupt screen. 95 frames.
+
+Plan 12 step 9 cut this file at its f94 record (D-2 of the step's PRD):
+a Select hold costs 30 frames, so the full 170-frame file could not end
+its eight years within 162 frames. The four labs, the free starting
+probe and the title's game moved into the record. Their placement stays
+covered by pad_build, pad_tech_costs and pad_planet_projects.
+
+The record is cut, never typed, from this file at b2a2369 (its title, the
+probe, labs s1-s4) replayed to f95, after the record of s4's drop and
+before the cheat:
+
+    make replay EVENTS=<b2a2369's pad_bankrupt.json cut to f0-95> SAVE_HEX=tmp/bankrupt.hex
+
+which prints `save: clock year 3401 month 9`, `save: resources
+credits 40`, `save: count nodes 94`; the hex is the header's
+initial_save. No wormhole lives there, so the record is written. The
+cheat typed before the cut would be lost, so it is typed after the
+resume.
+
+A lab is the build bar's basic structure ($15, 2 months, upkeep the
+square of the colony count). Readings come from `make state` of the
+file cut after the frame and from the capture.
+
+- f10: Up onto "resume", f12: X: the record's game, year 3401 month 9,
+  $40, income -16, camera 206 225, s1 (254, 248), s2 (246, 270), s3
+  (262, 288), s4 (286, 285). The record knows objects, so the game
+  starts in jump mode (plan 12 step 17); f13: square: aim mode.
+- f15-21: the cheat, four X + O chords one every 2 frames: $200,
+  research 99 at f21. The title's X is a lone X, which leaves the cheat
+  matcher at 0. The pad ignores X and O from a chord until both are up,
+  so the chords place no probe.
+- f24-44: the fifth lab s5 (304, 269), L1, X, Up+Right 13, Right 1, X:
+  $185, month 11, income -25, one toast. On f26 s5 is taken on s4's
+  point (286, 285): hatched, refused, until the pan moves it.
+- f45-74: Select held 30 frames in aim mode; Up+Left 13 and Up 1 held
+  with it on f45-58 pan the camera to 208 191, where the centre (288,
+  251) is free. f74, its 30th frame: the cursor on the year-skip button
+  (154 5), pressed: year 3402, $185 -> $160, five toasts.
+- f76, f78, ..., f86: six fresh Select presses, one every other frame,
+  each inside the 15 frames after the year before: one year each, year
+  3408 and $10 at f86, toasts 36.
+- f88: L1: the build bar, inside the chain window. f89: X takes s6, carried on
+  the map from f90 at the centre. f91: X drops it there: "-no money-"
+  in colour 8 above the centre (f91-94), s6 gone, $10 kept.
+- f92: Select, still inside the window (the 6th frame after f86): year
+  3409, $10 - 25 = -$15, income -25: the end box opens at f93
+  (modal_backdrop 1, message_box 3), its colour-12 row drawn from f94
+  (167 pixels in x58-103, y97-105), the row game_end_bankrupt's last
+  frame showed in colour 13.
+
+`make state` at f94: year 3409 month 1, credits -15, research 107,
+income -25, camera 208 191, s1-s5 colonized structure, planets 95,
+colonies 5, slipways 0, techs 0. Peaks: toast 42 (from f92),
+entity_table 161, message_box 3, modal_backdrop 1. Before the cut the
+peaks were the same: toast 42, entity_table 161.
+
+The toast peak needs every toast inside 50 frames, their lifetime: s5's
+at f44, 7 x 5 for the years, the refusal's and the last year's five at
+f92, 48 frames later: 1 + 7 x 5 + 1 + 5 = 42, game_end_bankrupt's peak.
+It is the only e2e evidence for TOAST_COUNT 48, which is why the pan to
+the free spot runs during the hold.
+
+Replaces game_end_bankrupt (6 labs, $5 after 4 years, refused lab, -$31
+bankrupt). Same effects: `economy_spend` refusal, bankrupt at the year.
+
+Dropped in plan 12 step 9, with the tab ring's years: R1 R1 to `end
+turn`, X seven times there, and L1 back to `build`.
+
+The cheat is typed once (cheat activations 1, as before the cut).

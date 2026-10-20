@@ -1,0 +1,18 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: make test-all
+        run: make test-all
+      - name: make sanitize-net
+        run: make sanitize-net
+      - name: make full-game
+        run: make full-game

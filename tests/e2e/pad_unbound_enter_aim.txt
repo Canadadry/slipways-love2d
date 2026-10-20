@@ -1,0 +1,57 @@
+pad_resume_at_start's resumed game, which starts in jump mode, played
+under unbound_enter_aim.cfg, which leaves jump.enter_aim unbound: button
+7 at f20 does nothing, and the game stays in jump mode to the end.
+48 frames.
+
+The header names the fixture: "bindings": "unbound_enter_aim.cfg", read
+by replay from this directory. The fixture is bindings.default.cfg with
+the one line `jump.enter_aim = 7` deleted, so button 7 has no action in
+jump mode and stays aim.leave_aim in aim mode. A missing line means
+unbound, never the default.
+
+Two changes from pad_resume_at_start.json: the bindings member, and its
+one button-7 tap moved from f13 to f20; every other frame is the same,
+and the initial_save line is copied byte for byte. Not at f13: f13 is
+the first in-game frame, the view settles during it (the hovered circle
+first appears), and make pad-metrics credits that change to the press,
+so a dead press there reads live. f20 is a one-frame tap, seven frames
+clear, inside a shown phase of the hovered circle's blink.
+
+Readings come from the capture's framebuffer: the aim crosshair at
+(78, 60), (82, 60), (80, 58), (80, 62) (colour 7), and the hovered
+circle round p23 (colour 7, radius 9, 42 colour-7 pixels in x95-113,
+y11-28; camera 176 209).
+
+- f0-12: as pad_resume_at_start: the title, Up at f10, button 5 on
+  "resume" at f12.
+- f13-47: jump mode on the resumed map. The hovered circle is shown
+  f13-28, hidden f29-44 by its blink, shown again f45-47.
+- f20: button 7, nothing changes: the circle is still drawn f20-28.
+- The aim crosshair is drawn on no frame.
+
+Proof 1, with the fixture:
+
+    make pad-metrics EVENTS=tests/e2e/pad_unbound_enter_aim.json
+
+lists `dead f20 press 7 jump other` and
+`presses jump 7 1 chords 0 live 0 dead-required 0 dead-other 1`, with
+`total mode jump frames 35` and no aim frame.
+
+Proof 2, the same file without the "bindings" member (the default
+table): the press is live
+(`presses jump 7 1 chords 0 live 1 dead-required 0 dead-other 0`, no
+dead line), `total mode jump frames 8` and `total mode aim frames 27`.
+Its capture differs from this file's on every frame f20-47, and equals
+pad_resume_at_start's from f20 on. Putting `jump.enter_aim = 7` back
+into the fixture turns this replay red from f20.
+
+The end state is pad_resume_at_start's (year 3403 month 1, credits
+122, colonies 4, nodes 92): the normalised state records neither the
+nav mode nor the camera, so the .sha256 and the two pad-metrics runs
+are the proof of the unbound action, not the .end-state.
+
+Regeneration: when the save format changes, re-cut the initial_save
+line from pad_resume_at_start.json (see pad_resume_at_start.txt), then
+rebaseline this one hash.
+
+No long-replay exception: 48 frames, within 180.

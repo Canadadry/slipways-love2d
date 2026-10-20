@@ -1,0 +1,42 @@
+# Exception list of the pointer guard (tools/pointer_guard.sh, make
+# pointer-guard), read from the source text of src/game/ and
+# src/engine/entity_class.h. A line `<file> <count>` gives the data pointers
+# the file declares in struct fields and file-scope variables, const ones
+# included; a line `entity-lists <file> <count>` gives its fields and
+# variables of type entity_list_t; a line `entity-arrays <file> <count>` gives
+# its local arrays of entity pointers (entity_t *name[...], const and static
+# included). A file with none of these has no line. Strict
+# equality: plan 13 lowers these counts, and no step may raise one.
+# Validated by the user (plan 13, section 7): rows aimed at static tables, or
+# at call-scoped memory never kept past the call.
+src/game/layout.h 4
+src/game/map_tables.h 21
+# Files whose remaining pointers are const static data, owned variable-size
+# buffers or generator state (plan 13, section 2 and the user's decisions).
+src/game/gen.h 3
+src/game/planet.c 2
+src/game/planet.h 5
+src/game/structure_icon.h 6
+src/game/ui_button.h 9
+# Files whose pointers all stay: const pointers to static data (plan 13, section 2).
+src/engine/entity_class.h 2
+src/game/background.h 1
+src/game/economy_score.c 1
+src/game/game_data.c 1
+src/game/game_data.h 29
+src/game/main_economy.h 2
+src/game/message_box.h 2
+src/game/mouse.h 1
+src/game/particle.h 2
+src/game/planet_family.c 1
+src/game/planet_family.h 1
+src/game/probe.h 1
+src/game/research.c 2
+src/game/research.h 10
+src/game/score_panel.h 1
+src/game/scroll.h 1
+src/game/slipway.h 2
+src/game/targeting.h 1
+src/game/tech_gate.h 1
+src/game/ui.h 1
+src/game/wormhole.h 2

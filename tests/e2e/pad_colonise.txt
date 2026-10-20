@@ -1,0 +1,198 @@
+Probe, space fold, then a colony through the menu X opens on the
+hovered planet, and jump mode on the new colony; its inspection panel
+closed with circle, then opened and closed with triangle; then square
+into aim mode over it, a fold there, and circle back to jump mode on
+the colony. Then the slipway rules: a second colony, a fold abandoned
+on empty space, circle at the root jumping back to the last object X
+acted on, a slipway built, the same slipway refused, circle at the root
+on that last object doing nothing, a slipway aimed under the top HUD, a
+fold held on its middle from aim mode and abandoned, a year with the
+slipway, ended by a Select hold. 447 frames.
+
+A new game knows no object, so it starts in aim mode (plan 12 step 17):
+f15 is idle. pad_probe's f18-19 (square and O doing nothing in aim mode
+while nothing is known) are shared; with f295's circle at the root they
+are the three no-ops `make pad-metrics-check` counts as required.
+
+f0-70 are pad_probe's frames verbatim (title, starting probe, fold, p25
+and p47 turning known at f65 and f67), so the galaxy and pad_probe.txt's
+planet list apply; pad_probe's idle f71-78 are dropped. Readings below come
+from the framebuffer dump and `make state` of the file cut after that
+frame.
+
+- f0-70: as pad_probe (f12-13 the loading screen). After f70: camera (188, 184), $97, month 2, p25
+  (type f) and p47 (type r) known.
+- f71-86: Down+Right 2, Down 14, camera (188, 184) -> (190, 206);
+  f87 idle. p47 is drawn round screen (80, 60), under the centre
+  cursor: the colour-7 crosshair (x78-82 on y=60, y58-62 on x=80, the
+  centre pixel undrawn) marks it. Pad mode draws no cursor sprite on
+  any frame.
+- f88: square: aim mode left for jump mode on p47, the target nearest
+  the centre (plan 12 step 7: △ does nothing in aim mode).
+- f90: X on the hovered known p47 (plan 12 step 8; it was triangle,
+  the same click, every frame identical): its menu opens beside the
+  planet (colour-5
+  header box from x=79, y=59), with the colonise row ("strip") below it
+  and two more rows below that. Focus starts on the header (row 0, no
+  click): the cursor point is inside it. The crosshair is gone from
+  f90: no crosshair under a panel.
+- f94: Down: the colonise row turns colour 12 (x80-131, y70-77 as the
+  menu slides in).
+  f96: Down: the next row (y81-89) turns colour 12.
+  f98: Up: back on the colonise row in colour 12 (y71-79).
+- f100: X on the colonise row, a fresh press (the X that opened the menu
+  was released at f91): p47 colonised, $97 -> $92, month 2 -> 5.
+  The menu is gone on the same frame and the colony ring (colour 2,
+  radius ~6) circles the planet.
+- f101-136: idle, jump mode on p47. No crosshair on any of these
+  frames. The colour-7 circle of radius 9 round the planet shows at
+  f101-116, is gone at f117-132, and shows again at f133-136.
+- f137: triangle again on the hovered colony; its inspection panel opens on the
+  f138 release (colour-5 panel x79-142, y59-78). The circle is hidden
+  while the panel is open; the cursor point is on the planet on
+  f137-138, the click's two frames, with nothing drawn there.
+- f141: O closes the panel. f141-147: no crosshair.
+- f143: triangle on the hovered colony again: its inspection panel opens
+  on the f144 release. f146: triangle again closes it (plan 12 step 8:
+  triangle toggles the planet menu), no button pressed on that frame,
+  jump mode still on p47, the marker back from f147.
+- f148: square: aim mode, the camera unmoved (190, 206); nothing is
+  pressed. The crosshair is back.
+- f149-157: Up 9, camera (190, 206) -> (190, 197), p47 at screen (80.24,
+  68.75), the fold's reference camera. $92, month 5, slipways 0.
+  (Before plan 12 step 7, f148's square pressed a slipway out of p47
+  that followed the crosshair, its colour-1 line and cost label drawn
+  at f156, and f157's square dropped it on nothing: the old drag, gone
+  with its mechanic.)
+- f158-173: X held 16 frames on empty space (centre world (270, 257)):
+  a probe exists, so the background press starts a fold, its colour-1
+  disk growing round the crosshair with the colour-8 price "3" above it
+  (x76-82, y52-56). f174: X released: the fold is confirmed, $92 ->
+  $89, month 5 -> 6. No planet turns known.
+- f175: circle: aim mode left for jump mode on p47, the target nearest
+  the centre (9 px off it); the camera stays (190, 197), p47 at screen
+  (80.24, 68.75); the crosshair is gone. f176: the colour-7 hovered
+  circle round p47. (Before plan 12 step 7, this circle went back to
+  network mode on the last planet, the camera centred on it: that return
+  is gone with its mechanic.)
+
+`make state` at f176: clock year 3401 month 6, credits 89, income -1,
+camera world 190 197, planets 90, colonies 1, slipways 0, structures
+0, techs 0. p47 colonized type r, p25 known type f; every other planet
+unknown.
+
+keyboard_slipway after its first colony (its file cut at f92): clock
+year 3401 month 5, credits 92, income -1, planets 90, colonies 1,
+slipways 0, structures 0, techs 0. p30 type m colonised, $97 -> $92,
+month 2 -> 5.
+
+The galaxies differ: the galaxy depends on the frame the game starts,
+keyboard_slipway clicks the title at f1 and a pad title needs the rows
+first (X at f12). The pairing compares the colony's cost and clock
+effect, not planet ids: both colonies are charged from the menu's
+colonise row ($5 for this type r planet and for keyboard_slipway's
+type m) and both take the clock from month 2 to 5.
+
+f148-176 have no keyboard_slipway counterpart: it had no aim mode to
+leave.
+
+Covers the first-colony part of keyboard_slipway (f77-92). Its second
+colony and its slipway are covered by pad_slipway (step 2.3), its probe
+and fold by pad_probe (step 2.1).
+
+Slipway rules, f177-418 (remove-mouse-mode PRD, chunk 5; appended here
+to share the colony instead of a separate pad_slipway_rules file).
+Before plan 12 step 7 the menus opened by triangle on the centre, which
+landed network mode; they now open from jump mode.
+
+- f177: square: aim mode, the camera unmoved (190 197). f181-199:
+  Up+Right 10, Up 9, then idle f200-209: camera 200 169, p25 under the
+  centre. (Before plan 12 step 7, f177 was square from network mode into
+  the drag and f179 square out of it: gone with the
+  ○ return above.)
+  f208: square: jump mode on p25, the target nearest the centre.
+  f210-215: triangle on the hovered p25, Down, X on "nanotech": p25
+  colonised, $89 -> $81, month 6 -> 9.
+- f217: square: aim mode, the camera unmoved (200 169).
+  f219-253: Down+Left 13, Down 22, then idle f254-259: camera 184 229,
+  the centre 24 px beyond p47, on empty space.
+- f260: X tap on empty space: a probe exists, so the background press
+  is a fold, released on f261 under 15 ticks and abandoned: nothing
+  charged ($81).
+- f264: square: aim mode left for jump mode on p47, the target nearest
+  the centre (camera 184 229). f268: Up onto p25: the edge scroll starts
+  (184 221, 184 213). f270: circle at the root (plan 12 step 8): the
+  cursor jumps back to p47, the last object X acted on (f90's X opened
+  its menu); p47 is inside the inner rectangle, so the camera stops at
+  184 213. f272: Up onto p25 again: the camera 184 209 on that frame.
+  (Before plan 12 step 7: f217's square pressed the old drag out of p25,
+  f259 showed its line crossing p47, the crossed planet, now shown in
+  slipway mode by pad_research; f260 dropped it on empty space, refused,
+  and the fold ran under the drag; f264 dropped it, f266's circle
+  returned to the last planet in network mode. The drag is gone with
+  its mechanic.)
+
+From here the slipway is built the cross way (plan 12 step 6): X on the
+hovered colony starts it, the D-pad aims, X builds, and slipway mode
+continues from the target. f0-268 are the inputs of the step 6 file,
+with f12's two loading-screen copies (plan 22),
+but f19, f88, f157, f179, f200-203, f208 and f266-268 (step 7) and f90,
+f143 and f146 (step 8). From f275 the inputs are the step 7 file's
+from its f269, 6 frames later, and 8 frames later from its f289, with
+f270's circle, f272's Up and f295's circle added and f367's Up moved to
+f371 (step 8).
+
+- f275: X on p25: the pad presses it, the ui holds the slipway from
+  f276. f277: Down: the aim jumps to p47 (the only other candidate),
+  already inside the inner rectangle, so the camera stays 184 209; the
+  dragged line runs from p25 to p47, the cursor on p47.
+- f281: X on p47: `slipway p25 p47`, $81 -> $76, month 9 -> 10. f282:
+  the outcome read, p47 is the last object X acted on; the pad presses
+  p47, the new start; slipway mode from p47.
+- f285: Up: the aim on p25. The line and the existing slipway are
+  colour 2, the forbidden sign above p25, the blinking marker round it.
+  f289: X: refused, $76, slipways 1; the last object stays p47. f290:
+  p47 pressed again.
+- f293: circle: the slipway dropped with no target, jump mode on p47.
+  f295: circle at the root on p47, the last object: nothing happens
+  (plan 12 step 8), no button, the camera unmoved: a required no-op,
+  like f18-19.
+- The aim under the top HUD (plan 12 step 7): f297: square: aim mode.
+  f299-324: Down 26, f326-343: Right 18: camera 210 251. f345: square:
+  jump mode on p47, the target nearest the centre, the edge scroll
+  bringing it inside by f347. f347: X on p47: the slipway pressed out of
+  it. f348-370: idle, the slipway aimed at its start. f371: Up (2
+  frames earlier than the step 7 file's, so `slipway_spawn_transit_dot`
+  still runs once with the cursor point as the line's end, no planet id
+  and no dot): the aim on p25, 22 px above the screen, under the score button
+  (x63-71); the edge scroll brings it down 8 px a frame. On f372-373 the
+  cursor, on p25's screen point, is on the HUD row (y -8, then 0): the
+  ui hovers the button, not p25, so slipway_drag hangs the line's end
+  on the cursor point, the line drawn up to the HUD; from f374 the end
+  is p25 again (already linked: refused feedback). f380: circle: the
+  slipway dropped with no target, nothing built or charged, jump mode on
+  p47.
+- f382: square: aim mode, the camera unmoved (210 209). f383-392:
+  Up+Left 10, f394-398: Up+Left 5, f399-404: Up 6: camera 195 187, the
+  reference camera, the centre on the slipway's middle. f408-410: X held
+  3 frames: a fold press whose target is the slipway (the slipway colour
+  2: 69-72 colour-2 pixels in x30-129, y20-99 against 40 at f407);
+  released at f411, under 15 ticks: abandoned, nothing charged.
+- f412: square: jump mode on p25, the target nearest the centre (cursor
+  85 42), the camera unmoved.
+- f414-443: Select held 30 frames: on f443, its 30th frame, the cursor
+  on the year-skip button (154 5), pressed: year 3402, $76 -> $79,
+  income 3 (the strip's ore feeds the nanotech colony), the "year 3402"
+  box. f444: the release, the cursor back on p25. Until plan 12 step 9
+  this year was R1 R1 and X on `end turn` (the tab ring).
+
+`make state` at f446: year 3402 month 1, credits 79, research 1, income
+3, camera 195 187, `slipway p25 p47 normal`, p25 colonized type f, p47
+colonized type r, planets 90, colonies 2, slipways 1.
+
+Replaces slipway_refused and slipway_build (mouse, deleted in the
+remove-mouse-mode PRD: two colonies; a drag across the second one
+released in empty space, refused; a slipway built; the same slipway
+refused; a press held on its middle then abandoned, a year). Same
+effects; here the crossed planet is the slipway's own end, as in
+slipway_refused.
