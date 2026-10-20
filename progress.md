@@ -62,6 +62,7 @@
     - [x] Chunk 1 — setDefaultFilter binding
     - [x] Chunk 2 — capture, nearest re-run, docs, timing
   - [ ] Step 3.15 — combined capture program
+    - [x] Chunks 1–2 — game_frame capture, probes, docs
 - [ ] Phase 4 — Capture and errors
   - [ ] Step 4.16 — capture
   - [ ] Step 4.17 — fatal errors
