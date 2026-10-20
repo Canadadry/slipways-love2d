@@ -22,10 +22,11 @@ end
 
 function love.draw()
     check_environment()
-    local program = assert(loadfile(program_path))()
     local canvas = love.graphics.newCanvas(160, 120)
+    local program = assert(loadfile(program_path))()
+    assert(type(program) == "function", program_path .. " returned a " .. type(program) .. ", not a function")
     love.graphics.setCanvas(canvas)
-    program()
+    program(canvas)
     love.graphics.setCanvas()
     local png = canvas:newImageData():encode("png"):getString()
     local file = assert(io.open(png_path, "wb"))

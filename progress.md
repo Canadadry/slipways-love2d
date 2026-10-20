@@ -27,7 +27,7 @@
     - [x] Chunk 1 — nothing from src/ guard
     - [x] Chunk 2 — canvas store
     - [x] Chunk 3 — love.graphics in the host
-    - [ ] Chunk 4 — the comparison
+    - [x] Chunk 4 — the comparison
     - [ ] Chunk 5 — captures, png_check retired, proof
   - [ ] Step 3.7 — points
   - [ ] Step 3.8 — rectangle("fill")
