@@ -7,7 +7,7 @@
   - [ ] Step 1.2 — CI capture job
     - [x] Drift checks in the love-capture job
     - [x] Deliberate drift turns the job red
-    - [ ] Revert turns it green
+    - [x] Revert turns it green
 - [ ] Phase 2 — The fake's skeleton
   - [ ] Step 2.3 — fake_love runs the loop
   - [ ] Step 2.4 — pad
