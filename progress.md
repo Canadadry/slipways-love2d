@@ -1,5 +1,5 @@
 - [ ] Phase 1 — Real LÖVE in the container and CI
-  - [ ] Step 1.1 — install script, love-capture, CI trigger, Xvfb exception
+  - [x] Step 1.1 — install script, love-capture, CI trigger, Xvfb exception
     - [x] Chunk 1 — install script, session hook, CI wiring
     - [x] Chunk 2 — LuaJIT probe and make love-check
     - [x] Chunk 3 — capture harness, clear program, PNG check

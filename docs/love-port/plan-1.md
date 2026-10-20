@@ -129,3 +129,19 @@ implementation, the comparison in `make test`, and the settled convention in
 None.
 
 ## 6. Step notes
+
+### Step 1.1
+
+- `tools/love_install.sh` installs love 11.5-1build1, xvfb, xauth, Mesa
+  (llvmpipe), luajit and libluajit-5.1-dev from Ubuntu 24.04 apt; it skips
+  apt when everything is installed. Run by a SessionStart hook
+  (`.claude/hooks/session_start.sh`, cloud sessions only) and by both CI jobs.
+- Deviation: minimized images exclude `/usr/share/man` and love's postinst
+  fails without its man page; the script re-includes it.
+- `make love-capture` runs `tools/love_capture/*.lua` through a real-LÖVE-only
+  harness in `tools/love_capture/harness/`; programs return a draw function
+  using listed functions only. `make love-check` (outside `make test`) runs the
+  LuaJIT probe and checks `clear.png` is 160×120 of `1D2B53`. `stb_image.h`
+  v2.30 vendored in `tools/fake_love/`.
+- Two local captures are byte-identical. CI triggers on `claude/**`; run
+  39487833316 green on every job (love-capture job 23 s).
