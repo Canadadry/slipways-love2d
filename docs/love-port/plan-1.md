@@ -21,24 +21,41 @@ disk, capture format, fatal errors) is in `docs/love-port/design.md`; read it fi
 - Xvfb (with Mesa software rendering) is allowed **only** inside
   `make love-capture`, which runs the capture programs in real LÖVE 11.5,
   rewrites their PNGs and stops; no window is ever visible. Agents and CI may
-  run it. It is not part of `make test` or `make e2e`. This exception goes
-  into `CLAUDE.md`.
+  run it. It is not part of `make test` or `make e2e`. Step 1 writes this
+  exception into `CLAUDE.md`, before any agent needs it.
 - `make test` runs every capture program in the fake and compares with the
-  PNGs; it stays fast.
+  PNGs. `CLAUDE.md` forbids making it slower: step 3 decides once how the
+  fake's checks stay out of its wall time, and every step that adds to it
+  records the time before and after in its step note.
+- A capture program's drawing part uses only listed functions; the canvas
+  read-back and PNG write run only in real LÖVE, so the same program runs
+  in the fake.
 - LuaJIT: system package, version checked at startup. PNG: vendored
   `stb_image.h`. Nothing else is vendored without a recorded decision.
+- Each drawing step writes the convention its capture settled (where a
+  point lands, how a rectangle rounds, off-canvas and transparent behaviour)
+  into `docs/love-port/design.md`: plan 1 is deleted, design.md is what
+  plans 2–3 read.
 - The fake does not reuse the C game's drawing code: it only draws pixels,
   filled rectangles and images.
+- At each phase end, every CI job is green on the last pushed commit, or the
+  red job goes through `fix-bug` before the next phase.
 - Not this plan: the Lua game.
 
 ## 3. Phases and steps
 
 ### Phase 1 — Real LÖVE in the container and CI
 
-1. Install LÖVE 11.5, Xvfb and Mesa in the container and in CI (setup script
-   and `ci.yml`); `make love-capture` runs one capture program that clears a
-   canvas to colour 1 and writes its PNG. Verified by the PNG holding 160×120
-   pixels of `1D2B53`.
+1. One committed install script for LÖVE 11.5, Xvfb, Mesa and the LuaJIT dev
+   package, called by every `ci.yml` job that runs `make` and by a
+   session-start hook, so the container
+   and CI run the same versions; `make love-capture` runs one capture program
+   that clears a canvas to colour 1 and writes its PNG. Verified by the PNG
+   holding 160×120 pixels of `1D2B53`, by a C program built against the
+   system LuaJIT printing its version, both in the container and in CI, and
+   by the Xvfb exception being in `CLAUDE.md`. Step 1 also makes `ci.yml`
+   run on pushes to the working branch (today: `master` and pull requests
+   only); verified by a green CI run on the pushed commit.
 2. CI job: `make love-capture` then `git diff --exit-code tools/love_capture/`.
    Verified by a deliberate change to a program turning the job red, then
    reverting it.
@@ -59,34 +76,51 @@ disk, capture format, fatal errors) is in `docs/love-port/design.md`; read it fi
 
 ### Phase 3 — Drawing, one function at a time
 
-For each of: `newCanvas`/`setCanvas`/`clear`, `setColor`, `points`,
-`rectangle("fill")`, `newImageData`/`setPixel`/`getPixel`, `newImage`,
-image `newImageData(file)` from a PNG, `newQuad` and `draw`, `push`/`pop`/
-`translate`, `setDefaultFilter`:
+Each step uses only functions from earlier steps. Each step: a capture
+program in `tools/love_capture/` exercising the function (including edge
+cases: off-canvas, negative coordinates, transparent pixels, nested
+translate), its PNG from `make love-capture`, the fake's
+implementation, the comparison in `make test`, and the settled convention in
+`docs/love-port/design.md`. Verified by the comparison passing.
 
-6. A capture program in `tools/love_capture/` exercising the function
-   (including edge cases: off-canvas, negative coordinates, transparent
-   pixels, nested translate), its PNG from `make love-capture`, the fake's
-   implementation, and the comparison in `make test`. One step per function.
-   Verified by the comparison passing.
+6. `newCanvas`/`setCanvas`/`clear`, and the comparison harness in
+   `make test` (run the program in the fake, read the PNG, compare pixel by
+   pixel). Also verified by one PNG pixel deliberately changed turning
+   `make test` red with the program and pixel named, then reverted.
+7. `points`.
+8. `rectangle("fill")`.
+9. `setColor`, shown through `points` and `rectangle`.
+10. `newImageData`/`setPixel`/`getPixel`, verified by `getPixel`'s returned
+    values in a test game (nothing reaches the canvas yet).
+11. `newImage`, `newQuad` and `draw`: an image only shows through `draw`.
+12. Image `newImageData(file)` from a PNG.
+13. `push`/`pop`/`translate`.
+14. `setDefaultFilter`.
+15. One capture program combining the functions as the game will: colour
+    before `draw`, `translate` over `points`, `rectangle` and `draw`,
+    transparent image pixels over existing content, canvas switches.
 
 ### Phase 4 — Capture and errors
 
-7. Capture: after each `love.draw()`, canvas → palette numbers → appended to
-   the capture; `debug_state()` written after the last frame. Verified by a
-   test game drawing known colours and the capture's bytes.
-8. Fatal errors: unlisted function, colour outside the 16, foreign pixel on
-   the canvas, each with its message. Verified by one test game per error.
-9. `make love-e2e`: runs `tmp/fake_love game/` on every replay of
-   `tests/e2e/`, in parallel, and checks each capture's sha256 with
-   `tools/frames_check.sh`. Verified by it running (all red is expected: there
-   is no game yet).
+16. Capture: after each `love.draw()`, canvas → palette numbers → appended to
+    the capture; `debug_state()` written after the last frame. Verified by a
+    test game drawing known colours and the capture's bytes.
+17. Fatal errors: unlisted function, colour outside the 16, foreign pixel on
+    the canvas, each with its message. Verified by one test game per error.
+18. `make love-e2e`: runs `tmp/fake_love game/` on every replay of
+    `tests/e2e/`, in parallel, and checks each capture's sha256 with
+    `tools/frames_check.sh`. Verified with a stub game drawing a fixed frame:
+    all 20 replays run, each capture has the replay's frame count of frames,
+    each reports a sha256 mismatch rather than a crash, and a game that fails
+    to load reports a distinct, named error.
 
 ## 4. Done when
 
-- Every function of the list has a capture program and its PNG, and the fake
-  matches each one in `make test`.
-- CI's capture job is green.
+- Every function of the list has a capture program and its PNG, the fake
+  matches each one in `make test`, and its convention is in
+  `docs/love-port/design.md`.
+- Every CI job is green.
+- The combined capture program of step 15 matches.
 - `make love-e2e` runs the fake on the 20 replays.
 - `CLAUDE.md` carries the Xvfb exception.
 
