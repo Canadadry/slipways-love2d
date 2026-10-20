@@ -13,6 +13,7 @@
 #include "canvas.h"
 #include "filesystem.h"
 #include "graphics.h"
+#include "image.h"
 #include "joystick.h"
 #include "pad.h"
 
@@ -191,6 +192,7 @@ bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
     joystick_install(host->lua);
     filesystem_install(host->lua, disk);
     graphics_install(host->lua, host->canvases);
+    image_install(host->lua);
     return run_file(host, "main.lua");
 }
 
