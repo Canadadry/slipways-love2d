@@ -334,6 +334,23 @@ $(TMP_DIR)/test_frames_tool: $(call objs,tests/test_frames_tool.c src/devtools/s
 $(TMP_DIR)/test_fake_love_replay: $(call objs,tests/test_fake_love_replay.c tools/fake_love/replay.c) $(wildcard tests/e2e/*.json) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
+# Recursive (`=`): only a target that builds the fake runs pkg-config.
+LUAJIT_CFLAGS = $(shell pkg-config --cflags luajit)
+LUAJIT_LIBS = $(shell pkg-config --libs luajit)
+FAKE_LOVE_LUA_SRCS := tools/fake_love/fake_love.c tools/fake_love/host.c
+
+$(call objs,$(FAKE_LOVE_LUA_SRCS)): override CFLAGS += $(LUAJIT_CFLAGS)
+
+$(TMP_DIR)/fake_love: $(call objs,$(FAKE_LOVE_LUA_SRCS) tools/fake_love/replay.c) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS)
+
+fake-love: $(TMP_DIR)/fake_love ## builds tmp/fake_love, the headless LÖVE that plays a Lua game on a replay
+
+.PHONY: fake-love
+
+$(TMP_DIR)/test_fake_love: $(call objs,tests/test_fake_love.c) $(TMP_DIR)/fake_love $(wildcard tests/fixtures/fake_love/*.json tests/fixtures/fake_love/*.lua tests/fixtures/fake_love/*/*.lua tests/fixtures/fake_love/*/*/*.lua) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
 $(TMP_DIR)/test_frames_check: $(call objs,tests/test_frames_check.c) tools/frames_check.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
@@ -839,7 +856,8 @@ UNIT_TESTS := \
     test_demo_data \
     test_attract \
     test_demo_overlay \
-    test_fake_love_replay
+    test_fake_love_replay \
+    test_fake_love
 
 # One run per test, each its own target: that is what `-j` runs in parallel.
 UNIT_RUNS := $(addprefix unit-run-,$(UNIT_TESTS))
@@ -901,7 +919,11 @@ endif
 replay: $(TMP_DIR)/replay ## EVENTS=<events> [SAVE_HEX=<file>] [DIGEST=<file>]: replays one file headless, dump in tmp/replay_dump.txt
 	$(if $(ATTRACT_STATE),ATTRACT_STATE=$(ATTRACT_STATE) )$(if $(REPLAY_STARTS),REPLAY_STARTS=$(REPLAY_STARTS) )$(if $(SAVE_HEX),SAVE_HEX=$(SAVE_HEX) )$(if $(DIGEST),DIGEST=$(DIGEST) )./$(TMP_DIR)/replay $(EVENTS)
 
-test: unit constants-check float-grep float-guard alloc-guard pointer-guard random-guard button-guard data-guard p8-guard ## fast loop: unit tests and static guards (~8 s)
+# Each check that runs the fake is its own target, listed here, so that `-j`
+# runs it beside the unit tests instead of after them.
+FAKE_LOVE_CHECKS := unit-run-test_fake_love
+
+test: unit $(FAKE_LOVE_CHECKS) constants-check float-grep float-guard alloc-guard pointer-guard random-guard button-guard data-guard p8-guard ## fast loop: unit tests and static guards (~8 s)
 
 test-all: test e2e ## test + e2e, the full suite
 
