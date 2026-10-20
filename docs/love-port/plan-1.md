@@ -165,3 +165,23 @@ None.
   plan-review: step 6 now retires `png_check`; `make test` time gets a
   plan-wide reference. The repeated constants are left: design constants and
   a runtime version guard.
+
+### Step 2.3
+
+- `tmp/fake_love` (`tools/fake_love/`: `replay.c` strict JSON reader keeping
+  the whole document, `host.c` the LuaJIT host, `fake_love.c` the command)
+  runs conf.lua, `love.conf`, main.lua, `love.load`, then `update(1/60)` and
+  `draw` per frame; `require` only looks in the game directory. Capture
+  stays empty. Deviation: `debug_state()` and the state file land here, not
+  in step 16, as the only output a test can read yet.
+- Tests: `test_fake_love_replay` (20 e2e frame counts, refusals),
+  `test_fake_love` (counting game, 3-frame replay, 23 ms),
+  `test_fake_love_failures` (every fatal error, 70 ms; split out to stay
+  under 100 ms per check). Fixtures in `tests/fixtures/fake_love/`.
+- `make test` time: each fake check is its own prerequisite of `test`
+  (`FAKE_LOVE_CHECKS`), rule in design.md. guideline replaced the PRD's
+  spread check (per-run spread ~4–8 %, never passes) with the median of
+  per-round paired ratios over 11 rounds, cap 3 %. Plan-wide reference:
+  2e7215c. After: medians 7.93 s (reference) / 7.87 s (current), paired
+  +1.28 %, 4 cores.
+

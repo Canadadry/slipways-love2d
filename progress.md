@@ -9,7 +9,7 @@
     - [x] Deliberate drift turns the job red
     - [x] Revert turns it green
 - [ ] Phase 2 — The fake's skeleton
-  - [ ] Step 2.3 — fake_love runs the loop
+  - [x] Step 2.3 — fake_love runs the loop
     - [x] Chunk 1 — replay reader
     - [x] Chunk 2 — binary, happy path
     - [x] Chunk 3 — failures, timing rule
