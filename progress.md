@@ -59,6 +59,8 @@
     - [x] Chunk 2 — push, pop, translate bindings
     - [x] Chunk 3 — capture, docs, timing
   - [ ] Step 3.14 — setDefaultFilter
+    - [x] Chunk 1 — setDefaultFilter binding
+    - [ ] Chunk 2 — capture, nearest re-run, docs, timing
   - [ ] Step 3.15 — combined capture program
 - [ ] Phase 4 — Capture and errors
   - [ ] Step 4.16 — capture

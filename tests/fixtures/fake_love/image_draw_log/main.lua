@@ -13,6 +13,8 @@ local function try(label, call, ...)
 end
 
 function love.load()
+    local set_default_filter = graphics.setDefaultFilter
+    try("filter before images", set_default_filter, "nearest", "nearest")
     local data = love.image.newImageData(3, 2)
     data:setPixel(0, 0, 1, 1, 1, 1)
     local image = graphics.newImage(data)
@@ -20,6 +22,7 @@ function love.load()
     local quad = graphics.newQuad(0, 0, 3, 2, 3, 2)
     table.insert(log, "quad " .. type(quad) .. " setViewport " .. tostring(quad.setViewport))
     local canvas = graphics.newCanvas(160, 120)
+    try("filter after images", set_default_filter, "nearest", "nearest")
 
     local new_image = graphics.newImage
     try("image none", new_image)
@@ -52,6 +55,7 @@ function love.load()
     try("quad accepted", new_quad, 45, 25, 3, 5, 48, 30)
 
     graphics.setCanvas(canvas)
+    try("filter on a canvas", set_default_filter, "nearest", "nearest")
     local draw = graphics.draw
     local font = graphics.newImage(love.image.newImageData(48, 30))
     local sheet_quad = new_quad(0, 0, 3, 5, 128, 128)
@@ -71,6 +75,21 @@ function love.load()
     try("draw string x", draw, image, quad, "3", 0)
     try("draw other reference", draw, font, sheet_quad, 0, 0)
     try("draw accepted", draw, image, quad, -(2 ^ 20 - 1), 2 ^ 20 - 1)
+
+    try("filter none", set_default_filter)
+    try("filter one", set_default_filter, "nearest")
+    try("filter anisotropy", set_default_filter, "nearest", "nearest", 1)
+    try("filter trailing nil", set_default_filter, "nearest", "nearest", nil)
+    try("filter number", set_default_filter, 1, "nearest")
+    try("filter table", set_default_filter, {}, "nearest")
+    try("filter nil", set_default_filter, nil, "nearest")
+    try("filter boolean", set_default_filter, "nearest", true)
+    try("filter bogus", set_default_filter, "bogus", "nearest")
+    try("filter upper case", set_default_filter, "nearest", "NEAREST")
+    try("filter linear", set_default_filter, "linear", "linear")
+    try("filter mixed", set_default_filter, "nearest", "linear")
+    try("filter none name", set_default_filter, "none", "nearest")
+    try("filter then draw", draw, image, quad, 0, 0)
     graphics.setCanvas()
 end
 

@@ -336,6 +336,28 @@ static int translate(lua_State *lua) {
     return 0;
 }
 
+static int set_default_filter(lua_State *lua) {
+    int top = lua_gettop(lua);
+    if (top != 2)
+        return luaL_error(lua, "love.graphics.setDefaultFilter: takes 2 arguments, \"nearest\" and \"nearest\", not %d",
+                          top);
+    for (int index = 1; index <= 2; index++) {
+        if (lua_type(lua, index) != LUA_TSTRING)
+            return luaL_error(lua, "love.graphics.setDefaultFilter: argument %d is a %s, not a string", index,
+                              luaL_typename(lua, index));
+        const char *name = lua_tostring(lua, index);
+        if (strcmp(name, "none") != 0 && strcmp(name, "linear") != 0 && strcmp(name, "nearest") != 0)
+            return luaL_error(lua, "love.graphics.setDefaultFilter: Invalid filter mode '%s', expected one of: "
+                                   "'none', 'linear', 'nearest'",
+                              name);
+        if (strcmp(name, "nearest") != 0)
+            return luaL_error(lua, "love.graphics.setDefaultFilter: argument %d is \"%s\", only \"nearest\" is "
+                                   "supported (the filter is not modelled)",
+                              index, name);
+    }
+    return 0;
+}
+
 static void new_metatable_without_methods(lua_State *lua, const char *name) {
     luaL_newmetatable(lua, name);
     lua_newtable(lua);
@@ -357,13 +379,14 @@ void graphics_install(lua_State *lua, canvas_store_t *store, transform_t *transf
     new_metatable_without_methods(lua, IMAGE_METATABLE);
     new_metatable_without_methods(lua, QUAD_METATABLE);
     lua_getglobal(lua, "love");
-    lua_createtable(lua, 0, 12);
+    lua_createtable(lua, 0, 13);
     set_function(lua, store, transform, new_canvas, "newCanvas");
     set_function(lua, store, transform, set_canvas, "setCanvas");
     set_function(lua, store, transform, clear, "clear");
     set_function(lua, store, transform, points, "points");
     set_function(lua, store, transform, rectangle, "rectangle");
     set_function(lua, store, transform, set_color, "setColor");
+    set_function(lua, store, transform, set_default_filter, "setDefaultFilter");
     set_function(lua, store, transform, new_image, "newImage");
     set_function(lua, store, transform, new_quad, "newQuad");
     set_function(lua, store, transform, draw, "draw");

@@ -19,7 +19,8 @@ static void test_set_color_misuse_is_refused_with_a_message_and_opaque_colours_s
     assert(status == 0 && "the setColor log game must run");
     fake_love_cli_assert_text(
         STATE,
-        "graphics clear draw newCanvas newImage newQuad points pop push rectangle setCanvas setColor translate\n"
+        "graphics clear draw newCanvas newImage newQuad points pop push rectangle setCanvas setColor setDefaultFilter "
+        "translate\n"
         "none: love.graphics.setColor: takes 3 numbers or 4 with alpha 1, not 0 arguments\n"
         "two: love.graphics.setColor: takes 3 numbers or 4 with alpha 1, not 2 arguments\n"
         "five: love.graphics.setColor: takes 3 numbers or 4 with alpha 1, not 5 arguments\n"
@@ -45,7 +46,8 @@ static void test_transform_misuse_is_refused_with_a_message_and_the_offset_reset
     fake_love_cli_assert_text(
         STATE,
         "conf graphics nil\n"
-        "graphics clear draw newCanvas newImage newQuad points pop push rectangle setCanvas setColor translate\n"
+        "graphics clear draw newCanvas newImage newQuad points pop push rectangle setCanvas setColor setDefaultFilter "
+        "translate\n"
         "push nil: love.graphics.push: takes no arguments, not 1 (push(\"all\") and push(\"transform\") are not "
         "supported)\n"
         "push all: love.graphics.push: takes no arguments, not 1 (push(\"all\") and push(\"transform\") are not "
