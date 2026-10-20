@@ -1,5 +1,7 @@
 #include "replay.h"
 
+#include "pad.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
@@ -35,6 +37,7 @@ typedef struct {
 
 struct replay {
     const node_t *frames;
+    unsigned *held;
     size_t node_count;
     node_t nodes[];
 };
@@ -447,6 +450,98 @@ static int find_frames(replay_t *replay, parser_t *parser) {
     return 1;
 }
 
+static int check_input(const replay_t *replay, parser_t *parser) {
+    const node_t *root = &replay->nodes[0];
+    const node_t *input = object_member(replay, root, "input");
+    if (input == NULL) {
+        fail_at(parser, root->offset, "\"input\" missing: a replay holds \"input\": \"pad\"");
+        return 0;
+    }
+    if (input->kind != NODE_STRING) {
+        fail_at(parser, input->offset, "\"input\" is not a string: a replay holds \"input\": \"pad\"");
+        return 0;
+    }
+    if (strcmp(input->string, "pad") != 0) {
+        fail_at(parser, input->offset, "\"input\" is \"%s\", not \"pad\"", input->string);
+        return 0;
+    }
+    return 1;
+}
+
+static const char *kind_name(node_kind_t kind) {
+    switch (kind) {
+    case NODE_NULL: return "null";
+    case NODE_FALSE: return "false";
+    case NODE_TRUE: return "true";
+    case NODE_INTEGER: return "an integer";
+    case NODE_STRING: return "a string";
+    case NODE_ARRAY: return "an array";
+    case NODE_OBJECT: return "an object";
+    }
+    return "?";
+}
+
+/* Returns 0 and fails the parser when a button is not an integer 1-12 or
+ * is listed twice. */
+static int read_frame_pad(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *frame, unsigned *held) {
+    const node_t *pad = NULL;
+    for (size_t i = frame->first_child; i != NO_NODE; i = replay->nodes[i].next) {
+        if (strcmp(replay->nodes[i].key, "pad") != 0) {
+            fail_at(parser, replay->nodes[i].offset, "f%zu: unexpected key \"%s\": a frame holds only \"pad\"", frame_index,
+                    replay->nodes[i].key);
+            return 0;
+        }
+        pad = &replay->nodes[i];
+    }
+    if (pad == NULL) {
+        fail_at(parser, frame->offset, "f%zu: no \"pad\"", frame_index);
+        return 0;
+    }
+    if (pad->kind != NODE_ARRAY) {
+        fail_at(parser, pad->offset, "f%zu: \"pad\" is %s, not an array", frame_index, kind_name(pad->kind));
+        return 0;
+    }
+    *held = 0;
+    for (size_t i = pad->first_child; i != NO_NODE; i = replay->nodes[i].next) {
+        const node_t *button = &replay->nodes[i];
+        if (button->kind == NODE_STRING) {
+            fail_at(parser, button->offset, "f%zu: button \"%s\" is not an integer", frame_index, button->string);
+            return 0;
+        }
+        if (button->kind != NODE_INTEGER) {
+            fail_at(parser, button->offset, "f%zu: button %s is not an integer", frame_index, kind_name(button->kind));
+            return 0;
+        }
+        if (button->integer < 1 || button->integer > PAD_BUTTON_COUNT) {
+            fail_at(parser, button->offset, "f%zu: button %lld is not 1-%d", frame_index, button->integer, PAD_BUTTON_COUNT);
+            return 0;
+        }
+        unsigned bit = 1u << (button->integer - 1);
+        if (*held & bit) {
+            fail_at(parser, button->offset, "f%zu: button %lld listed twice", frame_index, button->integer);
+            return 0;
+        }
+        *held |= bit;
+    }
+    return 1;
+}
+
+static int read_held(replay_t *replay, parser_t *parser) {
+    replay->held = calloc(replay->frames->child_count + 1, sizeof(*replay->held));
+    if (replay->held == NULL) {
+        fail_at(parser, 0, "out of memory");
+        return 0;
+    }
+    size_t frame_index = 0;
+    for (size_t i = replay->frames->first_child; i != NO_NODE; i = replay->nodes[i].next) {
+        if (!read_frame_pad(replay, parser, frame_index, &replay->nodes[i], &replay->held[frame_index])) {
+            return 0;
+        }
+        frame_index++;
+    }
+    return 1;
+}
+
 replay_t *replay_parse(const char *name, const char *text, size_t length, char *error, size_t error_size) {
     assert(name != NULL && (text != NULL || length == 0));
     parser_t parser = {
@@ -477,8 +572,9 @@ replay_t *replay_parse(const char *name, const char *text, size_t length, char *
     parse_document(&parser);
     assert(!parser.failed && parser.node_count == node_count && parser.char_count == char_count
            && "the filling pass reads the text the counting pass accepted");
-    if (!find_frames(replay, &parser)) {
-        free(replay);
+    replay->held = NULL;
+    if (!find_frames(replay, &parser) || !check_input(replay, &parser) || !read_held(replay, &parser)) {
+        replay_free(replay);
         return NULL;
     }
     return replay;
@@ -527,6 +623,14 @@ size_t replay_frame_count(const replay_t *replay) {
     return replay->frames->child_count;
 }
 
+unsigned replay_frame_held(const replay_t *replay, size_t frame) {
+    assert(replay != NULL && frame < replay_frame_count(replay));
+    return replay->held[frame];
+}
+
 void replay_free(replay_t *replay) {
+    if (replay != NULL) {
+        free(replay->held);
+    }
     free(replay);
 }
