@@ -355,6 +355,10 @@ test_fake_love_point_objs := $(call objs,tests/test_fake_love_point.c tools/fake
 $(TMP_DIR)/test_fake_love_point: $(test_fake_love_point_objs) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
 
+test_fake_love_frame_capture_objs := $(call objs,tests/test_fake_love_frame_capture.c tools/fake_love/frame_capture.c)
+$(TMP_DIR)/test_fake_love_frame_capture: $(test_fake_love_frame_capture_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
 test_fake_love_transform_objs := $(call objs,tests/test_fake_love_transform.c tools/fake_love/transform.c)
 $(TMP_DIR)/test_fake_love_transform: $(test_fake_love_transform_objs) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
@@ -971,7 +975,8 @@ UNIT_TESTS := \
     test_fake_love_set_color \
     test_fake_love_image \
     test_fake_love_image_draw \
-    test_fake_love_capture
+    test_fake_love_capture \
+    test_fake_love_frame_capture
 
 # One run per test, each its own target: that is what `-j` runs in parallel.
 UNIT_RUNS := $(addprefix unit-run-,$(UNIT_TESTS))
@@ -1054,7 +1059,7 @@ $(addprefix love-capture-check-,$(filter-out $(LOVE_CAPTURE_PNGS),$(LOVE_CAPTURE
 
 # Each check that runs the fake is its own target, listed here, so that `-j`
 # runs it beside the unit tests instead of after them.
-FAKE_LOVE_CHECKS := $(LOVE_CAPTURE_CHECKS) unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick unit-run-test_fake_love_files unit-run-test_fake_love_graphics unit-run-test_fake_love_points unit-run-test_fake_love_rectangle unit-run-test_fake_love_set_color unit-run-test_fake_love_image unit-run-test_fake_love_image_draw unit-run-test_fake_love_capture
+FAKE_LOVE_CHECKS := $(LOVE_CAPTURE_CHECKS) unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick unit-run-test_fake_love_files unit-run-test_fake_love_graphics unit-run-test_fake_love_points unit-run-test_fake_love_rectangle unit-run-test_fake_love_set_color unit-run-test_fake_love_image unit-run-test_fake_love_image_draw unit-run-test_fake_love_capture unit-run-test_fake_love_frame_capture
 
 # Longest first: `-j` starts prerequisites in this order, and float-guard
 # alone (~4 s, serial) sets the wall time when it starts behind the checks.
@@ -1288,7 +1293,7 @@ random-guard: tools/random_guard.sh $(RANDOM_GUARD_EXCEPTIONS) ## ratchet on the
 # `<binary> <objects>` per binary of the fake side: each name below has its
 # `<name>_objs` beside its link rule. tmp/luajit_version has no object: the
 # include scan of tools/love_capture/ covers it.
-FAKE_SIDE_BINARIES := fake_love love_capture_check test_fake_love_replay test_fake_love_pad test_fake_love_canvas test_fake_love_image_data test_fake_love_image_rules test_fake_love_point test_fake_love_transform test_fake_love_disk test_fake_love_png_file test_fake_love test_fake_love_failures test_fake_love_joystick test_fake_love_files test_fake_love_graphics test_fake_love_points test_fake_love_rectangle test_fake_love_set_color test_fake_love_image test_fake_love_image_draw test_fake_love_capture test_fake_love_guard
+FAKE_SIDE_BINARIES := fake_love love_capture_check test_fake_love_replay test_fake_love_pad test_fake_love_canvas test_fake_love_image_data test_fake_love_image_rules test_fake_love_point test_fake_love_transform test_fake_love_disk test_fake_love_png_file test_fake_love test_fake_love_failures test_fake_love_joystick test_fake_love_files test_fake_love_graphics test_fake_love_points test_fake_love_rectangle test_fake_love_set_color test_fake_love_image test_fake_love_image_draw test_fake_love_capture test_fake_love_frame_capture test_fake_love_guard
 FAKE_SIDE_LINKS := $(foreach binary,$(FAKE_SIDE_BINARIES),$(TMP_DIR)/$(binary) $($(binary)_objs))
 FAKE_SIDE_SRCS := tools/fake_love tools/love_capture $(wildcard tests/test_fake_love*.c tests/fake_love_*.[ch])
 
