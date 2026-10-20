@@ -24,6 +24,11 @@
     - [x] Chunk 4 — arguments, docs, timing
 - [ ] Phase 3 — Drawing, one function at a time
   - [ ] Step 3.6 — newCanvas/setCanvas/clear and the comparison harness
+    - [x] Chunk 1 — nothing from src/ guard
+    - [ ] Chunk 2 — canvas store
+    - [ ] Chunk 3 — love.graphics in the host
+    - [ ] Chunk 4 — the comparison
+    - [ ] Chunk 5 — captures, png_check retired, proof
   - [ ] Step 3.7 — points
   - [ ] Step 3.8 — rectangle("fill")
   - [ ] Step 3.9 — setColor

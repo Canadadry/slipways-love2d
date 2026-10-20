@@ -331,13 +331,16 @@ $(TMP_DIR)/frames_tool: $(call objs,src/cmd/frames.c src/devtools/screencast.c s
 $(TMP_DIR)/test_frames_tool: $(call objs,tests/test_frames_tool.c src/devtools/screencast.c src/p8/vram.c) $(TMP_DIR)/replay $(TMP_DIR)/frames_tool tests/fixtures/screencast_capture_events.json | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-$(TMP_DIR)/test_fake_love_replay: $(call objs,tests/test_fake_love_replay.c tools/fake_love/replay.c) $(wildcard tests/e2e/*.json) | $(TMP_DIR)
+test_fake_love_replay_objs := $(call objs,tests/test_fake_love_replay.c tools/fake_love/replay.c)
+$(TMP_DIR)/test_fake_love_replay: $(test_fake_love_replay_objs) $(wildcard tests/e2e/*.json) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-$(TMP_DIR)/test_fake_love_pad: $(call objs,tests/test_fake_love_pad.c tools/fake_love/pad.c) | $(TMP_DIR)
+test_fake_love_pad_objs := $(call objs,tests/test_fake_love_pad.c tools/fake_love/pad.c)
+$(TMP_DIR)/test_fake_love_pad: $(test_fake_love_pad_objs) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-$(TMP_DIR)/test_fake_love_disk: $(call objs,tests/test_fake_love_disk.c tools/fake_love/disk.c) $(wildcard tests/fixtures/fake_love/disk_tree/* tests/fixtures/fake_love/disk_tree/*/*) | $(TMP_DIR)
+test_fake_love_disk_objs := $(call objs,tests/test_fake_love_disk.c tools/fake_love/disk.c)
+$(TMP_DIR)/test_fake_love_disk: $(test_fake_love_disk_objs) $(wildcard tests/fixtures/fake_love/disk_tree/* tests/fixtures/fake_love/disk_tree/*/*) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 # Recursive (`=`): only a target that builds the fake runs pkg-config.
@@ -348,7 +351,8 @@ FAKE_LOVE_LUA_SRCS := tools/fake_love/fake_love.c tools/fake_love/host.c tools/f
 
 $(call objs,$(FAKE_LOVE_LUA_SRCS)): override CFLAGS += $(LUAJIT_CFLAGS)
 
-$(TMP_DIR)/fake_love: $(call objs,$(FAKE_LOVE_LUA_SRCS) tools/fake_love/replay.c tools/fake_love/pad.c tools/fake_love/disk.c) | $(TMP_DIR)
+fake_love_objs := $(call objs,$(FAKE_LOVE_LUA_SRCS) tools/fake_love/replay.c tools/fake_love/pad.c tools/fake_love/disk.c)
+$(TMP_DIR)/fake_love: $(fake_love_objs) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS)
 
 fake-love: $(TMP_DIR)/fake_love ## builds tmp/fake_love, the headless LÖVE that plays a Lua game on a replay
@@ -357,16 +361,20 @@ fake-love: $(TMP_DIR)/fake_love ## builds tmp/fake_love, the headless LÖVE that
 
 FAKE_LOVE_FIXTURES := $(wildcard tests/fixtures/fake_love/*.json tests/fixtures/fake_love/*.cfg tests/fixtures/fake_love/*.lua tests/fixtures/fake_love/*/*.lua tests/fixtures/fake_love/*/*.txt tests/fixtures/fake_love/*/*/*.lua tests/fixtures/fake_love/*/*/*.txt)
 
-$(TMP_DIR)/test_fake_love: $(call objs,tests/test_fake_love.c tests/fake_love_cli.c) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+test_fake_love_objs := $(call objs,tests/test_fake_love.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_fake_love: $(test_fake_love_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-$(TMP_DIR)/test_fake_love_failures: $(call objs,tests/test_fake_love_failures.c tests/fake_love_cli.c) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+test_fake_love_failures_objs := $(call objs,tests/test_fake_love_failures.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_fake_love_failures: $(test_fake_love_failures_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-$(TMP_DIR)/test_fake_love_joystick: $(call objs,tests/test_fake_love_joystick.c tests/fake_love_cli.c) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+test_fake_love_joystick_objs := $(call objs,tests/test_fake_love_joystick.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_fake_love_joystick: $(test_fake_love_joystick_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-$(TMP_DIR)/test_fake_love_files: $(call objs,tests/test_fake_love_files.c tests/fake_love_cli.c) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+test_fake_love_files_objs := $(call objs,tests/test_fake_love_files.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_fake_love_files: $(test_fake_love_files_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_frames_check: $(call objs,tests/test_frames_check.c) tools/frames_check.sh | $(TMP_DIR)
@@ -403,6 +411,10 @@ $(TMP_DIR)/test_random_guard: $(call objs,tests/test_random_guard.c) tools/rando
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_button_guard: $(call objs,tests/test_button_guard.c) tools/button_guard.sh | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_guard_objs := $(call objs,tests/test_fake_love_guard.c)
+$(TMP_DIR)/test_fake_love_guard: $(test_fake_love_guard_objs) tools/fake_love_guard.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_float_link: $(call objs,tests/test_float_link.c) tools/float_link.sh | $(TMP_DIR)
@@ -790,6 +802,7 @@ UNIT_TESTS := \
     test_float_grep \
     test_random_guard \
     test_button_guard \
+    test_fake_love_guard \
     test_float_link \
     test_constants_check \
     test_background_draw \
@@ -946,7 +959,7 @@ replay: $(TMP_DIR)/replay ## EVENTS=<events> [SAVE_HEX=<file>] [DIGEST=<file>]: 
 # runs it beside the unit tests instead of after them.
 FAKE_LOVE_CHECKS := unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick unit-run-test_fake_love_files
 
-test: unit $(FAKE_LOVE_CHECKS) constants-check float-grep float-guard alloc-guard pointer-guard random-guard button-guard data-guard p8-guard ## fast loop: unit tests and static guards (~8 s)
+test: unit $(FAKE_LOVE_CHECKS) constants-check float-grep float-guard alloc-guard pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~8 s)
 
 test-all: test e2e ## test + e2e, the full suite
 
@@ -1173,6 +1186,18 @@ random-guard: tools/random_guard.sh $(RANDOM_GUARD_EXCEPTIONS) ## ratchet on the
 
 .PHONY: random-guard
 
+# `<binary> <objects>` per binary of the fake side: each name below has its
+# `<name>_objs` beside its link rule. tmp/luajit_version has no object: the
+# include scan of tools/love_capture/ covers it.
+FAKE_SIDE_BINARIES := fake_love test_fake_love_replay test_fake_love_pad test_fake_love_disk test_fake_love test_fake_love_failures test_fake_love_joystick test_fake_love_files test_fake_love_guard
+FAKE_SIDE_LINKS := $(foreach binary,$(FAKE_SIDE_BINARIES),$(TMP_DIR)/$(binary) $($(binary)_objs))
+FAKE_SIDE_SRCS := tools/fake_love tools/love_capture $(wildcard tests/test_fake_love*.c tests/fake_love_cli.[ch])
+
+fake-love-guard: tools/fake_love_guard.sh $(filter %.o,$(FAKE_SIDE_LINKS)) ## fails when the fake side includes a header or links an object from src/
+	@sh tools/fake_love_guard.sh $(OBJ_DIR) $(FAKE_SIDE_LINKS) -- $(FAKE_SIDE_SRCS)
+
+.PHONY: fake-love-guard
+
 button-guard: tools/button_guard.sh ## fails when a src/game/ file other than cheat.c and the bindings names a P8_PAD_BUTTON_*
 	@sh tools/button_guard.sh src/game
 
@@ -1229,7 +1254,7 @@ love-check: $(TMP_DIR)/luajit_version $(TMP_DIR)/png_check ## checks the LuaJIT 
 
 # The dependency fragments written by the compiler, one per object. The
 # wildcard tolerates their absence: on a fresh clone, everything is compiled.
--include $(wildcard $(OBJ_DIR)/src/*/*.d $(OBJ_DIR)/tests/*.d $(OBJ_DIR)/tmp/bindings/*.d $(OBJ_DIR)/tmp/demo/*.d)
+-include $(wildcard $(OBJ_DIR)/src/*/*.d $(OBJ_DIR)/tests/*.d $(OBJ_DIR)/tools/*/*.d $(OBJ_DIR)/tmp/bindings/*.d $(OBJ_DIR)/tmp/demo/*.d)
 -include $(wildcard $(OBJ_ASAN_DIR)/src/*/*.d $(OBJ_ASAN_DIR)/tests/*.d $(OBJ_ASAN_DIR)/tmp/bindings/*.d $(OBJ_ASAN_DIR)/tmp/demo/*.d)
 -include $(wildcard $(OBJ_UBSAN_DIR)/src/*/*.d $(OBJ_UBSAN_DIR)/tests/*.d)
 -include $(wildcard $(OBJ_SANITIZE_DIR)/src/*/*.d $(OBJ_SANITIZE_DIR)/tests/*.d $(OBJ_SANITIZE_DIR)/tmp/bindings/*.d $(OBJ_SANITIZE_DIR)/tmp/demo/*.d)
