@@ -313,3 +313,20 @@ None.
 - `make test`: before 75aaf46 7.13 s, reference 7.03 s, current 7.26 s;
   paired +1.27 % / +2.24 %, 11 rounds, 4 cores.
 
+### Step 3.12
+
+- `png_file_decode`: a gate before stb_image (signature, chunk CRCs, IHDR
+  first, 8-bit RGB/RGBA only, sides ≤ 1024, no unknown critical chunk, IEND,
+  Adler-32, exact data length), since real LÖVE refuses broken files stb
+  decodes; on every accepted file both give the same bytes, no gamma. 16-bit,
+  grey and palette refused (the game's assets are 8-bit RGB).
+  `love.image.newImageData(name)` reads through the fake disk.
+- Capture `imagedata_files` reads fixtures in `tools/love_capture/files/`
+  through a `files` symlink in each harness; matches. design.md "Image files".
+- Tests: `test_fake_love_png_file` (5 ms), cases in `test_fake_love_image`.
+- `make test`: the gate failed (pooled 22 rounds +3.27 % against the
+  reference, +1.00 % against step 3.11's end). Cause: `float-guard`, the
+  longest job, started after the fake checks. Rework: longest prerequisites
+  first, capture checks without a shell. After: 5.04 s against 7.09 s
+  (reference) and 7.40 s (before); paired −27.97 % / −31.37 %.
+

@@ -49,7 +49,7 @@
     - [x] Chunk 1 — tint, texel draw, image rules
     - [x] Chunk 2 — newImage, newQuad, draw binding
     - [x] Chunk 3 — captures, docs, timing
-  - [ ] Step 3.12 — newImageData(file)
+  - [x] Step 3.12 — newImageData(file)
     - [x] Chunk 1 — PNG decoder and gate
     - [x] Chunk 2 — file form in the image binding
     - [x] Chunk 3 — fixtures, capture, docs, timing
