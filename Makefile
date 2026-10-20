@@ -331,6 +331,9 @@ $(TMP_DIR)/frames_tool: $(call objs,src/cmd/frames.c src/devtools/screencast.c s
 $(TMP_DIR)/test_frames_tool: $(call objs,tests/test_frames_tool.c src/devtools/screencast.c src/p8/vram.c) $(TMP_DIR)/replay $(TMP_DIR)/frames_tool tests/fixtures/screencast_capture_events.json | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
+$(TMP_DIR)/test_fake_love_replay: $(call objs,tests/test_fake_love_replay.c tools/fake_love/replay.c) $(wildcard tests/e2e/*.json) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
 $(TMP_DIR)/test_frames_check: $(call objs,tests/test_frames_check.c) tools/frames_check.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
@@ -835,7 +838,8 @@ UNIT_TESTS := \
     test_demo_source \
     test_demo_data \
     test_attract \
-    test_demo_overlay
+    test_demo_overlay \
+    test_fake_love_replay
 
 # One run per test, each its own target: that is what `-j` runs in parallel.
 UNIT_RUNS := $(addprefix unit-run-,$(UNIT_TESTS))
