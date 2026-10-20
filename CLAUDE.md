@@ -20,11 +20,12 @@ Everything written in the repository is in English: code, comments, docs, e2e no
 
 - **Never merge a pull request**, in any way (GitHub tool, `gh`, auto-merge). Merging is the user's job, always; denied in `.claude/settings.json`.
 - **Never make `make test` or `make e2e` slower**, under any circumstances: the loop must stay fast. A slow check goes in a separate target, outside `make test-all`.
-- **Never open a window or a virtual screen.** No window, no X server: an agent has neither eyes nor a mouse and would see nothing of what it opens. Verification is headless — N frames driven by a scripted `events.json`, then a text dump of the framebuffer (`make replay`).
+- **Never open a window or a virtual screen.** No window, no X server: an agent has neither eyes nor a mouse and would see nothing of what it opens. Verification is headless — N frames driven by a scripted `events.json`, then a text dump of the framebuffer (`make replay`). Single exception: Xvfb with Mesa software rendering, only inside `make love-capture`, which runs the capture programs in real LÖVE 11.5, rewrites their PNGs and stops; agents and CI may run it; it is never part of `make test` or `make e2e`.
 
 ## Build
 
 - `make test` is the fast loop (unit tests and static checks, ~8 s). `make e2e` replays the e2e files of `tests/e2e/` from the title screen (~1 s). `make test-all` runs both. `make help` lists the targets: each public target carries a one-line `## ` description of at most 20 words.
+- `tools/love_install.sh` installs LÖVE 11.5, Xvfb, Mesa and LuaJIT; the SessionStart hook and CI run it.
 - `test`, `e2e` and `test-all` hold `tmp/make.lock` through `flock` (macOS: `brew install flock`): a second one fails at once.
 
 ## Docs
