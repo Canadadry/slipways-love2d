@@ -297,3 +297,19 @@ None.
 - `make test`: before c1ba7d8 7.55 s, reference 7.24 s, current 7.49 s;
   paired −1.69 % / +2.79 % (close to the cap), 11 rounds, 4 cores.
 
+### Step 3.11
+
+- `newImage(imagedata)` copies (refusing a translucent pixel, named);
+  `newQuad(x, y, w, h, sw, sh)` six integers inside the image;
+  `draw(image, quad, x, y)` integer positions, quad made for that image;
+  alpha-00 texels skipped, alpha-FF written with the tint
+  round(c × t / 255). No methods on Image or Quad; `love.graphics` has 9
+  functions. Real LÖVE: default filter is linear, but integer draws give the
+  same bytes under linear and nearest, so the fake refuses what the filter
+  would change instead of modelling it.
+- Captures `draw_quads`, `draw_tint` match; design.md "Images".
+- Tests: `test_fake_love_image_rules` (2 ms), `test_fake_love_image_draw`
+  (24 ms), tint cases in `test_fake_love_canvas`.
+- `make test`: before 75aaf46 7.13 s, reference 7.03 s, current 7.26 s;
+  paired +1.27 % / +2.24 %, 11 rounds, 4 cores.
+
