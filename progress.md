@@ -37,7 +37,7 @@
     - [x] Chunk 1 — span rule
     - [x] Chunk 2 — rectangle in the fake
     - [x] Chunk 3 — captures, docs, proof
-  - [ ] Step 3.9 — setColor
+  - [x] Step 3.9 — setColor
     - [x] Chunk 1 — store colour
     - [x] Chunk 2 — setColor binding
     - [x] Chunk 3 — captures, docs, timing

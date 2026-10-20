@@ -271,3 +271,15 @@ None.
 - `make test`: before 9c0a220 7.89 s, reference 7.81 s, current 7.89 s;
   paired −0.01 % / +1.03 %, 11 rounds, 4 cores.
 
+### Step 3.9
+
+- Drawing colour: float, clamp, ×255 in float, truncated (0.5 → 127, unlike
+  `clear`'s 128); kept for the whole run. `setColor(r, g, b)` or
+  `(r, g, b, 1)`; table form, other counts, non-numbers, non-finite and any
+  alpha but 1 refused (the game draws opaque colours only).
+- Three captures `color_bytes`, `color_precision`, `color_state` match;
+  design.md "Colour": pass `byte / 255`, never an alpha.
+- Test: `test_fake_love_set_color` (~15 ms).
+- `make test`: before c157572 7.61 s, reference 7.58 s, current 7.66 s;
+  paired +0.09 % / +1.20 %, 11 rounds, 4 cores.
+
