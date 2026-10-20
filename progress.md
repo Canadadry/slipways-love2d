@@ -6,7 +6,7 @@
     - [x] Chunk 4 — CI capture job and CLAUDE.md
   - [ ] Step 1.2 — CI capture job
     - [x] Drift checks in the love-capture job
-    - [ ] Deliberate drift turns the job red
+    - [x] Deliberate drift turns the job red
     - [ ] Revert turns it green
 - [ ] Phase 2 — The fake's skeleton
   - [ ] Step 2.3 — fake_love runs the loop
