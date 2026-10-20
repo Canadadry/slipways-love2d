@@ -71,6 +71,31 @@ static int clear(lua_State *lua) {
     return 0;
 }
 
+static int set_color(lua_State *lua) {
+    int top = lua_gettop(lua);
+    if (top >= 1 && lua_type(lua, 1) == LUA_TTABLE)
+        return luaL_error(lua, "love.graphics.setColor: argument 1 is a table, not a number (the table form is not "
+                               "supported)");
+    if (top != 3 && top != 4)
+        return luaL_error(lua, "love.graphics.setColor: takes 3 numbers or 4 with alpha 1, not %d arguments", top);
+    for (int index = 1; index <= top; index++)
+        if (lua_type(lua, index) != LUA_TNUMBER)
+            return luaL_error(lua, "love.graphics.setColor: argument %d is a %s, not a number", index,
+                              luaL_typename(lua, index));
+    for (int index = 1; index <= top; index++)
+        if (!isfinite(lua_tonumber(lua, index)))
+            return luaL_error(lua, "love.graphics.setColor: argument %d is not finite", index);
+    if (top == 4 && lua_tonumber(lua, 4) != 1)
+        return luaL_error(lua, "love.graphics.setColor: alpha is %g, only 1 is supported (translucent colours are "
+                               "not modelled)",
+                          lua_tonumber(lua, 4));
+    unsigned char rgba[4] = {0, 0, 0, 255};
+    for (int index = 1; index <= 3; index++)
+        rgba[index - 1] = canvas_convert_draw_component(lua_tonumber(lua, index));
+    canvas_set_color(upvalue_store(lua), rgba);
+    return 0;
+}
+
 static void push_coordinate(lua_State *lua, bool table_form, int index) {
     if (table_form)
         lua_rawgeti(lua, 1, index);
@@ -148,12 +173,13 @@ void graphics_install(lua_State *lua, canvas_store_t *store) {
     luaL_newmetatable(lua, METATABLE);
     lua_pop(lua, 1);
     lua_getglobal(lua, "love");
-    lua_createtable(lua, 0, 5);
+    lua_createtable(lua, 0, 6);
     set_function(lua, store, new_canvas, "newCanvas");
     set_function(lua, store, set_canvas, "setCanvas");
     set_function(lua, store, clear, "clear");
     set_function(lua, store, points, "points");
     set_function(lua, store, rectangle, "rectangle");
+    set_function(lua, store, set_color, "setColor");
     lua_setfield(lua, -2, "graphics");
     lua_pop(lua, 1);
 }

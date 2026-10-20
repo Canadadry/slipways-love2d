@@ -39,7 +39,7 @@
     - [x] Chunk 3 — captures, docs, proof
   - [ ] Step 3.9 — setColor
     - [x] Chunk 1 — store colour
-    - [ ] Chunk 2 — setColor binding
+    - [x] Chunk 2 — setColor binding
     - [ ] Chunk 3 — captures, docs, timing
   - [ ] Step 3.10 — newImageData/setPixel/getPixel
   - [ ] Step 3.11 — newImage, newQuad and draw
