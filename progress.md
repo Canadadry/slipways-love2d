@@ -48,7 +48,7 @@
   - [ ] Step 3.11 — newImage, newQuad and draw
     - [x] Chunk 1 — tint, texel draw, image rules
     - [x] Chunk 2 — newImage, newQuad, draw binding
-    - [ ] Chunk 3 — captures, docs, timing
+    - [x] Chunk 3 — captures, docs, timing
   - [ ] Step 3.12 — newImageData(file)
   - [ ] Step 3.13 — push/pop/translate
   - [ ] Step 3.14 — setDefaultFilter

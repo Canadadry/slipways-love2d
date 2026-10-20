@@ -290,6 +290,55 @@ game: write palette bytes as `byte / 255`; read a byte back as
 value may go straight to `setPixel` or `setColor`; use integer
 coordinates.** Captures: `imagedata_rounding`, `imagedata_forms`.
 
+**Images.** `love.graphics` holds exactly `clear`, `draw`, `newCanvas`,
+`newImage`, `newQuad`, `points`, `rectangle`, `setCanvas` and `setColor`
+from `main.lua` on. `newImage(imagedata)` takes exactly one ImageData and
+copies its size and bytes at the call: a later `setPixel` on the ImageData
+leaves the Image as it was, as in LÖVE. `newQuad(x, y, w, h, sw, sh)` takes
+six integers: reference sides 1 to 1024, origin from 0, size from 1, the
+quad inside the reference size. `draw(image, quad, x, y)` is the only draw
+form: exactly an Image, a Quad of the image's own size, and two integers of
+magnitude below 2^20. Texel (`qx + i`, `qy + j`) goes to pixel
+(`x + i`, `y + j`); pixels off the canvas are clipped silently, so a draw
+far off draws nothing. An alpha-`00` texel leaves the pixel's four bytes,
+transparent pixels included; an alpha-`FF` texel writes, per channel,
+`round(c × t / 255)` (c the current colour's byte, t the texel's: a fourth
+colour rule, neither the floor nor llvmpipe's 8-bit blender multiply) and
+alpha `FF`. With white, the default colour, that is the texel itself. With
+the screen selected, a draw changes nothing the fake models. Images and
+Quads have no methods and are freed by the garbage collector. Every
+refusal is an error starting `love.graphics.newImage: `,
+`love.graphics.newQuad: ` or `love.graphics.draw: ` and changes nothing:
+another argument count (a trailing nil, rotation or scale too, and the
+quad-less `draw(image, x, y)`), a file name, a table or a Canvas where an
+ImageData or Image belongs, a non-number (no string coercion), a
+non-finite or fractional value, a value out of range, a quad whose
+reference size differs from the image's (it would scale), and an
+ImageData holding an alpha byte other than `00` and `FF`, named by its
+pixel. Real LÖVE accepts most of these; the fake refuses them because
+each one either draws texels LÖVE would blend or hides a bug. **The
+filter.** LÖVE's default filter is `linear` (`getDefaultFilter()` gives
+`linear linear 1`, a new Image is `linear`, wrap `clamp`). Integer draws
+of quads on the image's own size are byte-identical under `linear` and
+`nearest` (measured on 8 images and about 2 400 quads at random
+positions): the fake does not model filtering and needs no `nearest` to be
+exact. From
+1/512 of a pixel off an integer, `linear` blends texels into colours
+outside the palette, and `nearest` drops or doubles texel columns near
+half a pixel: hence the refusals. So `setDefaultFilter("nearest",
+"nearest")`, once the fake has it, is a call that changes
+nothing the fake draws, and fractional positions stay refused under
+`nearest` too. A translucent texel blends with llvmpipe's 8-bit
+arithmetic (`min(255, mul(s, a) + mul(d, 255 − a))`,
+`mul(p, q) = (p·q + (p·q >> 8) + 128) >> 8`), never into a palette byte,
+hence its refusal. **The rule for the game: build
+images with alpha exactly 0 or 1; call `setColor(1, 1, 1)` before drawing
+an image's own colours (a palette colour tinting an `FF` texel gives
+exactly that colour, any other tint gives non-palette bytes); pass
+integer positions, flooring fixed-point coordinates first; build each
+quad with integers, inside the image, on the image's own size.**
+Captures: `draw_quads`, `draw_tint`.
+
 ### The LÖVE functions the game may use
 
 The fake implements exactly this list; extending it is a decision recorded
@@ -300,8 +349,9 @@ here, with its real-LÖVE capture.
 - Drawing: `love.graphics.newCanvas(160, 120)`, `setCanvas`, `clear`,
   `setColor(r, g, b)` or `setColor(r, g, b, 1)`, `points(x1, y1, …)` or
   `points({x1, y1, …})`,
-  `rectangle("fill", x, y, w, h)`, `newImage`, `newQuad`,
-  `draw(image, quad, x, y)`, `setDefaultFilter("nearest", "nearest")`,
+  `rectangle("fill", x, y, w, h)`, `newImage(imagedata)`,
+  `newQuad(x, y, w, h, sw, sh)`, `draw(image, quad, x, y)`,
+  `setDefaultFilter("nearest", "nearest")`,
   `push`, `pop`, `translate`.
 - Images: `love.image.newImageData(w, h)`, `love.image.newImageData(file)`,
   `ImageData:setPixel(x, y, r, g, b[, a])`, `ImageData:getPixel(x, y)`.
