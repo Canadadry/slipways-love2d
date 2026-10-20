@@ -188,13 +188,17 @@ bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
     return run_file(host, "main.lua");
 }
 
-bool host_load(host_t *host) {
+bool host_load(host_t *host, const char *const *arguments, size_t count) {
     bool defined;
     if (!push_callback(host, "load", NO_FRAME, &defined))
         return false;
     if (!defined)
         return true;
-    lua_newtable(host->lua);
+    lua_createtable(host->lua, (int)count, 0);
+    for (size_t i = 0; i < count; i++) {
+        lua_pushstring(host->lua, arguments[i]);
+        lua_rawseti(host->lua, -2, (int)i + 1);
+    }
     return call(host, 1, 0, "love.load", NO_FRAME);
 }
 

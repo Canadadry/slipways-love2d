@@ -32,7 +32,13 @@ local function log_write(name, data)
     table.insert(log, string.format("write %s %s %s", name, tostring(ok), tostring(message)))
 end
 
-function love.load()
+function love.load(arguments)
+    local quoted = {"arg " .. #arguments}
+    for _, argument in ipairs(arguments) do
+        table.insert(quoted, string.format("%q", argument))
+    end
+    table.insert(log, table.concat(quoted, " "))
+    table.insert(log, "global arg " .. tostring(arg))
     local names = {}
     for name in pairs(love.filesystem) do
         table.insert(names, name)

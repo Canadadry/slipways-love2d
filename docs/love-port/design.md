@@ -25,12 +25,13 @@ For one replay it:
 
 1. loads the game directory (`game/`) as LÖVE would: `conf.lua`, then
    `main.lua`;
-2. builds the fake disk: `save.bin` holds the bytes of the replay's
-   `initial_save` (hex string) when present, `bindings.cfg` the content of the
-   file named by `bindings` (resolved next to the replay). Writes from the game
-   stay in memory; the real disk is never written by the game;
-3. calls `love.load(arg)`, with `--attract-after N` in `arg` when the replay
-   has `"attract_after": N`;
+2. builds the fake disk before `love.load`: `save.bin` holds the bytes of
+   the replay's `initial_save` (hex string) when present, `bindings.cfg` the
+   content of the file named by `bindings` (resolved next to the replay, at
+   most 65 536 bytes); no other file is in memory. Writes from the game stay
+   in memory; the real disk is never written by the game;
+3. calls `love.load(arg)`, `arg` being `{"--attract-after", "N"}` when the
+   replay has `"attract_after": N` (plain decimal), `{}` otherwise;
 4. for each frame of `frames`: compares the held buttons with the previous
    frame's, calls `love.gamepadreleased` then `love.gamepadpressed` for those
    that changed, each in ascending button number, answers
@@ -115,6 +116,28 @@ held; `guide`, `leftstick` and `rightstick` are never held; any other name
 fails with `Invalid gamepad button: <name>`. The ascending order is the
 fake's convention, not LÖVE's: the game must not depend on the order within
 a frame.
+
+**Fake disk and arguments.** The replay members the fake reads are
+`input`, `frames`, `initial_save`, `bindings` and `attract_after`, each at
+most once and as strict as the C replay; `start` is refused, other members
+are ignored. A refusal exits 1 before `love.load` and leaves no output.
+`love.filesystem` is nil in `conf.lua` and holds exactly `read`, `write`
+and `getInfo` from `main.lua` on. In-memory files lie over the game
+directory, visible read-only, and shadow its files of the same name; the
+disk lives for one run. `read(name)` returns the content and its size in
+bytes, or `nil, "Could not open file <name>. Does not exist."` for a
+missing file or a directory. `write(name, data)` with a string replaces the
+whole file and returns `true`; a name holding `/` returns `false` and the
+same message, since the fake creates no directory. `getInfo(name[,
+filtertype])` returns a new `{type = "file", size = N}` or
+`{type = "directory"}` (game directory only), no `modtime`, or `nil`
+when missing or of another type; `filtertype` is one of `"file"`,
+`"directory"`, `"symlink"`, `"other"`. Names are byte-compared; empty
+names, a leading `/`, an empty, `.` or `..` element, `\` and `:` raise an
+error naming the function and the path. Any other form (read's size or
+container argument, a third argument to write, non-string data, the
+info-table forms) raises an error naming the function. `love.load` gets its
+arguments as its parameter only: the global `arg` is nil.
 
 ### The LÖVE functions the game may use
 

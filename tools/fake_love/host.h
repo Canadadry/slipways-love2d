@@ -19,7 +19,8 @@ const char *host_runtime_version(host_t *host);
  * host_error, valid until the next call. */
 /* The disk is not owned and must outlive the host. */
 bool host_open(host_t *host, const char *game_dir, disk_t *disk);
-bool host_load(host_t *host);
+/* love.load gets a new sequence table holding the `count` strings. */
+bool host_load(host_t *host, const char *const *arguments, size_t count);
 /* Calls the pad callbacks for the changes from the previous frame's `held`
  * (nothing held before frame 0), then love.update and love.draw. */
 bool host_frame(host_t *host, size_t frame, unsigned held);

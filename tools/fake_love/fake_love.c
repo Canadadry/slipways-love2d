@@ -68,8 +68,18 @@ static bool write_state(host_t *host, const char *path) {
     return written;
 }
 
+static bool load_game(host_t *host, const replay_t *replay) {
+    int attract_after = replay_attract_after(replay);
+    if (attract_after == 0)
+        return host_load(host, NULL, 0);
+    char threshold[16];
+    snprintf(threshold, sizeof threshold, "%d", attract_after);
+    const char *const load_arguments[] = {"--attract-after", threshold};
+    return host_load(host, load_arguments, 2);
+}
+
 static bool run_game(host_t *host, const arguments_t *arguments, const replay_t *replay, disk_t *disk) {
-    bool ok = host_open(host, arguments->game_dir, disk) && host_load(host);
+    bool ok = host_open(host, arguments->game_dir, disk) && load_game(host, replay);
     for (size_t frame = 0; ok && frame < replay_frame_count(replay); frame++)
         ok = host_frame(host, frame, replay_frame_held(replay, frame));
     if (!ok)

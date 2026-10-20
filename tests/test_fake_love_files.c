@@ -91,6 +91,8 @@ static void assert_failure(const char *environment, const char *args, const char
 static void test_bare_replay_shows_only_the_game_directory(void) {
     assert_runs("", ECHO_GAME " " FIXTURES "disk_bare.json " CAPTURE " " STATE);
     assert_state("conf filesystem nil\n"
+                 "arg 0\n"
+                 "global arg nil\n"
                  "filesystem getInfo read write\n"
                  "save.bin info nil read nil Could not open file save.bin. Does not exist.\n"
                  "bindings.cfg info nil read nil Could not open file bindings.cfg. Does not exist.\n" GAME_LINES);
@@ -100,6 +102,8 @@ static void test_bare_replay_shows_only_the_game_directory(void) {
 static void test_full_replay_seeds_the_save_and_the_bindings(void) {
     assert_runs("", ECHO_GAME " " FIXTURES "disk_full.json " CAPTURE " " STATE);
     assert_state("conf filesystem nil\n"
+                 "arg 2 \"--attract-after\" \"7\"\n"
+                 "global arg nil\n"
                  "filesystem getInfo read write\n"
                  "save.bin info file 4 read 4 00ff10a5\n"
                  "bindings.cfg info file 20 read 20 61696d20610a6d656e7520620a7377617020780a\n" GAME_LINES);
@@ -132,6 +136,28 @@ static void test_bindings_fixture_over_64_kib_runs_nothing(void) {
     remove(BIG_FIXTURE);
 }
 
+#define SIZES_GAME FIXTURES "disk_sizes"
+
+/* The save counts are the ones test_fake_love_replay reads back. */
+static void test_e2e_replays_reach_the_game(void) {
+    long bindings_size;
+    char *bindings = fake_love_cli_read_file("tests/e2e/unbound_enter_aim.cfg", &bindings_size);
+    assert(bindings != NULL);
+    free(bindings);
+    char expected[256];
+    snprintf(expected, sizeof expected,
+             "arg 0\n"
+             "save.bin info 4186 read 4186 4186\n"
+             "bindings.cfg info %ld read %ld %ld\n",
+             bindings_size, bindings_size, bindings_size);
+    assert_runs("", SIZES_GAME " tests/e2e/pad_unbound_enter_aim.json " CAPTURE " " STATE);
+    assert_state(expected);
+    assert_runs("", SIZES_GAME " tests/e2e/attract.json " CAPTURE " " STATE);
+    assert_state("arg 2 \"--attract-after\" \"3\"\n"
+                 "save.bin info 3921 read 3921 3921\n"
+                 "bindings.cfg info nil read nil\n");
+}
+
 #define MISUSE FIXTURES "disk_misuse " FIXTURES "disk_bare.json " CAPTURE " " STATE
 
 static void test_filesystem_misuse_is_fatal(void) {
@@ -150,6 +176,7 @@ static void test_filesystem_misuse_is_fatal(void) {
 int main(void) {
     test_bare_replay_shows_only_the_game_directory();
     test_full_replay_seeds_the_save_and_the_bindings();
+    test_e2e_replays_reach_the_game();
     test_missing_bindings_fixture_runs_nothing();
     test_bindings_fixture_over_64_kib_runs_nothing();
     test_filesystem_misuse_is_fatal();
