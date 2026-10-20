@@ -9,8 +9,7 @@ static disk_t *upvalue_disk(lua_State *lua) {
     return lua_touserdata(lua, lua_upvalueindex(1));
 }
 
-/* Raises unless argument `index` is a valid name for the disk. */
-static const char *check_name(lua_State *lua, const char *function, int index) {
+const char *filesystem_check_name(lua_State *lua, const char *function, int index) {
     if (lua_type(lua, index) != LUA_TSTRING)
         luaL_error(lua, "%s: argument %d is a %s, not a file name", function, index, luaL_typename(lua, index));
     size_t length;
@@ -36,7 +35,7 @@ static int push_missing(lua_State *lua, const char *name) {
 
 static int read_file(lua_State *lua) {
     check_argument_count(lua, "read(name)", 1, 1);
-    const char *name = check_name(lua, "love.filesystem.read", 1);
+    const char *name = filesystem_check_name(lua, "love.filesystem.read", 1);
     size_t length;
     unsigned char *bytes = disk_read(upvalue_disk(lua), name, &length);
     if (bytes == NULL)
@@ -49,7 +48,7 @@ static int read_file(lua_State *lua) {
 
 static int write_file(lua_State *lua) {
     check_argument_count(lua, "write(name, data)", 2, 2);
-    const char *name = check_name(lua, "love.filesystem.write", 1);
+    const char *name = filesystem_check_name(lua, "love.filesystem.write", 1);
     if (lua_type(lua, 2) != LUA_TSTRING)
         return luaL_error(lua, "love.filesystem.write: the data is a %s, not a string", luaL_typename(lua, 2));
     size_t length;
@@ -67,7 +66,7 @@ static const char *const FILTER_TYPES[] = {"file", "directory", "symlink", "othe
 
 static int get_info(lua_State *lua) {
     check_argument_count(lua, "getInfo(name [, filtertype])", 1, 2);
-    const char *name = check_name(lua, "love.filesystem.getInfo", 1);
+    const char *name = filesystem_check_name(lua, "love.filesystem.getInfo", 1);
     const char *filter = NULL;
     if (!lua_isnoneornil(lua, 2)) {
         if (lua_type(lua, 2) != LUA_TSTRING)

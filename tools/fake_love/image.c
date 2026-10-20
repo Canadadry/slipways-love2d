@@ -2,8 +2,13 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <lauxlib.h>
+
+#include "filesystem.h"
+#include "png_file.h"
 
 #define METATABLE "ImageData"
 
@@ -15,11 +20,44 @@ static const char *format_number(double value, char text[32]) {
     return text;
 }
 
+static image_data_t *push_image_data(lua_State *lua, int width, int height) {
+    image_data_t *data = lua_newuserdata(lua, image_data_byte_count(width, height));
+    image_data_init(data, width, height);
+    luaL_getmetatable(lua, METATABLE);
+    lua_setmetatable(lua, -2);
+    return data;
+}
+
+static int load_image_data(lua_State *lua) {
+    const char *name = filesystem_check_name(lua, "love.image.newImageData", 1);
+    size_t length;
+    unsigned char *bytes = disk_read(lua_touserdata(lua, lua_upvalueindex(1)), name, &length);
+    if (bytes == NULL)
+        return luaL_error(lua, "love.image.newImageData: Could not open file %s. Does not exist.", name);
+    unsigned char *pixels;
+    int width, height;
+    const char *reason = png_file_decode(bytes, length, IMAGE_DATA_MAX_SIDE, &pixels, &width, &height);
+    free(bytes);
+    if (reason != NULL)
+        return luaL_error(lua, "love.image.newImageData: \"%s\" is not a PNG the fake decodes as LÖVE 11.5 does: %s",
+                          name, reason);
+    image_data_t *data = push_image_data(lua, width, height);
+    memcpy(data->pixels, pixels, (size_t)width * height * 4);
+    free(pixels);
+    return 1;
+}
+
 static int new_image_data(lua_State *lua) {
     int top = lua_gettop(lua);
-    if (top >= 1 && lua_type(lua, 1) == LUA_TSTRING)
-        return luaL_error(lua, "love.image.newImageData: argument 1 is a string, not a number (the file form is not "
-                               "supported)");
+    if (top >= 1 && lua_type(lua, 1) == LUA_TSTRING) {
+        if (top != 1)
+            return luaL_error(lua, "love.image.newImageData: takes 2 numbers, width and height, or 1 file name, not "
+                                   "%d arguments",
+                              top);
+        return load_image_data(lua);
+    }
+    if (top == 1 && lua_type(lua, 1) != LUA_TNUMBER)
+        return luaL_error(lua, "love.image.newImageData: argument 1 is a %s, not a file name", luaL_typename(lua, 1));
     if (top != 2)
         return luaL_error(lua, "love.image.newImageData: takes 2 numbers, width and height, not %d arguments", top);
     for (int index = 1; index <= 2; index++)
@@ -33,10 +71,7 @@ static int new_image_data(lua_State *lua) {
         return luaL_error(lua, "love.image.newImageData: size %sx%s is not two integers from 1 to %d",
                           format_number(width, width_text), format_number(height, height_text), IMAGE_DATA_MAX_SIDE);
     }
-    image_data_t *data = lua_newuserdata(lua, image_data_byte_count((int)width, (int)height));
-    image_data_init(data, (int)width, (int)height);
-    luaL_getmetatable(lua, METATABLE);
-    lua_setmetatable(lua, -2);
+    push_image_data(lua, (int)width, (int)height);
     return 1;
 }
 
@@ -105,7 +140,7 @@ const image_data_t *image_find_data(lua_State *lua, int index) {
     return luaL_testudata(lua, index, METATABLE);
 }
 
-void image_install(lua_State *lua) {
+void image_install(lua_State *lua, disk_t *disk) {
     luaL_newmetatable(lua, METATABLE);
     lua_createtable(lua, 0, 2);
     lua_pushcfunction(lua, set_pixel);
@@ -117,7 +152,8 @@ void image_install(lua_State *lua) {
 
     lua_getglobal(lua, "love");
     lua_createtable(lua, 0, 1);
-    lua_pushcfunction(lua, new_image_data);
+    lua_pushlightuserdata(lua, disk);
+    lua_pushcclosure(lua, new_image_data, 1);
     lua_setfield(lua, -2, "newImageData");
     lua_setfield(lua, -2, "image");
     lua_pop(lua, 1);

@@ -192,7 +192,7 @@ bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
     joystick_install(host->lua);
     filesystem_install(host->lua, disk);
     graphics_install(host->lua, host->canvases);
-    image_install(host->lua);
+    image_install(host->lua, disk);
     return run_file(host, "main.lua");
 }
 

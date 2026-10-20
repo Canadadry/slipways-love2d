@@ -3,10 +3,12 @@
 
 #include <lua.h>
 
+#include "disk.h"
 #include "image_data.h"
 
-/* Sets love.image, holding only newImageData, on the global `love` table. */
-void image_install(lua_State *lua);
+/* Sets love.image, holding only newImageData, on the global `love` table.
+ * The disk is not owned and must outlive the Lua state. */
+void image_install(lua_State *lua, disk_t *disk);
 
 /* The ImageData at stack `index`, owned by its userdata and valid while that
  * stays reachable from Lua; NULL when the value is anything else. */

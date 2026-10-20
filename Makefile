@@ -372,13 +372,13 @@ FAKE_LOVE_LUA_SRCS := tools/fake_love/fake_love.c tools/fake_love/host.c tools/f
 $(call objs,$(FAKE_LOVE_LUA_SRCS)): override CFLAGS += $(LUAJIT_CFLAGS)
 
 # What a Lua game runs on, without a command.
-FAKE_LOVE_HOST_SRCS := $(filter-out tools/fake_love/fake_love.c,$(FAKE_LOVE_LUA_SRCS)) tools/fake_love/pad.c tools/fake_love/disk.c tools/fake_love/canvas.c tools/fake_love/image_data.c tools/fake_love/image_rules.c tools/fake_love/point.c
+FAKE_LOVE_HOST_SRCS := $(filter-out tools/fake_love/fake_love.c,$(FAKE_LOVE_LUA_SRCS)) tools/fake_love/pad.c tools/fake_love/disk.c tools/fake_love/canvas.c tools/fake_love/image_data.c tools/fake_love/image_rules.c tools/fake_love/point.c tools/fake_love/png_file.c
 
 fake_love_objs := $(call objs,tools/fake_love/fake_love.c tools/fake_love/replay.c $(FAKE_LOVE_HOST_SRCS))
 $(TMP_DIR)/fake_love: $(fake_love_objs) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS) -lm
 
-love_capture_check_objs := $(call objs,tools/fake_love/love_capture_check.c tools/fake_love/png_file.c $(FAKE_LOVE_HOST_SRCS))
+love_capture_check_objs := $(call objs,tools/fake_love/love_capture_check.c $(FAKE_LOVE_HOST_SRCS))
 $(TMP_DIR)/love_capture_check: $(love_capture_check_objs) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS) -lm
 
@@ -388,7 +388,7 @@ fake-love: $(TMP_DIR)/fake_love ## builds tmp/fake_love, the headless LÖVE that
 
 FAKE_LOVE_HARNESS := tools/fake_love/harness/main.lua
 
-FAKE_LOVE_FIXTURES := $(wildcard tests/fixtures/fake_love/*.json tests/fixtures/fake_love/*.cfg tests/fixtures/fake_love/*.lua tests/fixtures/fake_love/*/*.lua tests/fixtures/fake_love/*/*.txt tests/fixtures/fake_love/*/*/*.lua tests/fixtures/fake_love/*/*/*.txt)
+FAKE_LOVE_FIXTURES := $(wildcard tests/fixtures/fake_love/*.json tests/fixtures/fake_love/*.cfg tests/fixtures/fake_love/*.lua tests/fixtures/fake_love/*/*.lua tests/fixtures/fake_love/*/*.txt tests/fixtures/fake_love/*/*/*.lua tests/fixtures/fake_love/*/*/*.txt tests/fixtures/fake_love/*/*.png tests/fixtures/fake_love/*/*/*.png)
 
 test_fake_love_objs := $(call objs,tests/test_fake_love.c tests/fake_love_cli.c)
 $(TMP_DIR)/test_fake_love: $(test_fake_love_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
@@ -427,7 +427,7 @@ $(TMP_DIR)/test_fake_love_image_draw: $(test_fake_love_image_draw_objs) $(TMP_DI
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(call objs,tests/test_fake_love_image.c): override CFLAGS += $(LUAJIT_CFLAGS)
-test_fake_love_image_objs := $(call objs,tests/test_fake_love_image.c tests/fake_love_cli.c tools/fake_love/image.c tools/fake_love/image_data.c)
+test_fake_love_image_objs := $(call objs,tests/test_fake_love_image.c tests/fake_love_cli.c tools/fake_love/image.c tools/fake_love/image_data.c tools/fake_love/filesystem.c tools/fake_love/disk.c tools/fake_love/png_file.c)
 $(TMP_DIR)/test_fake_love_image: $(test_fake_love_image_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS) -lm
 

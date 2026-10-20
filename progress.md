@@ -51,7 +51,7 @@
     - [x] Chunk 3 — captures, docs, timing
   - [ ] Step 3.12 — newImageData(file)
     - [x] Chunk 1 — PNG decoder and gate
-    - [ ] Chunk 2 — file form in the image binding
+    - [x] Chunk 2 — file form in the image binding
     - [ ] Chunk 3 — fixtures, capture, docs, timing
   - [ ] Step 3.13 — push/pop/translate
   - [ ] Step 3.14 — setDefaultFilter
