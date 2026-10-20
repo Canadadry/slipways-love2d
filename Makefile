@@ -337,6 +337,9 @@ $(TMP_DIR)/test_fake_love_replay: $(call objs,tests/test_fake_love_replay.c tool
 $(TMP_DIR)/test_fake_love_pad: $(call objs,tests/test_fake_love_pad.c tools/fake_love/pad.c) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
+$(TMP_DIR)/test_fake_love_disk: $(call objs,tests/test_fake_love_disk.c tools/fake_love/disk.c) $(wildcard tests/fixtures/fake_love/disk_tree/* tests/fixtures/fake_love/disk_tree/*/*) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
 # Recursive (`=`): only a target that builds the fake runs pkg-config.
 luajit_flags = $(if $(filter LUAJIT_MISSING,$(1)),$(error pkg-config luajit failed: run tools/love_install.sh),$(1))
 LUAJIT_CFLAGS = $(call luajit_flags,$(shell pkg-config --cflags luajit 2>/dev/null || echo LUAJIT_MISSING))
@@ -870,6 +873,7 @@ UNIT_TESTS := \
     test_demo_overlay \
     test_fake_love_replay \
     test_fake_love_pad \
+    test_fake_love_disk \
     test_fake_love \
     test_fake_love_failures \
     test_fake_love_joystick
