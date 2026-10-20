@@ -54,7 +54,7 @@
     - [x] Chunk 2 — file form in the image binding
     - [x] Chunk 3 — fixtures, capture, docs, timing
     - [x] Rework — bring make test back under the 3 % cap
-  - [ ] Step 3.13 — push/pop/translate
+  - [x] Step 3.13 — push/pop/translate
     - [x] Chunk 1 — transform stack, translated point rule
     - [x] Chunk 2 — push, pop, translate bindings
     - [x] Chunk 3 — capture, docs, timing

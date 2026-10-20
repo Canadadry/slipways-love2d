@@ -330,3 +330,17 @@ None.
   first, capture checks without a shell. After: 5.04 s against 7.09 s
   (reference) and 7.40 s (before); paired −27.97 % / −31.37 %.
 
+### Step 3.13
+
+- `transform.c`: offset plus 128 saved (LÖVE's limit and messages).
+  `push()`, `pop()`, `translate(dx, dy)` with integer offsets below 2^20;
+  `push("all")`, fractions, strings, NaN refused. Offsets compose in single
+  precision as real LÖVE (point at (float)x + (float)dx; span far edge
+  ((float)x + (float)w) + (float)dx), matching 8 measured ties. Offset reset
+  before each draw step, stack kept across frames.
+- Capture `translate_stack` matches; design.md "Transforms".
+- Tests: `test_fake_love_transform` (4 ms), `transform_log` inside
+  `test_fake_love_set_color` (22 ms).
+- `make test`: before 0b5a98a 5.02 s, reference 7.08 s, current 5.06 s;
+  paired +0.33 % / −28.87 %, 11 rounds, 4 cores.
+
