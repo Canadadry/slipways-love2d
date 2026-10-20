@@ -42,6 +42,9 @@
     - [x] Chunk 2 — setColor binding
     - [x] Chunk 3 — captures, docs, timing
   - [ ] Step 3.10 — newImageData/setPixel/getPixel
+    - [x] Chunk 1 — image data module
+    - [ ] Chunk 2 — love.image and ImageData methods
+    - [ ] Chunk 3 — captures, docs, timing
   - [ ] Step 3.11 — newImage, newQuad and draw
   - [ ] Step 3.12 — newImageData(file)
   - [ ] Step 3.13 — push/pop/translate
