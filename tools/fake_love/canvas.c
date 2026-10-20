@@ -87,6 +87,41 @@ void canvas_fill_range(canvas_store_t *store, int left, int top, int right, int 
     }
 }
 
+static long long clamp_long(long long value, long long low, long long high) {
+    return value < low ? low : value > high ? high : value;
+}
+
+void canvas_draw_texels(canvas_store_t *store, const canvas_source_t *source, const canvas_area_t *area, int x, int y) {
+    assert(area->column >= 0 && area->width > 0 && area->column + area->width <= source->width &&
+           "canvas_draw_texels: columns outside the source or empty");
+    assert(area->row >= 0 && area->height > 0 && area->row + area->height <= source->height &&
+           "canvas_draw_texels: rows outside the source or empty");
+    if (store->target == CANVAS_NONE) {
+        return;
+    }
+    int first_i = (int)clamp_long(-(long long)x, 0, area->width);
+    int end_i = (int)clamp_long((long long)CANVAS_WIDTH - x, first_i, area->width);
+    int first_j = (int)clamp_long(-(long long)y, 0, area->height);
+    int end_j = (int)clamp_long((long long)CANVAS_HEIGHT - y, first_j, area->height);
+    if (first_i == end_i || first_j == end_j) {
+        return;
+    }
+    for (int j = first_j; j < end_j; j++) {
+        const unsigned char *texel = source->pixels + 4 * ((area->row + j) * source->width + area->column + first_i);
+        unsigned char *pixel = store->pixels[store->target] + 4 * ((y + j) * CANVAS_WIDTH + x + first_i);
+        for (int i = first_i; i < end_i; i++, texel += 4, pixel += 4) {
+            assert((texel[3] == 0x00 || texel[3] == 0xFF) && "canvas_draw_texels: newImage refuses translucent texels, blending is not modelled");
+            if (texel[3] == 0x00) {
+                continue;
+            }
+            for (int channel = 0; channel < 3; channel++) {
+                pixel[channel] = canvas_tint_component(store->color[channel], texel[channel]);
+            }
+            pixel[3] = 0xFF;
+        }
+    }
+}
+
 const unsigned char *canvas_read_pixels(const canvas_store_t *store, int canvas) {
     if (canvas < 0 || canvas >= store->count) {
         return NULL;
@@ -105,4 +140,8 @@ unsigned char canvas_convert_draw_component(double component) {
     float clamped = fminf(fmaxf((float)component, 0.0f), 1.0f);
     float product = clamped * 255.0f;
     return (unsigned char)product;
+}
+
+unsigned char canvas_tint_component(unsigned char color, unsigned char texel) {
+    return (unsigned char)((2 * color * texel + 255) / 510);
 }

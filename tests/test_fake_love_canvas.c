@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -18,6 +19,7 @@ static void assert_filled(const canvas_store_t *store, int canvas, const unsigne
 }
 
 static const unsigned char TRANSPARENT_BLACK[4] = {0, 0, 0, 0};
+static const unsigned char CLEAR_TEAL[4] = {0x33, 0x66, 0x99, 0x00};
 
 static void test_a_new_canvas_is_transparent_black_and_counts_from_zero(void) {
     canvas_store_t *store = canvas_create_store();
@@ -140,7 +142,6 @@ static void test_a_plot_reaches_every_corner(void) {
 }
 
 static void test_a_plot_over_a_transparent_colour_replaces_all_four_bytes(void) {
-    static const unsigned char CLEAR_TEAL[4] = {0x33, 0x66, 0x99, 0x00};
     canvas_store_t *store = canvas_create_store();
     canvas_select(store, canvas_create(store));
     canvas_clear(store, CLEAR_TEAL);
@@ -189,7 +190,6 @@ static void test_a_range_fill_reaches_the_whole_canvas_and_a_single_pixel(void) 
 }
 
 static void test_a_range_fill_over_a_transparent_colour_replaces_all_four_bytes(void) {
-    static const unsigned char CLEAR_TEAL[4] = {0x33, 0x66, 0x99, 0x00};
     canvas_store_t *store = canvas_create_store();
     canvas_select(store, canvas_create(store));
     canvas_clear(store, CLEAR_TEAL);
@@ -326,6 +326,131 @@ static void test_a_value_outside_zero_to_one_is_clamped(void) {
     assert_byte(-1e300, 0);
 }
 
+static void assert_tint(int color, int texel, int expected, const char *likely_cause) {
+    int got = canvas_tint_component((unsigned char)color, (unsigned char)texel);
+    if (got != expected) {
+        fprintf(stderr, "tint %d x %d: expected %d, got %d (%s)\n", color, texel, expected, got, likely_cause);
+    }
+    assert(got == expected);
+}
+
+static void test_a_tint_rounds_the_exact_product_over_255_as_measured(void) {
+    assert_tint(1, 128, 1, "the tint probably floors the product");
+    assert_tint(152, 229, 137, "the tint probably uses the blender's 8-bit multiply");
+    assert_tint(253, 191, 190, "the tint probably uses the blender's 8-bit multiply");
+    assert_tint(127, 37, 18, "measured in LÖVE 11.5");
+    assert_tint(7, 233, 6, "measured in LÖVE 11.5");
+    for (int byte = 0; byte < 256; byte++) {
+        assert_tint(255, byte, byte, "white must leave the texel");
+        assert_tint(byte, 255, byte, "a white texel must give the colour");
+        assert_tint(0, byte, 0, "black must give black");
+    }
+    for (int color = 0; color < 256; color++) {
+        for (int texel = 0; texel < 256; texel++) {
+            assert_tint(color, texel, (int)floor(color * texel / 255.0 + 0.5), "exact rounding of c t / 255");
+        }
+    }
+}
+
+/* A 3x2 source: row 0 is opaque, transparent, opaque; row 1 transparent,
+ * opaque, transparent, with RGB bytes the canvas never holds. */
+static const unsigned char CHECKER[3 * 2 * 4] = {
+    0x25, 0x69, 0x01, 0xFF, 0xAA, 0xBB, 0xCC, 0x00, 0xFF, 0xF1, 0xE8, 0xFF,
+    0x11, 0x22, 0x33, 0x00, 0x1D, 0x2B, 0x53, 0xFF, 0x44, 0x55, 0x66, 0x00,
+};
+static const canvas_source_t CHECKER_SOURCE = {CHECKER, 3, 2};
+static const canvas_area_t WHOLE_CHECKER = {0, 0, 3, 2};
+
+/* Each opaque texel of `area` of CHECKER at its pixel from (x, y); every
+ * other pixel is `background`. */
+static void assert_drawn(const canvas_store_t *store, const canvas_area_t *area, int x, int y,
+                         const unsigned char background[4]) {
+    for (int row = 0; row < CANVAS_HEIGHT; row++) {
+        for (int column = 0; column < CANVAS_WIDTH; column++) {
+            int i = column - x;
+            int j = row - y;
+            const unsigned char *expected = background;
+            if (i >= 0 && i < area->width && j >= 0 && j < area->height) {
+                const unsigned char *texel = CHECKER + 4 * ((area->row + j) * 3 + area->column + i);
+                if (texel[3] == 0xFF) {
+                    expected = texel;
+                }
+            }
+            assert_pixel(store, 0, column, row, expected);
+        }
+    }
+}
+
+static void test_a_draw_writes_opaque_texels_and_leaves_transparent_ones(void) {
+    canvas_store_t *store = canvas_create_store();
+    canvas_select(store, canvas_create(store));
+    canvas_clear(store, CLEAR_TEAL);
+    canvas_draw_texels(store, &CHECKER_SOURCE, &WHOLE_CHECKER, 50, 60);
+    assert_drawn(store, &WHOLE_CHECKER, 50, 60, CLEAR_TEAL);
+    assert_pixel(store, 0, 51, 60, CLEAR_TEAL);
+    assert_pixel(store, 0, 50, 60, CHECKER);
+    canvas_free_store(store);
+}
+
+static void test_a_draw_tints_opaque_texels_with_the_current_colour(void) {
+    static const unsigned char TINT[4] = {0x7F, 0xFF, 0x3F, 0xFF};
+    canvas_store_t *store = canvas_create_store();
+    canvas_select(store, canvas_create(store));
+    canvas_clear(store, CLEAR_TEAL);
+    canvas_set_color(store, TINT);
+    canvas_draw_texels(store, &CHECKER_SOURCE, &WHOLE_CHECKER, 0, 0);
+    static const unsigned char first[4] = {0x12, 0x69, 0x00, 0xFF};
+    static const unsigned char navy[4] = {0x0E, 0x2B, 0x15, 0xFF};
+    assert_pixel(store, 0, 0, 0, first);
+    assert_pixel(store, 0, 1, 0, CLEAR_TEAL);
+    assert_pixel(store, 0, 1, 1, navy);
+    assert_pixel(store, 0, 0, 1, CLEAR_TEAL);
+    canvas_free_store(store);
+}
+
+static void test_a_draw_reads_its_area_inside_a_larger_source(void) {
+    static const canvas_area_t lower_right = {1, 1, 2, 1};
+    static const canvas_area_t upper_left = {0, 0, 1, 1};
+    canvas_store_t *store = canvas_create_store();
+    canvas_select(store, canvas_create(store));
+    canvas_clear(store, CLEAR_TEAL);
+    canvas_draw_texels(store, &CHECKER_SOURCE, &lower_right, 10, 20);
+    assert_drawn(store, &lower_right, 10, 20, CLEAR_TEAL);
+    assert_pixel(store, 0, 10, 20, CHECKER + 4 * 4);
+    canvas_clear(store, CLEAR_TEAL);
+    canvas_draw_texels(store, &CHECKER_SOURCE, &upper_left, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1);
+    assert_drawn(store, &upper_left, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1, CLEAR_TEAL);
+    canvas_free_store(store);
+}
+
+static void test_a_draw_clips_at_every_canvas_edge(void) {
+    static const int places[][2] = {
+        {-2, -1}, {CANVAS_WIDTH - 2, CANVAS_HEIGHT - 2}, {-3, 0}, {CANVAS_WIDTH, 0}, {0, CANVAS_HEIGHT},
+        {(1 << 20) - 1, 0}, {-((1 << 20) - 1), 0}, {0, (1 << 20) - 1}, {0, -((1 << 20) - 1)},
+    };
+    canvas_store_t *store = canvas_create_store();
+    canvas_select(store, canvas_create(store));
+    for (int k = 0; k < (int)(sizeof places / sizeof places[0]); k++) {
+        canvas_clear(store, CLEAR_TEAL);
+        canvas_draw_texels(store, &CHECKER_SOURCE, &WHOLE_CHECKER, places[k][0], places[k][1]);
+        assert_drawn(store, &WHOLE_CHECKER, places[k][0], places[k][1], CLEAR_TEAL);
+    }
+    canvas_clear(store, CLEAR_TEAL);
+    canvas_draw_texels(store, &CHECKER_SOURCE, &WHOLE_CHECKER, -1, -1);
+    assert_pixel(store, 0, 0, 0, CHECKER + 4 * 4);
+    canvas_draw_texels(store, &CHECKER_SOURCE, &WHOLE_CHECKER, CANVAS_WIDTH - 2, CANVAS_HEIGHT - 1);
+    assert_pixel(store, 0, CANVAS_WIDTH - 2, CANVAS_HEIGHT - 1, CHECKER);
+    canvas_free_store(store);
+}
+
+static void test_a_draw_on_the_screen_changes_no_canvas(void) {
+    canvas_store_t *store = canvas_create_store();
+    canvas_create(store);
+    canvas_draw_texels(store, &CHECKER_SOURCE, &WHOLE_CHECKER, 0, 0);
+    assert_filled(store, 0, TRANSPARENT_BLACK);
+    canvas_free_store(store);
+}
+
 int main(void) {
     test_a_new_canvas_is_transparent_black_and_counts_from_zero();
     test_handles_follow_creation_order_and_the_seventeenth_is_refused();
@@ -351,6 +476,12 @@ int main(void) {
     test_a_drawing_component_is_truncated_not_rounded();
     test_a_drawing_component_outside_zero_to_one_is_clamped();
     test_a_drawing_component_is_multiplied_in_single_precision();
+    test_a_tint_rounds_the_exact_product_over_255_as_measured();
+    test_a_draw_writes_opaque_texels_and_leaves_transparent_ones();
+    test_a_draw_tints_opaque_texels_with_the_current_colour();
+    test_a_draw_reads_its_area_inside_a_larger_source();
+    test_a_draw_clips_at_every_canvas_edge();
+    test_a_draw_on_the_screen_changes_no_canvas();
     puts("test_fake_love_canvas: ok");
     return 0;
 }
