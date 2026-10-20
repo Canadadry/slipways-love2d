@@ -1152,6 +1152,14 @@ asset-export: $(TMP_DIR)/asset_export ## writes game/sprites.png and game/font.p
 
 .PHONY: asset-export
 
+$(TMP_DIR)/luajit_version: tools/love_capture/luajit_version.c | $(TMP_DIR)
+	$(CC) $(CFLAGS) $$(pkg-config --cflags luajit) -o $@ $< $$(pkg-config --libs luajit)
+
+love-check: $(TMP_DIR)/luajit_version ## builds a probe against the system LuaJIT, fails unless header and library are both 2.1
+	./$(TMP_DIR)/luajit_version
+
+.PHONY: love-check
+
 # The dependency fragments written by the compiler, one per object. The
 # wildcard tolerates their absence: on a fresh clone, everything is compiled.
 -include $(wildcard $(OBJ_DIR)/src/*/*.d $(OBJ_DIR)/tests/*.d $(OBJ_DIR)/tmp/bindings/*.d $(OBJ_DIR)/tmp/demo/*.d)
