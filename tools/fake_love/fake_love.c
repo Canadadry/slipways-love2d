@@ -1,13 +1,16 @@
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <luajit.h>
 
+#include "disk.h"
 #include "host.h"
 #include "replay.h"
 
 #define EXPECTED_VERSION_PREFIX "LuaJIT 2.1"
+#define BINDINGS_MAX_BYTES 65536
 
 typedef struct {
     const char *game_dir;
@@ -65,8 +68,8 @@ static bool write_state(host_t *host, const char *path) {
     return written;
 }
 
-static bool run_game(host_t *host, const arguments_t *arguments, const replay_t *replay) {
-    bool ok = host_open(host, arguments->game_dir) && host_load(host);
+static bool run_game(host_t *host, const arguments_t *arguments, const replay_t *replay, disk_t *disk) {
+    bool ok = host_open(host, arguments->game_dir, disk) && host_load(host);
     for (size_t frame = 0; ok && frame < replay_frame_count(replay); frame++)
         ok = host_frame(host, frame, replay_frame_held(replay, frame));
     if (!ok)
@@ -74,20 +77,76 @@ static bool run_game(host_t *host, const arguments_t *arguments, const replay_t 
     return ok && (arguments->state_path == NULL || write_state(host, arguments->state_path));
 }
 
-static bool run(host_t *host, const arguments_t *arguments) {
+/* The fixture's bytes in a buffer the caller frees; NULL after printing the
+ * refusal. */
+static unsigned char *read_bindings(const char *replay_path, const char *name, size_t *length) {
+    const char *slash = strrchr(replay_path, '/');
+    int directory_length = slash != NULL ? (int)(slash - replay_path) : 1;
+    const char *directory = slash != NULL ? replay_path : ".";
+    char path[4096];
+    snprintf(path, sizeof path, "%.*s/%s", directory_length, directory, name);
+    FILE *file = fopen(path, "rb");
+    unsigned char *bytes = malloc(BINDINGS_MAX_BYTES + 1);
+    *length = file != NULL && bytes != NULL ? fread(bytes, 1, BINDINGS_MAX_BYTES + 1, file) : 0;
+    bool readable = file != NULL && bytes != NULL && !ferror(file);
+    if (file != NULL)
+        fclose(file);
+    if (!readable || *length > BINDINGS_MAX_BYTES) {
+        if (readable)
+            fprintf(stderr, "fake_love: %s: \"bindings\": %s is over %d bytes\n", replay_path, path, BINDINGS_MAX_BYTES);
+        else
+            fprintf(stderr, "fake_love: %s: \"bindings\": %s cannot be read\n", replay_path, path);
+        free(bytes);
+        return NULL;
+    }
+    return bytes;
+}
+
+/* NULL after printing the refusal; else a disk the caller frees. */
+static disk_t *build_disk(const arguments_t *arguments, const replay_t *replay) {
+    disk_t *disk = disk_create(arguments->game_dir);
+    size_t count;
+    const unsigned char *save = replay_initial_save(replay, &count);
+    if (save != NULL)
+        disk_put(disk, "save.bin", save, count);
+    const char *bindings = replay_bindings(replay);
+    if (bindings == NULL)
+        return disk;
+    size_t length;
+    unsigned char *bytes = read_bindings(arguments->replay_path, bindings, &length);
+    if (bytes == NULL) {
+        disk_free(disk);
+        return NULL;
+    }
+    disk_put(disk, "bindings.cfg", bytes, length);
+    free(bytes);
+    return disk;
+}
+
+static bool run(const arguments_t *arguments) {
     char error[512];
     replay_t *replay = replay_read(arguments->replay_path, error, sizeof error);
     if (replay == NULL) {
         fprintf(stderr, "fake_love: %s\n", error);
         return false;
     }
-    bool ok = create_empty_file(arguments->capture_path);
-    if (ok && !run_game(host, arguments, replay)) {
+    disk_t *disk = build_disk(arguments, replay);
+    if (disk == NULL) {
+        replay_free(replay);
+        return false;
+    }
+    host_t *host = host_new();
+    if (host == NULL)
+        fprintf(stderr, "fake_love: out of memory\n");
+    bool ok = host != NULL && check_version(host) && create_empty_file(arguments->capture_path);
+    if (ok && !run_game(host, arguments, replay, disk)) {
         remove(arguments->capture_path);
         if (arguments->state_path != NULL)
             remove(arguments->state_path);
         ok = false;
     }
+    host_close(host);
+    disk_free(disk);
     replay_free(replay);
     return ok;
 }
@@ -98,12 +157,5 @@ int main(int argc, char **argv) {
         fprintf(stderr, "usage: fake_love <game dir> <events.json> <capture.bin> [<state.txt>]\n");
         return 2;
     }
-    host_t *host = host_new();
-    if (host == NULL) {
-        fprintf(stderr, "fake_love: out of memory\n");
-        return 1;
-    }
-    bool ok = check_version(host) && run(host, &arguments);
-    host_close(host);
-    return ok ? 0 : 1;
+    return run(&arguments) ? 0 : 1;
 }

@@ -10,6 +10,7 @@
 #include <lua.h>
 #include <lualib.h>
 
+#include "filesystem.h"
 #include "joystick.h"
 #include "pad.h"
 
@@ -168,8 +169,9 @@ static bool run_conf(host_t *host) {
     return call(host, 1, 0, "love.conf", NO_FRAME);
 }
 
-bool host_open(host_t *host, const char *game_dir) {
+bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
     assert(host->game_dir == NULL && "host_open runs once per host");
+    assert(disk != NULL);
     host->game_dir = malloc(strlen(game_dir) + 1);
     if (host->game_dir == NULL) {
         set_error(host, "out of memory");
@@ -182,6 +184,7 @@ bool host_open(host_t *host, const char *game_dir) {
     if (!run_conf(host))
         return false;
     joystick_install(host->lua);
+    filesystem_install(host->lua, disk);
     return run_file(host, "main.lua");
 }
 

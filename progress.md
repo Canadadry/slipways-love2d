@@ -20,7 +20,7 @@
   - [ ] Step 2.5 — fake disk and arguments
     - [x] Chunk 1 — replay members
     - [x] Chunk 2 — fake disk
-    - [ ] Chunk 3 — love.filesystem in the run
+    - [x] Chunk 3 — love.filesystem in the run
     - [ ] Chunk 4 — arguments, docs, timing
 - [ ] Phase 3 — Drawing, one function at a time
   - [ ] Step 3.6 — newCanvas/setCanvas/clear and the comparison harness
