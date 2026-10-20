@@ -242,3 +242,17 @@ None.
 - `make test`: before bee1cb3 7.53 s, reference 7.57 s, current 7.59 s;
   paired +1.30 % / +1.67 %, 11 rounds, 4 cores; new checks 4 ms each.
 
+### Step 3.7
+
+- `point.c` reproduces llvmpipe's single-precision pipeline (product and sum
+  rounded apart, fused viewport, 1/256 snap half to even); any other fusion
+  fails at the c + 1/512 ties measured in real LÖVE. `points` takes a list or
+  one flat table, checks all before drawing, refuses pairs, colours, strings,
+  NaN, infinities, |v| ≥ 2^20 and odd counts. Colour is opaque white until
+  step 9.
+- Six captures `points_*` match; design.md "Points": to light (x, y), call
+  `points(x + 0.5, y + 0.5)`; integers light (x − 1, y − 1).
+- Tests: `test_fake_love_point` (1 ms), `test_fake_love_points` (26 ms).
+- `make test`: before ab98ab6 7.60 s, reference 7.60 s, current 7.72 s;
+  paired +1.22 % / +1.92 %, 11 rounds, 4 cores.
+

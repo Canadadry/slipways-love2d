@@ -29,7 +29,7 @@
     - [x] Chunk 3 — love.graphics in the host
     - [x] Chunk 4 — the comparison
     - [x] Chunk 5 — captures, png_check retired, proof
-  - [ ] Step 3.7 — points
+  - [x] Step 3.7 — points
     - [x] Chunk 1 — point rule
     - [x] Chunk 2 — points in the fake
     - [x] Chunk 3 — captures, docs, proof
