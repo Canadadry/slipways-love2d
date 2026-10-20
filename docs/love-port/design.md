@@ -329,14 +329,14 @@ RGB or RGBA (`make asset-export` writes RGB); make no Image from an
 ImageData holding a translucent alpha.** Capture: `imagedata_files`.
 
 **Images.** `love.graphics` holds exactly `clear`, `draw`, `newCanvas`,
-`newImage`, `newQuad`, `points`, `rectangle`, `setCanvas` and `setColor`
-from `main.lua` on. `newImage(imagedata)` takes exactly one ImageData and
+`newImage`, `newQuad`, `points`, `pop`, `push`, `rectangle`, `setCanvas`,
+`setColor` and `translate` from `main.lua` on. `newImage(imagedata)` takes exactly one ImageData and
 copies its size and bytes at the call: a later `setPixel` on the ImageData
 leaves the Image as it was, as in LÖVE. `newQuad(x, y, w, h, sw, sh)` takes
 six integers: reference sides 1 to 1024, origin from 0, size from 1, the
 quad inside the reference size. `draw(image, quad, x, y)` is the only draw
 form: exactly an Image, a Quad of the image's own size, and two integers of
-magnitude below 2^20. Texel (`qx + i`, `qy + j`) goes to pixel
+magnitude below 2^20, also once translated (see Transforms). Texel (`qx + i`, `qy + j`) goes to pixel
 (`x + i`, `y + j`); pixels off the canvas are clipped silently, so a draw
 far off draws nothing. An alpha-`00` texel leaves the pixel's four bytes,
 transparent pixels included; an alpha-`FF` texel writes, per channel,
@@ -377,6 +377,49 @@ integer positions, flooring fixed-point coordinates first; build each
 quad with integers, inside the image, on the image's own size.**
 Captures: `draw_quads`, `draw_tint`.
 
+**Transforms.** `push()`, `pop()` and `translate(dx, dy)` are the only
+forms. The fake keeps a current offset, integer on each axis, and a stack
+of up to 128 saved offsets. `translate` adds to the current offset;
+`push` saves a copy of it; `pop` makes the last saved one current again.
+Neither touches the colour or the selected canvas, as LÖVE's default
+`push` saves the transform only. `points`, `rectangle` and `draw` apply
+the offset as real LÖVE 11.5 does on Mesa llvmpipe, each sum a separate
+single-precision rounding before the rules above: a point coordinate
+becomes `(float) x + (float) dx`; a rectangle's near edge
+`(float) x + (float) dx` and its far edge
+`((float) x + (float) w) + (float) dx`, never `(x + dx) + w`; a draw
+position `x + dx`, an exact integer sum. A double sum lights another
+pixel near the 1/512 ties (60 of 60 measured point cases and 24 of 24
+rectangle cases follow the float rule). With offset 0 nothing changes. Each
+of `dx` and `dy` is an integer of magnitude below 2^20, and the current
+offset stays below 2^20 on each axis; a translated point coordinate, a
+rectangle's translated near edge and a translated draw position must stay
+below 2^20 too, refused with `out of range after translate`. The 129th
+nested `push` fails with LÖVE's `Maximum stack depth reached (more pushes
+than pops?)`, a `pop` with nothing pushed with `Minimum stack depth reached
+(more pops than pushes?)`. As LÖVE's `love.run` calls `origin()`, the
+current offset goes back to 0 right before each frame's draw step, with or
+without `love.draw`; the stack is kept from frame to frame and nothing is
+checked at a frame's end, so a leaked `push` fails at the 129th nesting, as
+in LÖVE. The offset set in `love.load` holds in the first `love.update`,
+the one left by `love.draw` in the next `love.update`. The offset belongs
+to the graphics state, not to a canvas: a translation made with the screen
+selected holds after `setCanvas(canvas)`. `clear` ignores it and fills the
+whole canvas. Every refusal is an error starting `love.graphics.push: `,
+`love.graphics.pop: ` or `love.graphics.translate: ` and changes nothing:
+an argument to `push` or `pop` (`push("all")`, `push("transform")`, a
+trailing nil), another argument count to `translate`, a non-number (no
+string coercion), a non-finite or fractional value, a value of 2^20 or
+more, an offset that would reach 2^20. Real LÖVE accepts most of these:
+a fractional offset puts integer rectangle edges on pixel-centre ties and
+blends image texels into colours outside the palette (`translate(1/512)`
+already changes 37 pixels of a draw), and `push("all")`, coercion and
+NaN are not modelled. **The rule for the game: port `camera(x, y)` as
+`push()`, `translate(-x, -y)`, the drawing, `pop()`, with the integer
+camera; keep `points(x + 0.5, y + 0.5)`, integer rectangles and integer
+draws under it; never translate by a fraction; pair every `push` with a
+`pop` in the same frame.** Capture: `translate_stack`.
+
 ### The LÖVE functions the game may use
 
 The fake implements exactly this list; extending it is a decision recorded
@@ -390,7 +433,7 @@ here, with its real-LÖVE capture.
   `rectangle("fill", x, y, w, h)`, `newImage(imagedata)`,
   `newQuad(x, y, w, h, sw, sh)`, `draw(image, quad, x, y)`,
   `setDefaultFilter("nearest", "nearest")`,
-  `push`, `pop`, `translate`.
+  `push()`, `pop()`, `translate(dx, dy)` with integer offsets.
 - Images: `love.image.newImageData(w, h)`, `love.image.newImageData(name)`,
   `ImageData:setPixel(x, y, r, g, b[, a])`, `ImageData:getPixel(x, y)`.
 - Pad: `love.joystick.getJoysticks`, `Joystick:isGamepadDown`, the callbacks
@@ -431,7 +474,10 @@ the capture directory's `files/` directory, reached through a relative
 `files` symlink in each harness, so both resolve it to the same bytes.
 Fixtures are committed bytes, never regenerated by `make`, and are neither
 programs nor checks: only the top-level `.lua` and `.png` files are. A
-scratch `LOVE_CAPTURE_DIR` must copy `files/` too. `make love-check` only
+scratch `LOVE_CAPTURE_DIR` must copy `files/` too. A capture program never
+changes the transform at its top level: the real harness loads it inside
+`love.draw`, after LÖVE's `origin()`, the fake one in `love.load`, before
+the fake's reset, so such a translation would hold in real LÖVE only. `make love-check` only
 checks the installed LuaJIT.
 
 ## How the Lua game draws

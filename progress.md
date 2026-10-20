@@ -57,7 +57,7 @@
   - [ ] Step 3.13 — push/pop/translate
     - [x] Chunk 1 — transform stack, translated point rule
     - [x] Chunk 2 — push, pop, translate bindings
-    - [ ] Chunk 3 — capture, docs, timing
+    - [x] Chunk 3 — capture, docs, timing
   - [ ] Step 3.14 — setDefaultFilter
   - [ ] Step 3.15 — combined capture program
 - [ ] Phase 4 — Capture and errors
