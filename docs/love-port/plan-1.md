@@ -38,6 +38,9 @@ disk, capture format, fatal errors) is in `docs/love-port/design.md`; read it fi
   point lands, how a rectangle rounds, off-canvas and transparent behaviour)
   into `docs/love-port/design.md`: plan 1 is deleted, design.md is what
   plans 2–3 read.
+- Nothing under `tools/fake_love/` or `tools/love_capture/`, nor any test or
+  binary driving the fake, includes a header or links an object from `src/`:
+  plan 4 deletes `src/` and keeps the fake. Checked in `make test` from step 6.
 - The fake does not reuse the C game's drawing code: it only draws pixels,
   filled rectangles and images.
 - At each phase end, every CI job is green on the last pushed commit, or the
@@ -90,7 +93,8 @@ implementation, the comparison in `make test`, and the settled convention in
    pixel). The harness replaces `png_check` and the PNG half of
    `make love-check`. Also verified by one PNG pixel deliberately changed
    turning `make test` red with the program and pixel named, then reverted,
-   and by the CI love-capture job staying green without `png_check`.
+   and by the CI love-capture job staying green without `png_check`. Also
+   adds the `make test` check that the fake uses nothing from `src/`.
 7. `points`.
 8. `rectangle("fill")`.
 9. `setColor`, shown through `points` and `rectangle`.
@@ -200,4 +204,22 @@ None.
   callback is only detected when called.
 - `make test`: before 05ee35b 7.77 s, reference 2e7215c 7.67 s, current
   7.70 s; paired −0.92 % / +0.39 %, 11 rounds, 4 cores.
+
+### Step 2.5
+
+- Reader: `initial_save` (hex), `bindings` (fixture name, ≤ 64 KiB),
+  `attract_after` (1..INT_MAX); `start` and duplicates refused. `disk.c`:
+  in-memory files over a read-only view of the game directory, never writing
+  the real disk. `filesystem.c`: `love.filesystem.read`/`write`/`getInfo` with
+  LÖVE 11.5 returns, nil in conf.lua. `love.load` gets
+  `{"--attract-after", "N"}` or `{}`; global `arg` stays nil. design.md has
+  "Fake disk and arguments".
+- Tests: `test_fake_love_disk` (1 ms), `test_fake_love_files` (46 ms; disk
+  echo game, `pad_unbound_enter_aim.json`, `attract.json`).
+- `make test`: before d358c85 7.66 s, reference 7.64 s, current 7.65 s;
+  paired −0.17 % / +0.06 %, 11 rounds, 4 cores.
+- Phase 2 end: warn-review flagged repeated file/path helpers, `replay.c`
+  (806 lines) copying the C reader's rules, and copied test helpers.
+  plan-review judged them code cleanup; it added the "nothing from `src/`"
+  rule and its check to step 6.
 

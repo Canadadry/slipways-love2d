@@ -8,7 +8,7 @@
     - [x] Drift checks in the love-capture job
     - [x] Deliberate drift turns the job red
     - [x] Revert turns it green
-- [ ] Phase 2 — The fake's skeleton
+- [x] Phase 2 — The fake's skeleton
   - [x] Step 2.3 — fake_love runs the loop
     - [x] Chunk 1 — replay reader
     - [x] Chunk 2 — binary, happy path
@@ -17,7 +17,7 @@
     - [x] Chunk 1 — pad table and edges
     - [x] Chunk 2 — reader pad checks
     - [x] Chunk 3 — joystick binding, host, logging game
-  - [ ] Step 2.5 — fake disk and arguments
+  - [x] Step 2.5 — fake disk and arguments
     - [x] Chunk 1 — replay members
     - [x] Chunk 2 — fake disk
     - [x] Chunk 3 — love.filesystem in the run
