@@ -33,7 +33,7 @@
     - [x] Chunk 1 — point rule
     - [x] Chunk 2 — points in the fake
     - [x] Chunk 3 — captures, docs, proof
-  - [ ] Step 3.8 — rectangle("fill")
+  - [x] Step 3.8 — rectangle("fill")
     - [x] Chunk 1 — span rule
     - [x] Chunk 2 — rectangle in the fake
     - [x] Chunk 3 — captures, docs, proof

@@ -256,3 +256,18 @@ None.
 - `make test`: before ab98ab6 7.60 s, reference 7.60 s, current 7.72 s;
   paired +1.22 % / +1.92 %, 11 rounds, 4 cores.
 
+### Step 3.8
+
+- `point_find_span` (shared snap): far edge added in float, pixel i filled
+  when its centre is in [lo, hi), floor division, clipped.
+  `rectangle("fill", x, y, w, h)` only; refuses other modes, a sixth
+  argument, non-numbers, NaN, infinity, |v| ≥ 2^20. guideline: keep the
+  2^20 bound on each argument; the off-canvas capture's widths shrink to fit.
+- Six captures `rectangle_*` match (459/1728/7023/5327/636/3366 pixels);
+  design.md "Rectangles": pass integers; `rectfill(x0,y0,x1,y1)` is
+  `rectangle("fill", min, min, |dx|+1, |dy|+1)`.
+- Tests: `test_fake_love_rectangle` (~25 ms), span cases in
+  `test_fake_love_point`.
+- `make test`: before 9c0a220 7.89 s, reference 7.81 s, current 7.89 s;
+  paired −0.01 % / +1.03 %, 11 rounds, 4 cores.
+
