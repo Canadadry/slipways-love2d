@@ -19,7 +19,8 @@ static void test_rectangle_misuse_is_refused_with_a_message_and_valid_calls_succ
                                    CAPTURE, STATE, STDERR_LOG);
     assert(status == 0 && "the rectangle log game must run");
     fake_love_cli_assert_text(
-        STATE, "graphics clear draw newCanvas newImage newQuad points rectangle setCanvas setColor\n"
+        STATE, "graphics clear draw newCanvas newImage newQuad points pop push rectangle setCanvas setColor "
+               "translate\n"
                "line: love.graphics.rectangle: mode 'line' is not supported, only 'fill'\n"
                "full: love.graphics.rectangle: mode 'full' is not supported, only 'fill'\n"
                "number mode: love.graphics.rectangle: argument 1 is a number, not a string\n"

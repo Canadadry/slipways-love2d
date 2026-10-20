@@ -1,6 +1,7 @@
 #include "graphics.h"
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <lauxlib.h>
@@ -8,6 +9,7 @@
 #include "image.h"
 #include "image_rules.h"
 #include "point.h"
+#include "transform.h"
 
 #define METATABLE "Canvas"
 #define IMAGE_METATABLE "Image"
@@ -25,6 +27,10 @@ typedef struct {
 
 static canvas_store_t *upvalue_store(lua_State *lua) {
     return lua_touserdata(lua, lua_upvalueindex(1));
+}
+
+static transform_t *upvalue_transform(lua_State *lua) {
+    return lua_touserdata(lua, lua_upvalueindex(2));
 }
 
 static int new_canvas(lua_State *lua) {
@@ -120,6 +126,7 @@ static int points(lua_State *lua) {
         return luaL_error(lua, "love.graphics.points: a table must be the only argument, not one of %d", top);
     int count = table_form ? (int)lua_objlen(lua, 1) : top;
     const char *kind = table_form ? "element" : "argument";
+    transform_offset_t offset = transform_get_offset(upvalue_transform(lua));
     for (int index = 1; index <= count; index++) {
         push_coordinate(lua, table_form, index);
         if (lua_type(lua, -1) != LUA_TNUMBER)
@@ -131,6 +138,9 @@ static int points(lua_State *lua) {
             return luaL_error(lua, "love.graphics.points: %s %d is not finite", kind, index);
         if (!point_accepts_coordinate(coordinate))
             return luaL_error(lua, "love.graphics.points: %s %d is out of range (|v| >= 2^20)", kind, index);
+        if (!point_accepts_translated(coordinate, index % 2 != 0 ? offset.x : offset.y))
+            return luaL_error(lua, "love.graphics.points: %s %d is out of range after translate (|v| >= 2^20)", kind,
+                              index);
     }
     if (count % 2 != 0)
         return luaL_error(lua, "love.graphics.points: odd number of coordinates (%d)", count);
@@ -138,8 +148,8 @@ static int points(lua_State *lua) {
     for (int index = 1; index <= count; index += 2) {
         push_coordinate(lua, table_form, index);
         push_coordinate(lua, table_form, index + 1);
-        int x = point_find_pixel(lua_tonumber(lua, -2), 0, CANVAS_WIDTH);
-        int y = point_find_pixel(lua_tonumber(lua, -1), 0, CANVAS_HEIGHT);
+        int x = point_find_pixel(lua_tonumber(lua, -2), offset.x, CANVAS_WIDTH);
+        int y = point_find_pixel(lua_tonumber(lua, -1), offset.y, CANVAS_HEIGHT);
         lua_pop(lua, 2);
         if (x != POINT_OFF && y != POINT_OFF)
             canvas_plot(store, x, y);
@@ -166,9 +176,15 @@ static int rectangle(lua_State *lua) {
         if (!point_accepts_coordinate(value))
             return luaL_error(lua, "love.graphics.rectangle: argument %d is out of range (|v| >= 2^20)", index);
     }
+    transform_offset_t offset = transform_get_offset(upvalue_transform(lua));
+    for (int index = 2; index <= 3; index++)
+        if (!point_accepts_translated(lua_tonumber(lua, index), index == 2 ? offset.x : offset.y))
+            return luaL_error(lua, "love.graphics.rectangle: argument %d is out of range after translate (|v| >= 2^20)",
+                              index);
     int first_column, last_column, first_row, last_row;
-    if (point_find_span(lua_tonumber(lua, 2), lua_tonumber(lua, 4), 0, CANVAS_WIDTH, &first_column, &last_column) &&
-        point_find_span(lua_tonumber(lua, 3), lua_tonumber(lua, 5), 0, CANVAS_HEIGHT, &first_row, &last_row))
+    if (point_find_span(lua_tonumber(lua, 2), lua_tonumber(lua, 4), offset.x, CANVAS_WIDTH, &first_column,
+                        &last_column) &&
+        point_find_span(lua_tonumber(lua, 3), lua_tonumber(lua, 5), offset.y, CANVAS_HEIGHT, &first_row, &last_row))
         canvas_fill_range(upvalue_store(lua), first_column, first_row, last_column, last_row);
     return 0;
 }
@@ -263,12 +279,60 @@ static int draw(lua_State *lua) {
                               luaL_typename(lua, index));
         refuse_verdict(lua, "draw", index, image_rules_check_position(lua_tonumber(lua, index)), "|v| >= 2^20");
     }
+    transform_offset_t offset = transform_get_offset(upvalue_transform(lua));
+    int x = (int)lua_tonumber(lua, 3) + offset.x;
+    int y = (int)lua_tonumber(lua, 4) + offset.y;
+    for (int index = 3; index <= 4; index++)
+        if (image_rules_check_position(index == 3 ? x : y) != IMAGE_RULES_ACCEPTED)
+            return luaL_error(lua, "love.graphics.draw: argument %d is out of range after translate (|v| >= 2^20)",
+                              index);
     if (quad->reference_width != image->width || quad->reference_height != image->height)
         return luaL_error(lua, "love.graphics.draw: the quad's reference size %dx%d differs from the image's %dx%d",
                           quad->reference_width, quad->reference_height, image->width, image->height);
     canvas_source_t source = {image->pixels, image->width, image->height};
-    canvas_draw_texels(upvalue_store(lua), &source, &quad->area, (int)lua_tonumber(lua, 3),
-                       (int)lua_tonumber(lua, 4));
+    canvas_draw_texels(upvalue_store(lua), &source, &quad->area, x, y);
+    return 0;
+}
+
+static int push(lua_State *lua) {
+    int top = lua_gettop(lua);
+    if (top != 0)
+        return luaL_error(lua, "love.graphics.push: takes no arguments, not %d (push(\"all\") and "
+                               "push(\"transform\") are not supported)",
+                          top);
+    if (!transform_push(upvalue_transform(lua)))
+        return luaL_error(lua, "love.graphics.push: Maximum stack depth reached (more pushes than pops?)");
+    return 0;
+}
+
+static int pop(lua_State *lua) {
+    int top = lua_gettop(lua);
+    if (top != 0)
+        return luaL_error(lua, "love.graphics.pop: takes no arguments, not %d", top);
+    if (!transform_pop(upvalue_transform(lua)))
+        return luaL_error(lua, "love.graphics.pop: Minimum stack depth reached (more pops than pushes?)");
+    return 0;
+}
+
+static int translate(lua_State *lua) {
+    int top = lua_gettop(lua);
+    if (top != 2)
+        return luaL_error(lua, "love.graphics.translate: takes 2 numbers, dx and dy, not %d arguments", top);
+    for (int index = 1; index <= 2; index++) {
+        if (lua_type(lua, index) != LUA_TNUMBER)
+            return luaL_error(lua, "love.graphics.translate: argument %d is a %s, not a number", index,
+                              luaL_typename(lua, index));
+        refuse_verdict(lua, "translate", index, image_rules_check_position(lua_tonumber(lua, index)), "|v| >= 2^20");
+    }
+    transform_t *transform = upvalue_transform(lua);
+    int dx = (int)lua_tonumber(lua, 1);
+    int dy = (int)lua_tonumber(lua, 2);
+    if (!transform_translate(transform, dx, dy)) {
+        transform_offset_t offset = transform_get_offset(transform);
+        bool on_x = abs(offset.x + dx) >= TRANSFORM_OFFSET_LIMIT;
+        return luaL_error(lua, "love.graphics.translate: the offset would reach 2^20 (%s: %d)", on_x ? "x" : "y",
+                          on_x ? offset.x + dx : offset.y + dy);
+    }
     return 0;
 }
 
@@ -279,28 +343,33 @@ static void new_metatable_without_methods(lua_State *lua, const char *name) {
     lua_pop(lua, 1);
 }
 
-static void set_function(lua_State *lua, canvas_store_t *store, lua_CFunction function, const char *name) {
+static void set_function(lua_State *lua, canvas_store_t *store, transform_t *transform, lua_CFunction function,
+                         const char *name) {
     lua_pushlightuserdata(lua, store);
-    lua_pushcclosure(lua, function, 1);
+    lua_pushlightuserdata(lua, transform);
+    lua_pushcclosure(lua, function, 2);
     lua_setfield(lua, -2, name);
 }
 
-void graphics_install(lua_State *lua, canvas_store_t *store) {
+void graphics_install(lua_State *lua, canvas_store_t *store, transform_t *transform) {
     luaL_newmetatable(lua, METATABLE);
     lua_pop(lua, 1);
     new_metatable_without_methods(lua, IMAGE_METATABLE);
     new_metatable_without_methods(lua, QUAD_METATABLE);
     lua_getglobal(lua, "love");
-    lua_createtable(lua, 0, 9);
-    set_function(lua, store, new_canvas, "newCanvas");
-    set_function(lua, store, set_canvas, "setCanvas");
-    set_function(lua, store, clear, "clear");
-    set_function(lua, store, points, "points");
-    set_function(lua, store, rectangle, "rectangle");
-    set_function(lua, store, set_color, "setColor");
-    set_function(lua, store, new_image, "newImage");
-    set_function(lua, store, new_quad, "newQuad");
-    set_function(lua, store, draw, "draw");
+    lua_createtable(lua, 0, 12);
+    set_function(lua, store, transform, new_canvas, "newCanvas");
+    set_function(lua, store, transform, set_canvas, "setCanvas");
+    set_function(lua, store, transform, clear, "clear");
+    set_function(lua, store, transform, points, "points");
+    set_function(lua, store, transform, rectangle, "rectangle");
+    set_function(lua, store, transform, set_color, "setColor");
+    set_function(lua, store, transform, new_image, "newImage");
+    set_function(lua, store, transform, new_quad, "newQuad");
+    set_function(lua, store, transform, draw, "draw");
+    set_function(lua, store, transform, push, "push");
+    set_function(lua, store, transform, pop, "pop");
+    set_function(lua, store, transform, translate, "translate");
     lua_setfield(lua, -2, "graphics");
     lua_pop(lua, 1);
 }

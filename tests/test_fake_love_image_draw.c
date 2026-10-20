@@ -21,8 +21,8 @@ static void test_image_misuse_is_refused_with_a_message_and_valid_calls_succeed(
                                    CAPTURE, STATE, STDERR_LOG);
     assert(status == 0 && "the image draw log game must run");
     fake_love_cli_assert_text(STATE, "conf graphics nil\n"
-                                     "graphics clear draw newCanvas newImage newQuad points rectangle setCanvas "
-                                     "setColor\n"
+                                     "graphics clear draw newCanvas newImage newQuad points pop push rectangle "
+                                     "setCanvas setColor translate\n"
                                      "image userdata getWidth nil\n"
                                      "quad userdata setViewport nil\n"
         "image none: love.graphics.newImage: takes 1 argument, an ImageData, not 0 arguments\n"

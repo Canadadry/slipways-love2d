@@ -16,6 +16,7 @@
 #include "image.h"
 #include "joystick.h"
 #include "pad.h"
+#include "transform.h"
 
 #define NO_FRAME ((size_t)-1)
 #define FRAME_DT (1.0 / 60.0)
@@ -23,6 +24,7 @@
 struct host {
     lua_State *lua;
     canvas_store_t *canvases;
+    transform_t transform;
     unsigned held;
     char *game_dir;
     char *state_text;
@@ -78,6 +80,7 @@ host_t *host_new(void) {
     }
     luaL_openlibs(host->lua);
     host->canvases = canvas_create_store();
+    transform_init(&host->transform);
     return host;
 }
 
@@ -191,7 +194,7 @@ bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
         return false;
     joystick_install(host->lua);
     filesystem_install(host->lua, disk);
-    graphics_install(host->lua, host->canvases);
+    graphics_install(host->lua, host->canvases, &host->transform);
     image_install(host->lua, disk);
     return run_file(host, "main.lua");
 }
@@ -238,6 +241,7 @@ bool host_frame(host_t *host, size_t frame, unsigned held) {
         if (!call(host, 1, 0, "love.update", frame))
             return false;
     }
+    transform_reset(&host->transform);
     if (!push_callback(host, "draw", frame, &defined))
         return false;
     if (defined && !call(host, 0, 0, "love.draw", frame))
