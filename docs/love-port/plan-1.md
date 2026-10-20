@@ -185,3 +185,19 @@ None.
   2e7215c. After: medians 7.93 s (reference) / 7.87 s (current), paired
   +1.28 %, 4 cores.
 
+### Step 2.4
+
+- `pad.c` (button table, frame-to-frame changes), reader pad checks
+  (`"input": "pad"`, frames `{"pad": [...]}` of distinct 1–12, refusals tagged
+  `f<N>`; `replay_frame_held()`), `joystick.c` (`getJoysticks`,
+  `isGamepadDown`). Per frame: releases, then presses, each ascending, then
+  update and draw. `love.joystick` is nil in conf.lua. design.md has "Pad
+  semantics".
+- Tests: `test_fake_love_pad` (3 ms), reader cases incl. `pad_title.json`'s
+  32 masks, `test_fake_love_joystick` (40 ms: 9-frame `pad_log` byte for
+  byte, polling, misuse). Deviations: pad CLI cases in their own check to
+  keep `test_fake_love_failures` (76 ms) under 100 ms; a non-function
+  callback is only detected when called.
+- `make test`: before 05ee35b 7.77 s, reference 2e7215c 7.67 s, current
+  7.70 s; paired −0.92 % / +0.39 %, 11 rounds, 4 cores.
+

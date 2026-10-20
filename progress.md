@@ -13,7 +13,7 @@
     - [x] Chunk 1 — replay reader
     - [x] Chunk 2 — binary, happy path
     - [x] Chunk 3 — failures, timing rule
-  - [ ] Step 2.4 — pad
+  - [x] Step 2.4 — pad
     - [x] Chunk 1 — pad table and edges
     - [x] Chunk 2 — reader pad checks
     - [x] Chunk 3 — joystick binding, host, logging game
