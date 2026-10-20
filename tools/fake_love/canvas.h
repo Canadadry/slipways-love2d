@@ -25,9 +25,13 @@ int canvas_get_target(const canvas_store_t *store);
 /* With the screen as target, nothing: the screen is not modelled. */
 void canvas_clear(canvas_store_t *store, const unsigned char rgba[4]);
 
-/* Writes the current colour, opaque white (LÖVE's default) until a setter
- * exists, over pixel (x, y) of the target; with the screen as target,
- * nothing. Asserts (x, y) is on the canvas. */
+/* The current colour of canvas_plot and canvas_fill_range until the next
+ * call, whatever is selected or cleared meanwhile; opaque white in a new
+ * store. Asserts rgba[3] is 0xFF. */
+void canvas_set_color(canvas_store_t *store, const unsigned char rgba[4]);
+
+/* Writes the current colour over pixel (x, y) of the target; with the
+ * screen as target, nothing. Asserts (x, y) is on the canvas. */
 void canvas_plot(canvas_store_t *store, int x, int y);
 
 /* As canvas_plot over every pixel of columns left ... right and rows
@@ -39,8 +43,12 @@ void canvas_fill_range(canvas_store_t *store, int left, int top, int right, int 
  * for a handle that was never created. */
 const unsigned char *canvas_read_pixels(const canvas_store_t *store, int canvas);
 
-/* As LÖVE 11.5 on Mesa: to float, clamped to [0, 1], times 255 in float,
- * rounded to nearest, ties to even. Asserts the component is not NaN. */
-unsigned char canvas_convert_component(double component);
+/* clear's rule in LÖVE 11.5 on Mesa: to float, clamped to [0, 1], times
+ * 255 in float, rounded to nearest, ties to even. Asserts not NaN. */
+unsigned char canvas_convert_clear_component(double component);
+
+/* setColor's rule in LÖVE 11.5 on Mesa: to float, clamped to [0, 1], times
+ * 255 in float, truncated (0.5 gives 127, clear gives 128). Asserts not NaN. */
+unsigned char canvas_convert_draw_component(double component);
 
 #endif

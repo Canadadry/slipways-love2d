@@ -58,6 +58,11 @@ void canvas_clear(canvas_store_t *store, const unsigned char rgba[4]) {
     }
 }
 
+void canvas_set_color(canvas_store_t *store, const unsigned char rgba[4]) {
+    assert(rgba[3] == 0xFF && "canvas_set_color: setColor refuses translucent colours, blending is not modelled");
+    memcpy(store->color, rgba, sizeof store->color);
+}
+
 void canvas_plot(canvas_store_t *store, int x, int y) {
     assert(x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT && "canvas_plot: pixel off the canvas");
     assert(store->color[3] == 0xFF && "canvas_plot: a translucent colour needs blending, which step 9 decides");
@@ -89,8 +94,15 @@ const unsigned char *canvas_read_pixels(const canvas_store_t *store, int canvas)
     return store->pixels[canvas];
 }
 
-unsigned char canvas_convert_component(double component) {
-    assert(!isnan(component) && "canvas_convert_component: NaN has no byte");
+unsigned char canvas_convert_clear_component(double component) {
+    assert(!isnan(component) && "canvas_convert_clear_component: NaN has no byte");
     float clamped = fminf(fmaxf((float)component, 0.0f), 1.0f);
     return (unsigned char)rintf(clamped * 255.0f);
+}
+
+unsigned char canvas_convert_draw_component(double component) {
+    assert(!isnan(component) && "canvas_convert_draw_component: NaN has no byte");
+    float clamped = fminf(fmaxf((float)component, 0.0f), 1.0f);
+    float product = clamped * 255.0f;
+    return (unsigned char)product;
 }

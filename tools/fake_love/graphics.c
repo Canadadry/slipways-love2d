@@ -66,7 +66,7 @@ static int clear(lua_State *lua) {
         return luaL_error(lua, "love.graphics.clear: takes 0, 3 or 4 numbers, not %d arguments", top);
     unsigned char rgba[4] = {0, 0, 0, top == 3 ? 255 : 0};
     for (int index = 1; index <= top; index++)
-        rgba[index - 1] = canvas_convert_component(lua_tonumber(lua, index));
+        rgba[index - 1] = canvas_convert_clear_component(lua_tonumber(lua, index));
     canvas_clear(upvalue_store(lua), rgba);
     return 0;
 }

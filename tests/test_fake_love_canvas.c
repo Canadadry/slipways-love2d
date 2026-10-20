@@ -206,12 +206,96 @@ static void test_a_range_fill_on_the_screen_changes_no_canvas(void) {
     canvas_free_store(store);
 }
 
+static const unsigned char PALETTE_PINK[4] = {0xFF, 0x00, 0x4D, 0xFF};
+static const unsigned char PALETTE_YELLOW[4] = {0xFF, 0xEC, 0x27, 0xFF};
+
+static void test_a_set_colour_is_what_a_plot_and_a_range_fill_write(void) {
+    static const unsigned char CLEAR_PURPLE[4] = {0x80, 0x40, 0xBF, 0x00};
+    canvas_store_t *store = canvas_create_store();
+    canvas_select(store, canvas_create(store));
+    canvas_clear(store, CLEAR_PURPLE);
+    canvas_set_color(store, PALETTE_PINK);
+    canvas_fill_range(store, 10, 30, 39, 49);
+    assert_rectangle(store, 0, 10, 30, 39, 49, PALETTE_PINK, CLEAR_PURPLE);
+    canvas_set_color(store, PALETTE_YELLOW);
+    canvas_plot(store, 15, 35);
+    canvas_plot(store, 70, 5);
+    assert_pixel(store, 0, 15, 35, PALETTE_YELLOW);
+    assert_pixel(store, 0, 70, 5, PALETTE_YELLOW);
+    assert_pixel(store, 0, 16, 35, PALETTE_PINK);
+    assert_pixel(store, 0, 71, 5, CLEAR_PURPLE);
+    canvas_free_store(store);
+}
+
+static void test_the_colour_survives_selecting_canvases_the_screen_and_a_clear(void) {
+    canvas_store_t *store = canvas_create_store();
+    int first = canvas_create(store);
+    int other = canvas_create(store);
+    canvas_set_color(store, PALETTE_PINK);
+    canvas_select(store, other);
+    canvas_clear(store, RED);
+    canvas_select(store, CANVAS_NONE);
+    canvas_select(store, first);
+    canvas_clear(store, BLUE);
+    canvas_plot(store, 3, 4);
+    assert_one_pixel(store, first, 3, 4, PALETTE_PINK, BLUE);
+    canvas_free_store(store);
+}
+
+static void test_a_new_store_plots_opaque_white_again(void) {
+    canvas_store_t *coloured = canvas_create_store();
+    canvas_set_color(coloured, PALETTE_PINK);
+    canvas_free_store(coloured);
+    canvas_store_t *store = canvas_create_store();
+    canvas_select(store, canvas_create(store));
+    canvas_plot(store, 0, 0);
+    assert_one_pixel(store, 0, 0, 0, OPAQUE_WHITE, TRANSPARENT_BLACK);
+    canvas_free_store(store);
+}
+
 static void assert_byte(double component, int expected) {
-    int got = canvas_convert_component(component);
+    int got = canvas_convert_clear_component(component);
     if (got != expected) {
         fprintf(stderr, "%.17g: expected %d, got %d\n", component, expected, got);
     }
     assert(got == expected);
+}
+
+static void assert_draw_byte(double component, int expected, const char *likely_cause) {
+    int got = canvas_convert_draw_component(component);
+    if (got != expected) {
+        fprintf(stderr, "draw %.17g: expected %d, got %d (%s)\n", component, expected, got, likely_cause);
+    }
+    assert(got == expected);
+}
+
+static void test_a_drawing_byte_over_255_comes_back_as_that_byte(void) {
+    static const int bytes[] = {0, 1, 7, 128, 255};
+    for (int i = 0; i < (int)(sizeof bytes / sizeof bytes[0]); i++) {
+        assert_draw_byte(bytes[i] / 255.0, bytes[i], "byte/255 must give the byte");
+    }
+}
+
+static void test_a_drawing_component_is_truncated_not_rounded(void) {
+    assert_draw_byte(0.5, 127, "the drawing conversion probably rounds as clear does");
+    assert(canvas_convert_clear_component(0.5) == 128);
+    assert_draw_byte((2 + 0.5) / 255, 2, "the drawing conversion probably rounds");
+    assert_draw_byte(0.3, 76, "the drawing conversion probably rounds");
+    assert_draw_byte((5 - 0.5) / 255, 4, "the drawing conversion probably rounds");
+    assert_draw_byte((5 - 1e-6) / 255, 4, "the drawing conversion probably rounds");
+    assert_draw_byte((255 + 0.999) / 255, 255, "a component above 1 must clamp");
+}
+
+static void test_a_drawing_component_outside_zero_to_one_is_clamped(void) {
+    assert_draw_byte(2, 255, "a component above 1 must clamp");
+    assert_draw_byte(-1, 0, "a component below 0 must clamp");
+}
+
+static void test_a_drawing_component_is_multiplied_in_single_precision(void) {
+    double one_float_step_below = 1 - 0x1p-30;
+    assert_draw_byte(128 / 255.0 * one_float_step_below, 127, "one float step below 128/255");
+    assert_draw_byte(1 / 255.0 * one_float_step_below, 0, "one float step below 1/255");
+    assert_draw_byte(7 / 255.0 * one_float_step_below, 7, "the product was probably taken in double precision");
 }
 
 static void test_every_byte_over_255_comes_back_as_that_byte(void) {
@@ -260,6 +344,13 @@ int main(void) {
     test_a_tie_rounds_to_even_in_single_precision();
     test_other_values_round_to_nearest();
     test_a_value_outside_zero_to_one_is_clamped();
+    test_a_set_colour_is_what_a_plot_and_a_range_fill_write();
+    test_the_colour_survives_selecting_canvases_the_screen_and_a_clear();
+    test_a_new_store_plots_opaque_white_again();
+    test_a_drawing_byte_over_255_comes_back_as_that_byte();
+    test_a_drawing_component_is_truncated_not_rounded();
+    test_a_drawing_component_outside_zero_to_one_is_clamped();
+    test_a_drawing_component_is_multiplied_in_single_precision();
     puts("test_fake_love_canvas: ok");
     return 0;
 }
