@@ -1,10 +1,10 @@
-- [ ] Phase 1 — Real LÖVE in the container and CI
+- [x] Phase 1 — Real LÖVE in the container and CI
   - [x] Step 1.1 — install script, love-capture, CI trigger, Xvfb exception
     - [x] Chunk 1 — install script, session hook, CI wiring
     - [x] Chunk 2 — LuaJIT probe and make love-check
     - [x] Chunk 3 — capture harness, clear program, PNG check
     - [x] Chunk 4 — CI capture job and CLAUDE.md
-  - [ ] Step 1.2 — CI capture job
+  - [x] Step 1.2 — CI capture job
     - [x] Drift checks in the love-capture job
     - [x] Deliberate drift turns the job red
     - [x] Revert turns it green

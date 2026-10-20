@@ -26,7 +26,9 @@ disk, capture format, fatal errors) is in `docs/love-port/design.md`; read it fi
 - `make test` runs every capture program in the fake and compares with the
   PNGs. `CLAUDE.md` forbids making it slower: step 3 decides once how the
   fake's checks stay out of its wall time, and every step that adds to it
-  records the time before and after in its step note.
+  records the time before and after in its step note. The median measured at
+  the start of step 3 is the plan-wide reference: every "after" is also
+  compared with it, under the same cap, so small per-step growth cannot add up.
 - A capture program's drawing part uses only listed functions; the canvas
   read-back and PNG write run only in real LÖVE, so the same program runs
   in the fake.
@@ -85,8 +87,10 @@ implementation, the comparison in `make test`, and the settled convention in
 
 6. `newCanvas`/`setCanvas`/`clear`, and the comparison harness in
    `make test` (run the program in the fake, read the PNG, compare pixel by
-   pixel). Also verified by one PNG pixel deliberately changed turning
-   `make test` red with the program and pixel named, then reverted.
+   pixel). The harness replaces `png_check` and the PNG half of
+   `make love-check`. Also verified by one PNG pixel deliberately changed
+   turning `make test` red with the program and pixel named, then reverted,
+   and by the CI love-capture job staying green without `png_check`.
 7. `points`.
 8. `rectangle("fill")`.
 9. `setColor`, shown through `points` and `rectangle`.
@@ -120,6 +124,7 @@ implementation, the comparison in `make test`, and the settled convention in
   matches each one in `make test`, and its convention is in
   `docs/love-port/design.md`.
 - Every CI job is green.
+- The `make test` median is within the cap of the step 3 reference.
 - The combined capture program of step 15 matches.
 - `make love-e2e` runs the fake on the 20 replays.
 - `CLAUDE.md` carries the Xvfb exception.
@@ -145,3 +150,18 @@ None.
   v2.30 vendored in `tools/fake_love/`.
 - Two local captures are byte-identical. CI triggers on `claude/**`; run
   39487833316 green on every job (love-capture job 23 s).
+
+### Step 1.2
+
+- The love-capture CI job, after `make love-capture`, fails when a file under
+  `tools/love_capture/` differs from the commit or is not in it, naming the
+  files; it got `timeout-minutes: 10`. Extends step 1's job, no new one.
+- Proof: commit 75111d5 changed `clear.lua` to colour 2 without its PNG; run
+  39489217080 went red on the drift check. The revert's run 39489901977 is
+  green on every job (love-capture 24 s). Container and CI write identical
+  PNG bytes.
+- Phase 1 end: warn-review flagged 160×120, "11.5" and `1D2B53` repeated
+  across files, and `png_check.c` using the `stb_image.h` of `tools/fake_love/`.
+  plan-review: step 6 now retires `png_check`; `make test` time gets a
+  plan-wide reference. The repeated constants are left: design constants and
+  a runtime version guard.
