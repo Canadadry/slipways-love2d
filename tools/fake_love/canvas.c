@@ -67,6 +67,21 @@ void canvas_plot(canvas_store_t *store, int x, int y) {
     memcpy(store->pixels[store->target] + 4 * (y * CANVAS_WIDTH + x), store->color, 4);
 }
 
+void canvas_fill_range(canvas_store_t *store, int left, int top, int right, int bottom) {
+    assert(left >= 0 && left <= right && right < CANVAS_WIDTH && "canvas_fill_range: columns off the canvas or empty");
+    assert(top >= 0 && top <= bottom && bottom < CANVAS_HEIGHT && "canvas_fill_range: rows off the canvas or empty");
+    assert(store->color[3] == 0xFF && "canvas_fill_range: a translucent colour needs blending, which step 9 decides");
+    if (store->target == CANVAS_NONE) {
+        return;
+    }
+    for (int row = top; row <= bottom; row++) {
+        unsigned char *pixel = store->pixels[store->target] + 4 * (row * CANVAS_WIDTH + left);
+        for (int column = left; column <= right; column++, pixel += 4) {
+            memcpy(pixel, store->color, 4);
+        }
+    }
+}
+
 const unsigned char *canvas_read_pixels(const canvas_store_t *store, int canvas) {
     if (canvas < 0 || canvas >= store->count) {
         return NULL;

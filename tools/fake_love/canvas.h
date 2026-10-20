@@ -30,6 +30,11 @@ void canvas_clear(canvas_store_t *store, const unsigned char rgba[4]);
  * nothing. Asserts (x, y) is on the canvas. */
 void canvas_plot(canvas_store_t *store, int x, int y);
 
+/* As canvas_plot over every pixel of columns left ... right and rows
+ * top ... bottom, inclusive. Asserts the range is on the canvas and not
+ * empty. */
+void canvas_fill_range(canvas_store_t *store, int left, int top, int right, int bottom);
+
 /* Row-major RGBA8, owned by the store and valid until it is freed; NULL
  * for a handle that was never created. */
 const unsigned char *canvas_read_pixels(const canvas_store_t *store, int canvas);

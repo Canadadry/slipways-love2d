@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 
 #include "../tools/fake_love/canvas.h"
@@ -156,6 +157,55 @@ static void test_a_plot_on_the_screen_changes_no_canvas(void) {
     canvas_free_store(store);
 }
 
+static void assert_rectangle(const canvas_store_t *store, int canvas, int left, int top, int right, int bottom,
+                             const unsigned char rgba[4], const unsigned char background[4]) {
+    for (int row = 0; row < CANVAS_HEIGHT; row++) {
+        for (int column = 0; column < CANVAS_WIDTH; column++) {
+            bool inside = column >= left && column <= right && row >= top && row <= bottom;
+            assert_pixel(store, canvas, column, row, inside ? rgba : background);
+        }
+    }
+}
+
+static void test_a_range_fill_covers_exactly_the_inclusive_range_of_the_target(void) {
+    canvas_store_t *store = canvas_create_store();
+    int first = canvas_create(store);
+    int second = canvas_create(store);
+    canvas_select(store, first);
+    canvas_fill_range(store, 10, 7, 14, 12);
+    assert_rectangle(store, first, 10, 7, 14, 12, OPAQUE_WHITE, TRANSPARENT_BLACK);
+    assert_filled(store, second, TRANSPARENT_BLACK);
+    canvas_free_store(store);
+}
+
+static void test_a_range_fill_reaches_the_whole_canvas_and_a_single_pixel(void) {
+    canvas_store_t *store = canvas_create_store();
+    canvas_select(store, canvas_create(store));
+    canvas_fill_range(store, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1);
+    assert_one_pixel(store, 0, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1, OPAQUE_WHITE, TRANSPARENT_BLACK);
+    canvas_fill_range(store, 0, 0, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1);
+    assert_filled(store, 0, OPAQUE_WHITE);
+    canvas_free_store(store);
+}
+
+static void test_a_range_fill_over_a_transparent_colour_replaces_all_four_bytes(void) {
+    static const unsigned char CLEAR_TEAL[4] = {0x33, 0x66, 0x99, 0x00};
+    canvas_store_t *store = canvas_create_store();
+    canvas_select(store, canvas_create(store));
+    canvas_clear(store, CLEAR_TEAL);
+    canvas_fill_range(store, 0, 30, CANVAS_WIDTH - 1, 31);
+    assert_rectangle(store, 0, 0, 30, CANVAS_WIDTH - 1, 31, OPAQUE_WHITE, CLEAR_TEAL);
+    canvas_free_store(store);
+}
+
+static void test_a_range_fill_on_the_screen_changes_no_canvas(void) {
+    canvas_store_t *store = canvas_create_store();
+    canvas_create(store);
+    canvas_fill_range(store, 0, 0, CANVAS_WIDTH - 1, CANVAS_HEIGHT - 1);
+    assert_filled(store, 0, TRANSPARENT_BLACK);
+    canvas_free_store(store);
+}
+
 static void assert_byte(double component, int expected) {
     int got = canvas_convert_component(component);
     if (got != expected) {
@@ -202,6 +252,10 @@ int main(void) {
     test_a_plot_reaches_every_corner();
     test_a_plot_over_a_transparent_colour_replaces_all_four_bytes();
     test_a_plot_on_the_screen_changes_no_canvas();
+    test_a_range_fill_covers_exactly_the_inclusive_range_of_the_target();
+    test_a_range_fill_reaches_the_whole_canvas_and_a_single_pixel();
+    test_a_range_fill_over_a_transparent_colour_replaces_all_four_bytes();
+    test_a_range_fill_on_the_screen_changes_no_canvas();
     test_every_byte_over_255_comes_back_as_that_byte();
     test_a_tie_rounds_to_even_in_single_precision();
     test_other_values_round_to_nearest();

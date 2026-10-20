@@ -35,7 +35,7 @@
     - [x] Chunk 3 — captures, docs, proof
   - [ ] Step 3.8 — rectangle("fill")
     - [x] Chunk 1 — span rule
-    - [ ] Chunk 2 — rectangle in the fake
+    - [x] Chunk 2 — rectangle in the fake
     - [ ] Chunk 3 — captures, docs, proof
   - [ ] Step 3.9 — setColor
   - [ ] Step 3.10 — newImageData/setPixel/getPixel

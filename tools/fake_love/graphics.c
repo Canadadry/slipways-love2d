@@ -1,6 +1,7 @@
 #include "graphics.h"
 
 #include <math.h>
+#include <string.h>
 
 #include <lauxlib.h>
 
@@ -111,6 +112,32 @@ static int points(lua_State *lua) {
     return 0;
 }
 
+static int rectangle(lua_State *lua) {
+    int top = lua_gettop(lua);
+    if (top != 5)
+        return luaL_error(lua, "love.graphics.rectangle: takes 5 arguments, not %d", top);
+    if (lua_type(lua, 1) != LUA_TSTRING)
+        return luaL_error(lua, "love.graphics.rectangle: argument 1 is a %s, not a string", luaL_typename(lua, 1));
+    const char *mode = lua_tostring(lua, 1);
+    if (strcmp(mode, "fill") != 0)
+        return luaL_error(lua, "love.graphics.rectangle: mode '%s' is not supported, only 'fill'", mode);
+    for (int index = 2; index <= 5; index++) {
+        if (lua_type(lua, index) != LUA_TNUMBER)
+            return luaL_error(lua, "love.graphics.rectangle: argument %d is a %s, not a number", index,
+                              luaL_typename(lua, index));
+        double value = lua_tonumber(lua, index);
+        if (!isfinite(value))
+            return luaL_error(lua, "love.graphics.rectangle: argument %d is not finite", index);
+        if (!point_accepts_coordinate(value))
+            return luaL_error(lua, "love.graphics.rectangle: argument %d is out of range (|v| >= 2^20)", index);
+    }
+    int first_column, last_column, first_row, last_row;
+    if (point_find_span(lua_tonumber(lua, 2), lua_tonumber(lua, 4), CANVAS_WIDTH, &first_column, &last_column) &&
+        point_find_span(lua_tonumber(lua, 3), lua_tonumber(lua, 5), CANVAS_HEIGHT, &first_row, &last_row))
+        canvas_fill_range(upvalue_store(lua), first_column, first_row, last_column, last_row);
+    return 0;
+}
+
 static void set_function(lua_State *lua, canvas_store_t *store, lua_CFunction function, const char *name) {
     lua_pushlightuserdata(lua, store);
     lua_pushcclosure(lua, function, 1);
@@ -121,11 +148,12 @@ void graphics_install(lua_State *lua, canvas_store_t *store) {
     luaL_newmetatable(lua, METATABLE);
     lua_pop(lua, 1);
     lua_getglobal(lua, "love");
-    lua_createtable(lua, 0, 4);
+    lua_createtable(lua, 0, 5);
     set_function(lua, store, new_canvas, "newCanvas");
     set_function(lua, store, set_canvas, "setCanvas");
     set_function(lua, store, clear, "clear");
     set_function(lua, store, points, "points");
+    set_function(lua, store, rectangle, "rectangle");
     lua_setfield(lua, -2, "graphics");
     lua_pop(lua, 1);
 }
