@@ -12,7 +12,7 @@
   - [ ] Step 2.3 — fake_love runs the loop
     - [x] Chunk 1 — replay reader
     - [x] Chunk 2 — binary, happy path
-    - [ ] Chunk 3 — failures, timing rule
+    - [x] Chunk 3 — failures, timing rule
   - [ ] Step 2.4 — pad
   - [ ] Step 2.5 — fake disk and arguments
 - [ ] Phase 3 — Drawing, one function at a time

@@ -46,6 +46,46 @@ Anything outside the contract below is a **fatal error** that names the
 function (or the frame and pixel): a LÖVE function not on the list, a colour
 that is not one of the 16, a pixel of another colour on the canvas.
 
+### `make test` and the fake's checks
+
+`CLAUDE.md` forbids making `make test` slower. Every check that runs the
+fake follows these rules, and every step that adds one measures it.
+
+1. **Parallel, never serial.** Each check of the fake (a C test that drives
+   `tmp/fake_love`, a capture program comparison) is its own make target,
+   listed in the Makefile's `FAKE_LOVE_CHECKS`, a direct prerequisite of
+   `test`. No recipe loops over programs, and no check orders itself after
+   the unit tests: `-j` runs them on the cores the unit tests leave idle.
+2. **Cheap by construction.** One process per check, no interpreter but the
+   embedded LuaJIT, no external tool (no Python, no ImageMagick, no shell
+   pipeline over PNGs); comparisons are done in C. Budget: 100 ms of wall
+   time per check on the container. A check over budget is split before
+   its step closes.
+3. **Out of `make e2e`.** No fake check is a prerequisite of `e2e`;
+   `make love-e2e` is its own target, outside `make test` and `make e2e`.
+4. **Measured, with one protocol, against two baselines.**
+   - Baselines: the step's "before" commit, and the plan-wide reference,
+     commit `2e7215c` (4 cores, plain median 7.70 s over 15 runs when
+     recorded). A median is never compared across machines: the reference
+     is re-measured beside the current commit every time.
+   - Protocol: each commit under comparison in its own git worktree under
+     `tmp/`; one `make test` in each to warm the build; then 11 rounds, each
+     timing one `make test` (wall time) per worktree back to back, rotating
+     which goes first.
+   - Gate: for each round, r = current / baseline − 1, against "before" and
+     against the reference; the statistic is the median of the r values per
+     baseline. Both ≤ 3 % → pass. Either > 3 % → 11 more rounds, decide on
+     the 22 pooled rounds: still > 3 % → fail, and the step reworks its
+     checks under rules 1 and 2, or rule 5. No third batch, and no gate on
+     the spread: per-run spread is about 4 % and does not shrink with more
+     runs, while in-round pairs cancel the drift.
+   - Record, in the step note: the plain medians, the paired medians, each
+     commit's spread (for information only), the number of rounds, the
+     core count, and the slowest new check's own time.
+5. A check that rules 1 and 2 cannot hold under 3 % goes into a separate
+   target outside `make test-all`, and this file then says that `make test`
+   no longer runs every capture.
+
 ### Pad buttons
 
 The replays hold button numbers 1–12. The fixed table, from the PSX mapping

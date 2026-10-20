@@ -4,45 +4,19 @@
 #include <string.h>
 #include <sys/wait.h>
 
-#define FAKE_LOVE "./tmp/fake_love"
-#define FIXTURES "tests/fixtures/fake_love/"
+#include "fake_love_cli.h"
+
+#define FIXTURES FAKE_LOVE_CLI_FIXTURES
 #define CAPTURE "tmp/test_fake_love_capture.bin"
 #define STATE "tmp/test_fake_love_state.txt"
 #define STDERR_LOG "tmp/test_fake_love_stderr.txt"
 
-/* Allocated buffer, NUL-terminated, freed by the caller; NULL when the file
- * does not exist. */
-static char *read_whole_file(const char *path, long *size_out) {
-    FILE *file = fopen(path, "rb");
-    if (file == NULL)
-        return NULL;
-    assert(fseek(file, 0, SEEK_END) == 0);
-    long size = ftell(file);
-    assert(size >= 0);
-    rewind(file);
-    char *buf = malloc((size_t)size + 1);
-    assert(buf != NULL);
-    assert(fread(buf, 1, (size_t)size, file) == (size_t)size);
-    buf[size] = '\0';
-    fclose(file);
-    if (size_out != NULL)
-        *size_out = size;
-    return buf;
-}
-
-/* Returns the exit status of `fake_love <args>`; stderr goes to STDERR_LOG. */
 static int run_fake_love(const char *args) {
-    char cmd[512];
-    remove(CAPTURE);
-    remove(STATE);
-    snprintf(cmd, sizeof cmd, FAKE_LOVE " %s > /dev/null 2> " STDERR_LOG, args);
-    int status = system(cmd);
-    assert(status != -1 && WIFEXITED(status));
-    return WEXITSTATUS(status);
+    return fake_love_cli_run("", args, CAPTURE, STATE, STDERR_LOG);
 }
 
 static void assert_state(const char *expected) {
-    char *state = read_whole_file(STATE, NULL);
+    char *state = fake_love_cli_read_file(STATE, NULL);
     assert(state != NULL && "the state file must be written");
     if (strcmp(state, expected) != 0) {
         fprintf(stderr, "state:\n%s\nexpected:\n%s\n", state, expected);
@@ -53,7 +27,7 @@ static void assert_state(const char *expected) {
 
 static void assert_capture_empty(void) {
     long size = -1;
-    char *capture = read_whole_file(CAPTURE, &size);
+    char *capture = fake_love_cli_read_file(CAPTURE, &size);
     assert(capture != NULL && "the capture file must be created");
     assert(size == 0 && "nothing draws yet: the capture stays empty");
     free(capture);
@@ -103,11 +77,11 @@ static void test_require_resolves_in_the_game_directory(void) {
  * outside_module.lua. */
 static void test_require_ignores_modules_outside_the_game_directory(void) {
     remove(STDERR_LOG);
-    int status = system("cd " FIXTURES " && ../../../" FAKE_LOVE " outside zero_frames.json ../../../" CAPTURE
+    int status = system("cd " FIXTURES " && ../../../tmp/fake_love outside zero_frames.json ../../../" CAPTURE
                         " ../../../" STATE " > /dev/null 2> ../../../" STDERR_LOG);
     assert(status != -1 && WIFEXITED(status));
     assert(WEXITSTATUS(status) == 1);
-    char *err = read_whole_file(STDERR_LOG, NULL);
+    char *err = fake_love_cli_read_file(STDERR_LOG, NULL);
     assert(err != NULL && strstr(err, "outside_module") != NULL);
     free(err);
 }

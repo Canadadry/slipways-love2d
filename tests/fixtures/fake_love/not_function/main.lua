@@ -1,0 +1,1 @@
+love.draw = 42

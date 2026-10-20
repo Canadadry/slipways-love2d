@@ -65,6 +65,15 @@ static bool write_state(host_t *host, const char *path) {
     return written;
 }
 
+static bool run_game(host_t *host, const arguments_t *arguments, const replay_t *replay) {
+    bool ok = host_open(host, arguments->game_dir) && host_load(host);
+    for (size_t frame = 0; ok && frame < replay_frame_count(replay); frame++)
+        ok = host_frame(host, frame);
+    if (!ok)
+        fprintf(stderr, "fake_love: %s\n", host_error(host));
+    return ok && (arguments->state_path == NULL || write_state(host, arguments->state_path));
+}
+
 static bool run(host_t *host, const arguments_t *arguments) {
     char error[512];
     replay_t *replay = replay_read(arguments->replay_path, error, sizeof error);
@@ -73,14 +82,14 @@ static bool run(host_t *host, const arguments_t *arguments) {
         return false;
     }
     bool ok = create_empty_file(arguments->capture_path);
-    if (ok && !(host_open(host, arguments->game_dir) && host_load(host)))
+    if (ok && !run_game(host, arguments, replay)) {
+        remove(arguments->capture_path);
+        if (arguments->state_path != NULL)
+            remove(arguments->state_path);
         ok = false;
-    for (size_t frame = 0; ok && frame < replay_frame_count(replay); frame++)
-        ok = host_frame(host, frame);
-    if (!ok && host_error(host)[0] != '\0')
-        fprintf(stderr, "fake_love: %s\n", host_error(host));
+    }
     replay_free(replay);
-    return ok && (arguments->state_path == NULL || write_state(host, arguments->state_path));
+    return ok;
 }
 
 int main(int argc, char **argv) {
