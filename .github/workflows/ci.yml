@@ -21,11 +21,18 @@ jobs:
 
   love-capture:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: install LÖVE, Xvfb, Mesa, LuaJIT
         run: sh tools/love_install.sh
       - name: make love-capture
         run: make love-capture
+      - name: committed PNGs match the regenerated ones
+        run: git diff --exit-code -- tools/love_capture/ || { git status --short -- tools/love_capture/; exit 1; }
+      - name: no file outside the commit under tools/love_capture/
+        run: |
+          untracked=$(git status --porcelain --untracked-files=all -- tools/love_capture/)
+          [ -z "$untracked" ] || { echo "$untracked"; exit 1; }
       - name: make love-check
         run: make love-check
