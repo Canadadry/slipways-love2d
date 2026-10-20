@@ -25,7 +25,7 @@
 - [ ] Phase 3 — Drawing, one function at a time
   - [ ] Step 3.6 — newCanvas/setCanvas/clear and the comparison harness
     - [x] Chunk 1 — nothing from src/ guard
-    - [ ] Chunk 2 — canvas store
+    - [x] Chunk 2 — canvas store
     - [ ] Chunk 3 — love.graphics in the host
     - [ ] Chunk 4 — the comparison
     - [ ] Chunk 5 — captures, png_check retired, proof
