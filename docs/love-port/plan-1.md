@@ -344,3 +344,14 @@ None.
 - `make test`: before 0b5a98a 5.02 s, reference 7.08 s, current 5.06 s;
   paired +0.33 % / −28.87 %, 11 rounds, 4 cores.
 
+### Step 3.14
+
+- `setDefaultFilter("nearest", "nearest")` only, storing nothing; other forms
+  refused (unknown names with LÖVE's message). Real LÖVE: only objects created
+  after the call get nearest; 31 of 31 captures re-run under nearest were
+  byte-identical; fractional positions still differ (0.5: 7 249 pixels), so
+  they stay refused. design.md "Default filter": call it first in `love.load`.
+- Capture `filter_nearest` matches; misuses in the `image_draw_log` game.
+- `make test`: before 434db23 5.19 s, reference 7.21 s, current 5.15 s;
+  paired +0.62 % / −28.42 %, 11 rounds, 4 cores.
+

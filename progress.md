@@ -58,7 +58,7 @@
     - [x] Chunk 1 — transform stack, translated point rule
     - [x] Chunk 2 — push, pop, translate bindings
     - [x] Chunk 3 — capture, docs, timing
-  - [ ] Step 3.14 — setDefaultFilter
+  - [x] Step 3.14 — setDefaultFilter
     - [x] Chunk 1 — setDefaultFilter binding
     - [x] Chunk 2 — capture, nearest re-run, docs, timing
   - [ ] Step 3.15 — combined capture program
