@@ -24,7 +24,7 @@ Everything written in the repository is in English: code, comments, docs, e2e no
 
 ## Build
 
-- `make test` is the fast loop (unit tests and static checks, ~8 s). `make e2e` replays the e2e files of `tests/e2e/` from the title screen (~1 s). `make test-all` runs both. `make help` lists the targets: each public target carries a one-line `## ` description of at most 20 words.
+- `make test` is the fast loop (unit tests and static checks, ~5 s). `make e2e` replays the e2e files of `tests/e2e/` from the title screen (~1 s). `make test-all` runs both. `make help` lists the targets: each public target carries a one-line `## ` description of at most 20 words.
 - `tools/love_install.sh` installs LÖVE 11.5, Xvfb, Mesa and LuaJIT; the SessionStart hook and CI run it.
 - `test`, `e2e` and `test-all` hold `tmp/make.lock` through `flock` (macOS: `brew install flock`): a second one fails at once.
 

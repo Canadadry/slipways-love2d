@@ -1029,16 +1029,21 @@ replay: $(TMP_DIR)/replay ## EVENTS=<events> [SAVE_HEX=<file>] [DIGEST=<file>]: 
 	$(if $(ATTRACT_STATE),ATTRACT_STATE=$(ATTRACT_STATE) )$(if $(REPLAY_STARTS),REPLAY_STARTS=$(REPLAY_STARTS) )$(if $(SAVE_HEX),SAVE_HEX=$(SAVE_HEX) )$(if $(DIGEST),DIGEST=$(DIGEST) )./$(TMP_DIR)/replay $(EVENTS)
 
 # One target per name of tools/love_capture/, from its .lua and .png alike,
-# so that a lone half fails instead of being skipped.
-LOVE_CAPTURE_NAMES := $(sort $(basename $(notdir $(wildcard tools/love_capture/*.lua tools/love_capture/*.png))))
+# so that a lone half fails instead of being skipped. The halves are sorted
+# here, not in a recipe: a pair's recipe then runs without a shell.
+LOVE_CAPTURE_PROGRAMS := $(basename $(notdir $(wildcard tools/love_capture/*.lua)))
+LOVE_CAPTURE_PNGS := $(basename $(notdir $(wildcard tools/love_capture/*.png)))
+LOVE_CAPTURE_NAMES := $(sort $(LOVE_CAPTURE_PROGRAMS) $(LOVE_CAPTURE_PNGS))
 LOVE_CAPTURE_CHECKS := $(addprefix love-capture-check-,$(LOVE_CAPTURE_NAMES))
 
-$(foreach name,$(LOVE_CAPTURE_NAMES),$(eval love-capture-check-$(name): $(wildcard tools/love_capture/$(name).lua tools/love_capture/$(name).png)))
-
-$(LOVE_CAPTURE_CHECKS): love-capture-check-%: $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS)
-	@[ -f tools/love_capture/$*.lua ] || { echo "love-capture-check: $*.lua missing for $*.png" >&2; exit 1; }
-	@[ -f tools/love_capture/$*.png ] || { echo "love-capture-check: $*.png missing: run make love-capture" >&2; exit 1; }
+$(addprefix love-capture-check-,$(filter $(LOVE_CAPTURE_PNGS),$(LOVE_CAPTURE_PROGRAMS))): love-capture-check-%: tools/love_capture/%.lua tools/love_capture/%.png $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS)
 	./$(TMP_DIR)/love_capture_check tools/fake_love/harness tools/love_capture/$*.lua tools/love_capture/$*.png
+
+$(addprefix love-capture-check-,$(filter-out $(LOVE_CAPTURE_PROGRAMS),$(LOVE_CAPTURE_PNGS))): love-capture-check-%:
+	@echo "love-capture-check: $*.lua missing for $*.png" >&2; exit 1
+
+$(addprefix love-capture-check-,$(filter-out $(LOVE_CAPTURE_PNGS),$(LOVE_CAPTURE_PROGRAMS))): love-capture-check-%:
+	@echo "love-capture-check: $*.png missing: run make love-capture" >&2; exit 1
 
 .PHONY: $(LOVE_CAPTURE_CHECKS)
 
@@ -1046,7 +1051,9 @@ $(LOVE_CAPTURE_CHECKS): love-capture-check-%: $(TMP_DIR)/love_capture_check $(FA
 # runs it beside the unit tests instead of after them.
 FAKE_LOVE_CHECKS := $(LOVE_CAPTURE_CHECKS) unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick unit-run-test_fake_love_files unit-run-test_fake_love_graphics unit-run-test_fake_love_points unit-run-test_fake_love_rectangle unit-run-test_fake_love_set_color unit-run-test_fake_love_image unit-run-test_fake_love_image_draw unit-run-test_fake_love_capture
 
-test: unit $(FAKE_LOVE_CHECKS) constants-check float-grep float-guard alloc-guard pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~8 s)
+# Longest first: `-j` starts prerequisites in this order, and float-guard
+# alone (~4 s, serial) sets the wall time when it starts behind the checks.
+test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
 
 test-all: test e2e ## test + e2e, the full suite
 

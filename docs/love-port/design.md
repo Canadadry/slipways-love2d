@@ -58,11 +58,17 @@ fake follows these rules, and every step that adds one measures it.
    listed in the Makefile's `FAKE_LOVE_CHECKS`, a direct prerequisite of
    `test`. No recipe loops over programs, and no check orders itself after
    the unit tests: `-j` runs them on the cores the unit tests leave idle.
+   `test` lists its longest prerequisites first (`float-guard`, about 4 s
+   on one core, then `float-grep` and the slowest unit tests): `-j` starts
+   prerequisites in list order, and `float-guard` queued behind the checks
+   would set the wall time alone.
 2. **Cheap by construction.** One process per check, no interpreter but the
    embedded LuaJIT, no external tool (no Python, no ImageMagick, no shell
-   pipeline over PNGs); comparisons are done in C. Budget: 100 ms of wall
-   time per check on the container. A check over budget is split before
-   its step closes.
+   pipeline over PNGs); comparisons are done in C. A capture check's recipe
+   is the bare `love_capture_check` command, run without a shell: a lone
+   `.lua` or `.png` is found when the Makefile is read, and its target
+   fails naming the missing half. Budget: 100 ms of wall time per check
+   on the container. A check over budget is split before its step closes.
 3. **Out of `make e2e`.** No fake check is a prerequisite of `e2e`;
    `make love-e2e` is its own target, outside `make test` and `make e2e`.
 4. **Measured, with one protocol, against two baselines.**
