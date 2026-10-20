@@ -22,11 +22,16 @@ bool host_open(host_t *host, const char *game_dir, disk_t *disk);
 /* love.load gets a new sequence table holding the `count` strings. */
 bool host_load(host_t *host, const char *const *arguments, size_t count);
 /* Calls the pad callbacks for the changes from the previous frame's `held`
- * (nothing held before frame 0), then love.update and love.draw. */
+ * (nothing held before frame 0), then love.update and love.draw; fails when
+ * a canvas is still selected after the draw step, as LÖVE's present does. */
 bool host_frame(host_t *host, size_t frame, unsigned held);
 /* `*text` is owned by the host, valid until the next call. */
 bool host_debug_state(host_t *host, const char **text, size_t *length);
 
 const char *host_error(const host_t *host);
+
+/* The RGBA8 pixels of the canvas created `canvas`-th, owned by the host and
+ * valid until host_close; NULL, leaving the size unset, when fewer exist. */
+const unsigned char *host_read_canvas(const host_t *host, int canvas, int *width, int *height);
 
 #endif

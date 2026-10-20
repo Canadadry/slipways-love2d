@@ -10,7 +10,9 @@
 #include <lua.h>
 #include <lualib.h>
 
+#include "canvas.h"
 #include "filesystem.h"
+#include "graphics.h"
 #include "joystick.h"
 #include "pad.h"
 
@@ -19,6 +21,7 @@
 
 struct host {
     lua_State *lua;
+    canvas_store_t *canvases;
     unsigned held;
     char *game_dir;
     char *state_text;
@@ -73,6 +76,7 @@ host_t *host_new(void) {
         return NULL;
     }
     luaL_openlibs(host->lua);
+    host->canvases = canvas_create_store();
     return host;
 }
 
@@ -80,6 +84,7 @@ void host_close(host_t *host) {
     if (host == NULL)
         return;
     lua_close(host->lua);
+    canvas_free_store(host->canvases);
     free(host->game_dir);
     free(host->state_text);
     free(host);
@@ -185,6 +190,7 @@ bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
         return false;
     joystick_install(host->lua);
     filesystem_install(host->lua, disk);
+    graphics_install(host->lua, host->canvases);
     return run_file(host, "main.lua");
 }
 
@@ -232,7 +238,22 @@ bool host_frame(host_t *host, size_t frame, unsigned held) {
     }
     if (!push_callback(host, "draw", frame, &defined))
         return false;
-    return !defined || call(host, 0, 0, "love.draw", frame);
+    if (defined && !call(host, 0, 0, "love.draw", frame))
+        return false;
+    if (canvas_get_target(host->canvases) != CANVAS_NONE) {
+        set_error(host, "love.draw f%zu: present cannot be called while a Canvas is active.", frame);
+        return false;
+    }
+    return true;
+}
+
+const unsigned char *host_read_canvas(const host_t *host, int canvas, int *width, int *height) {
+    const unsigned char *pixels = canvas_read_pixels(host->canvases, canvas);
+    if (pixels != NULL) {
+        *width = CANVAS_WIDTH;
+        *height = CANVAS_HEIGHT;
+    }
+    return pixels;
 }
 
 bool host_debug_state(host_t *host, const char **text, size_t *length) {

@@ -16,4 +16,12 @@ char *fake_love_cli_read_file(const char *path, long *size_out);
 
 bool fake_love_cli_file_exists(const char *path);
 
+/* Asserts that `path` holds exactly `expected`. */
+void fake_love_cli_assert_text(const char *path, const char *expected);
+
+/* Runs as fake_love_cli_run and asserts exit 1, stderr holding every string
+ * of `needles` (NULL-terminated), and no capture nor state file left. */
+void fake_love_cli_assert_failure(const char *environment, const char *args, const char *capture, const char *state,
+                                  const char *stderr_log, const char *const *needles);
+
 #endif

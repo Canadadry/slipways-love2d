@@ -351,13 +351,13 @@ $(TMP_DIR)/test_fake_love_disk: $(test_fake_love_disk_objs) $(wildcard tests/fix
 luajit_flags = $(if $(filter LUAJIT_MISSING,$(1)),$(error pkg-config luajit failed: run tools/love_install.sh),$(1))
 LUAJIT_CFLAGS = $(call luajit_flags,$(shell pkg-config --cflags luajit 2>/dev/null || echo LUAJIT_MISSING))
 LUAJIT_LIBS = $(call luajit_flags,$(shell pkg-config --libs luajit 2>/dev/null || echo LUAJIT_MISSING))
-FAKE_LOVE_LUA_SRCS := tools/fake_love/fake_love.c tools/fake_love/host.c tools/fake_love/joystick.c tools/fake_love/filesystem.c
+FAKE_LOVE_LUA_SRCS := tools/fake_love/fake_love.c tools/fake_love/host.c tools/fake_love/joystick.c tools/fake_love/filesystem.c tools/fake_love/graphics.c
 
 $(call objs,$(FAKE_LOVE_LUA_SRCS)): override CFLAGS += $(LUAJIT_CFLAGS)
 
-fake_love_objs := $(call objs,$(FAKE_LOVE_LUA_SRCS) tools/fake_love/replay.c tools/fake_love/pad.c tools/fake_love/disk.c)
+fake_love_objs := $(call objs,$(FAKE_LOVE_LUA_SRCS) tools/fake_love/replay.c tools/fake_love/pad.c tools/fake_love/disk.c tools/fake_love/canvas.c)
 $(TMP_DIR)/fake_love: $(fake_love_objs) | $(TMP_DIR)
-	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS) -lm
 
 fake-love: $(TMP_DIR)/fake_love ## builds tmp/fake_love, the headless LÖVE that plays a Lua game on a replay
 
@@ -379,6 +379,10 @@ $(TMP_DIR)/test_fake_love_joystick: $(test_fake_love_joystick_objs) $(TMP_DIR)/f
 
 test_fake_love_files_objs := $(call objs,tests/test_fake_love_files.c tests/fake_love_cli.c)
 $(TMP_DIR)/test_fake_love_files: $(test_fake_love_files_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_graphics_objs := $(call objs,tests/test_fake_love_graphics.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_fake_love_graphics: $(test_fake_love_graphics_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_frames_check: $(call objs,tests/test_frames_check.c) tools/frames_check.sh | $(TMP_DIR)
@@ -898,7 +902,8 @@ UNIT_TESTS := \
     test_fake_love \
     test_fake_love_failures \
     test_fake_love_joystick \
-    test_fake_love_files
+    test_fake_love_files \
+    test_fake_love_graphics
 
 # One run per test, each its own target: that is what `-j` runs in parallel.
 UNIT_RUNS := $(addprefix unit-run-,$(UNIT_TESTS))
@@ -962,7 +967,7 @@ replay: $(TMP_DIR)/replay ## EVENTS=<events> [SAVE_HEX=<file>] [DIGEST=<file>]: 
 
 # Each check that runs the fake is its own target, listed here, so that `-j`
 # runs it beside the unit tests instead of after them.
-FAKE_LOVE_CHECKS := unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick unit-run-test_fake_love_files
+FAKE_LOVE_CHECKS := unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick unit-run-test_fake_love_files unit-run-test_fake_love_graphics
 
 test: unit $(FAKE_LOVE_CHECKS) constants-check float-grep float-guard alloc-guard pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~8 s)
 
@@ -1194,7 +1199,7 @@ random-guard: tools/random_guard.sh $(RANDOM_GUARD_EXCEPTIONS) ## ratchet on the
 # `<binary> <objects>` per binary of the fake side: each name below has its
 # `<name>_objs` beside its link rule. tmp/luajit_version has no object: the
 # include scan of tools/love_capture/ covers it.
-FAKE_SIDE_BINARIES := fake_love test_fake_love_replay test_fake_love_pad test_fake_love_canvas test_fake_love_disk test_fake_love test_fake_love_failures test_fake_love_joystick test_fake_love_files test_fake_love_guard
+FAKE_SIDE_BINARIES := fake_love test_fake_love_replay test_fake_love_pad test_fake_love_canvas test_fake_love_disk test_fake_love test_fake_love_failures test_fake_love_joystick test_fake_love_files test_fake_love_graphics test_fake_love_guard
 FAKE_SIDE_LINKS := $(foreach binary,$(FAKE_SIDE_BINARIES),$(TMP_DIR)/$(binary) $($(binary)_objs))
 FAKE_SIDE_SRCS := tools/fake_love tools/love_capture $(wildcard tests/test_fake_love*.c tests/fake_love_cli.[ch])
 

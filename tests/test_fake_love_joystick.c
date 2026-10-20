@@ -17,13 +17,7 @@ static int run_fake_love(const char *environment, const char *args) {
 }
 
 static void assert_state(const char *expected) {
-    char *state = fake_love_cli_read_file(STATE, NULL);
-    assert(state != NULL && "the state file must be written");
-    if (strcmp(state, expected) != 0) {
-        fprintf(stderr, "state:\n%s\nexpected:\n%s\n", state, expected);
-        assert(!"unexpected state");
-    }
-    free(state);
+    fake_love_cli_assert_text(STATE, expected);
 }
 
 static void assert_runs(const char *environment, const char *args) {
@@ -36,23 +30,8 @@ static void assert_runs(const char *environment, const char *args) {
     }
 }
 
-/* `needles` ends with NULL; each must appear in stderr. */
 static void assert_failure(const char *environment, const char *args, const char *const *needles) {
-    int status = run_fake_love(environment, args);
-    char *err = fake_love_cli_read_file(STDERR_LOG, NULL);
-    assert(err != NULL);
-    if (status != 1) {
-        fprintf(stderr, "fake_love %s %s: status %d, expected 1\n%s", environment, args, status, err);
-        assert(!"unexpected exit status");
-    }
-    for (const char *const *needle = needles; *needle != NULL; needle++)
-        if (strstr(err, *needle) == NULL) {
-            fprintf(stderr, "fake_love %s %s: stderr lacks \"%s\":\n%s", environment, args, *needle, err);
-            assert(!"stderr must name the cause");
-        }
-    free(err);
-    assert(!fake_love_cli_file_exists(CAPTURE) && "a failed run must remove its capture");
-    assert(!fake_love_cli_file_exists(STATE) && "a failed run must remove its state file");
+    fake_love_cli_assert_failure(environment, args, CAPTURE, STATE, STDERR_LOG, needles);
 }
 
 static void test_callbacks_follow_the_replay_buttons(void) {

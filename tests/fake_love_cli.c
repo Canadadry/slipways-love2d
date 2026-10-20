@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/wait.h>
 
 int fake_love_cli_run(const char *environment, const char *args, const char *capture, const char *state,
@@ -41,4 +42,33 @@ bool fake_love_cli_file_exists(const char *path) {
         return false;
     fclose(file);
     return true;
+}
+
+void fake_love_cli_assert_text(const char *path, const char *expected) {
+    char *text = fake_love_cli_read_file(path, NULL);
+    assert(text != NULL && "the file must be written");
+    if (strcmp(text, expected) != 0) {
+        fprintf(stderr, "%s:\n%s\nexpected:\n%s\n", path, text, expected);
+        assert(!"unexpected file content");
+    }
+    free(text);
+}
+
+void fake_love_cli_assert_failure(const char *environment, const char *args, const char *capture, const char *state,
+                                  const char *stderr_log, const char *const *needles) {
+    int status = fake_love_cli_run(environment, args, capture, state, stderr_log);
+    char *err = fake_love_cli_read_file(stderr_log, NULL);
+    assert(err != NULL);
+    if (status != 1) {
+        fprintf(stderr, "fake_love %s %s: status %d, expected 1\n%s", environment, args, status, err);
+        assert(!"unexpected exit status");
+    }
+    for (const char *const *needle = needles; *needle != NULL; needle++)
+        if (strstr(err, *needle) == NULL) {
+            fprintf(stderr, "fake_love %s %s: stderr lacks \"%s\":\n%s", environment, args, *needle, err);
+            assert(!"stderr must name the cause");
+        }
+    free(err);
+    assert(!fake_love_cli_file_exists(capture) && "a failed run must remove its capture");
+    assert(!fake_love_cli_file_exists(state) && "a failed run must remove its state file");
 }
