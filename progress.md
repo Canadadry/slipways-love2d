@@ -14,6 +14,9 @@
     - [x] Chunk 2 — binary, happy path
     - [x] Chunk 3 — failures, timing rule
   - [ ] Step 2.4 — pad
+    - [x] Chunk 1 — pad table and edges
+    - [ ] Chunk 2 — reader pad checks
+    - [ ] Chunk 3 — joystick binding, host, logging game
   - [ ] Step 2.5 — fake disk and arguments
 - [ ] Phase 3 — Drawing, one function at a time
   - [ ] Step 3.6 — newCanvas/setCanvas/clear and the comparison harness
