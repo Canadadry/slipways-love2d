@@ -90,6 +90,28 @@ local function play_call(call)
       points[i] = { x = v[3 * i], y = v[3 * i + 1], col = v[3 * i + 2] }
     end
     gfx_module.p8_psets(gfx, mem, points, call.count / 3)
+  elseif operation == "line" then
+    require_count(call, 5)
+    gfx_module.p8_line(gfx, mem, v[0], v[1], v[2], v[3], v[4])
+  elseif operation == "lines" then
+    if call.count % 4 ~= 1 then
+      error(string.format("scene.txt:%d: lines takes a colour then x1 y1 x2 y2 quadruples", call.line_number), 0)
+    end
+    local segments = {}
+    local count = (call.count - 1) / 4
+    for i = 0, count - 1 do
+      segments[i] = { x1 = v[1 + 4 * i], y1 = v[2 + 4 * i], x2 = v[3 + 4 * i], y2 = v[4 + 4 * i] }
+    end
+    gfx_module.p8_lines(gfx, mem, segments, count, v[0])
+  elseif operation == "rect" then
+    require_count(call, 5)
+    gfx_module.p8_rect(gfx, mem, v[0], v[1], v[2], v[3], v[4])
+  elseif operation == "circ" then
+    require_count(call, 4)
+    gfx_module.p8_circ(gfx, mem, v[0], v[1], v[2], v[3])
+  elseif operation == "circfill" then
+    require_count(call, 4)
+    gfx_module.p8_circfill(gfx, mem, v[0], v[1], v[2], v[3])
   elseif operation == "rectfill" then
     require_count(call, 5)
     gfx_module.p8_rectfill(gfx, mem, v[0], v[1], v[2], v[3], v[4])

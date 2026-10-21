@@ -20,7 +20,7 @@
 #define STATE DIR "/state.txt"
 #define LOG DIR "/stderr.txt"
 #define FRAME_SIZE (P8_SCREEN_WIDTH * P8_SCREEN_HEIGHT / 2)
-#define SCENE_FRAMES 4
+#define SCENE_FRAMES 9
 #define MAX_ARGUMENTS 64
 
 static unsigned char expected[SCENE_FRAMES][FRAME_SIZE];
@@ -83,6 +83,25 @@ static void play_call(p8_graphics_t *gfx, p8_vram_t *mem, const char *operation,
         for (int i = 0; i < count / 3; i++)
             points[i] = (p8_point_t){v[3 * i], v[3 * i + 1], v[3 * i + 2]};
         p8_psets(gfx, mem, points, count / 3);
+    } else if (strcmp(operation, "line") == 0) {
+        require_count(operation, count, 5);
+        p8_line(gfx, mem, v[0], v[1], v[2], v[3], v[4]);
+    } else if (strcmp(operation, "lines") == 0) {
+        if (count % 4 != 1)
+            scene_fail("lines takes a colour then x1 y1 x2 y2 quadruples", NULL);
+        p8_segment_t segments[MAX_ARGUMENTS / 4];
+        for (int i = 0; i < count / 4; i++)
+            segments[i] = (p8_segment_t){v[1 + 4 * i], v[2 + 4 * i], v[3 + 4 * i], v[4 + 4 * i]};
+        p8_lines(gfx, mem, segments, count / 4, v[0]);
+    } else if (strcmp(operation, "rect") == 0) {
+        require_count(operation, count, 5);
+        p8_rect(gfx, mem, v[0], v[1], v[2], v[3], v[4]);
+    } else if (strcmp(operation, "circ") == 0) {
+        require_count(operation, count, 4);
+        p8_circ(gfx, mem, v[0], v[1], v[2], v[3]);
+    } else if (strcmp(operation, "circfill") == 0) {
+        require_count(operation, count, 4);
+        p8_circfill(gfx, mem, v[0], v[1], v[2], v[3]);
     } else if (strcmp(operation, "rectfill") == 0) {
         require_count(operation, count, 5);
         p8_rectfill(gfx, mem, v[0], v[1], v[2], v[3], v[4]);

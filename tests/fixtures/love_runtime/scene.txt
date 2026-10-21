@@ -58,3 +58,93 @@ rectfill 160 100 180 140 3
 rectfill -5000 50 5000 52 4
 camera 0 0
 frame
+# line: one pixel, horizontal, vertical, both diagonals, steep and shallow
+# slopes in each direction, ends off screen on every side, wholly off screen,
+# under a camera.
+line 5 5 5 5 7
+line 10 2 40 2 8
+line 2 10 2 40 9
+line 10 10 30 30 10
+line 30 40 10 60 11
+line 50 5 57 40 12
+line 70 40 63 5 13
+line 60 50 100 57 14
+line 100 65 60 58 15
+line -20 80 40 90 6
+line 140 70 200 100 5
+line 120 -10 125 20 4
+line 80 100 90 140 3
+line -30 -30 -10 -5 7
+line 170 10 190 50 7
+camera -10 20
+line 0 0 20 10 8
+line 140 -20 160 0 9
+camera 0 0
+frame
+# lines: one colour over several segments in list order (a later segment
+# crossing an earlier one), a degenerate segment, segments partly and wholly
+# off screen, a single segment, under a camera.
+lines 12 10 10 60 50 10 50 60 10 35 35 35 35 -20 5 30 5 170 90 200 110
+lines 7 80 80 80 80
+camera 30 -15
+lines 2 100 0 140 40 140 40 100 0
+camera 0 0
+frame
+# rect: corners in either order, one pixel, one row, one column, edges partly
+# and wholly off screen, enclosing the whole screen, under a camera.
+rect 10 10 30 20 8
+rect 60 40 40 25 9
+rect 5 50 5 50 7
+rect 10 60 40 60 10
+rect 50 60 50 90 11
+rect -10 70 20 100 12
+rect 140 -5 170 30 13
+rect 100 100 200 200 14
+rect 200 10 220 20 7
+rect -1 -1 160 120 15
+rect -2 -2 161 121 15
+camera -40 25
+rect 0 0 30 20 6
+rect 90 -30 130 10 5
+camera 0 0
+frame
+# circ: radius 0, small and large radii, a negative radius (nothing), partly
+# off screen on each side, enclosing the screen, wholly off screen, under a
+# camera.
+circ 10 10 0 7
+circ 20 20 1 8
+circ 40 20 2 9
+circ 70 30 7 10
+circ 80 60 30 11
+circ 0 60 12 12
+circ 159 60 12 13
+circ 80 0 9 14
+circ 80 119 9 15
+circ 80 60 100 6
+circ 50 50 -1 7
+circ -40 -40 10 7
+camera 20 -20
+circ 40 40 15 5
+camera 0 0
+frame
+# circfill without a pattern: radius 0, small and large radii, a negative
+# radius (nothing), partly off screen on each side, enclosing the screen,
+# wholly off screen, a colour byte with a high nibble (masked to the low
+# one), under a camera.
+circfill 80 60 100 1
+circfill 10 10 0 7
+circfill 20 20 1 8
+circfill 40 20 2 9
+circfill 70 30 7 10
+circfill 80 70 25 11
+circfill 0 60 12 12
+circfill 159 60 12 13
+circfill 80 0 9 14
+circfill 80 119 9 15
+circfill 50 50 -1 7
+circfill -40 -40 10 7
+circfill 120 90 6 0xc3
+camera 20 -20
+circfill 40 40 15 5
+camera 0 0
+frame
