@@ -74,3 +74,7 @@
     - [x] Chunk 3 — colour check, drawing-rules game
     - [x] Chunk 4 — timing
   - [ ] Step 4.18 — make love-e2e
+    - [x] Chunk 1 — frames_check --no-baseline-hints
+    - [ ] Chunk 2 — runner, report, fixed stub, test
+    - [ ] Chunk 3 — love-e2e target, docs, redraw stub
+    - [ ] Chunk 4 — verification, timing
