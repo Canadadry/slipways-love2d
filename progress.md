@@ -33,7 +33,7 @@
   - [ ] 3.2 engine: entity classes, ids, lists, exit queue
     - [x] chunk 1: id type and entity class
     - [x] chunk 2: id table and id lists
-    - [ ] chunk 3: entity lists and exit queue
+    - [x] chunk 3: entity lists and exit queue
     - [ ] chunk 4: cost and record
   - [ ] 3.3 engine: registry, entity geometry, entities, bootstrap
   - [ ] 3.4 game: leaves
