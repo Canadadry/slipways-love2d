@@ -133,6 +133,47 @@ function M.p8_fixed_pow075(x)
   return M.p8_fixed_mul(s, M.p8_fixed_sqrt(s))
 end
 
+local P8_RND_LCG_MULTIPLIER = 1664525
+local P8_RND_LCG_INCREMENT = 1013904223
+local P8_RND_DEFAULT_SEED = 0x2545F491
+
+-- A uint32_t: a number in 0 .. 2^32 - 1, never a signed bit result.
+local rnd_state = P8_RND_DEFAULT_SEED
+
+-- The C uint32_t *state is an argument plus a second return value: the new
+-- state. The 64-bit magnitude * state (up to 2^63) does not fit a double:
+-- the state is split into 16-bit halves.
+function M.p8_fixed_rnd_from_state(state, x)
+  if x == 0 then
+    return 0, state
+  end
+  local magnitude = x < 0 and -x or x
+  state = (state * P8_RND_LCG_MULTIPLIER + P8_RND_LCG_INCREMENT) % 0x100000000
+  local state_high, state_low = floor(state / 0x10000), state % 0x10000
+  local scaled = floor((magnitude * state_high + floor(magnitude * state_low / 0x10000)) / 0x10000)
+  local result = tobit(scaled)
+  return x < 0 and M.p8_fixed_neg(result) or result, state
+end
+
+function M.p8_fixed_rnd(x)
+  local result
+  result, rnd_state = M.p8_fixed_rnd_from_state(rnd_state, x)
+  return result
+end
+
+function M.p8_fixed_rnd_state()
+  return rnd_state
+end
+
+function M.p8_fixed_set_rnd_state(state)
+  assert(state >= 0 and state < 0x100000000 and state == floor(state), "p8_fixed_set_rnd_state: state is a uint32_t")
+  rnd_state = state
+end
+
+function M.p8_fixed_rnd_default()
+  return M.p8_fixed_rnd(M.p8_fixed_from_int(1))
+end
+
 -- 0 - v, not -v: -0 would print as "-0".
 local function quarter_wave_at(f)
   local quadrant = band(rshift(f, 14), 3)

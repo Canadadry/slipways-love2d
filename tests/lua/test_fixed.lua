@@ -37,6 +37,32 @@ local SIGNATURES = {
   p8_fixed_pow075 = UNARY,
   p8_fixed_cos = UNARY,
   p8_fixed_sin = UNARY,
+  p8_fixed_rnd = { inputs = { "f" }, outputs = { "f", "u" } },
+  p8_fixed_set_rnd_state = { inputs = { "u" }, outputs = { "u" } },
+  p8_fixed_rnd_default = { inputs = {}, outputs = { "f", "u" } },
+  p8_fixed_rnd_from_state = { inputs = { "u", "f" }, outputs = { "f", "u" } },
+  p8_fixed_rnd_state = { inputs = {}, outputs = { "u" } },
+}
+
+-- Sections whose C call also reads the global random state: each record
+-- holds the call's results then the state it leaves.
+local ADAPTERS = {
+  p8_fixed_rnd = function(m)
+    return m.p8_fixed_rnd and m.p8_fixed_rnd_state and function(x)
+      return m.p8_fixed_rnd(x), m.p8_fixed_rnd_state()
+    end
+  end,
+  p8_fixed_rnd_default = function(m)
+    return m.p8_fixed_rnd_default and m.p8_fixed_rnd_state and function()
+      return m.p8_fixed_rnd_default(), m.p8_fixed_rnd_state()
+    end
+  end,
+  p8_fixed_set_rnd_state = function(m)
+    return m.p8_fixed_set_rnd_state and m.p8_fixed_rnd_state and function(state)
+      m.p8_fixed_set_rnd_state(state)
+      return m.p8_fixed_rnd_state()
+    end
+  end,
 }
 
 local function fail(message)
@@ -93,6 +119,8 @@ if version ~= 1 then
 end
 
 local mismatches = {}
+-- Per C name, summed over its sections: a name may have several.
+local differing, checked = {}, {}
 local seen = {}
 local records_read = 0
 local failed = false
@@ -120,14 +148,14 @@ while true do
     fail(string.format("section %s: %d outputs, the reader keeps 3 return values", name, output_count))
   end
   seen[name] = true
-  local fn = fixed[name]
+  local fn = ADAPTERS[name] and ADAPTERS[name](fixed) or fixed[name]
   if type(fn) == "number" then
     local value = fn
     fn = function()
       return value
     end
   end
-  local count = 0
+  local count = differing[name] or 0
   local inputs, actual, expected = {}, {}, {}
   for _ = 1, record_count do
     for i = 1, input_count do
@@ -160,8 +188,12 @@ while true do
     end
   end
   records_read = records_read + record_count
+  differing[name] = count
+  checked[name] = (checked[name] or 0) + record_count
+end
+for name, count in pairs(differing) do
   if count > 0 then
-    mismatches[#mismatches + 1] = string.format("%s: %d of %d records differ", name, count, record_count)
+    mismatches[#mismatches + 1] = string.format("%s: %d of %d records differ", name, count, checked[name])
     failed = true
   end
 end

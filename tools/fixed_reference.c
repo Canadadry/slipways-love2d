@@ -277,6 +277,104 @@ static void write_ternary(writer_t *w, const char *name, ternary_fn fn) {
     section_end(w);
 }
 
+/* Every rnd section draws on the library's global state in file order: the
+ * first draw is the default seed's, so no earlier section may draw. */
+static void push_rnd(writer_t *w, int32_t x) {
+    section_push(w, (uint32_t)x);
+    section_push(w, (uint32_t)p8_fixed_rnd(x));
+    section_push(w, p8_fixed_rnd_state());
+}
+
+static void write_rnd_stream(writer_t *w) {
+    int i;
+    section_begin(w, "p8_fixed_rnd", 1, 2);
+    for (i = 0; i < 8; i++) {
+        push_rnd(w, p8_fixed_from_int(1));
+    }
+    for (i = 0; i < EDGE_COUNT; i++) {
+        push_rnd(w, edge_values[i]);
+    }
+    for (i = 0; i < SAMPLE_PER_SECTION; i++) {
+        push_rnd(w, sample_value());
+    }
+    section_end(w);
+}
+
+static const uint32_t edge_states[] = {
+    0u, 1u, 0x7FFFFFFFu, 0x80000000u, 0xFFFFFFFFu, 0x2545F491u, 0xC5E1D7B3u,
+};
+#define EDGE_STATE_COUNT ((int)(sizeof edge_states / sizeof edge_states[0]))
+
+static void write_set_rnd_streams(writer_t *w) {
+    int i;
+    int j;
+    for (i = 0; i < EDGE_STATE_COUNT; i++) {
+        section_begin(w, "p8_fixed_set_rnd_state", 1, 1);
+        p8_fixed_set_rnd_state(edge_states[i]);
+        section_push(w, edge_states[i]);
+        section_push(w, p8_fixed_rnd_state());
+        section_end(w);
+        section_begin(w, "p8_fixed_rnd", 1, 2);
+        for (j = 0; j < 4; j++) {
+            push_rnd(w, p8_fixed_from_int(1));
+        }
+        push_rnd(w, 0);
+        push_rnd(w, INT32_MIN);
+        push_rnd(w, 0x7FFFFFFF);
+        push_rnd(w, -0x10000);
+        section_end(w);
+    }
+}
+
+static void write_rnd_default_stream(writer_t *w) {
+    int i;
+    p8_fixed_t result;
+    section_begin(w, "p8_fixed_rnd_default", 0, 2);
+    for (i = 0; i < 32; i++) {
+        result = p8_fixed_rnd_default();
+        section_push(w, (uint32_t)result);
+        section_push(w, p8_fixed_rnd_state());
+    }
+    section_end(w);
+}
+
+static void push_rnd_from_state(writer_t *w, uint32_t *state, int32_t x) {
+    section_push(w, *state);
+    section_push(w, (uint32_t)x);
+    section_push(w, (uint32_t)p8_fixed_rnd_from_state(state, x));
+    section_push(w, *state);
+}
+
+/* Chains: each record's input state is the previous record's new state.
+ * The trailing rnd_state section proves the global state was left alone. */
+static void write_rnd_from_state_chains(writer_t *w) {
+    int i;
+    int j;
+    uint32_t state;
+    section_begin(w, "p8_fixed_rnd_from_state", 2, 2);
+    for (i = 0; i < EDGE_STATE_COUNT; i++) {
+        state = edge_states[i];
+        for (j = 0; j < EDGE_COUNT; j++) {
+            push_rnd_from_state(w, &state, edge_values[j]);
+        }
+    }
+    state = sample_next();
+    for (i = 0; i < SAMPLE_PER_SECTION; i++) {
+        push_rnd_from_state(w, &state, sample_value());
+    }
+    /* 0xA4B668AA advances to 0x80000001, and 0x7FFFFFFF * 0x80000001 is
+     * 2^32 * 0x3FFFFFFF + 0xFFFFFFFF: a double product rounds it up to the
+     * next multiple of 2^32, so a Lua copy multiplying in doubles fails here. */
+    state = 0xA4B668AAu;
+    push_rnd_from_state(w, &state, 0x7FFFFFFF);
+    state = 0xA4B668AAu;
+    push_rnd_from_state(w, &state, -0x7FFFFFFF);
+    section_end(w);
+    section_begin(w, "p8_fixed_rnd_state", 0, 1);
+    section_push(w, p8_fixed_rnd_state());
+    section_end(w);
+}
+
 int main(int argc, char **argv) {
     writer_t w = {0};
     if (argc != 2) {
@@ -317,6 +415,10 @@ int main(int argc, char **argv) {
     write_unary(&w, "p8_fixed_pow075", call_pow075, edge_roots, EDGE_ROOT_COUNT);
     write_angle(&w, "p8_fixed_cos", call_cos);
     write_angle(&w, "p8_fixed_sin", call_sin);
+    write_rnd_stream(&w);
+    write_set_rnd_streams(&w);
+    write_rnd_default_stream(&w);
+    write_rnd_from_state_chains(&w);
     write_u32(&w, 0);
     write_u32(&w, w.total_records);
     free(w.section);

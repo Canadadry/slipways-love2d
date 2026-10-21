@@ -7,7 +7,7 @@
     - [x] chunk 1: reference commit
     - [x] chunk 2: harness and integer arithmetic
     - [x] chunk 3: roots and trigonometry
-    - [ ] chunk 4: random generator
+    - [x] chunk 4: random generator
     - [ ] chunk 5: budget, sweep and record
 - [ ] Phase 2 — Runtime and LÖVE glue
   - [ ] 2.1 `game/p8/` and `game/love/`
