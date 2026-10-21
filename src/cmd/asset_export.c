@@ -8,13 +8,13 @@ enum { PATH_CAPACITY = 4096 };
 static unsigned char sprites_rgb[ASSET_IMAGE_SPRITES_WIDTH * ASSET_IMAGE_SPRITES_HEIGHT * 3];
 static unsigned char font_rgb[ASSET_IMAGE_FONT_WIDTH * ASSET_IMAGE_FONT_HEIGHT * 3];
 static unsigned char png_bytes[ASSET_IMAGE_SPRITES_WIDTH * ASSET_IMAGE_SPRITES_HEIGHT * 3 + 4096];
+static char packed_lua[ASSET_IMAGE_PACKED_LUA_CAPACITY];
 
-static int write_png(const char *directory, const char *name, const unsigned char *rgb, int width, int height) {
+static int write_file(const char *directory, const char *name, const void *bytes, size_t size) {
     char path[PATH_CAPACITY];
     int length = snprintf(path, sizeof path, "%s/%s", directory, name);
-    size_t size = png_writer_encode(rgb, width, height, png_bytes, sizeof png_bytes);
     FILE *file = (length > 0 && length < (int)sizeof path && size > 0) ? fopen(path, "wb") : NULL;
-    int written = file != NULL && fwrite(png_bytes, 1, size, file) == size;
+    int written = file != NULL && fwrite(bytes, 1, size, file) == size;
     if (file != NULL && fclose(file) != 0) written = 0;
     if (!written) {
         fprintf(stderr, "%s: cannot write\n", path);
@@ -22,6 +22,10 @@ static int write_png(const char *directory, const char *name, const unsigned cha
     }
     printf("%s\n", path);
     return 1;
+}
+
+static int write_png(const char *directory, const char *name, const unsigned char *rgb, int width, int height) {
+    return write_file(directory, name, png_bytes, png_writer_encode(rgb, width, height, png_bytes, sizeof png_bytes));
 }
 
 int main(int argc, char **argv) {
@@ -33,5 +37,7 @@ int main(int argc, char **argv) {
     asset_image_fill_font(font_rgb);
     if (!write_png(argv[1], "sprites.png", sprites_rgb, ASSET_IMAGE_SPRITES_WIDTH, ASSET_IMAGE_SPRITES_HEIGHT)) return 1;
     if (!write_png(argv[1], "font.png", font_rgb, ASSET_IMAGE_FONT_WIDTH, ASSET_IMAGE_FONT_HEIGHT)) return 1;
+    size_t packed_lua_length = asset_image_format_packed_lua(packed_lua, sizeof packed_lua);
+    if (!write_file(argv[1], "p8/sprite_sheet_packed.lua", packed_lua, packed_lua_length)) return 1;
     return 0;
 }

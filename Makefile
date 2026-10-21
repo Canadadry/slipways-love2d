@@ -774,7 +774,7 @@ $(TMP_DIR)/test_format: $(call objs,tests/test_format.c src/p8/format.c) | $(TMP
 $(TMP_DIR)/test_png_writer: $(call objs,tests/test_png_writer.c tests/png_reader.c src/devtools/png_writer.c) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-$(TMP_DIR)/test_asset_image: $(call objs,tests/test_asset_image.c tests/png_reader.c src/devtools/asset_image.c src/devtools/png_writer.c src/p8/palette.c src/p8/sprite_sheet.c src/p8/vram.c src/p8/gfx.c src/p8/gfx_software.c) game/sprites.png game/font.png | $(TMP_DIR)
+$(TMP_DIR)/test_asset_image: $(call objs,tests/test_asset_image.c tests/png_reader.c src/devtools/asset_image.c src/devtools/png_writer.c src/p8/palette.c src/p8/sprite_sheet.c src/p8/vram.c src/p8/gfx.c src/p8/gfx_software.c) game/sprites.png game/font.png game/p8/sprite_sheet_packed.lua | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_state: $(call objs,tests/test_state.c $(STATE_SRCS) $(ENGINE_SRCS)) $(TMP_DIR)/replay | $(TMP_DIR)
@@ -1091,7 +1091,7 @@ FAKE_LOVE_CHECKS := $(LOVE_CAPTURE_CHECKS) unit-run-test_fake_love unit-run-test
 
 # Longest first: `-j` starts prerequisites in this order, and float-guard
 # alone (~4 s, serial) sets the wall time when it starts behind the checks.
-test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) lua-test-fixed lua-guard pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
+test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) lua-test-fixed lua-test-runtime lua-guard pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
 
 test-all: test e2e ## test + e2e, the full suite
 
@@ -1384,7 +1384,10 @@ lua-test-fixed: tests/lua/test_fixed.lua $(wildcard game/p8/*.lua) $(TMP_DIR)/fi
 lua-sweep-fixed: tests/lua/test_fixed.lua $(wildcard game/p8/*.lua) $(TMP_DIR)/fixed_reference ## compares game/p8/fixed.lua with the C library on millions of sampled values (slow)
 	./$(TMP_DIR)/fixed_reference --sweep $(FIXED_SWEEP_COUNT) $(FIXED_SWEEP_SEED) | luajit tests/lua/test_fixed.lua -
 
-.PHONY: lua-test-fixed lua-sweep-fixed
+lua-test-runtime: tests/lua/test_runtime.lua $(wildcard game/p8/*.lua) ## checks the Lua-only behaviour of game/p8/ modules
+	luajit tests/lua/test_runtime.lua
+
+.PHONY: lua-test-fixed lua-sweep-fixed lua-test-runtime
 
 # wildcard, not find: the guard stays a single process.
 LUA_GUARD_FILES := $(wildcard game/*.lua game/*/*.lua game/*/*/*.lua)
@@ -1397,7 +1400,7 @@ lua-guard: tools/lua_guard.lua ## fails when a game/ Lua file does not compile o
 $(TMP_DIR)/asset_export: $(call objs,src/cmd/asset_export.c src/devtools/asset_image.c src/devtools/png_writer.c src/p8/palette.c src/p8/sprite_sheet.c src/p8/vram.c src/p8/gfx_software.c src/p8/gfx.c) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-asset-export: $(TMP_DIR)/asset_export ## writes game/sprites.png and game/font.png from the C sprite sheet and font
+asset-export: $(TMP_DIR)/asset_export ## writes game/sprites.png, game/font.png and game/p8/sprite_sheet_packed.lua from the C sprite sheet and font
 	mkdir -p game
 	./$(TMP_DIR)/asset_export game
 

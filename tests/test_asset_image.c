@@ -156,12 +156,42 @@ static void test_committed_pngs_are_what_the_export_writes_now(void) {
     assert_committed_equals_export("game/font.png", ASSET_IMAGE_FONT_WIDTH, ASSET_IMAGE_FONT_HEIGHT);
 }
 
+static char exported_lua[ASSET_IMAGE_PACKED_LUA_CAPACITY];
+
+static void test_committed_packed_lua_is_what_the_export_writes_now(void) {
+    size_t length = asset_image_format_packed_lua(exported_lua, sizeof exported_lua);
+    assert(length > 0);
+    size_t committed_size = read_committed("game/p8/sprite_sheet_packed.lua");
+    if (committed_size != length || memcmp(file_bytes, exported_lua, length) != 0) {
+        fprintf(stderr, "game/p8/sprite_sheet_packed.lua is stale: run make asset-export\n");
+    }
+    assert(committed_size == length);
+    assert(memcmp(file_bytes, exported_lua, length) == 0);
+}
+
+static void test_packed_lua_holds_every_byte_from_index_0(void) {
+    size_t length = asset_image_format_packed_lua(exported_lua, sizeof exported_lua);
+    assert(length > 0);
+    assert(strstr(exported_lua, "local p8_sprite_sheet_packed_bytes = {\n  [0] = 0x00, ") != NULL);
+    int count = 0;
+    for (const char *p = strstr(exported_lua, "0x"); p != NULL; p = strstr(p + 2, "0x")) count++;
+    assert(count == P8_SPRITE_SHEET_PACKED_SIZE);
+    assert(strstr(exported_lua, "\nreturn p8_sprite_sheet_packed_bytes\n") != NULL);
+}
+
+static void test_packed_lua_needs_room_for_the_whole_text(void) {
+    assert(asset_image_format_packed_lua(exported_lua, 100) == 0);
+}
+
 int main(void) {
     test_committed_sprites_png_holds_the_sheet();
     test_committed_font_png_holds_every_glyph_in_its_grid_cell();
     test_committed_pngs_hold_only_palette_colors();
     test_font_grid_spot_checks();
     test_committed_pngs_are_what_the_export_writes_now();
+    test_packed_lua_holds_every_byte_from_index_0();
+    test_packed_lua_needs_room_for_the_whole_text();
+    test_committed_packed_lua_is_what_the_export_writes_now();
 
     printf("test_asset_image: all tests passed\n");
     return 0;
