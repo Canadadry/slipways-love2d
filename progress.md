@@ -66,12 +66,12 @@
     - [x] chunk 2: economy_score
     - [x] chunk 3: economy
     - [x] chunk 4: cost and record
-  - [ ] 3.8 game: include cycle, slipways, probes and wormholes
+  - [x] 3.8 game: include cycle, slipways, probes and wormholes
     - [x] chunk 1: particle_zone
     - [x] chunk 2: probe
     - [x] chunk 3: slipway
     - [x] chunk 4: wormhole
-    - [ ] chunk 5: cost and record
+    - [x] chunk 5: cost and record
   - [ ] 3.9 game: include cycle, UI and message box, particles, background, scroll
   - [ ] 3.10 game: displays and panels
   - [ ] 3.11 game: pad modes

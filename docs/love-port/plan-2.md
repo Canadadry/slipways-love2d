@@ -527,3 +527,38 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   model. Pass. Projection at the end: `lua-guard` 79–88 ms,
   `lua-test-modules` 65–72 ms.
 - The PRD's agent had no `guideline` and settled its points itself.
+
+### Step 3.8
+
+- `game/game/`: particle_zone, probe (with the main economy and targeting
+  functions of `probe.c`), slipway, wormhole. `make checklist STEP=3.8`
+  passes (100/100, 13/13).
+- Deferred loads: only particle_zone loads now. probe requires `game.particle`
+  at load (its class draws with `emitter_update_method`), so it waits for
+  3.9. slipway and wormhole hold `slipway_draw_method` and
+  `wormhole_draw_method` by identity, defined in `slipway_display.c` and
+  `wormhole_display.c`, which the checklist assigns to 3.10 (outside the
+  cycle); so they wait for 3.10 (decided by `guideline`: hold the C methods,
+  defer, no forwarders). `LUA_DEFERRED_MODULES` is now `game.planet_family
+  game.probe game.slipway game.wormhole`: 3.9 drops planet_family and probe,
+  3.10 drops slipway and wormhole, so 3.10 (not 3.9, as 3.6 said) empties it.
+  With the missing modules stubbed, all their blocks already match the C.
+- The load check clears the non-table entries a failed require leaves in
+  `package.loaded` (LuaJIT's sentinel), so a module first required by a
+  failing deferred one reports its own missing module, not "loop or previous
+  error".
+- Field names: the slipway's `end` is `end_`, the wormhole's own `has` is
+  `has_`. `targeting_zero` lives in `game.targeting`, `slipway_keys_zero` in
+  `game.slipway`; probe keeps a local `emitter_zero` for 3.9 to fold into
+  particle. `reference_header` is in `tools/table_reference/reference_class.h`.
+- For 3.9: particle requires probe at call time (`emitter_of`); dropping
+  planet_family and probe from the list makes their 20 blocks count.
+- Behaviour checked against the C with throwaway programs, all
+  byte-identical: particle zone slots and overflows; targeting over a
+  49×34 grid, tooltips, probe particles and the main economy; slipway drags,
+  drops and obstructions; wormhole anchors, 494 drags, drops and unfolding.
+- Own-time gate, paired against `cd653b0` (45 pairs; +51.6 KB Lua, +12
+  compared blocks, +19 deferred, +1,377 compared lines): `lua-guard` 56.5 →
+  59.3 ms (+4.0, about 0.078 ms per KB); `lua-test-modules` 43.2 → 46.6 ms
+  (+3.7; deferred files are compiled before they fail). Pass. Projection at
+  the end: `lua-guard` 77–87 ms, `lua-test-modules` 63–69 ms.
