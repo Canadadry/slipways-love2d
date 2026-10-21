@@ -68,3 +68,17 @@ None.
   matches all 20 hashes. A divergence is therefore the Lua game's, or a
   fake LÖVE rule the captures did not settle.
 
+### From plan 2
+
+- `make love-e2e` matches all 20 replays on the closing commit of plan 2:
+  each replay step may shrink to confirming its match and end state (the
+  state comparison still needs `make love-e2e-state`, above). Plan 3's
+  plan-converge decides.
+- The rules for reading a Lua function against its C original (names,
+  0-indexed arrays, `cint`, out-parameters as extra returns, `has_`, module
+  loading) are in design.md § Reading the Lua against the C.
+- Left open, with no check in the tree: the four planet fields Lua leaves
+  nil (`sprite`, `palette_block`, `acceleration_factor`, `speed`) are read
+  nowhere, by audit only; no code compares the score panel's text
+  addresses, by audit only; `game.pad_nav` and `game.save_state` have no
+  direct test (their C-vs-Lua checks were throwaway programs).

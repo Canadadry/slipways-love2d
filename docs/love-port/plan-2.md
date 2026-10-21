@@ -134,6 +134,8 @@ from the recorded own times.
 - The fixed-point tests and the drawing check are green, and the game runs
   the synthetic no-input file in `tmp/fake_love`, `debug_state()` included,
   without a refusal.
+- The conventions of the step notes are in `docs/love-port/design.md` as
+  rules of the code as it stands.
 
 ## 5. Open questions
 
@@ -740,3 +742,47 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   Lua, +5 blocks, +19 lines): `lua-guard` +0.6 then +1.9 ms (79.1–80.5 ms);
   `lua-test-modules` +1.0 then +1.2 ms (54.0–54.5 ms). Pass. 3.15 adds about
   20 KB: `lua-guard` projected at 81–84 ms at the end.
+
+### Step 3.15
+
+- `game/devtools/state_format.lua`, `game/main.lua`, `game/conf.lua`.
+  `make checklist` passes plan-wide: 1,555 functions ported, 0 missing, 8
+  not ported, of 1,563; 529 of 529 tables. Every `H-3.14-k` held.
+- design.md gains the present, `draw(canvas, x, y, 0, s, s)`: onto the
+  screen only, under white, untranslated, rotation 0, equal integer scales 1
+  to 16 (a guideline decision: no listed form scales a canvas). The fake
+  accepts it there and refuses the rest, in the existing image draw test;
+  `screen_present` with `SCREEN_SCALE = 4`; conf.lua opens a fixed 640×480
+  window. The `game_frame` capture now presents: `make love-capture` left
+  all 32 PNGs byte-identical.
+- The four GPU sizes are state_format locals copied from `gpu_sizes.h`
+  (which stays not ported), as 2.1's `draw_meter.lua`; `add_fixed` uses
+  plain arithmetic, since `bit` negation wraps -2^31.
+- State text against the C over 48 throwaway scenarios (every start, the
+  230 corpus resumes and save summaries, `add_fixed` edges, demo frames,
+  slipway drags): 415,588 byte-identical lines; mutations 37/40, the rest
+  unreachable. The planet-field trap counted 0 reads there and over the
+  smoke run: the 3.10 finding is closed, no nil fallback anywhere.
+- Smoke run: `tmp/fake_love game tmp/smoke_s15.json …` over 600 frames of
+  `{ "pad": [] }` with `attract_after` 60 and a state path exits 0 with no
+  refusal (143 state lines); its state text and capture are byte-identical
+  to `tmp/replay`'s on the same file, though nothing requires it. `make
+  love-e2e`: all 20 replays match.
+- Own times, paired against `d478ad6` (45 pairs, run twice; +19.0 KB Lua,
+  +2 blocks, +11 lines): `lua-guard` +1.3 then +1.5 ms (80.3–83.9 ms);
+  `lua-test-modules` +0.6 then −1.7 ms (54.2–54.3 ms). Pass.
+- Checkpoint, rule-4 protocol, 4 cores: first 11 rounds −0.44 % vs
+  `457d574` (end of 3.9) and +3.74 % vs `8dff812`, so 22; pooled plain
+  medians 5.527 s (current), 5.536 s (`457d574`), 5.385 s (`8dff812`);
+  paired −1.10 % and +2.76 %; spreads 8.1 %, 15.4 %, 7.6 %. Pass, with
+  little margin left against `8dff812`. Slowest new check: `lua-guard`,
+  about 80–84 ms.
+- End of Phase 3: warn-review gave 24 warnings, none acted on in the plan
+  (layer requires and the `planet` hub copy the C include graph; repeated
+  local helpers and flat `game/game/` follow the faithful-copy rule; long
+  comments, the inline scale in `game_frame.lua`, private tables exported
+  for the data check, the `is_dead` filter in `wormhole.c`; no direct test
+  for `pad_nav` or `save_state`; the planet-field and score-panel text
+  audits have no check). plan-review accepted two changes: the conventions
+  of these notes now live in design.md § Reading the Lua against the C (a
+  new Done when line), and plan-3.md gains a "From plan 2" note.

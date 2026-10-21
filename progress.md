@@ -21,7 +21,7 @@
     - [x] chunk 8: text
     - [x] chunk 9: image slots
     - [x] chunk 10: meter, budget and record
-- [ ] Phase 3 — Engine and game
+- [x] Phase 3 — Engine and game
   - [x] 3.1 engine: memory and basics
     - [x] chunk 1: the global rule
     - [x] chunk 2: the load and data check
@@ -107,9 +107,9 @@
     - [x] chunk 2: the cart
     - [x] chunk 3: the input step
     - [x] chunk 4: own-time gate and step note
-  - [ ] 3.15 `game/main.lua` and `game/conf.lua`
+  - [x] 3.15 `game/main.lua` and `game/conf.lua`
     - [x] chunk 1: check the 3.14 hypotheses
     - [x] chunk 2: state_format
     - [x] chunk 3: the present
     - [x] chunk 4: conf.lua, main.lua and the smoke run
-    - [ ] chunk 5: checkpoint timing and the step note
+    - [x] chunk 5: checkpoint timing and the step note
