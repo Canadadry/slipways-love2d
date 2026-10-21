@@ -9,8 +9,8 @@
     - [x] chunk 3: roots and trigonometry
     - [x] chunk 4: random generator
     - [x] chunk 5: budget, sweep and record
-- [ ] Phase 2 — Runtime and LÖVE glue
-  - [ ] 2.1 `game/p8/` and `game/love/`
+- [x] Phase 2 — Runtime and LÖVE glue
+  - [x] 2.1 `game/p8/` and `game/love/`
     - [x] chunk 1: static guard
     - [x] chunk 2: conventions and the plain runtime
     - [x] chunk 3: drawing core in Lua
