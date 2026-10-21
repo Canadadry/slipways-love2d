@@ -81,6 +81,11 @@
     - [x] chunk 6: research_display and bootstrap
     - [x] chunk 7: cost, checkpoint and record
   - [ ] 3.10 game: displays and panels
+    - [x] chunk 1: slipway and wormhole displays
+    - [ ] chunk 2: planet_family_trade
+    - [ ] chunk 3: structure_icon and help
+    - [ ] chunk 4: score panel
+    - [ ] chunk 5: cost and record
   - [ ] 3.11 game: pad modes
   - [ ] 3.12 game: save
   - [ ] 3.13 game: menus, title and attract
