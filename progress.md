@@ -1,9 +1,9 @@
-- [ ] Phase 1 — Checklist and numbers
+- [x] Phase 1 — Checklist and numbers
   - [x] 1.1 The checklist script
     - [x] chunk 1: scanner and listing
     - [x] chunk 2: data file, consistency, make target
     - [x] chunk 3: include order and the step gate
-  - [ ] 1.2 `game/p8/fixed.lua`
+  - [x] 1.2 `game/p8/fixed.lua`
     - [x] chunk 1: reference commit
     - [x] chunk 2: harness and integer arithmetic
     - [x] chunk 3: roots and trigonometry
