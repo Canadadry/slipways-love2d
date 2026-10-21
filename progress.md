@@ -36,6 +36,12 @@
     - [x] chunk 3: entity lists and exit queue
     - [x] chunk 4: cost and record
   - [ ] 3.3 engine: registry, entity geometry, entities, bootstrap
+    - [x] chunk 1: map tables
+    - [ ] chunk 2: game_data, first half
+    - [ ] chunk 3: game_data, second half
+    - [ ] chunk 4: registry and entity_geom
+    - [ ] chunk 5: entity
+    - [ ] chunk 6: cost and record
   - [ ] 3.4 game: leaves
   - [ ] 3.5 game: techs, HUD and layout
   - [ ] 3.6 game: include cycle, galaxy and planets

@@ -85,6 +85,14 @@ Step 3.1 creates these three checks once, each over the whole tree; steps
 3.2 to 3.15 add their files and tables to them and add no `make test` target.
 Step 3.1's note records their cost per file and per table, against what is
 left of the plan-wide 3 % (step 1.2's note).
+How Phase 3 applies design.md's timing rule 4: each step from 3.3 to 3.14
+measures the own times of `lua-guard` and `lua-test-modules`, paired
+against its "before" commit, and passes when each stays under 100 ms and
+grows within 2× of 3.1's cost per KB and per table; both figures go in its
+note. The full rule-4 protocol runs at the end of 3.3, 3.9 and 3.15, against
+`8dff812` and the "before" commit of the span since the last checkpoint,
+and after any step whose own-time gate fails; a failure picks what to rework
+from the recorded own times.
 
 3.1. `game/engine/` memory and basics: zones, allocator, value and pointer
    lists, slot groups, vectors and geometry.
