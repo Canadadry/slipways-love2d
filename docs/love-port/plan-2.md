@@ -334,3 +334,24 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
 - **Truth values.** As 2.1; `!x` is `(x == 0) and 1 or 0` as a value, `x == 0` as a test; a pointer test is `p ~= nil`; Lua booleans never stand for a C int.
 - **Zone strings.** A zone-built `char *` is a Lua string: the function performs the C allocation for length + 1 bytes and returns the string; releasing it is a no-op on a bump zone and fails "outside the zone" on a slot zone; `strcmp(a, b) == 0` is `a == b`.
 - **Registering constants and sizes.** A unit `tools/table_reference/<dir>_<file>.c` including the header (or the `.c` for statics) prints each with `table_reference_int(module, value, "NAME")` or `"SIZEOF.type"`; add the source to `TABLE_REFERENCE_SOURCES`.
+
+### Step 3.2
+
+- `game/engine/`: entity_id_type, entity_class, entity_id, entity_id_list,
+  entity_list, exit_queue (21.2 KB of Lua). `make checklist STEP=3.2`
+  passes (60/60, no tables); five reference units added (enums, has bits,
+  `ENTITY_ID_NONE`, `EXIT_QUEUE_CAP`, sizes). Step 3.1's conventions held
+  unchanged.
+- Ids are new tables wherever the C creates, returns or stores one by value,
+  shifts inside lists included (a verifier caught `del` moving the table),
+  and are compared only through `entity_id_equal`; `ENTITY_ID_NONE` is
+  copied at each use. Positions are copied in and out (game code changes
+  `self.pos.y` in place). `entity_init_header` writes only the header fields.
+  The PRD's agent had no `guideline` and settled these itself.
+- Checks, paired against `78d0d19`: `lua-guard` +1.3 ms (about 30 ms),
+  `lua-test-modules` +1.4 ms (about 20 ms), within 2× of 3.1's per-KB costs.
+- Timing protocol, 4 cores, 11 rounds: plain medians 5.732 s (current),
+  5.796 s (`78d0d19`, before), 5.637 s (`8dff812`); paired medians +2.59 %
+  vs before, +2.94 % vs `8dff812`; spreads 11.1 %, 12.4 %, 10.4 %. The step
+  adds about 3 ms of checks, so the paired figures are mostly noise, but the
+  margin against `8dff812` is thin.

@@ -30,11 +30,11 @@
     - [x] chunk 5: lists and strings
     - [x] chunk 6: vectors, geometry, dispatch context
     - [x] chunk 7: cost and record
-  - [ ] 3.2 engine: entity classes, ids, lists, exit queue
+  - [x] 3.2 engine: entity classes, ids, lists, exit queue
     - [x] chunk 1: id type and entity class
     - [x] chunk 2: id table and id lists
     - [x] chunk 3: entity lists and exit queue
-    - [ ] chunk 4: cost and record
+    - [x] chunk 4: cost and record
   - [ ] 3.3 engine: registry, entity geometry, entities, bootstrap
   - [ ] 3.4 game: leaves
   - [ ] 3.5 game: techs, HUD and layout
