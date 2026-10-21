@@ -625,3 +625,25 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   63.3 → 67.6 ms (+5.4, about 0.083 ms per KB); `lua-test-modules` 45.7 →
   47.4 ms (+2.7). Pass. Projection at the end (364 functions left):
   `lua-guard` 78–85 ms, `lua-test-modules` 57–59 ms.
+
+### Step 3.11
+
+- `game/game/`: pad_direction (constants only), pad_target, pad_back,
+  pad_cycle, cheat, pad_jump, pad_select, pad_slipway, pad_panel, pad_build.
+  `make checklist STEP=3.11` passes (89/89, 1/1). All ten load at once
+  (no cycle: only pad_nav, input_step and devtools include them);
+  `LUA_DEFERRED_MODULES` stays empty.
+- Out-parameters come back as extra returns (`pad_panel_step` returns `at,
+  x, y, mouse_buttons`; `pad_jump_scroll` returns `dx, dy`); the planet's and
+  the button's own flags are read from `has_`.
+- Behaviour checked against the C with throwaway programs, all
+  byte-identical, with hand mutations caught: target picks over 3,000
+  random galaxies (ties exercised), back, cycle and cheat streams (85,002
+  lines); jump, select and slipway streams (205,153 lines); panel and build
+  over 3,000 random worlds of real buttons and icons.
+- Own-time gate, paired against `d7c6a3f` (45 pairs, run twice; +32.2 KB
+  Lua, +30 blocks, +33 lines): `lua-guard` +3.3 then +0.8 ms (77.7 ms);
+  `lua-test-modules` +0.7 then +1.4 ms (56.4 ms). Pass. Absolute times ran
+  2–6 ms higher than 3.10's on the same tree; on that scale `lua-guard` is
+  projected at 85–95 ms at the end (about 160–200 KB of Lua left, demo data
+  included), still the check to watch.
