@@ -110,6 +110,6 @@
   - [ ] 3.15 `game/main.lua` and `game/conf.lua`
     - [x] chunk 1: check the 3.14 hypotheses
     - [x] chunk 2: state_format
-    - [ ] chunk 3: the present
+    - [x] chunk 3: the present
     - [ ] chunk 4: conf.lua, main.lua and the smoke run
     - [ ] chunk 5: checkpoint timing and the step note

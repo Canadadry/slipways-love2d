@@ -63,6 +63,10 @@ void canvas_set_color(canvas_store_t *store, const unsigned char rgba[4]) {
     memcpy(store->color, rgba, sizeof store->color);
 }
 
+void canvas_get_color(const canvas_store_t *store, unsigned char rgba[4]) {
+    memcpy(rgba, store->color, sizeof store->color);
+}
+
 void canvas_plot(canvas_store_t *store, int x, int y) {
     assert(x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT && "canvas_plot: pixel off the canvas");
     assert(store->color[3] == 0xFF && "canvas_plot: a translucent colour needs blending, which step 9 decides");

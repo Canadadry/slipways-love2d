@@ -430,9 +430,9 @@ copies its size and bytes at the call: a later `setPixel` on the ImageData
 leaves the Image as it was, as in LÖVE. `newQuad(x, y, w, h, sw, sh)` takes
 six integers: reference sides 1 to 1024, origin from 0, size from 1, the
 quad inside the reference size. `draw(image, quad, x, y)` is the only draw
-form: exactly an Image, a Quad of the image's own size, and two integers of
-magnitude below 2^20, also once translated (see Transforms). Texel (`qx + i`, `qy + j`) goes to pixel
-(`x + i`, `y + j`); pixels off the canvas are clipped silently, so a draw
+form onto a canvas: exactly an Image, a Quad of the image's own size, and
+two integers of magnitude below 2^20, also once translated (see
+Transforms). Texel (`qx + i`, `qy + j`) goes to pixel (`x + i`, `y + j`); pixels off the canvas are clipped silently, so a draw
 far off draws nothing. An alpha-`00` texel leaves the pixel's four bytes,
 transparent pixels included; an alpha-`FF` texel writes, per channel,
 `round(c × t / 255)` (c the current colour's byte, t the texel's: a fourth
@@ -442,8 +442,9 @@ the screen selected, a draw changes nothing the fake models. Images and
 Quads have no methods and are freed by the garbage collector. Every
 refusal is an error starting `love.graphics.newImage: `,
 `love.graphics.newQuad: ` or `love.graphics.draw: ` and changes nothing:
-another argument count (a trailing nil, rotation or scale too, and the
-quad-less `draw(image, x, y)`), a file name, a table or a Canvas where an
+another argument count (a trailing nil and the quad-less
+`draw(image, x, y)`; six arguments are taken as the present below, which
+refuses an Image), a file name, a table or a Canvas where an
 ImageData or Image belongs, a non-number (no string coercion), a
 non-finite or fractional value, a value out of range, a quad whose
 reference size differs from the image's (it would scale), and an
@@ -469,6 +470,25 @@ exactly that colour, any other tint gives non-palette bytes); pass
 integer positions, flooring fixed-point coordinates first; build each
 quad with integers, inside the image, on the image's own size.**
 Captures: `draw_quads`, `draw_tint`.
+
+**The present.** `draw(canvas, x, y, 0, s, s)` is the only other draw
+form: exactly six arguments, a Canvas, two integers of magnitude below
+2^20, a rotation equal to 0, and two equal integer scales from 1 to 16.
+It is accepted only while the screen is selected, the current colour is
+white `FFFFFFFF` and the current offset is 0 on both axes, and it changes
+nothing the fake models, as every screen draw. Every refusal is an error
+starting `love.graphics.draw: ` and changes nothing (the arguments are
+checked before the state): a canvas selected
+(real LÖVE refuses a canvas drawn onto itself, and the fake does not model
+scaled draws between canvases), a non-white colour (it tints the window),
+a non-zero offset (it shifts it), unequal, fractional or out-of-range
+scales (they blur or distort it), another argument count, a
+non-Canvas first argument, a non-number (no string coercion), a
+non-finite or fractional position and a rotation other than 0. **The rule
+for the game: present canvas 0 once per frame, last in `love.draw`, with
+the screen selected, after `setColor(1, 1, 1)`, outside any `push`, at
+`(0, 0)` and scale `SCREEN_SCALE`** (`screen.screen_present()`). Capture:
+`game_frame`.
 
 **Transforms.** `push()`, `pop()` and `translate(dx, dy)` are the only
 forms. The fake keeps a current offset, integer on each axis, and a stack
@@ -558,6 +578,7 @@ here, with its real-LÖVE capture.
   `points({x1, y1, …})`,
   `rectangle("fill", x, y, w, h)`, `newImage(imagedata)`,
   `newQuad(x, y, w, h, sw, sh)`, `draw(image, quad, x, y)`,
+  `draw(canvas, x, y, 0, s, s)` onto the screen only (see The present),
   `setDefaultFilter("nearest", "nearest")`,
   `push()`, `pop()`, `translate(dx, dy)` with integer offsets.
 - Images: `love.image.newImageData(w, h)`, `love.image.newImageData(name)`,
@@ -575,8 +596,11 @@ sets them, and for the four modules while `conf.lua` runs, they read `nil`.
 It is an ordinary Lua error, like every refusal of the fake. Both binaries,
 `tmp/fake_love` and `tmp/love_capture_check`, run under this guard.
 
-In real LÖVE the game draws its canvas scaled up to the window at the end of
-`love.draw()`; the fake reads the canvas and needs nothing more.
+The game shows its canvas in the window with `draw(canvas, 0, 0, 0,
+SCREEN_SCALE, SCREEN_SCALE)`: **present canvas 0 once per frame, last in
+`love.draw`, with the screen selected, after `setColor(1, 1, 1)`, outside
+any `push`, at `(0, 0)` and scale `SCREEN_SCALE`** (see The present). The
+fake reads the canvas, and the present changes nothing it models.
 
 The exact pixel conventions (where `points(x, y)` lands, how `rectangle`
 rounds) are those of real LÖVE 11.5, settled by the captures of
@@ -655,8 +679,9 @@ what the player sees:
 **In combination.** Real LÖVE 11.5 and the fake agree when these functions
 are mixed in a game frame: the `game_frame` capture (camera over a map,
 pattern rectangles, discs of spans, rings of points, sprites, outlined
-text in a nested `push`/`translate`, a HUD, another canvas, screen draws,
-a second frame over the first), and once, at step 3.15, 60 random scenes
+text in a nested `push`/`translate`, a HUD, another canvas, screen draws
+including the present `draw(canvas, 0, 0, 0, 4, 4)`, a second frame over
+the first), and once, at step 3.15, 60 random scenes
 of 400 calls each mixing palette and white colours, nested integer
 translations, point tables, rectangles partly off the canvas, quads of
 see-through images, canvas switches and screen draws (60 of 60 equal,
@@ -669,7 +694,7 @@ a canvas selected, draws like one built in `love.load`. **The rule for
 the game: set the colour before every primitive and `setColor(1, 1, 1)`
 before every image drawn in its own colours (a leftover palette colour
 tints the texels into colours outside the palette); undo every
-translation before leaving the canvas for the upscale, or wrap the frame
+translation before leaving the canvas for the present, or wrap the frame
 in `push`/`pop`; build see-through and recoloured copies with `getPixel`
 compared with `byte / 255` and `setPixel` of palette bytes.** Capture:
 `game_frame`.

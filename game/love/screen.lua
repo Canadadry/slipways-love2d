@@ -5,6 +5,8 @@ local vram = require("p8.vram")
 
 local M = {}
 
+M.SCREEN_SCALE = 4
+
 -- Indexed 0..15 like P8_PALETTE_RGB: { red, green, blue } as byte / 255.
 M.SCREEN_COLORS = {}
 for c = 0, palette.P8_PALETTE_COLORS - 1 do
@@ -35,6 +37,14 @@ end
 
 function M.screen_frame_end()
   love.graphics.setCanvas()
+end
+
+-- design.md's present: call it once, last in love.draw, outside any push.
+function M.screen_present()
+  assert(canvas ~= nil, "screen_present: screen_init has not run")
+  love.graphics.setCanvas()
+  love.graphics.setColor(1, 1, 1)
+  love.graphics.draw(canvas, 0, 0, 0, M.SCREEN_SCALE, M.SCREEN_SCALE)
 end
 
 -- The ImageData of sprites.png, loaded once by screen_init: never write it.

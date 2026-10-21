@@ -274,10 +274,54 @@ static int new_quad(lua_State *lua) {
     return 1;
 }
 
+/* draw(canvas, x, y, 0, s, s): models nothing, as every draw on the screen,
+ * so it is accepted only where it cannot hide a change to a canvas or a
+ * tinted, shifted, blurred or distorted window. */
+static int draw_canvas(lua_State *lua) {
+    if (luaL_testudata(lua, 1, METATABLE) == NULL)
+        return luaL_error(lua, "love.graphics.draw: argument 1 is %s, not a Canvas", describe(lua, 1));
+    for (int index = 2; index <= 6; index++)
+        if (lua_type(lua, index) != LUA_TNUMBER)
+            return luaL_error(lua, "love.graphics.draw: argument %d is a %s, not a number", index,
+                              luaL_typename(lua, index));
+    for (int index = 2; index <= 3; index++)
+        refuse_verdict(lua, "draw", index, image_rules_check_position(lua_tonumber(lua, index)), "|v| >= 2^20");
+    double rotation = lua_tonumber(lua, 4);
+    if (!isfinite(rotation))
+        return luaL_error(lua, "love.graphics.draw: argument 4 is not finite");
+    if (rotation != 0)
+        return luaL_error(lua, "love.graphics.draw: argument 4 is %g, only 0 is supported (rotation is not modelled)",
+                          rotation);
+    for (int index = 5; index <= 6; index++)
+        refuse_verdict(lua, "draw", index, image_rules_check_scale(lua_tonumber(lua, index)), "s from 1 to 16");
+    if (lua_tonumber(lua, 5) != lua_tonumber(lua, 6))
+        return luaL_error(lua, "love.graphics.draw: the scales %d and %d differ (unequal scales distort the window)",
+                          (int)lua_tonumber(lua, 5), (int)lua_tonumber(lua, 6));
+    canvas_store_t *store = upvalue_store(lua);
+    if (canvas_get_target(store) != CANVAS_NONE)
+        return luaL_error(lua, "love.graphics.draw: a canvas is selected, a Canvas is drawn only onto the screen "
+                               "(draws between canvases are not modelled)");
+    unsigned char rgba[4];
+    canvas_get_color(store, rgba);
+    if (rgba[0] != 0xFF || rgba[1] != 0xFF || rgba[2] != 0xFF || rgba[3] != 0xFF)
+        return luaL_error(lua, "love.graphics.draw: the colour is %02X%02X%02X%02X, not white FFFFFFFF (it would tint "
+                               "the window)",
+                          rgba[0], rgba[1], rgba[2], rgba[3]);
+    transform_offset_t offset = transform_get_offset(upvalue_transform(lua));
+    if (offset.x != 0 || offset.y != 0)
+        return luaL_error(lua, "love.graphics.draw: the offset is (%d, %d), not (0, 0) (it would shift the window)",
+                          offset.x, offset.y);
+    return 0;
+}
+
 static int draw(lua_State *lua) {
     int top = lua_gettop(lua);
+    if (top == 6)
+        return draw_canvas(lua);
     if (top != 4)
-        return luaL_error(lua, "love.graphics.draw: takes 4 arguments, an Image, a Quad, x and y, not %d", top);
+        return luaL_error(lua, "love.graphics.draw: takes 4 arguments, an Image, a Quad, x and y, or 6, a Canvas, x, "
+                               "y, 0, s and s, not %d",
+                          top);
     const image_data_t *image = luaL_testudata(lua, 1, IMAGE_METATABLE);
     if (image == NULL)
         return luaL_error(lua, "love.graphics.draw: argument 1 is %s, not an Image", describe(lua, 1));

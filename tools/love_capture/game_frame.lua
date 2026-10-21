@@ -211,6 +211,7 @@ end
 local function frame_two(canvas)
     graphics.setCanvas()
     graphics.setColor(1, 1, 1)
+    graphics.draw(canvas, 0, 0, 0, 4, 4)
     graphics.draw(sheet, graphics.newQuad(0, 0, 128, 128, 128, 128), 0, 0)
     rectfill(0, 0, 50, 50, 8)
     graphics.setCanvas(canvas)
