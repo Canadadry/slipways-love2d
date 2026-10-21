@@ -6,7 +6,7 @@
   - [ ] 1.2 `game/p8/fixed.lua`
     - [x] chunk 1: reference commit
     - [x] chunk 2: harness and integer arithmetic
-    - [ ] chunk 3: roots and trigonometry
+    - [x] chunk 3: roots and trigonometry
     - [ ] chunk 4: random generator
     - [ ] chunk 5: budget, sweep and record
 - [ ] Phase 2 — Runtime and LÖVE glue

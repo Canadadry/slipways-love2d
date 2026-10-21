@@ -33,6 +33,10 @@ local SIGNATURES = {
   p8_fixed_bor = BINARY,
   p8_fixed_mod = BINARY,
   p8_fixed_shl = BINARY,
+  p8_fixed_sqrt = UNARY,
+  p8_fixed_pow075 = UNARY,
+  p8_fixed_cos = UNARY,
+  p8_fixed_sin = UNARY,
 }
 
 local function fail(message)
@@ -112,6 +116,9 @@ while true do
     fail(string.format("section %s: %d inputs, %d outputs, expected %d and %d", name, input_count, output_count,
       #signature.inputs, #signature.outputs))
   end
+  if output_count > 3 then
+    fail(string.format("section %s: %d outputs, the reader keeps 3 return values", name, output_count))
+  end
   seen[name] = true
   local fn = fixed[name]
   if type(fn) == "number" then
@@ -121,14 +128,15 @@ while true do
     end
   end
   local count = 0
-  local inputs = {}
+  local inputs, actual, expected = {}, {}, {}
   for _ = 1, record_count do
     for i = 1, input_count do
       inputs[i] = decode(read_u32(), signature.inputs[i])
     end
-    local actual = fn and { fn(unpack(inputs, 1, input_count)) } or {}
+    if fn then
+      actual[1], actual[2], actual[3] = fn(unpack(inputs, 1, input_count))
+    end
     local bad = not fn
-    local expected = {}
     for i = 1, output_count do
       expected[i] = decode(read_u32(), signature.outputs[i])
       if actual[i] ~= expected[i] then

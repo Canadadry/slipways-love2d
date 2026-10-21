@@ -133,6 +133,10 @@ static int32_t call_div(int32_t a, int32_t b) { return p8_fixed_div(a, b); }
 static int32_t call_band(int32_t a, int32_t b) { return p8_fixed_band(a, b); }
 static int32_t call_bor(int32_t a, int32_t b) { return p8_fixed_bor(a, b); }
 static int32_t call_mod(int32_t a, int32_t b) { return p8_fixed_mod(a, b); }
+static int32_t call_sqrt(int32_t x) { return p8_fixed_sqrt(x); }
+static int32_t call_pow075(int32_t x) { return p8_fixed_pow075(x); }
+static int32_t call_cos(int32_t x) { return p8_fixed_cos(x); }
+static int32_t call_sin(int32_t x) { return p8_fixed_sin(x); }
 
 static void write_constant(writer_t *w, const char *name, int32_t value) {
     section_begin(w, name, 0, 1);
@@ -225,6 +229,27 @@ static void write_shift(writer_t *w) {
     section_end(w);
 }
 
+static const int32_t edge_roots[] = {
+    3,          4,          0x3FFF,     0x4000,     0x4001,     0xFFFE,     0x24000,    0x8FFFF,
+    0x90000,    0x90001,    0x640000,   0xFFFFFF,   0x1000000,  0x3FFFFFFF, 0x7FFE0001, 0x7FFFFFFE,
+};
+#define EDGE_ROOT_COUNT ((int)(sizeof edge_roots / sizeof edge_roots[0]))
+
+/* Every 16-bit angle once, each under drawn high bits: only the low 16 bits
+ * may select the table entry. */
+static void write_angle(writer_t *w, const char *name, unary_fn fn) {
+    int i;
+    uint32_t angle;
+    section_begin(w, name, 1, 1);
+    for (i = 0; i < EDGE_COUNT; i++) {
+        push_unary(w, fn, edge_values[i]);
+    }
+    for (angle = 0; angle <= 0xFFFFu; angle++) {
+        push_unary(w, fn, (int32_t)((sample_next() & 0xFFFF0000u) | angle));
+    }
+    section_end(w);
+}
+
 static void push_ternary(writer_t *w, ternary_fn fn, int32_t a, int32_t b, int32_t c) {
     section_push(w, (uint32_t)a);
     section_push(w, (uint32_t)b);
@@ -288,6 +313,10 @@ int main(int argc, char **argv) {
     write_binary(&w, "p8_fixed_bor", call_bor);
     write_binary(&w, "p8_fixed_mod", call_mod);
     write_shift(&w);
+    write_unary(&w, "p8_fixed_sqrt", call_sqrt, edge_roots, EDGE_ROOT_COUNT);
+    write_unary(&w, "p8_fixed_pow075", call_pow075, edge_roots, EDGE_ROOT_COUNT);
+    write_angle(&w, "p8_fixed_cos", call_cos);
+    write_angle(&w, "p8_fixed_sin", call_sin);
     write_u32(&w, 0);
     write_u32(&w, w.total_records);
     free(w.section);

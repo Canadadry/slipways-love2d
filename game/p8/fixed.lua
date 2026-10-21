@@ -1,6 +1,7 @@
 -- Copy of src/p8/fixed.h then src/p8/fixed.c, in the C order. A fixed is a
 -- number holding the signed 32-bit raw value of the C p8_fixed_t.
 local bit = require("bit")
+local p8_quarter_wave = require("p8.quarter_wave")
 
 local M = {}
 
@@ -10,6 +11,7 @@ local band = bit.band
 local bor = bit.bor
 local lshift = bit.lshift
 local arshift = bit.arshift
+local rshift = bit.rshift
 local floor = math.floor
 
 M.P8_FIXED_SHIFT = 16
@@ -102,6 +104,49 @@ function M.p8_fixed_shl(x, n)
     return 0
   end
   return lshift(x, n)
+end
+
+-- mid * mid rounds above 2^53, yet compares right: n stays below 2^48.
+local function isqrt_u64(n)
+  local lo = 0
+  local hi = 0xFFFFFFFF
+  while lo < hi do
+    local mid = lo + floor((hi - lo + 1) / 2)
+    if mid * mid <= n then
+      lo = mid
+    else
+      hi = mid - 1
+    end
+  end
+  return lo
+end
+
+function M.p8_fixed_sqrt(x)
+  if x < 0 then
+    return 0
+  end
+  return isqrt_u64(x * 0x10000)
+end
+
+function M.p8_fixed_pow075(x)
+  local s = M.p8_fixed_sqrt(x)
+  return M.p8_fixed_mul(s, M.p8_fixed_sqrt(s))
+end
+
+-- 0 - v, not -v: -0 would print as "-0".
+local function quarter_wave_at(f)
+  local quadrant = band(rshift(f, 14), 3)
+  local r = band(f, 0x3FFF)
+  local v = band(quadrant, 1) ~= 0 and p8_quarter_wave[0x4000 - r] or p8_quarter_wave[r]
+  return band(quadrant, 2) ~= 0 and 0 - v or v
+end
+
+function M.p8_fixed_cos(x)
+  return quarter_wave_at(band(x + 0x4000, 0xFFFF))
+end
+
+function M.p8_fixed_sin(x)
+  return 0 - quarter_wave_at(band(x, 0xFFFF))
 end
 
 return M

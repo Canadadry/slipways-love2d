@@ -1356,9 +1356,11 @@ float-link: $(call objs,$(REPLAY_SRCS)) tools/float_link.sh ## links the replay 
 $(TMP_DIR)/gen_quarter_wave: tools/gen_quarter_wave.c | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $< -lm
 
-sin-table: $(TMP_DIR)/gen_quarter_wave ## regenerates src/p8/quarter_wave.h
+sin-table: $(TMP_DIR)/gen_quarter_wave ## regenerates src/p8/quarter_wave.h and its Lua copy game/p8/quarter_wave.lua
 	./$(TMP_DIR)/gen_quarter_wave > $(TMP_DIR)/quarter_wave.h
+	./$(TMP_DIR)/gen_quarter_wave --lua > $(TMP_DIR)/quarter_wave.lua
 	mv $(TMP_DIR)/quarter_wave.h src/p8/quarter_wave.h
+	mv $(TMP_DIR)/quarter_wave.lua game/p8/quarter_wave.lua
 
 .PHONY: sin-table
 
