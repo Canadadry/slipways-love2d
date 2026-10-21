@@ -74,7 +74,7 @@
     - [x] chunk 5: cost and record
   - [ ] 3.9 game: include cycle, UI and message box, particles, background, scroll
     - [x] chunk 1: particle
-    - [ ] chunk 2: scroll and background
+    - [x] chunk 2: scroll and background
     - [ ] chunk 3: ui_button
     - [ ] chunk 4: ui
     - [ ] chunk 5: message_box
