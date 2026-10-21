@@ -509,6 +509,9 @@ $(TMP_DIR)/test_checklist: $(call objs,tests/test_checklist.c) tools/checklist.l
 $(TMP_DIR)/test_lua_guard: $(call objs,tests/test_lua_guard.c) tools/lua_guard.lua | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
+$(TMP_DIR)/test_lua_modules: $(call objs,tests/test_lua_modules.c) tests/lua/test_modules.lua | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
 test_fake_love_guard_objs := $(call objs,tests/test_fake_love_guard.c)
 $(TMP_DIR)/test_fake_love_guard: $(test_fake_love_guard_objs) tools/fake_love_guard.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
@@ -900,6 +903,7 @@ UNIT_TESTS := \
     test_button_guard \
     test_fake_love_guard \
     test_lua_guard \
+    test_lua_modules \
     test_float_link \
     test_constants_check \
     test_background_draw \
@@ -1103,7 +1107,7 @@ FAKE_LOVE_CHECKS := $(LOVE_CAPTURE_CHECKS) unit-run-test_fake_love unit-run-test
 
 # Longest first: `-j` starts prerequisites in this order, and float-guard
 # alone (~4 s, serial) sets the wall time when it starts behind the checks.
-test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) lua-test-fixed lua-test-runtime lua-guard pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
+test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) lua-test-fixed lua-test-runtime lua-guard lua-test-modules pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
 
 test-all: test e2e ## test + e2e, the full suite
 
@@ -1409,6 +1413,29 @@ lua-guard: tools/lua_guard.lua ## fails when a game/ Lua file does not compile, 
 
 .PHONY: lua-guard
 
+# One unit of tools/table_reference/ per source holding compared tables: the
+# unit includes the source to reach its statics, so the source's own object
+# leaves the link. The unit list reaches table_reference.o as a -D flag, hence
+# its rebuild on a Makefile edit.
+TABLE_REFERENCE_SOURCES := src/p8/quarter_wave.h src/p8/sprite_sheet_packed.h src/p8/palette.c src/p8/draw_cost.c src/p8/draw_meter.c src/p8/gfx_software.c src/p8/image.c
+TABLE_REFERENCE_UNITS := $(foreach source,$(TABLE_REFERENCE_SOURCES),$(subst /,_,$(basename $(patsubst src/%,%,$(source)))))
+table_reference_objs := $(call objs,tools/table_reference.c $(patsubst %,tools/table_reference/%.c,$(TABLE_REFERENCE_UNITS)) $(filter-out $(TABLE_REFERENCE_SOURCES),$(ENGINE_SRCS)))
+
+$(call objs,tools/table_reference.c): override CFLAGS += -DTABLE_REFERENCE_UNITS='$(foreach unit,$(TABLE_REFERENCE_UNITS),X($(unit)))'
+$(call objs,tools/table_reference.c): Makefile
+
+$(TMP_DIR)/table_reference: $(table_reference_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+$(TMP_DIR)/table_reference.txt: $(TMP_DIR)/table_reference
+	./$< $@.part
+	mv $@.part $@
+
+lua-test-modules: tests/lua/test_modules.lua $(TMP_DIR)/table_reference.txt ## requires every game/ module under plain LuaJIT, compares its data tables and constants with the C ones
+	@luajit tests/lua/test_modules.lua game $(TMP_DIR)/table_reference.txt $(LUA_GUARD_FILES)
+
+.PHONY: lua-test-modules
+
 $(TMP_DIR)/asset_export: $(call objs,src/cmd/asset_export.c src/devtools/asset_image.c src/devtools/png_writer.c src/p8/palette.c src/p8/sprite_sheet.c src/p8/vram.c src/p8/gfx_software.c src/p8/gfx.c) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
@@ -1440,9 +1467,9 @@ love-check: $(TMP_DIR)/luajit_version ## checks that the installed LuaJIT is 2.1
 
 .PHONY: love-check
 
-checklist: $(BINDINGS_CORE_UNIT) $(DEMO_UNIT) love-check $(TMP_DIR)/test_checklist tools/checklist.txt ## tests the checklist script, lists each C function's Lua copy; STEP=<id> fails on missing ones up to it
+checklist: $(BINDINGS_CORE_UNIT) $(DEMO_UNIT) love-check $(TMP_DIR)/test_checklist tools/checklist.txt $(TMP_DIR)/table_reference.txt ## tests the checklist script, lists each C function's Lua copy; STEP=<id> fails on missing or uncompared ones up to it
 	./$(TMP_DIR)/test_checklist
-	luajit tools/checklist.lua --listing $(TMP_DIR)/checklist.txt$(if $(STEP), --step $(STEP))
+	luajit tools/checklist.lua --listing $(TMP_DIR)/checklist.txt --reference $(TMP_DIR)/table_reference.txt$(if $(STEP), --step $(STEP))
 
 .PHONY: checklist
 

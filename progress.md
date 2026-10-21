@@ -24,7 +24,7 @@
 - [ ] Phase 3 — Engine and game
   - [ ] 3.1 engine: memory and basics
     - [x] chunk 1: the global rule
-    - [ ] chunk 2: the load and data check
+    - [x] chunk 2: the load and data check
     - [ ] chunk 3: zones and the allocator
     - [ ] chunk 4: zone singletons and slot groups
     - [ ] chunk 5: lists and strings

@@ -193,6 +193,7 @@ local METER = {
   image_draw = meter_image_draw,
   lines = meter_lines, psets = meter_psets,
 }
+M.METER = METER
 
 -- Installs the meter around the backend active at the call and zeroes every
 -- count. Returns the wrapped backend: reinstalling it with

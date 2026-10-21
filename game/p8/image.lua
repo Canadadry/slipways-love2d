@@ -56,6 +56,7 @@ M.P8_IMAGE_SLOTS(function(width, height)
   SLOT_SIZES[slot_sizes_defined] = { width = width, height = height }
   slot_sizes_defined = slot_sizes_defined + 1
 end)
+M.SLOT_SIZES = SLOT_SIZES
 
 local built = {}
 for slot = 0, M.P8_IMAGE_SLOT_COUNT - 1 do
@@ -151,6 +152,7 @@ local GUARD = {
   image_draw = guard_image_draw,
   lines = guard_lines, psets = guard_psets,
 }
+M.GUARD = GUARD
 
 -- Clears the slot, then calls draw(gfx, mem, context) once per window of at
 -- most P8_IMAGE_WINDOW_WIDTH x P8_IMAGE_WINDOW_HEIGHT covering w x h,

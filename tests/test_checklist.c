@@ -438,6 +438,27 @@ static void test_step_fails_on_a_missing_item_up_to_that_step_only(void) {
     assert(has(OUT, "checklist: unknown step 3.16\n"));
 }
 
+static void test_a_ported_table_absent_from_the_reference_fails_its_step(void) {
+    reset();
+    write_file(ROOT "/src/p8/gfx.c", "const int GFX_SIZES[] = {1};\nconst int GFX_ROWS[] = {1};\n");
+    write_file(ROOT "/src/game/planet.c", "const int PLANET_SIZES[] = {1};\n");
+    write_file(ROOT "/game/p8/gfx.lua", "local M = {}\nM.GFX_SIZES = { [0] = 1 }\nlocal GFX_ROWS = { [0] = 1 }\nreturn M\n");
+    write_file(ROOT "/game/game/planet.lua", "local M = {}\nM.PLANET_SIZES = { [0] = 1 }\nreturn M\n");
+    write_data("step 2.1 src/p8/gfx.c\nstep 3.6 src/game/planet.c\n");
+    write_file(DIR "/reference.txt", "= p8.gfx GFX_SIZES 21\np8.gfx GFX_SIZES[0] 1\n");
+    assert(run(CHECKLIST " --reference " DIR "/reference.txt --step 2.1") == 1);
+    assert(has(OUT, "checklist: table GFX_ROWS of src/p8/gfx.c is ported but not compared by lua-test-modules\n"));
+    assert(!has(OUT, "GFX_SIZES of"));
+    assert(!has(OUT, "PLANET_SIZES"));
+    assert(run(CHECKLIST " --reference " DIR "/reference.txt --step 3.6") == 1);
+    assert(has(OUT, "checklist: table PLANET_SIZES of src/game/planet.c is ported but not compared by lua-test-modules\n"));
+    write_file(DIR "/reference.txt", "= p8.gfx GFX_SIZES 21\np8.gfx GFX_SIZES[0] 1\n"
+                                     "= p8.gfx GFX_ROWS 20\np8.gfx GFX_ROWS[0] 1\n");
+    assert(run(CHECKLIST " --reference " DIR "/reference.txt --step 2.1") == 0);
+    assert(run(CHECKLIST " --reference " DIR "/none.txt --step 2.1") == 2);
+    assert(has(OUT, "checklist: cannot read " DIR "/none.txt\n"));
+}
+
 static void test_usage_errors_exit_2(void) {
     reset();
     write_file(ROOT "/src/game/a.c", "int a(void) { return 0; }\n");
@@ -469,6 +490,7 @@ int main(void) {
     test_an_include_of_an_unassigned_file_is_not_an_order_error();
     test_a_cycle_is_between_modules_so_a_c_file_shares_its_header_cycle();
     test_step_fails_on_a_missing_item_up_to_that_step_only();
+    test_a_ported_table_absent_from_the_reference_fails_its_step();
     test_usage_errors_exit_2();
     return 0;
 }

@@ -20,7 +20,8 @@ end
 
 local function usage_failure(message)
     io.stderr:write("checklist: " .. message .. "\n")
-    io.stderr:write("usage: luajit tools/checklist.lua [--root <dir>] [--listing <file>] [--step <id>]\n")
+    io.stderr:write("usage: luajit tools/checklist.lua [--root <dir>] [--listing <file>] [--step <id>]"
+        .. " [--reference <file>]\n")
     os.exit(2)
 end
 
@@ -29,7 +30,7 @@ local function parse_arguments(argv)
     local i = 1
     while i <= #argv do
         local name, value = argv[i], argv[i + 1]
-        if name == "--root" or name == "--listing" or name == "--step" then
+        if name == "--root" or name == "--listing" or name == "--step" or name == "--reference" then
             if value == nil then
                 usage_failure(name .. " needs a value")
             end
@@ -608,8 +609,24 @@ local function exit_with_errors(status)
     os.exit(#errors == 0 and 0 or status)
 end
 
+-- The "<module> <name>" of each table block of the lua-test-modules
+-- reference (tools/table_reference.c).
+local function compared_tables(path)
+    local file = io.open(path, "rb")
+    if file == nil then
+        usage_failure("cannot read " .. path)
+    end
+    local compared = {}
+    for id in ("\n" .. file:read("*a")):gmatch("\n= (%S+ [%w_]+) %d+") do
+        compared[id] = true
+    end
+    file:close()
+    return compared
+end
+
 local function main(argv)
     local options = parse_arguments(argv)
+    local compared = options.reference and compared_tables(options.reference)
     local root = options.root
     local c_paths = list_c_files(root)
     if #c_paths == 0 then
@@ -716,6 +733,13 @@ local function main(argv)
                     elseif defined and defined[lua_name] then
                         status = "ported"
                         totals[kind].ported = totals[kind].ported + 1
+                        local module = item_lua_path:match("^game/(.*)%.lua$")
+                        if kind == "table" and compared and gate_rank ~= nil and step ~= "-"
+                            and STEP_RANK[step] <= gate_rank
+                            and not compared[(module or ""):gsub("/", ".") .. " " .. lua_name] then
+                            report("table " .. item.name .. " of " .. c_path
+                                .. " is ported but not compared by lua-test-modules")
+                        end
                     else
                         status = "MISSING"
                         totals[kind].missing = totals[kind].missing + 1

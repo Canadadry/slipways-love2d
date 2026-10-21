@@ -27,6 +27,7 @@ M.P8_GPU_COMMAND_BYTES = 8
 -- API's, before gfx's camera.
 
 local FREE = { bytes = 0, primitives = 0 }
+M.FREE = FREE
 
 local function cost_of(bytes_each, primitives)
   local cost = { bytes = bytes_each * primitives, primitives = primitives }
