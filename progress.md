@@ -63,7 +63,7 @@
     - [x] Chunk 2 — capture, nearest re-run, docs, timing
   - [x] Step 3.15 — combined capture program
     - [x] Chunks 1–2 — game_frame capture, probes, docs
-- [ ] Phase 4 — Capture and errors
+- [x] Phase 4 — Capture and errors
   - [x] Step 4.16 — capture
     - [x] Chunk 1 — frame_capture module
     - [x] Chunk 2 — command writes the capture
@@ -73,8 +73,8 @@
     - [x] Chunk 2 — foreign pixel fatal
     - [x] Chunk 3 — colour check, drawing-rules game
     - [x] Chunk 4 — timing
-  - [ ] Step 4.18 — make love-e2e
+  - [x] Step 4.18 — make love-e2e
     - [x] Chunk 1 — frames_check --no-baseline-hints
     - [x] Chunk 2 — runner, report, fixed stub, test
     - [x] Chunk 3 — love-e2e target, docs, redraw stub
-    - [ ] Chunk 4 — verification, timing
+    - [x] Chunk 4 — verification, timing

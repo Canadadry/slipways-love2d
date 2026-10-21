@@ -410,3 +410,20 @@ None.
 - `make test`: before 3b68acd 5.06 s, reference 6.90 s, current 4.98 s;
   paired −0.17 % / −28.17 %, 11 rounds, 4 cores.
 
+### Step 4.18
+
+- `tools/frames_check.sh --no-baseline-hints`; `tools/love_e2e_run.sh` (one
+  replay: hash or an error file, always exit 0) and `love_e2e_report.sh`
+  (FAILED / DIVERGENT / matches and a count line). `make love-e2e`, with
+  `LOVE_E2E_GAME` (default `game/`, `%` = replay name), outside test/e2e,
+  under the lock. Test `test_love_e2e` (~76 ms).
+- Verified: today's `game/` → 20 FAILED naming `main.lua`; `e2e_fixed` stub
+  → 20 DIVERGENT, every capture the C capture's size; `e2e_redraw` stub
+  redrawing the C captures from the fake disk → 20 of 20 match (2.2 s).
+- `make test`: before 3473f46 5.05 s, reference 7.16 s, current 5.20 s;
+  paired +2.70 % / −27.88 %, 11 rounds, 4 cores.
+- Phase 4 end: warn-review flagged copied palettes and canvas-0 wrappers in
+  fixtures, redefined sizes, a report counting by grep. plan-review judged
+  them code cleanup; it moved the missing `make love-e2e-state` into
+  plan-3.md's step notes, which survive plan 1.
+

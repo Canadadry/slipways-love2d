@@ -54,3 +54,17 @@ Read `docs/love-port/design.md` first.
 None.
 
 ## 6. Step notes
+
+### From plan 1
+
+- `make love-e2e-state` does not exist yet, and step 3, "Done when" and
+  plan 4's start condition and step 2 depend on it. What exists:
+  `tmp/fake_love <game> <replay> <capture> [<state>]` writes `debug_state()`
+  to the optional fourth argument; `make love-e2e` passes no state path, and
+  its runner (`tools/love_e2e_run.sh`) can be extended to. Plan 3's
+  plan-converge places the work, before the first replay step.
+- `make love-e2e` is proven both ways: a game that fails to load gives 20
+  FAILED, a fixed stub 20 DIVERGENT, and a stub redrawing the C captures
+  matches all 20 hashes. A divergence is therefore the Lua game's, or a
+  fake LÖVE rule the captures did not settle.
+
