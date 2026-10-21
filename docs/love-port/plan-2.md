@@ -363,3 +363,47 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   vs before, +2.94 % vs `8dff812`; spreads 11.1 %, 12.4 %, 10.4 %. The step
   adds about 3 ms of checks, so the paired figures are mostly noise, but the
   margin against `8dff812` is thin.
+
+### Step 3.3
+
+- `game/game/`: map_tables (169 tables), game_data (215 tables, its six
+  functions); `game/engine/`: entity_registry, entity_geom, entity.
+  `make checklist STEP=3.3` passes (56/56, 386/386); the data check now
+  compares 540 blocks, 30,845 lines.
+- Data files: every table is a module field (`M.name`: LuaJIT allows 200
+  locals per function); structs the C partly initializes go through local
+  constructors that fill every missing field with its C zero value and reject
+  a field the struct lacks (`map_tables.map_tables_check_fields`, Lua only);
+  constructors come before the tables, which call them at load. A struct
+  with a positional C initializer gets a positional constructor. Pointers are
+  the very table pointed to; a `char[]`, and a pointer to one, is its Lua
+  string. Reference units list each table once in an X-macro (`ARRAY`,
+  `STRUCT`, `TEXT`) driving both the pointer-name map and the rendering; a
+  pointer to an unlisted table stops the reference build. Helpers in
+  `reference_data.h` are `static inline`.
+- Include cycle `entity_geom` / `entity_registry`: each requires the other at
+  call time only; neither needs a partner's value at load, so both load
+  alone in either order and the load check runs here. Extension of 2.1's
+  rule for later cycles: a partner's constant used inside functions is read
+  at call time, never cached at module level; a load-time initializer
+  needing a partner's value requires that partner at load, in one direction
+  per pair only (the step meeting a two-way need decides and records how);
+  only that one-direction case can make a cycle file fail to load alone.
+- A C ternary choosing between two function pointers is an `if`/`else`,
+  never `a and b or c` (a nil `b` falls through).
+- Own-time gate, paired against `d88bb89` (45 pairs; +99.4 KB Lua, +420
+  blocks, +5,467 lines): `lua-guard` 28.6 → 36.5 ms (+7.8, 0.79× the 3.1
+  model, about 0.078 ms per KB); `lua-test-modules` 19.0 → 36.2 ms (+15.8,
+  1.26×; load 0.055 ms per KB, data about 20 µs per block). Pass.
+- Projection to the end (about 580 KB more Lua, 83 tables left):
+  `lua-guard` about 82 ms (95 ms at the 3.1 rate), `lua-test-modules` about
+  70 ms. With 82 % of the tables in, the risk is now `lua-guard`'s cost per
+  KB of code, not the large-table comparison.
+- Checkpoint, rule-4 protocol: first 11 rounds +3.25 % vs `8dff812`, so 22;
+  pooled plain medians 5.945 s (current), 5.977 s (`d88bb89`), 5.846 s
+  (`8dff812`); paired −0.87 % vs before, +2.18 % vs `8dff812`; spreads
+  14.8 %, 18.3 %, 41.0 % (one 7.8 s outlier). Pass. A PRD agent ran during
+  the first rounds and likely added noise: no other agent runs during a
+  protocol.
+- The PRD's agent had no `guideline`; it settled the cycle extension and the
+  data-file shape itself.
