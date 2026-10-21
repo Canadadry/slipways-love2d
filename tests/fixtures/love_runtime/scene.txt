@@ -292,3 +292,42 @@ palt 13 1
 map 0 0 10 40 3 2
 spr 0 60 40 2 2
 frame
+# Every font code 32..127 (# \ and 127 escaped), lowercase as uppercase, v
+# as U, bytes outside 32..127 as cell 127, in several colours.
+cls
+rectfill 0 0 159 50 1
+print 2 2 7  !"\x23$%&'()*+,-./0123456789:;<=>?
+print 2 9 10 @ABCDEFGHIJKLMNOPQRSTUVWXYZ[\x5c]^_
+print 2 16 12 `abcdefghijklmnopqrstuvwxyz{|}~\x7f
+print 2 23 0 THE QUICK BROWN FOX: v V w W 0.5%
+print 2 30 15 \x01\x1f\x80\xa0\xff\x7f end
+print 2 37 8 a
+print 2 44 3 
+print_outlined 4 60 7 OUTLINED: score 1234
+print_outlined 4 70 11 lowercase v!
+print_outlined 100 60 0 zero
+frame
+# Text clipped at every screen edge, wholly off screen, under a camera, and
+# outlined text clipped.
+rectfill 0 0 159 119 5
+print -2 10 7 CLIPPED LEFT
+print -60 20 7 GONE LEFT AND BACK
+print 150 10 7 RIGHT
+print 158 30 9 W
+print 160 40 9 OFF
+print 40 -3 10 TOP EDGE
+print 40 -5 10 GONE
+print 40 117 10 BOTTOM EDGE
+print 40 120 10 GONE
+print -100 -100 7 FAR
+print_outlined -1 60 7 OUTLINE LEFT
+print_outlined 150 70 12 EDGE
+print_outlined 60 -4 14 TOP
+print_outlined 60 116 14 BOTTOM
+camera 10 -20
+print 10 0 6 CAMERA AT 10 -20
+print_outlined 5 30 7 CAMERA OUTLINE
+camera -150 0
+print 0 100 4 XY
+camera 0 0
+frame

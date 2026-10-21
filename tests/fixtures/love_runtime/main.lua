@@ -29,6 +29,23 @@ local function parse_integer(token, line_number)
   return negative and -value or value
 end
 
+-- The text of a print line, as tests/test_love_runtime.c's split_text cuts
+-- and decodes it; returns the line without the text, then the text.
+local function split_text(line, line_number)
+  local head, raw = line:match("^(%s*%S+%s+%S+%s+%S+%s+%S+) (.*)$")
+  if head == nil then
+    error(string.format("scene.txt:%d: print takes x y c, one space, then the text", line_number), 0)
+  end
+  local text = raw:gsub("\\(.?.?.?)", function(escape)
+    local hex = escape:match("^x(%x%x)$")
+    if hex == nil or tonumber(hex, 16) == 0 then
+      error(string.format("scene.txt:%d: a backslash in text must start \\xNN, NN not 00", line_number), 0)
+    end
+    return string.char(tonumber(hex, 16))
+  end)
+  return head, text
+end
+
 -- Returns the frames, each a list of calls { operation, line_number, values }.
 local function parse_scene(text)
   local parsed = {}
@@ -37,6 +54,11 @@ local function parse_scene(text)
   for line in (text .. "\n"):gmatch("([^\n]*)\n") do
     line_number = line_number + 1
     line = line:gsub("#.*", "")
+    local text = nil
+    local operation = line:match("^%s*(%S+)")
+    if operation == "print" or operation == "print_outlined" then
+      line, text = split_text(line, line_number)
+    end
     local tokens = {}
     for token in line:gmatch("%S+") do
       tokens[#tokens + 1] = token
@@ -54,7 +76,9 @@ local function parse_scene(text)
       for i = 2, #tokens do
         values[i - 2] = parse_integer(tokens[i], line_number)
       end
-      calls[#calls + 1] = { operation = tokens[1], line_number = line_number, values = values, count = #tokens - 1 }
+      calls[#calls + 1] = {
+        operation = tokens[1], line_number = line_number, values = values, count = #tokens - 1, text = text,
+      }
     end
     ::continue::
   end
@@ -143,6 +167,12 @@ local function play_call(call)
   elseif operation == "map" then
     require_count(call, 6)
     gfx_module.p8_map(gfx, mem, v[0], v[1], v[2], v[3], v[4], v[5])
+  elseif operation == "print" then
+    require_count(call, 3)
+    gfx_module.p8_print(gfx, mem, call.text, v[0], v[1], v[2])
+  elseif operation == "print_outlined" then
+    require_count(call, 3)
+    gfx_module.p8_print_outlined(gfx, mem, call.text, v[0], v[1], v[2])
   else
     error(string.format("scene.txt:%d: unknown operation %s", call.line_number, operation), 0)
   end

@@ -9,6 +9,7 @@ local vram = require("p8.vram")
 local pattern = require("love.pattern")
 local screen = require("love.screen")
 local sheet = require("love.sheet")
+local text = require("love.text")
 
 local M = {}
 
@@ -308,8 +309,27 @@ local function love_spr(gfx, mem, n, x, y, w, h)
   fill_rectangle(gfx, wx1 + 1, wy0, box_x1, wy1)
 end
 
+local function love_print(gfx, mem, str, x, y, col)
+  check_color("print", col)
+  set_color(col)
+  text.text_draw(str, x - gfx.camera_x, y - gfx.camera_y)
+end
+
+-- src/p8/gfx_software.c's software_print_outlined order, copied.
+local function love_print_outlined(gfx, mem, str, x, y, col)
+  for dy = -1, 1 do
+    for dx = -1, 1 do
+      if dx ~= 0 or dy ~= 0 then
+        love_print(gfx, mem, str, x + dx, y + dy, 0)
+      end
+    end
+  end
+  love_print(gfx, mem, str, x, y, col)
+end
+
 local LOVE_BACKEND = {
   cls = love_cls, pset = love_pset, line = love_line, rect = love_rect, circ = love_circ, lines = love_lines, psets = love_psets, rectfill = love_rectfill, circfill = love_circfill, spr = love_spr,
+  print = love_print, print_outlined = love_print_outlined,
 }
 
 -- Shared by every caller: never write it.

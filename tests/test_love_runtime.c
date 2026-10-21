@@ -20,8 +20,9 @@
 #define STATE DIR "/state.txt"
 #define LOG DIR "/stderr.txt"
 #define FRAME_SIZE (P8_SCREEN_WIDTH * P8_SCREEN_HEIGHT / 2)
-#define SCENE_FRAMES 14
+#define SCENE_FRAMES 16
 #define MAX_ARGUMENTS 64
+#define MAX_TEXT 256
 
 static unsigned char expected[SCENE_FRAMES][FRAME_SIZE];
 
@@ -55,6 +56,52 @@ static int split(char *line, int values[MAX_ARGUMENTS], char **operation) {
     return count;
 }
 
+static int hex_digit(char c) {
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    if (c >= 'a' && c <= 'f')
+        return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F')
+        return c - 'A' + 10;
+    return -1;
+}
+
+/* A print line is "print x y c text": the text is everything after the one
+ * space following c, with \xNN for a byte (#, \, 127 and above, but never
+ * 00) and no other escape. Cuts the line before the text and writes the
+ * decoded text into text; returns 0 when the line is not a print. */
+static int split_text(char *line, char text[MAX_TEXT]) {
+    char *p = line + strspn(line, " \t");
+    size_t length = strcspn(p, " \t");
+    if (!((length == 5 && strncmp(p, "print", 5) == 0) || (length == 14 && strncmp(p, "print_outlined", 14) == 0)))
+        return 0;
+    for (int token = 0; token < 4; token++) {
+        if (token > 0)
+            p += strspn(p, " \t");
+        p += strcspn(p, " \t");
+    }
+    if (*p != ' ')
+        scene_fail("print takes x y c, one space, then the text", NULL);
+    *p++ = '\0';
+    int n = 0;
+    while (*p != '\0') {
+        if (n == MAX_TEXT - 1)
+            scene_fail("text too long", NULL);
+        if (*p != '\\') {
+            text[n++] = *p++;
+            continue;
+        }
+        int high = p[1] == 'x' ? hex_digit(p[2]) : -1;
+        int low = high >= 0 ? hex_digit(p[3]) : -1;
+        if (low < 0 || (high == 0 && low == 0))
+            scene_fail("a backslash in text must start \\xNN, NN not 00", NULL);
+        text[n++] = (char)(high * 16 + low);
+        p += 4;
+    }
+    text[n] = '\0';
+    return 1;
+}
+
 static void require_count(const char *operation, int count, int expected_count) {
     if (count != expected_count)
         scene_fail("wrong argument count for", operation);
@@ -66,7 +113,8 @@ static void pack_screen(const p8_vram_t *mem, unsigned char frame[FRAME_SIZE]) {
             frame[(y * P8_SCREEN_WIDTH + x) / 2] = (unsigned char)(mem->screen[y][x] | mem->screen[y][x + 1] << 4);
 }
 
-static void play_call(p8_graphics_t *gfx, p8_vram_t *mem, const char *operation, const int *v, int count) {
+static void play_call(p8_graphics_t *gfx, p8_vram_t *mem, const char *operation, const int *v, int count,
+                      const char *text) {
     if (strcmp(operation, "cls") == 0) {
         require_count(operation, count, 0);
         p8_cls(mem);
@@ -131,6 +179,12 @@ static void play_call(p8_graphics_t *gfx, p8_vram_t *mem, const char *operation,
     } else if (strcmp(operation, "map") == 0) {
         require_count(operation, count, 6);
         p8_map(gfx, mem, v[0], v[1], v[2], v[3], v[4], v[5]);
+    } else if (strcmp(operation, "print") == 0) {
+        require_count(operation, count, 3);
+        p8_print(gfx, mem, text, v[0], v[1], v[2]);
+    } else if (strcmp(operation, "print_outlined") == 0) {
+        require_count(operation, count, 3);
+        p8_print_outlined(gfx, mem, text, v[0], v[1], v[2]);
     } else {
         scene_fail("unknown operation", operation);
     }
@@ -158,6 +212,8 @@ static int play_scene_in_c(void) {
         char *comment = strchr(line, '#');
         if (comment != NULL)
             *comment = '\0';
+        char text[MAX_TEXT];
+        int has_text = split_text(line, text);
         int values[MAX_ARGUMENTS];
         char *operation;
         int count = split(line, values, &operation);
@@ -171,7 +227,7 @@ static int play_scene_in_c(void) {
             open_frame = false;
             continue;
         }
-        play_call(&gfx, &mem, operation, values, count);
+        play_call(&gfx, &mem, operation, values, count, has_text ? text : NULL);
         open_frame = true;
     }
     free(text);
