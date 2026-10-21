@@ -105,6 +105,6 @@
   - [ ] 3.14 game: the cart and the input step
     - [x] chunk 1: check the 3.13 hypotheses
     - [x] chunk 2: the cart
-    - [ ] chunk 3: the input step
+    - [x] chunk 3: the input step
     - [ ] chunk 4: own-time gate and step note
   - [ ] 3.15 `game/main.lua` and `game/conf.lua`
