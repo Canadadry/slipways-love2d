@@ -1393,6 +1393,12 @@ love-check: $(TMP_DIR)/luajit_version ## checks that the installed LuaJIT is 2.1
 
 .PHONY: love-check
 
+checklist: $(BINDINGS_CORE_UNIT) $(DEMO_UNIT) love-check $(TMP_DIR)/test_checklist tools/checklist.txt ## tests the checklist script, then lists each C function and table with its Lua copy in tmp/checklist.txt
+	./$(TMP_DIR)/test_checklist
+	luajit tools/checklist.lua --listing $(TMP_DIR)/checklist.txt
+
+.PHONY: checklist
+
 # The dependency fragments written by the compiler, one per object. The
 # wildcard tolerates their absence: on a fresh clone, everything is compiled.
 -include $(wildcard $(OBJ_DIR)/src/*/*.d $(OBJ_DIR)/tests/*.d $(OBJ_DIR)/tools/*/*.d $(OBJ_DIR)/tmp/bindings/*.d $(OBJ_DIR)/tmp/demo/*.d)

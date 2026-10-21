@@ -1,6 +1,17 @@
 local SCANNED_DIRS = { "src/p8", "src/engine", "src/game" }
 local SCANNED_FILES = { "src/devtools/state_format.c" }
 
+local DATA_FILE = "tools/checklist.txt"
+local STEP_IDS = { "1.2", "2.1" }
+for n = 1, 15 do
+    STEP_IDS[#STEP_IDS + 1] = "3." .. n
+end
+local STEP_RANK = {}
+for rank, id in ipairs(STEP_IDS) do
+    STEP_RANK[id] = rank
+end
+local UNASSIGNED_RANK = #STEP_IDS + 1
+
 local errors = {}
 
 local function report(message)
@@ -320,6 +331,51 @@ local function scan(text)
     return found
 end
 
+local NOT_PORTED_KINDS = { file = 3, ["function"] = 4, table = 4, declaration = 4, macro = 4, rule = 4 }
+
+local function split_fields(text)
+    local fields = {}
+    for field in text:gmatch("%S+") do
+        fields[#fields + 1] = field
+    end
+    return fields
+end
+
+-- Returns { steps = { [C path] = id }, units = { [generated path] = Lua path },
+-- not_ported = { { kind, path, name, why } }, lua = { { path, name, lua_path, lua_name } } };
+-- a missing data file reads as empty.
+local function read_data(root)
+    local data = { steps = {}, units = {}, not_ported = {}, lua = {} }
+    local text = read_file(root .. "/" .. DATA_FILE) or ""
+    local number = 0
+    for line in (text .. "\n"):gmatch("([^\n]*)\n") do
+        number = number + 1
+        local head, why = line:match("^(.-) %-%- (.+)$")
+        local fields = split_fields(head or line)
+        local where = DATA_FILE .. ":" .. number .. ": "
+        if why == nil and ((fields[1] == "step" and #fields == 3) or (fields[1] == "unit" and #fields == 4)) then
+            local id, path = fields[2], fields[3]
+            if fields[1] == "unit" then
+                data.units[path] = fields[4]
+            end
+            if STEP_RANK[id] == nil then
+                report(where .. "unknown step " .. id)
+            elseif data.steps[path] ~= nil then
+                report(path .. ": two step lines")
+            else
+                data.steps[path] = id
+            end
+        elseif why ~= nil and fields[1] == "not-ported" and NOT_PORTED_KINDS[fields[2]] == #fields then
+            data.not_ported[#data.not_ported + 1] = { kind = fields[2], path = fields[3], name = fields[4], why = why }
+        elseif why == nil and fields[1] == "lua" and #fields == 5 then
+            data.lua[#data.lua + 1] = { path = fields[2], name = fields[3], lua_path = fields[4], lua_name = fields[5] }
+        elseif #fields > 0 then
+            report(where .. "cannot read: " .. line)
+        end
+    end
+    return data
+end
+
 local function lua_path_of(c_path)
     local dir, base = c_path:match("^src/([^/]+)/([^/]+)%.[ch]$")
     return "game/" .. dir .. "/" .. base .. ".lua"
@@ -364,70 +420,63 @@ local function lua_definitions(path)
     return { functions = functions, tables = tables }
 end
 
-local function main(argv)
-    local options = parse_arguments(argv)
-    local root = options.root
-    local c_paths = list_c_files(root)
-    if #c_paths == 0 then
-        usage_failure("no C file under " .. root .. "/src")
+local function sorted_keys(map)
+    local keys = {}
+    for key in pairs(map) do
+        keys[#keys + 1] = key
     end
+    table.sort(keys)
+    return keys
+end
 
-    local entries = {}
-    local totals = {
-        ["function"] = { ported = 0, missing = 0 },
-        table = { ported = 0, missing = 0 },
-    }
-    local lua_cache = {}
-    local parse_failed = false
-
-    for _, c_path in ipairs(c_paths) do
-        local found, error_line, message = scan(read_file(root .. "/" .. c_path))
-        if found == nil then
-            report(c_path .. ":" .. error_line .. ": " .. message)
-            parse_failed = true
-        else
-            local lua_path = lua_path_of(c_path)
-            if lua_cache[lua_path] == nil then
-                lua_cache[lua_path] = lua_definitions(root .. "/" .. lua_path) or false
-            end
-            local definitions = lua_cache[lua_path]
-            local file_status
-            if #found.functions == 0 and #found.tables == 0 and c_path:match("%.h$") then
-                file_status = "no-lua"
-            else
-                file_status = definitions and "present" or "MISSING"
-            end
-            entries[#entries + 1] = {
-                step = "-", path = c_path, line = 0,
-                text = "file " .. file_status .. " " .. c_path .. " -> " .. lua_path,
-            }
-            for _, kind in ipairs({ "function", "table" }) do
-                local items = kind == "function" and found.functions or found.tables
-                local defined = definitions and (kind == "function" and definitions.functions or definitions.tables)
-                for _, item in ipairs(items) do
-                    local status = defined and defined[item.name] and "ported" or "MISSING"
-                    local counter = status == "ported" and "ported" or "missing"
-                    totals[kind][counter] = totals[kind][counter] + 1
-                    entries[#entries + 1] = {
-                        step = "-", path = c_path, line = item.line,
-                        text = kind .. " " .. status .. " " .. c_path .. ":" .. item.line .. " " .. item.name
-                            .. " -> " .. lua_path .. " " .. item.name,
-                    }
-                end
+local function scan_defines(found, kind, name)
+    if found == nil then
+        return false
+    end
+    local lists = { found.functions, found.tables }
+    if kind == "function" then
+        lists = { found.functions }
+    elseif kind == "table" then
+        lists = { found.tables }
+    end
+    for _, list in ipairs(lists) do
+        for _, item in ipairs(list) do
+            if item.name == name then
+                return true
             end
         end
     end
+    return false
+end
 
-    if parse_failed then
-        for _, line in ipairs(errors) do
-            io.stderr:write(line .. "\n")
+local function check_stale_entries(root, data, found_in, lua_items)
+    for _, entry in ipairs(data.not_ported) do
+        local found = found_in[entry.path]
+        local exists = found ~= nil
+        if entry.kind == "function" or entry.kind == "table" then
+            exists = scan_defines(found, entry.kind, entry.name)
+        elseif exists and (entry.kind == "declaration" or entry.kind == "macro") then
+            exists = read_file(root .. "/" .. entry.path):find("%f[%w_]" .. entry.name .. "%f[^%w_]") ~= nil
         end
-        os.exit(2)
+        if not exists then
+            report(entry.path .. ": not-ported " .. entry.kind .. (entry.name and " " .. entry.name or "")
+                .. " not found")
+        end
+        if entry.name ~= nil and lua_items[entry.path .. " " .. entry.name] ~= nil then
+            report(entry.path .. ": " .. entry.name .. " both not ported and given a lua line")
+        end
     end
+    for _, entry in ipairs(data.lua) do
+        if not scan_defines(found_in[entry.path], nil, entry.name) then
+            report(entry.path .. ": lua " .. entry.name .. " not found")
+        end
+    end
+end
 
+local function write_listing(path, entries)
     table.sort(entries, function(a, b)
         if a.step ~= b.step then
-            return a.step < b.step
+            return (STEP_RANK[a.step] or UNASSIGNED_RANK) < (STEP_RANK[b.step] or UNASSIGNED_RANK)
         end
         if a.path ~= b.path then
             return a.path < b.path
@@ -437,25 +486,185 @@ local function main(argv)
         end
         return a.text < b.text
     end)
-
-    if options.listing ~= nil then
-        local file = io.open(options.listing, "w")
-        if file == nil then
-            usage_failure("cannot write " .. options.listing)
-        end
-        for _, entry in ipairs(entries) do
-            file:write(entry.step .. " " .. entry.text .. "\n")
-        end
-        file:close()
+    local file = io.open(path, "w")
+    if file == nil then
+        usage_failure("cannot write " .. path)
     end
+    for _, entry in ipairs(entries) do
+        file:write(entry.step .. " " .. entry.text .. "\n")
+    end
+    file:close()
+end
 
+local function print_summary(per_step, totals, assigned_files)
+    for _, id in ipairs(STEP_IDS) do
+        local counts = per_step[id]
+        if counts ~= nil then
+            io.write(string.format("%s: %d files, %d/%d functions, %d/%d tables\n", id, counts.files,
+                counts["function"][1], counts["function"][2], counts.table[1], counts.table[2]))
+        end
+    end
     local f, t = totals["function"], totals.table
     io.write(string.format(
         "checklist: %d ported, %d missing, %d not ported, of %d functions; "
-            .. "%d ported, %d missing, %d not ported, of %d tables; %d files\n",
-        f.ported, f.missing, 0, f.ported + f.missing,
-        t.ported, t.missing, 0, t.ported + t.missing, #c_paths))
-    os.exit(0)
+            .. "%d ported, %d missing, %d not ported, of %d tables; %d files, each with a step\n",
+        f.ported, f.missing, f.not_ported, f.ported + f.missing + f.not_ported,
+        t.ported, t.missing, t.not_ported, t.ported + t.missing + t.not_ported, assigned_files))
+end
+
+local function exit_with_errors(status)
+    for _, line in ipairs(errors) do
+        io.stderr:write(line .. "\n")
+    end
+    os.exit(#errors == 0 and 0 or status)
+end
+
+local function main(argv)
+    local options = parse_arguments(argv)
+    local root = options.root
+    local c_paths = list_c_files(root)
+    if #c_paths == 0 then
+        usage_failure("no C file under " .. root .. "/src")
+    end
+
+    local data = read_data(root)
+    for _, path in ipairs(sorted_keys(data.units)) do
+        if read_file(root .. "/" .. path) == nil then
+            report(path .. ": generated unit not found")
+        else
+            c_paths[#c_paths + 1] = path
+        end
+    end
+    table.sort(c_paths)
+    local scanned = {}
+    for _, c_path in ipairs(c_paths) do
+        scanned[c_path] = true
+    end
+    for _, path in ipairs(sorted_keys(data.steps)) do
+        if not scanned[path] and data.units[path] == nil then
+            report(path .. ": step for a file that is not scanned")
+        end
+    end
+
+    local not_ported_files, not_ported_items = {}, {}
+    for _, entry in ipairs(data.not_ported) do
+        if entry.kind == "file" then
+            not_ported_files[entry.path] = entry
+        else
+            not_ported_items[entry.path .. " " .. entry.kind .. " " .. entry.name] = entry
+        end
+    end
+    local lua_items = {}
+    for _, entry in ipairs(data.lua) do
+        lua_items[entry.path .. " " .. entry.name] = entry
+    end
+
+    local entries = {}
+    local per_step = {}
+    local assigned_files = 0
+    local totals = {
+        ["function"] = { ported = 0, missing = 0, not_ported = 0 },
+        table = { ported = 0, missing = 0, not_ported = 0 },
+    }
+    local lua_cache = {}
+    local function definitions_of(lua_path)
+        if lua_cache[lua_path] == nil then
+            lua_cache[lua_path] = lua_definitions(root .. "/" .. lua_path) or false
+        end
+        return lua_cache[lua_path]
+    end
+    local parse_failed = false
+    local found_in = {}
+
+    for _, c_path in ipairs(c_paths) do
+        local found, error_line, message = scan(read_file(root .. "/" .. c_path))
+        if found == nil then
+            report(c_path .. ":" .. error_line .. ": " .. message)
+            parse_failed = true
+        else
+            found_in[c_path] = found
+            local whole = not_ported_files[c_path]
+            local step = data.steps[c_path] or "-"
+            if whole ~= nil and step ~= "-" then
+                report(c_path .. ": both a step and not ported")
+            elseif whole == nil and step == "-" then
+                report(c_path .. ": no step")
+            elseif whole == nil then
+                assigned_files = assigned_files + 1
+                per_step[step] = per_step[step] or { files = 0, ["function"] = { 0, 0 }, table = { 0, 0 } }
+                per_step[step].files = per_step[step].files + 1
+            end
+            local lua_path = data.units[c_path] or lua_path_of(c_path)
+            local definitions = definitions_of(lua_path)
+            local file_status
+            if whole ~= nil then
+                file_status = "not-ported"
+            elseif #found.functions == 0 and #found.tables == 0 and c_path:match("%.h$") then
+                file_status = "no-lua"
+            else
+                file_status = definitions and "present" or "MISSING"
+            end
+            entries[#entries + 1] = {
+                step = step, path = c_path, line = -1,
+                text = "file " .. file_status .. " " .. c_path .. " -> " .. lua_path
+                    .. (whole and " -- " .. whole.why or ""),
+            }
+            for _, kind in ipairs({ "function", "table" }) do
+                local items = kind == "function" and found.functions or found.tables
+                for _, item in ipairs(items) do
+                    local reason = whole or not_ported_items[c_path .. " " .. kind .. " " .. item.name]
+                    local exception = lua_items[c_path .. " " .. item.name]
+                    local item_lua_path = exception and exception.lua_path or lua_path
+                    local lua_name = exception and exception.lua_name or item.name
+                    local item_definitions = definitions_of(item_lua_path)
+                    local defined = item_definitions
+                        and (kind == "function" and item_definitions.functions or item_definitions.tables)
+                    local status
+                    if reason ~= nil then
+                        status = "not-ported"
+                        totals[kind].not_ported = totals[kind].not_ported + 1
+                    elseif defined and defined[lua_name] then
+                        status = "ported"
+                        totals[kind].ported = totals[kind].ported + 1
+                    else
+                        status = "MISSING"
+                        totals[kind].missing = totals[kind].missing + 1
+                    end
+                    if per_step[step] ~= nil and reason == nil then
+                        local counts = per_step[step][kind]
+                        counts[2] = counts[2] + 1
+                        if status == "ported" then
+                            counts[1] = counts[1] + 1
+                        end
+                    end
+                    entries[#entries + 1] = {
+                        step = step, path = c_path, line = item.line,
+                        text = kind .. " " .. status .. " " .. c_path .. ":" .. item.line .. " " .. item.name
+                            .. " -> " .. item_lua_path .. " " .. lua_name .. (reason and " -- " .. reason.why or ""),
+                    }
+                end
+            end
+        end
+    end
+    if parse_failed then
+        exit_with_errors(2)
+    end
+
+    check_stale_entries(root, data, found_in, lua_items)
+    for _, entry in ipairs(data.not_ported) do
+        if entry.kind == "declaration" or entry.kind == "macro" or entry.kind == "rule" then
+            entries[#entries + 1] = {
+                step = data.steps[entry.path] or "-", path = entry.path, line = 0,
+                text = entry.kind .. " not-ported " .. entry.path .. " " .. entry.name .. " -- " .. entry.why,
+            }
+        end
+    end
+
+    if options.listing ~= nil then
+        write_listing(options.listing, entries)
+    end
+    print_summary(per_step, totals, assigned_files)
+    exit_with_errors(1)
 end
 
 main(arg)
