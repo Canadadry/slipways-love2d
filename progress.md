@@ -72,14 +72,14 @@
     - [x] chunk 3: slipway
     - [x] chunk 4: wormhole
     - [x] chunk 5: cost and record
-  - [ ] 3.9 game: include cycle, UI and message box, particles, background, scroll
+  - [x] 3.9 game: include cycle, UI and message box, particles, background, scroll
     - [x] chunk 1: particle
     - [x] chunk 2: scroll and background
     - [x] chunk 3: ui_button
     - [x] chunk 4: ui
     - [x] chunk 5: message_box
     - [x] chunk 6: research_display and bootstrap
-    - [ ] chunk 7: cost, checkpoint and record
+    - [x] chunk 7: cost, checkpoint and record
   - [ ] 3.10 game: displays and panels
   - [ ] 3.11 game: pad modes
   - [ ] 3.12 game: save

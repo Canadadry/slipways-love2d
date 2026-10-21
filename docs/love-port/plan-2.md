@@ -562,3 +562,37 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   59.3 ms (+4.0, about 0.078 ms per KB); `lua-test-modules` 43.2 → 46.6 ms
   (+3.7; deferred files are compiled before they fail). Pass. Projection at
   the end: `lua-guard` 77–87 ms, `lua-test-modules` 63–69 ms.
+
+### Step 3.9
+
+- `game/game/`: particle, scroll, background, ui_button, ui, message_box,
+  research_display; `game/engine/bootstrap.lua` (requires game.mouse,
+  game.scroll and game.ui at load, as the C includes them; nothing requires
+  it back). `make checklist STEP=3.9` passes (170/170, 9/9); the PRD's
+  per-file counts were off by one in places (ui 43, message_box 35,
+  ui_button 36), the total right.
+- All eight modules load at once. With particle in the tree, planet_family
+  and probe load and their 20 blocks compare equal to the C:
+  `LUA_DEFERRED_MODULES` is now `game.slipway game.wormhole`, which 3.10
+  empties.
+- Zero constructors moved home: `emitter_zero` to particle,
+  `button_keys_zero` and `button_zero` to ui_button (economy_score builds its
+  difficulty button at load, so it requires game.ui_button at load, one
+  direction only), `toast_keys_zero` and `open_box_frame_zero` to
+  message_box. The size of a struct field keeps the `type.field` key
+  (`SIZEOF["p8_vram_t.draw_palette"]`).
+- Behaviour checked against the C with throwaway programs, all
+  byte-identical: particles over 70 probe frames, the camera and background,
+  buttons, ui hover, presses, drags and drops (1,004 lines), boxes and
+  toasts, and research display over every project, planet type and
+  technology with world resets (96,681 lines).
+- Own-time gate, paired against `42d7734` (45 pairs; +87.0 KB Lua, +61
+  compared blocks of which 20 formerly deferred, +282 lines): `lua-guard`
+  60.8 → 67.9 ms (+6.7, about 0.077 ms per KB); `lua-test-modules` 46.8 →
+  47.7 ms (+2.6; the deferred files were already compiled). Pass.
+  Projection at the end (about 229 KB left): `lua-guard` 83–88 ms,
+  `lua-test-modules` 55–61 ms.
+- Checkpoint, rule-4 protocol, 4 cores, 11 rounds: plain medians 6.194 s
+  (current), 6.054 s (`a880ee9`, end of 3.3), 5.923 s (`8dff812`); paired
+  +0.23 % vs `a880ee9`, +1.93 % vs `8dff812`; spreads 10.5 %, 10.1 %,
+  10.2 %. Pass.
