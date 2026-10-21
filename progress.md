@@ -39,7 +39,7 @@
     - [x] chunk 1: map tables
     - [x] chunk 2: game_data, first half
     - [x] chunk 3: game_data, second half
-    - [ ] chunk 4: registry and entity_geom
+    - [x] chunk 4: registry and entity_geom
     - [ ] chunk 5: entity
     - [ ] chunk 6: cost and record
   - [ ] 3.4 game: leaves
