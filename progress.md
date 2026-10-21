@@ -52,7 +52,7 @@
     - [x] chunk 1: economy leaves
     - [x] chunk 2: research
     - [x] chunk 3: HUD and draw functions
-    - [ ] chunk 4: layout and row images
+    - [x] chunk 4: layout and row images
     - [ ] chunk 5: cost and record
   - [ ] 3.6 game: include cycle, galaxy and planets
   - [ ] 3.7 game: include cycle, economy
