@@ -37,7 +37,7 @@
     - [x] chunk 4: cost and record
   - [ ] 3.3 engine: registry, entity geometry, entities, bootstrap
     - [x] chunk 1: map tables
-    - [ ] chunk 2: game_data, first half
+    - [x] chunk 2: game_data, first half
     - [ ] chunk 3: game_data, second half
     - [ ] chunk 4: registry and entity_geom
     - [ ] chunk 5: entity

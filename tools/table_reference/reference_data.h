@@ -4,8 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "game/game_data.h"
 #include "game/map_tables.h"
 #include "table_reference.h"
+
+/* Every function static inline: a unit that never calls one would otherwise
+ * fail -Wunused-function. */
 
 typedef struct {
     const void *address;
@@ -22,7 +26,7 @@ typedef struct {
 
 /* NULL for a NULL address; exits when the address starts no listed table, so
  * an unlisted table cannot hide behind a pointer. */
-static const char *reference_data_name_of(const reference_data_t *data, const void *address, const char *path) {
+static inline const char *reference_data_name_of(const reference_data_t *data, const void *address, const char *path) {
     if (address == NULL) {
         return NULL;
     }
@@ -35,11 +39,11 @@ static const char *reference_data_name_of(const reference_data_t *data, const vo
     exit(1);
 }
 
-static void reference_data_pointer(const reference_data_t *data, const void *address, const char *path) {
+static inline void reference_data_pointer(const reference_data_t *data, const void *address, const char *path) {
     table_reference_pointer(data->module, reference_data_name_of(data, address, path), "%s", path);
 }
 
-static void reference_data_item(const reference_data_t *data, const data_item_t *item, const char *path) {
+static inline void reference_data_item(const reference_data_t *data, const data_item_t *item, const char *path) {
     char field[256];
 #define FIELD(name) (snprintf(field, sizeof field, "%s." #name, path), field)
     if (item->text != NULL) {
@@ -54,7 +58,7 @@ static void reference_data_item(const reference_data_t *data, const data_item_t 
 #undef FIELD
 }
 
-static void reference_data_row(const reference_data_t *data, const data_row_t *row, const char *path) {
+static inline void reference_data_row(const reference_data_t *data, const data_row_t *row, const char *path) {
     char field[256];
 #define FIELD(name) (snprintf(field, sizeof field, "%s." #name, path), field)
     table_reference_int(data->module, row->count, "%s", FIELD(count));
@@ -67,7 +71,7 @@ static void reference_data_row(const reference_data_t *data, const data_row_t *r
 #undef FIELD
 }
 
-static void reference_data_items(const reference_data_t *data, const char *name, const data_item_t *items, int count) {
+static inline void reference_data_items(const reference_data_t *data, const char *name, const data_item_t *items, int count) {
     char path[256];
     for (int i = 0; i < count; i++) {
         snprintf(path, sizeof path, "%s[%d]", name, i);
@@ -75,12 +79,26 @@ static void reference_data_items(const reference_data_t *data, const char *name,
     }
 }
 
-static void reference_data_rows(const reference_data_t *data, const char *name, const data_row_t *rows, int count) {
+static inline void reference_data_rows(const reference_data_t *data, const char *name, const data_row_t *rows, int count) {
     char path[256];
     for (int i = 0; i < count; i++) {
         snprintf(path, sizeof path, "%s[%d]", name, i);
         reference_data_row(data, &rows[i], path);
     }
+}
+
+static inline void reference_data_ints(const reference_data_t *data, const char *name, const int *items, int count) {
+    for (int i = 0; i < count; i++) {
+        table_reference_int(data->module, items[i], "%s[%d]", name, i);
+    }
+}
+
+static inline void reference_data_int_seq(const reference_data_t *data, const int_seq_t *seq, const char *path) {
+    char field[256];
+    snprintf(field, sizeof field, "%s.count", path);
+    table_reference_int(data->module, seq->count, "%s", field);
+    snprintf(field, sizeof field, "%s.items", path);
+    reference_data_pointer(data, seq->items, field);
 }
 
 #endif

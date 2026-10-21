@@ -31,8 +31,10 @@ M.DRAW_FUNCTION_SPR = 4
 M.DRAW_FUNCTION_DRAW_ROW = 5
 M.DRAW_FUNCTION_COUNT = 6
 
--- A misspelt field would be dropped silently and read as its zero.
-local function check_fields(fields, made, type_name)
+-- Lua only, like the two constructors below, here rather than after the C
+-- functions because the tables below call them at load. Returns made; a
+-- misspelt field would be dropped silently and read as its zero.
+function M.map_tables_check_fields(fields, made, type_name)
   for key in pairs(fields) do
     if made[key] == nil then
       error(type_name .. ": unknown field " .. tostring(key))
@@ -41,8 +43,9 @@ local function check_fields(fields, made, type_name)
   return made
 end
 
--- Lua only, here rather than after the C functions because the tables below
--- call them at load: a new data_item_t, the fields not given at their C zero.
+local check_fields = M.map_tables_check_fields
+
+-- Lua only: a new data_item_t, the fields not given at their C zero.
 function M.map_tables_make_data_item(fields)
   return check_fields(fields, {
     text = fields.text,
