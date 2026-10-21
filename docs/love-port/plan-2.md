@@ -288,3 +288,49 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   `snprintf` messages use `string.format` with the same text.
 - **Lua-only tests.** In `tests/lua/test_runtime.lua`, one process; checks
   against C results use a C reference writer, as `test_fixed.lua` does.
+
+### Step 3.1
+
+- `game/engine/`: zone, zone_sizes, allocator, frame_zone, game_zone,
+  slot_tally, slot_group, value_list, pointer_list, collect, vec, geom,
+  dispatch_context; `game/p8/str.lua`. `make checklist STEP=3.1` passes
+  (146/146; the step has no tables).
+- The three Phase 3 checks, each over the whole tree: the undeclared-global
+  rule in `lua-guard` (bytecode walk, about 1 ms); `lua-test-modules` (one
+  process: requires every module without `love`, then compares every ported
+  table, constant and `SIZEOF` entry with `tmp/table_reference.txt`, written
+  by `tools/table_reference.c` from one unit per C source in
+  `tools/table_reference/`). A step registers its constants by adding a unit
+  and its source to `TABLE_REFERENCE_SOURCES`. `make checklist STEP=` fails
+  on a ported table the check does not compare. The data check compares
+  each table as one sorted block (the PRD's line-by-line comparison took
+  78 ms); its agent had no `guideline` and decided that itself.
+- Costs: `lua-guard` 2.4 ms fixed + about 0.10 ms per KB of Lua code;
+  load 2.1 ms + about 0.043 ms per KB; data about 17 µs per table + 0.21 µs
+  per line. Now `lua-guard` 26 ms, `lua-test-modules` 16 ms. Projected at
+  the end of the plan (about 600 KB more Lua, 469 tables): `lua-guard` about
+  88 ms, `lua-test-modules` about 54 ms, both under 100 ms; `lua-guard` is
+  the one to watch, and the large-table comparison is the first thing to
+  move out under rule 5 if needed. The C tests `test_lua_guard` and
+  `test_lua_modules` take about 100 ms each on fixed fixtures and do not
+  grow; kept in `make test` (unit tests, not fake checks).
+- Timing protocol, 4 cores, 11 rounds: plain medians 5.794 s (current),
+  5.918 s (`2e8bdd4`, before), 5.704 s (`8dff812`); paired medians −0.98 %
+  vs before, +1.40 % vs `8dff812`; spreads 9.4 %, 10.1 %, 9.0 %.
+- No behaviour tests for engine modules (the replays of plan 3 cover them);
+  agents checked behaviour with throwaway scripts.
+
+#### Engine conventions (add to 2.1's)
+
+- **The build Lua copies.** The 64-bit PC build without ASan (the one that recorded the replays): `sizeof(void *)` 8, a `zone_cell_t` 8; `ZONE_BYTES_BY_WIDTH(b64, b32)` returns `b64` after a load-time `assert` on the C condition on `b32`; `BUMP_ZONE_HALVES` 1; `POISON`/`UNPOISON` dropped.
+- **Blocks.** An allocation returns a new, empty table, the block; the caller writes what the C writes into the bytes (fields by name, array elements from 0). Zones never read a block. Byte counts, cell rounding, capacity test and the `zone %s full, limit %d bytes|slots` message are the C ones, through `fatal.p8_fatal`. C address arithmetic stays as byte offsets nothing reads.
+- **Zone storage and macros.** `BUMP_ZONE_STORAGE`/`FLIP_ZONE_STORAGE` return a new table standing for the cells, never read; `SLOT_ZONE_STORAGE(slot_size, count)` returns `cells, taken` (`taken` 0-indexed zeros). Function-like macros are module functions with the C names.
+- **Slots.** A slot zone has two Lua-only fields: `blocks` (the block handed out per slot index, what `slot_at` returns) and `index_of` (block → slot index). Release of a block never handed out, or whose slot was handed out again, fails `release of a pointer outside the zone`; a second release `release of a slot already released`.
+- **Copies of unknown type.** A whole-block `memcpy` is `copy_block` (local to `allocator.lua`, every key); a one-element `memcpy` of unknown type is one local of `value_list.lua` (one level deep). The only generic copies; an inline mutable sub-struct is copied by the caller before the add.
+- **First-member casts.** A struct reached by casting its first member (`flip_zone_allocator_t`, `arena_t`, `slot_group_handle_t`) is one table holding both structs' fields; the cast is the identity; coinciding names are one object. Assigning a handle by value copies its five fields (`store_handle`). `assert(arena->bump == &a->bump)` becomes `assert(arena ~= nil and a.from ~= nil, "<C message>")`.
+- **Statics.** A static struct or inline array of structs is a table (or 0-indexed array of tables) with every field at its C zero value (0, or nil for a pointer).
+- **`sizeof`.** Every `sizeof` a module uses is an entry of `M.SIZEOF`, keyed by the C type as written (`SIZEOF["void *"]`, `SIZEOF.arena_t`), 64-bit value, read through `local SIZEOF = M.SIZEOF`, never a bare number; compared with the C compiler by `lua-test-modules`.
+- **Constants.** Numeric header macros and enum constants are module fields with the C names, computed as the C does, compared by `lua-test-modules`; a `.c`-local macro is a module local, not compared. A header without a `.c` whose macros Lua needs gets its own Lua file (`engine.zone_sizes`).
+- **Truth values.** As 2.1; `!x` is `(x == 0) and 1 or 0` as a value, `x == 0` as a test; a pointer test is `p ~= nil`; Lua booleans never stand for a C int.
+- **Zone strings.** A zone-built `char *` is a Lua string: the function performs the C allocation for length + 1 bytes and returns the string; releasing it is a no-op on a bump zone and fails "outside the zone" on a slot zone; `strcmp(a, b) == 0` is `a == b`.
+- **Registering constants and sizes.** A unit `tools/table_reference/<dir>_<file>.c` including the header (or the `.c` for statics) prints each with `table_reference_int(module, value, "NAME")` or `"SIZEOF.type"`; add the source to `TABLE_REFERENCE_SOURCES`.
