@@ -93,9 +93,11 @@ fake follows these rules, and every step that adds one measures it.
    (see `make love-e2e`).
 4. **Measured, with one protocol, against two baselines.**
    - Baselines: the step's "before" commit, and the plan-wide reference,
-     commit `2e7215c` (4 cores, plain median 7.70 s over 15 runs when
-     recorded). A median is never compared across machines: the reference
-     is re-measured beside the current commit every time.
+     commit `8dff812`, the merge of pull request #1: the last commit before
+     plan 2's own work, with its fake checks (4 cores, plain median 5.60 s
+     over 11 rounds when recorded). A median is never compared across
+     machines: the reference is re-measured beside the current commit every
+     time.
    - Protocol: each commit under comparison in its own git worktree under
      `tmp/`; one `make test` in each to warm the build; then 11 rounds, each
      timing one `make test` (wall time) per worktree back to back, rotating

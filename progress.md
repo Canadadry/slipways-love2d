@@ -4,6 +4,11 @@
     - [x] chunk 2: data file, consistency, make target
     - [x] chunk 3: include order and the step gate
   - [ ] 1.2 `game/p8/fixed.lua`
+    - [x] chunk 1: reference commit
+    - [ ] chunk 2: harness and integer arithmetic
+    - [ ] chunk 3: roots and trigonometry
+    - [ ] chunk 4: random generator
+    - [ ] chunk 5: budget, sweep and record
 - [ ] Phase 2 — Runtime and LÖVE glue
   - [ ] 2.1 `game/p8/` and `game/love/`
 - [ ] Phase 3 — Engine and game
