@@ -1,0 +1,21 @@
+- [ ] Phase 1 — Checklist and numbers
+  - [ ] 1.1 The checklist script
+  - [ ] 1.2 `game/p8/fixed.lua`
+- [ ] Phase 2 — Runtime and LÖVE glue
+  - [ ] 2.1 `game/p8/` and `game/love/`
+- [ ] Phase 3 — Engine and game
+  - [ ] 3.1 engine: memory and basics
+  - [ ] 3.2 engine: entity classes, ids, lists, exit queue
+  - [ ] 3.3 engine: registry, entity geometry, entities, bootstrap
+  - [ ] 3.4 game: leaves
+  - [ ] 3.5 game: techs, HUD and layout
+  - [ ] 3.6 game: include cycle, galaxy and planets
+  - [ ] 3.7 game: include cycle, economy
+  - [ ] 3.8 game: include cycle, slipways, probes and wormholes
+  - [ ] 3.9 game: include cycle, UI and message box, particles, background, scroll
+  - [ ] 3.10 game: displays and panels
+  - [ ] 3.11 game: pad modes
+  - [ ] 3.12 game: save
+  - [ ] 3.13 game: menus, title and attract
+  - [ ] 3.14 game: the cart and the input step
+  - [ ] 3.15 `game/main.lua` and `game/conf.lua`
