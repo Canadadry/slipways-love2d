@@ -9,12 +9,9 @@
 --   targeting_track_ctx_t: { self_map_pos }.
 --
 -- Include cycle: game.particle is required at load, since emitter_update_method fills
--- probe_class_def; particle must reach this module at call time only. game.economy, game.planet,
+-- probe_class_def; particle never requires this module. game.economy, game.planet,
 -- game.slipway, game.ui and game.wormhole are required at call time, inside the functions that need
 -- them. planet_family and wormhole hold this module's methods by identity, so it requires neither.
---
--- emitter_t is owned by game.particle (step 3.9): emitter_zero below is a local copy of
--- planet.lua's, for 3.9 to fold into its owner.
 local bit = require("bit")
 local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
@@ -49,29 +46,6 @@ local SIZEOF = M.SIZEOF
 local function entity_id_none()
   local none = entity_id_type.ENTITY_ID_NONE
   return { index = none.index, generation = none.generation }
-end
-
--- pointer_list_t list = {0}.
-local function list_zero()
-  return { items = nil, count = 0, capacity = 0, zone = nil }
-end
-
--- Lua only: emitter_t at its C zero, the inline sub-struct later code writes field by field.
-local function emitter_zero()
-  return {
-    archetype = nil,
-    has = 0,
-    angle_slices = 0,
-    base_radius = 0,
-    speed_factor = 0,
-    trail_colors = nil,
-    matrix_xx = 0,
-    matrix_xy = 0,
-    matrix_yx = 0,
-    matrix_yy = 0,
-    particles = list_zero(),
-    particles_slot_kind = 0,
-  }
 end
 
 local g_probe_up = 0
@@ -507,7 +481,7 @@ M.probe_class_def = {
 function M.probe_init_instance(self, cls, archetype)
   entity.entity_init_instance(self, cls, archetype.state, archetype.state_time)
   -- Lua only: the inline sub-structs the C writes into in place.
-  self.emitter = emitter_zero()
+  self.emitter = particle_module.emitter_zero()
   self.targeting = targeting_module.targeting_zero()
   self.archetype = archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)

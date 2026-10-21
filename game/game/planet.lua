@@ -19,8 +19,8 @@
 -- planet_offer_trade_method (game.planet_trade); planet_kind_named (game.planet_family).
 --
 -- Include cycle: game.planet_display and game.planet_trade are required at load, since their
--- methods fill planet_class_def; neither requires this module at load. game.message_box is
--- required at call time.
+-- methods fill planet_class_def; neither requires this module at load. game.message_box and
+-- game.particle are required at call time.
 local bit = require("bit")
 local allocator = require("engine.allocator")
 local collect = require("engine.collect")
@@ -96,24 +96,6 @@ local function toast_keys_zero()
     has_text = 0,
     text = "",
     color = 0,
-  }
-end
-
--- Lua only: emitter_t at its C zero, the inline sub-struct later code writes field by field.
-local function emitter_zero()
-  return {
-    archetype = nil,
-    has = 0,
-    angle_slices = 0,
-    base_radius = 0,
-    speed_factor = 0,
-    trail_colors = nil,
-    matrix_xx = 0,
-    matrix_xy = 0,
-    matrix_yx = 0,
-    matrix_yy = 0,
-    particles = list_zero(),
-    particles_slot_kind = 0,
   }
 end
 
@@ -221,7 +203,7 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.synthesizable_resources = self.archetype.synthesizable_resources
   self.has_ = 0
   self.targeting = targeting.targeting_zero()
-  self.emitter = emitter_zero()
+  self.emitter = require("game.particle").emitter_zero()
 end
 
 local function planet_create(keys)
