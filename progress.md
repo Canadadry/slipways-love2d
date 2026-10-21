@@ -1,5 +1,5 @@
 - [ ] Phase 1 — Checklist and numbers
-  - [ ] 1.1 The checklist script
+  - [x] 1.1 The checklist script
     - [x] chunk 1: scanner and listing
     - [x] chunk 2: data file, consistency, make target
     - [x] chunk 3: include order and the step gate

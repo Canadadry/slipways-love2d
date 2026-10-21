@@ -135,3 +135,31 @@ deleted binaries used it): `bindings_compiled_personal`
 and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
 `draw_meter.c` and `state_format.c`), the width-multiple-of-16 rule of
 `src/p8/image.h`.
+
+### Step 1.1
+
+- `tools/checklist.lua` (LuaJIT, its own C tokenizer) with `tools/checklist.txt`
+  (file → step, the two generated units, not-ported entries, Lua-name
+  exceptions); `make checklist` writes `tmp/checklist.txt` and prints per-step
+  counts; `make checklist STEP=<id>` fails on any function or table still
+  MISSING at that step or an earlier one. Outside `make test`; its test
+  `tmp/test_checklist` (22 tests) runs under `make checklist`.
+- A Lua function is found by the same file, same name rule, as a global,
+  `local function`, or module field (`M.name = function` / `function M.name`).
+- Real tree: 1563 functions (8 not ported: `format.c`), 529 tables, 206
+  files, each with a step. Generated units: `tmp/bindings/core.c` →
+  `game/game/bindings_default.lua` (3.4), `tmp/demo/demo.c` →
+  `game/game/demo_data.lua` (3.13); `tmp/bindings/default.c` is the replay
+  tool's unit, not scanned.
+- `src/p8/` files are assigned too (`fixed`, `quarter_wave` → 1.2, the rest
+  → 2.1), so `STEP=` works for Phases 1 and 2; `state_format.c` → 3.15.
+- The include graph moved files off the step their title names: `game_data`
+  and `map_tables` → 3.3; `trade` and the economy formulas, `row_image` and
+  `draw_functions` → 3.5; `ui_zone` → 3.6, `particle_zone` → 3.8; engine
+  `bootstrap` → 3.9 (includes `ui`, `scroll`, `mouse`); `pad_nav` → 3.13;
+  `src/p8/str` → 3.1 (includes `engine/allocator.h`). The checklist is
+  authoritative, per the Phase 3 header.
+- Include cycles are taken between modules (a `.c` and its `.h`), since only
+  headers are included.
+- Open for 3.15: `GPU_FRAME_BUFFER_BYTES` is not ported, but `state_format.c`
+  prints it, so `debug_state()` must still give that number.
