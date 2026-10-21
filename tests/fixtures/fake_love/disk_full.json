@@ -1,0 +1,7 @@
+{
+  "input": "pad",
+  "initial_save": "00ff10A5",
+  "bindings": "disk_bindings.cfg",
+  "attract_after": 7,
+  "frames": [{"pad": []}, {"pad": []}]
+}

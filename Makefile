@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 # Reruns make under flock: one make of LOCKED_GOALS at a time over tmp/.
-LOCKED_GOALS := test e2e test-all
+LOCKED_GOALS := test e2e test-all love-e2e
 
 ifneq ($(if $(MAKE_LOCK_HELD),,$(filter $(LOCKED_GOALS),$(MAKECMDGOALS))),)
 $(MAKECMDGOALS): make-lock ; @:
@@ -331,6 +331,138 @@ $(TMP_DIR)/frames_tool: $(call objs,src/cmd/frames.c src/devtools/screencast.c s
 $(TMP_DIR)/test_frames_tool: $(call objs,tests/test_frames_tool.c src/devtools/screencast.c src/p8/vram.c) $(TMP_DIR)/replay $(TMP_DIR)/frames_tool tests/fixtures/screencast_capture_events.json | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
+test_fake_love_replay_objs := $(call objs,tests/test_fake_love_replay.c tools/fake_love/replay.c)
+$(TMP_DIR)/test_fake_love_replay: $(test_fake_love_replay_objs) $(wildcard tests/e2e/*.json) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_pad_objs := $(call objs,tests/test_fake_love_pad.c tools/fake_love/pad.c)
+$(TMP_DIR)/test_fake_love_pad: $(test_fake_love_pad_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_canvas_objs := $(call objs,tests/test_fake_love_canvas.c tools/fake_love/canvas.c)
+$(TMP_DIR)/test_fake_love_canvas: $(test_fake_love_canvas_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
+
+test_fake_love_image_data_objs := $(call objs,tests/test_fake_love_image_data.c tools/fake_love/image_data.c)
+$(TMP_DIR)/test_fake_love_image_data: $(test_fake_love_image_data_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
+
+test_fake_love_image_rules_objs := $(call objs,tests/test_fake_love_image_rules.c tools/fake_love/image_rules.c tools/fake_love/point.c)
+$(TMP_DIR)/test_fake_love_image_rules: $(test_fake_love_image_rules_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
+
+test_fake_love_point_objs := $(call objs,tests/test_fake_love_point.c tools/fake_love/point.c)
+$(TMP_DIR)/test_fake_love_point: $(test_fake_love_point_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
+
+test_fake_love_frame_capture_objs := $(call objs,tests/test_fake_love_frame_capture.c tools/fake_love/frame_capture.c)
+$(TMP_DIR)/test_fake_love_frame_capture: $(test_fake_love_frame_capture_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_transform_objs := $(call objs,tests/test_fake_love_transform.c tools/fake_love/transform.c)
+$(TMP_DIR)/test_fake_love_transform: $(test_fake_love_transform_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_disk_objs := $(call objs,tests/test_fake_love_disk.c tools/fake_love/disk.c)
+$(TMP_DIR)/test_fake_love_disk: $(test_fake_love_disk_objs) $(wildcard tests/fixtures/fake_love/disk_tree/* tests/fixtures/fake_love/disk_tree/*/*) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_png_file_objs := $(call objs,tests/test_fake_love_png_file.c tools/fake_love/png_file.c)
+$(TMP_DIR)/test_fake_love_png_file: $(test_fake_love_png_file_objs) game/sprites.png game/font.png | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
+
+# Recursive (`=`): only a target that builds the fake runs pkg-config.
+luajit_flags = $(if $(filter LUAJIT_MISSING,$(1)),$(error pkg-config luajit failed: run tools/love_install.sh),$(1))
+LUAJIT_CFLAGS = $(call luajit_flags,$(shell pkg-config --cflags luajit 2>/dev/null || echo LUAJIT_MISSING))
+LUAJIT_LIBS = $(call luajit_flags,$(shell pkg-config --libs luajit 2>/dev/null || echo LUAJIT_MISSING))
+FAKE_LOVE_LUA_SRCS := tools/fake_love/fake_love.c tools/fake_love/host.c tools/fake_love/joystick.c tools/fake_love/filesystem.c tools/fake_love/graphics.c tools/fake_love/image.c tools/fake_love/function_list.c
+
+$(call objs,$(FAKE_LOVE_LUA_SRCS)): override CFLAGS += $(LUAJIT_CFLAGS)
+
+# What a Lua game runs on, without a command.
+FAKE_LOVE_HOST_SRCS := $(filter-out tools/fake_love/fake_love.c,$(FAKE_LOVE_LUA_SRCS)) tools/fake_love/pad.c tools/fake_love/disk.c tools/fake_love/canvas.c tools/fake_love/image_data.c tools/fake_love/image_rules.c tools/fake_love/point.c tools/fake_love/png_file.c tools/fake_love/transform.c tools/fake_love/frame_capture.c
+
+fake_love_objs := $(call objs,tools/fake_love/fake_love.c tools/fake_love/replay.c $(FAKE_LOVE_HOST_SRCS))
+$(TMP_DIR)/fake_love: $(fake_love_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS) -lm
+
+love_capture_check_objs := $(call objs,tools/fake_love/love_capture_check.c $(FAKE_LOVE_HOST_SRCS))
+$(TMP_DIR)/love_capture_check: $(love_capture_check_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS) -lm
+
+fake-love: $(TMP_DIR)/fake_love ## builds tmp/fake_love, the headless LÖVE that plays a Lua game on a replay
+
+.PHONY: fake-love
+
+FAKE_LOVE_HARNESS := tools/fake_love/harness/main.lua
+
+FAKE_LOVE_FIXTURES := $(wildcard tests/fixtures/fake_love/*.json tests/fixtures/fake_love/*.cfg tests/fixtures/fake_love/*.lua tests/fixtures/fake_love/*/*.lua tests/fixtures/fake_love/*/*.txt tests/fixtures/fake_love/*/*/*.lua tests/fixtures/fake_love/*/*/*.txt tests/fixtures/fake_love/*/*.png tests/fixtures/fake_love/*/*/*.png)
+
+test_fake_love_objs := $(call objs,tests/test_fake_love.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_fake_love: $(test_fake_love_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_frames_objs := $(call objs,tests/test_fake_love_frames.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_fake_love_frames: $(test_fake_love_frames_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_failures_objs := $(call objs,tests/test_fake_love_failures.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_fake_love_failures: $(test_fake_love_failures_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_joystick_objs := $(call objs,tests/test_fake_love_joystick.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_fake_love_joystick: $(test_fake_love_joystick_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_files_objs := $(call objs,tests/test_fake_love_files.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_fake_love_files: $(test_fake_love_files_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_graphics_objs := $(call objs,tests/test_fake_love_graphics.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_fake_love_graphics: $(test_fake_love_graphics_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_unlisted_objs := $(call objs,tests/test_fake_love_unlisted.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_fake_love_unlisted: $(test_fake_love_unlisted_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_points_objs := $(call objs,tests/test_fake_love_points.c tests/fake_love_cli.c tests/fake_love_png.c)
+$(TMP_DIR)/test_fake_love_points: $(test_fake_love_points_objs) $(TMP_DIR)/fake_love $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS) $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_rectangle_objs := $(call objs,tests/test_fake_love_rectangle.c tests/fake_love_cli.c tests/fake_love_png.c)
+$(TMP_DIR)/test_fake_love_rectangle: $(test_fake_love_rectangle_objs) $(TMP_DIR)/fake_love $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS) $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_set_color_objs := $(call objs,tests/test_fake_love_set_color.c tests/fake_love_cli.c tests/fake_love_png.c)
+$(TMP_DIR)/test_fake_love_set_color: $(test_fake_love_set_color_objs) $(TMP_DIR)/fake_love $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS) $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_image_draw_objs := $(call objs,tests/test_fake_love_image_draw.c tests/fake_love_cli.c tests/fake_love_png.c)
+$(TMP_DIR)/test_fake_love_image_draw: $(test_fake_love_image_draw_objs) $(TMP_DIR)/fake_love $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS) $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+$(call objs,tests/test_fake_love_image.c): override CFLAGS += $(LUAJIT_CFLAGS)
+test_fake_love_image_objs := $(call objs,tests/test_fake_love_image.c tests/fake_love_cli.c tools/fake_love/image.c tools/fake_love/function_list.c tools/fake_love/image_data.c tools/fake_love/filesystem.c tools/fake_love/disk.c tools/fake_love/png_file.c)
+$(TMP_DIR)/test_fake_love_image: $(test_fake_love_image_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS) -lm
+
+$(call objs,tests/test_fake_love_function_list.c): override CFLAGS += $(LUAJIT_CFLAGS)
+test_fake_love_function_list_objs := $(call objs,tests/test_fake_love_function_list.c tools/fake_love/function_list.c)
+$(TMP_DIR)/test_fake_love_function_list: $(test_fake_love_function_list_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS) -lm
+
+# The one translation unit compiling the vendored stb_image.h.
+$(call objs,tools/fake_love/png_file.c): override CFLAGS += -Wno-unused-function
+
+test_fake_love_capture_objs := $(call objs,tests/test_fake_love_capture.c tests/fake_love_cli.c tests/fake_love_png.c tools/fake_love/png_file.c)
+$(TMP_DIR)/test_fake_love_capture: $(test_fake_love_capture_objs) $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS) $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
+
+test_love_e2e_objs := $(call objs,tests/test_love_e2e.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_love_e2e: $(test_love_e2e_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) tools/love_e2e_run.sh tools/love_e2e_report.sh tools/frames_check.sh | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
 $(TMP_DIR)/test_frames_check: $(call objs,tests/test_frames_check.c) tools/frames_check.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
@@ -365,6 +497,10 @@ $(TMP_DIR)/test_random_guard: $(call objs,tests/test_random_guard.c) tools/rando
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_button_guard: $(call objs,tests/test_button_guard.c) tools/button_guard.sh | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+test_fake_love_guard_objs := $(call objs,tests/test_fake_love_guard.c)
+$(TMP_DIR)/test_fake_love_guard: $(test_fake_love_guard_objs) tools/fake_love_guard.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_float_link: $(call objs,tests/test_float_link.c) tools/float_link.sh | $(TMP_DIR)
@@ -752,6 +888,7 @@ UNIT_TESTS := \
     test_float_grep \
     test_random_guard \
     test_button_guard \
+    test_fake_love_guard \
     test_float_link \
     test_constants_check \
     test_background_draw \
@@ -835,7 +972,32 @@ UNIT_TESTS := \
     test_demo_source \
     test_demo_data \
     test_attract \
-    test_demo_overlay
+    test_demo_overlay \
+    test_fake_love_replay \
+    test_fake_love_pad \
+    test_fake_love_canvas \
+    test_fake_love_image_data \
+    test_fake_love_image_rules \
+    test_fake_love_point \
+    test_fake_love_transform \
+    test_fake_love_disk \
+    test_fake_love_png_file \
+    test_fake_love \
+    test_fake_love_failures \
+    test_fake_love_joystick \
+    test_fake_love_files \
+    test_fake_love_graphics \
+    test_fake_love_points \
+    test_fake_love_rectangle \
+    test_fake_love_set_color \
+    test_fake_love_image \
+    test_fake_love_image_draw \
+    test_fake_love_capture \
+    test_fake_love_frame_capture \
+    test_fake_love_frames \
+    test_fake_love_function_list \
+    test_fake_love_unlisted \
+    test_love_e2e
 
 # One run per test, each its own target: that is what `-j` runs in parallel.
 UNIT_RUNS := $(addprefix unit-run-,$(UNIT_TESTS))
@@ -897,7 +1059,32 @@ endif
 replay: $(TMP_DIR)/replay ## EVENTS=<events> [SAVE_HEX=<file>] [DIGEST=<file>]: replays one file headless, dump in tmp/replay_dump.txt
 	$(if $(ATTRACT_STATE),ATTRACT_STATE=$(ATTRACT_STATE) )$(if $(REPLAY_STARTS),REPLAY_STARTS=$(REPLAY_STARTS) )$(if $(SAVE_HEX),SAVE_HEX=$(SAVE_HEX) )$(if $(DIGEST),DIGEST=$(DIGEST) )./$(TMP_DIR)/replay $(EVENTS)
 
-test: unit constants-check float-grep float-guard alloc-guard pointer-guard random-guard button-guard data-guard p8-guard ## fast loop: unit tests and static guards (~8 s)
+# One target per name of tools/love_capture/, from its .lua and .png alike,
+# so that a lone half fails instead of being skipped. The halves are sorted
+# here, not in a recipe: a pair's recipe then runs without a shell.
+LOVE_CAPTURE_PROGRAMS := $(basename $(notdir $(wildcard tools/love_capture/*.lua)))
+LOVE_CAPTURE_PNGS := $(basename $(notdir $(wildcard tools/love_capture/*.png)))
+LOVE_CAPTURE_NAMES := $(sort $(LOVE_CAPTURE_PROGRAMS) $(LOVE_CAPTURE_PNGS))
+LOVE_CAPTURE_CHECKS := $(addprefix love-capture-check-,$(LOVE_CAPTURE_NAMES))
+
+$(addprefix love-capture-check-,$(filter $(LOVE_CAPTURE_PNGS),$(LOVE_CAPTURE_PROGRAMS))): love-capture-check-%: tools/love_capture/%.lua tools/love_capture/%.png $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS)
+	./$(TMP_DIR)/love_capture_check tools/fake_love/harness tools/love_capture/$*.lua tools/love_capture/$*.png
+
+$(addprefix love-capture-check-,$(filter-out $(LOVE_CAPTURE_PROGRAMS),$(LOVE_CAPTURE_PNGS))): love-capture-check-%:
+	@echo "love-capture-check: $*.lua missing for $*.png" >&2; exit 1
+
+$(addprefix love-capture-check-,$(filter-out $(LOVE_CAPTURE_PNGS),$(LOVE_CAPTURE_PROGRAMS))): love-capture-check-%:
+	@echo "love-capture-check: $*.png missing: run make love-capture" >&2; exit 1
+
+.PHONY: $(LOVE_CAPTURE_CHECKS)
+
+# Each check that runs the fake is its own target, listed here, so that `-j`
+# runs it beside the unit tests instead of after them.
+FAKE_LOVE_CHECKS := $(LOVE_CAPTURE_CHECKS) unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick unit-run-test_fake_love_files unit-run-test_fake_love_graphics unit-run-test_fake_love_points unit-run-test_fake_love_rectangle unit-run-test_fake_love_set_color unit-run-test_fake_love_image unit-run-test_fake_love_image_draw unit-run-test_fake_love_capture unit-run-test_fake_love_frame_capture unit-run-test_fake_love_frames unit-run-test_fake_love_function_list unit-run-test_fake_love_unlisted unit-run-test_love_e2e
+
+# Longest first: `-j` starts prerequisites in this order, and float-guard
+# alone (~4 s, serial) sets the wall time when it starts behind the checks.
+test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
 
 test-all: test e2e ## test + e2e, the full suite
 
@@ -961,6 +1148,23 @@ e2e-baseline: $(foreach e,$(E2E_EVENTS),$(call frames_current,$(e))) ## sets or 
 
 e2e-ref: $(foreach e,$(E2E_EVENTS),$(if $(wildcard $(call frames_reference,$(e))),$(call frames_current,$(e)))) $(FRAMES_TOOL) tools/frames_ref.sh ## for each diverging e2e, replays the commit that set its reference and gives the first diverging frame
 	@sh tools/frames_ref.sh ./$(FRAMES_TOOL) $(FRAMES_DIR) $(TMP_DIR)/frames-ref $(foreach e,$(E2E_EVENTS),$(e) $(call frames_reference,$(e)) $(call frames_current,$(e)) $(call frames_capture,$(e)))
+
+# A `%` in LOVE_E2E_GAME becomes the replay's file name: one game directory
+# per replay. Forced: make does not see a Lua edit.
+LOVE_E2E_GAME ?= game
+LOVE_E2E_DIR := $(TMP_DIR)/love-e2e
+LOVE_E2E_HASHES := $(foreach e,$(E2E_EVENTS),$(LOVE_E2E_DIR)/$(e).sha256)
+
+$(LOVE_E2E_HASHES): $(LOVE_E2E_DIR)/%.sha256: % $(TMP_DIR)/fake_love tools/love_e2e_run.sh FORCE
+	@mkdir -p $(@D)
+	@sh tools/love_e2e_run.sh "$(SHA256_CMD)" ./$(TMP_DIR)/fake_love $(subst %,$(notdir $*),$(LOVE_E2E_GAME)) $* $(@:.sha256=.bin) $@ $(@:.sha256=.error)
+
+love-e2e: $(LOVE_E2E_HASHES) tools/love_e2e_report.sh tools/frames_check.sh ## runs tmp/fake_love on every tests/e2e/ replay in parallel and checks each capture's sha256 (LOVE_E2E_GAME=game)
+	@sh tools/love_e2e_report.sh $(foreach e,$(E2E_EVENTS),$(e) $(call frames_reference,$(e)) $(LOVE_E2E_DIR)/$(e).sha256 $(LOVE_E2E_DIR)/$(e).error)
+
+FORCE:
+
+.PHONY: love-e2e FORCE
 
 # offsetof, void *self, a field read by name, a spec or defaults table: the
 # model the composition migration removed, which a port of the cart brings
@@ -1124,6 +1328,18 @@ random-guard: tools/random_guard.sh $(RANDOM_GUARD_EXCEPTIONS) ## ratchet on the
 
 .PHONY: random-guard
 
+# `<binary> <objects>` per binary of the fake side: each name below has its
+# `<name>_objs` beside its link rule. tmp/luajit_version has no object: the
+# include scan of tools/love_capture/ covers it.
+FAKE_SIDE_BINARIES := fake_love love_capture_check test_fake_love_replay test_fake_love_pad test_fake_love_canvas test_fake_love_image_data test_fake_love_image_rules test_fake_love_point test_fake_love_transform test_fake_love_disk test_fake_love_png_file test_fake_love test_fake_love_failures test_fake_love_joystick test_fake_love_files test_fake_love_graphics test_fake_love_points test_fake_love_rectangle test_fake_love_set_color test_fake_love_image test_fake_love_image_draw test_fake_love_capture test_fake_love_frame_capture test_fake_love_frames test_fake_love_function_list test_fake_love_unlisted test_fake_love_guard test_love_e2e
+FAKE_SIDE_LINKS := $(foreach binary,$(FAKE_SIDE_BINARIES),$(TMP_DIR)/$(binary) $($(binary)_objs))
+FAKE_SIDE_SRCS := tools/fake_love tools/love_capture $(wildcard tests/test_fake_love*.c tests/fake_love_*.[ch]) tests/test_love_e2e.c
+
+fake-love-guard: tools/fake_love_guard.sh $(filter %.o,$(FAKE_SIDE_LINKS)) ## fails when the fake side includes a header or links an object from src/
+	@sh tools/fake_love_guard.sh $(OBJ_DIR) $(FAKE_SIDE_LINKS) -- $(FAKE_SIDE_SRCS)
+
+.PHONY: fake-love-guard
+
 button-guard: tools/button_guard.sh ## fails when a src/game/ file other than cheat.c and the bindings names a P8_PAD_BUTTON_*
 	@sh tools/button_guard.sh src/game
 
@@ -1152,9 +1368,31 @@ asset-export: $(TMP_DIR)/asset_export ## writes game/sprites.png and game/font.p
 
 .PHONY: asset-export
 
+$(TMP_DIR)/luajit_version: tools/love_capture/luajit_version.c | $(TMP_DIR)
+	$(CC) $(CFLAGS) $$(pkg-config --cflags luajit) -o $@ $< $$(pkg-config --libs luajit)
+
+LOVE_CAPTURE_DIR := $(CURDIR)/tools/love_capture
+
+# One xvfb-run wraps the whole loop: it starts Xvfb and stops it on exit.
+love-capture: ## runs the tools/love_capture/ programs in real LÖVE 11.5 under Xvfb, rewrites their PNGs
+	@command -v love >/dev/null && command -v xvfb-run >/dev/null || \
+		{ echo "love-capture: love or xvfb-run missing, run tools/love_install.sh" >&2; exit 1; }
+	xvfb-run -a -s '-screen 0 640x480x24' sh -c ' \
+		for program in $(LOVE_CAPTURE_DIR)/*.lua; do \
+			LIBGL_ALWAYS_SOFTWARE=1 timeout 60 love $(LOVE_CAPTURE_DIR)/harness "$$program" "$${program%.lua}.png" \
+				|| { echo "love-capture: $$program failed" >&2; exit 1; }; \
+		done'
+
+.PHONY: love-capture
+
+love-check: $(TMP_DIR)/luajit_version ## checks that the installed LuaJIT is 2.1; make test compares the captures
+	./$(TMP_DIR)/luajit_version
+
+.PHONY: love-check
+
 # The dependency fragments written by the compiler, one per object. The
 # wildcard tolerates their absence: on a fresh clone, everything is compiled.
--include $(wildcard $(OBJ_DIR)/src/*/*.d $(OBJ_DIR)/tests/*.d $(OBJ_DIR)/tmp/bindings/*.d $(OBJ_DIR)/tmp/demo/*.d)
+-include $(wildcard $(OBJ_DIR)/src/*/*.d $(OBJ_DIR)/tests/*.d $(OBJ_DIR)/tools/*/*.d $(OBJ_DIR)/tmp/bindings/*.d $(OBJ_DIR)/tmp/demo/*.d)
 -include $(wildcard $(OBJ_ASAN_DIR)/src/*/*.d $(OBJ_ASAN_DIR)/tests/*.d $(OBJ_ASAN_DIR)/tmp/bindings/*.d $(OBJ_ASAN_DIR)/tmp/demo/*.d)
 -include $(wildcard $(OBJ_UBSAN_DIR)/src/*/*.d $(OBJ_UBSAN_DIR)/tests/*.d)
 -include $(wildcard $(OBJ_SANITIZE_DIR)/src/*/*.d $(OBJ_SANITIZE_DIR)/tests/*.d $(OBJ_SANITIZE_DIR)/tmp/bindings/*.d $(OBJ_SANITIZE_DIR)/tmp/demo/*.d)
