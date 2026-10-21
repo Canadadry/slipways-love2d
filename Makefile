@@ -499,6 +499,9 @@ $(TMP_DIR)/test_random_guard: $(call objs,tests/test_random_guard.c) tools/rando
 $(TMP_DIR)/test_button_guard: $(call objs,tests/test_button_guard.c) tools/button_guard.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
+$(TMP_DIR)/test_checklist: $(call objs,tests/test_checklist.c) tools/checklist.lua | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
 test_fake_love_guard_objs := $(call objs,tests/test_fake_love_guard.c)
 $(TMP_DIR)/test_fake_love_guard: $(test_fake_love_guard_objs) tools/fake_love_guard.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
