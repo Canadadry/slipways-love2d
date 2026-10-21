@@ -407,3 +407,28 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   protocol.
 - The PRD's agent had no `guideline`; it settled the cycle extension and the
   data-file shape itself.
+
+### Step 3.4
+
+- `game/game/`: mouse_button, visual_random, gen, grab_arena, targeting
+  (constants only), bindings, bindings_default (generated), image_slot
+  (constants only), text_image, button_image, mouse. `make checklist
+  STEP=3.4` passes (56/56, 8/8).
+- `make bindings-lua` (outside `make test`) writes
+  `game/game/bindings_default.lua` through a new `--lua` kind of
+  `bindings_generate`; the data check compares it with `tmp/bindings/core.c`,
+  so a stale copy fails `make test`. The Lua parser matches the C byte for
+  byte on 60 cases (positions 1-based with exclusive ends, a NUL ends the
+  text as `strlen` does, error texts cut to 255 bytes as `snprintf` does).
+- A C name compared by address is compared by value in Lua (`grab_arena`:
+  no other zone is named "grab"). The class renderer moved to
+  `tools/table_reference/reference_class.h`, shared by later class tables.
+- Behaviour checked against the C with throwaway programs: picker, random
+  walk and visual stream byte-identical (359 lines); text and button caches
+  byte-identical on 784 events.
+- Own-time gate, paired against `a880ee9` (45 pairs; +33.7 KB Lua, +79
+  blocks, +755 lines): `lua-guard` 36.1 → 39.2 ms (+3.0, about 0.088 ms per
+  KB); `lua-test-modules` 33.2 → 34.9 ms (+1.3, below the model: small
+  blocks). Pass; not a checkpoint, so no full protocol. `lua-guard`
+  projected at about 87 ms at the end.
+- The PRD's agent had no `guideline` and settled its points itself.
