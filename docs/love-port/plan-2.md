@@ -596,3 +596,32 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   (current), 6.054 s (`a880ee9`, end of 3.3), 5.923 s (`8dff812`); paired
   +0.23 % vs `a880ee9`, +1.93 % vs `8dff812`; spreads 10.5 %, 10.1 %,
   10.2 %. Pass.
+
+### Step 3.10
+
+- `game/game/`: slipway_display, wormhole_display, planet_family_trade,
+  structure_icon, help, score_panel, score_panel_display. `make checklist
+  STEP=3.10` passes (122/122, 15/15).
+- With the two display modules in the tree, slipway and wormhole load:
+  `LUA_DEFERRED_MODULES` is empty (the `--defer` mechanism stays), and every
+  ported module loads and is compared (94 modules, 783 names). score_panel
+  requires score_panel_display at load (its class holds the display's
+  methods); planet_family_trade and help require the planet and probe
+  modules whose methods their classes hold.
+- No C code compares the score panel's text addresses (audited across the
+  modules that receive them), so Lua strings are equivalent.
+- `fix-bug` finding, stopped with no change (latent): planet tables leave
+  `sprite`, `palette_block`, `acceleration_factor` and `speed` nil on kinds
+  that never write them, where the C reads 0; every reader, C and Lua,
+  guards by lineage or class, and instrumented runs trapped no read. Steps
+  that serialize or dump planets (3.12 save, 3.15 `debug_state`) must not
+  read them on kinds that do not write them, or must treat nil as 0.
+- Behaviour checked against the C with throwaway programs, all
+  byte-identical: 600 slipway and 120 wormhole frames, the trade structures,
+  structure icons and the help screen, the score panel over 18 economy
+  states and 31 new years.
+- Own-time gate, paired against `457d574` (45 pairs; +65.3 KB Lua, +36
+  compared blocks of which 13 formerly deferred, +225 lines): `lua-guard`
+  63.3 → 67.6 ms (+5.4, about 0.083 ms per KB); `lua-test-modules` 45.7 →
+  47.4 ms (+2.7). Pass. Projection at the end (364 functions left):
+  `lua-guard` 78–85 ms, `lua-test-modules` 57–59 ms.
