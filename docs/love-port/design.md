@@ -47,9 +47,25 @@ For one replay it:
    `debug_state()` and writes the text it returns next to the capture,
    compared with the replay's `.end-state`.
 
-Anything outside the contract below is a **fatal error** that names the
-function (or the frame and pixel): a LÖVE function not on the list, a colour
-that is not one of the 16, a pixel of another colour on the canvas.
+**Fatal errors.** Anything outside the contract below is fatal, with one
+of three errors, each naming its cause:
+
+1. a LÖVE function not on the list (see The LÖVE functions the game may
+   use), checked when the game reads or creates the field, in both
+   binaries: `love.timer is not in the function list of docs/love-port/design.md`;
+2. a colour that is neither one of the 16 nor white, checked by `setColor`
+   on the bytes it would draw, in `tmp/fake_love` only (see Colour):
+   `love.graphics.setColor: 4C0000 is not one of the 16 palette colours nor white FFFFFF (pass each palette byte as byte / 255)`;
+3. a pixel of another colour on canvas 0, or no canvas, checked at the end
+   of each frame, in `tmp/fake_love` only (see Capture):
+   `fake_love: frame f3: pixel (0, 0) of canvas 0 is FF0000FF, not one of the 16 palette colours (1 such pixels in the frame)`.
+
+The first two are ordinary Lua errors, carrying the game's `file:line:`
+like every refusal of the fake: uncaught, the run fails (exit 1, no
+capture nor state file); caught by `pcall`, the game goes on. No game code
+can catch the third. `love_capture_check` keeps the function list but
+allows any colour in `setColor` and never checks frames: its programs
+measure real LÖVE, the palette is the game's contract.
 
 ### `make test` and the fake's checks
 
@@ -295,11 +311,21 @@ any pixel, transparent included. Every refusal is an error starting
 argument count (a fifth argument too), a non-number (no string coercion,
 no table form), a non-finite component, and an alpha other than 1, because
 real LÖVE blends a translucent colour with the pixels under it and the fake
-does not model the blender. **The rule for the game: pass each palette
-byte as the Lua expression `byte / 255`**, which always gives that byte; a
-component computed any other way can lose a whole byte. Never pass an
-alpha: translucent colours blend in real LÖVE and are refused by the fake.
-Captures: `color_bytes`, `color_precision`, `color_state`.
+does not model the blender. In `tmp/fake_love`, the three bytes the
+conversion gives must then be one of the 16 triples of the Capture table
+or white `FFFFFF`, whatever numbers gave them (`2, -1, 77/255` is colour
+8); anything else is refused naming those bytes:
+`love.graphics.setColor: 4C0000 is not one of the 16 palette colours nor white FFFFFF (pass each palette byte as byte / 255)`.
+White is accepted because it tints texels to themselves (see Images).
+`clear`, `setPixel` and texels are not checked at the call: on a
+scratch canvas any bytes are legal, and what reaches canvas 0 is judged at
+the end of the frame (see Capture). `love_capture_check` accepts any
+opaque colour. **The rule for the game: set only palette colours and
+white; pass each palette byte as the Lua expression `byte / 255`**, which
+always gives that byte; a component computed any other way can lose a
+whole byte. Never pass an alpha: translucent colours blend in real LÖVE
+and are refused by the fake. Captures: `color_bytes`, `color_precision`,
+`color_state`.
 
 **Image data.** `love.image` is nil while `conf.lua` runs, then holds
 exactly `newImageData`; an ImageData holds exactly `setPixel` and
@@ -527,7 +553,10 @@ rounds) are those of real LÖVE 11.5, settled by the captures of
 Small LÖVE programs, each exercising some functions of the list, and the PNG
 real LÖVE 11.5 draws for each, read from the canvas
 (`Canvas:newImageData():encode("png")`, never a window screenshot).
-`make love-capture` runs them in real LÖVE under Xvfb with Mesa software
+In the fake, `tmp/love_capture_check` runs them under the function-list
+guard, so their drawing part uses listed functions only, but with any
+opaque colour allowed in `setColor` and no frame check: they measure
+LÖVE's conversions and transparent pixels. `make love-capture` runs them in real LÖVE under Xvfb with Mesa software
 rendering and rewrites the PNGs; it is the **only** place a virtual screen is
 allowed (see `CLAUDE.md`), agents and CI may run it, and it is outside
 `make test` and `make e2e`. CI runs it on every push and fails when a PNG

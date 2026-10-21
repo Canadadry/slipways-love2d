@@ -71,6 +71,6 @@
   - [ ] Step 4.17 — fatal errors
     - [x] Chunk 1 — unlisted functions
     - [x] Chunk 2 — foreign pixel fatal
-    - [ ] Chunk 3 — colour check, drawing-rules game
+    - [x] Chunk 3 — colour check, drawing-rules game
     - [ ] Chunk 4 — timing
   - [ ] Step 4.18 — make love-e2e

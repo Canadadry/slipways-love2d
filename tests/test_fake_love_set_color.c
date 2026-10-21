@@ -36,7 +36,13 @@ static void test_set_color_misuse_is_refused_with_a_message_and_opaque_colours_s
         "alpha 2: love.graphics.setColor: alpha is 2, only 1 is supported (translucent colours are not modelled)\n"
         "alpha nil: love.graphics.setColor: argument 4 is a nil, not a number\n"
         "clamped: ok\n"
-        "alpha 1: ok\n");
+        "alpha 1: ok\n"
+        "white: ok\n"
+        "palette: ok\n"
+        "outside: love.graphics.setColor: 4C0000 is not one of the 16 palette colours nor white FFFFFF (pass each "
+        "palette byte as byte / 255)\n"
+        "one byte off: love.graphics.setColor: FF004C is not one of the 16 palette colours nor white FFFFFF (pass "
+        "each palette byte as byte / 255)\n");
 }
 
 static void test_transform_misuse_is_refused_with_a_message_and_the_offset_resets_before_each_draw(void) {
@@ -98,6 +104,13 @@ static void test_an_uncaught_translucent_colour_is_fatal_and_names_set_color_and
                                  CAPTURE, STATE, STDERR_LOG, needles);
 }
 
+static void test_an_uncaught_colour_outside_the_palette_is_fatal_and_names_its_bytes(void) {
+    const char *const needles[] = {"love.draw f0: ", "main.lua:2: love.graphics.setColor: ",
+                                   "4C0000 is not one of the 16 palette colours nor white FFFFFF", NULL};
+    fake_love_cli_assert_failure("", FIXTURES "set_color_outside " FIXTURES "three_frames.json " CAPTURE " " STATE,
+                                 CAPTURE, STATE, STDERR_LOG, needles);
+}
+
 static void test_refused_calls_keep_the_colour_set_at_load_time_without_a_canvas(void) {
     unsigned char *pixels = calloc(CANVAS_WIDTH * CANVAS_HEIGHT, 4);
     assert(pixels != NULL);
@@ -121,6 +134,7 @@ int main(void) {
     test_set_color_misuse_is_refused_with_a_message_and_opaque_colours_succeed();
     test_transform_misuse_is_refused_with_a_message_and_the_offset_resets_before_each_draw();
     test_an_uncaught_translucent_colour_is_fatal_and_names_set_color_and_the_frame();
+    test_an_uncaught_colour_outside_the_palette_is_fatal_and_names_its_bytes();
     test_refused_calls_keep_the_colour_set_at_load_time_without_a_canvas();
     remove(PNG);
     remove(CAPTURE);

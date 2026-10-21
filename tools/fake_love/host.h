@@ -17,6 +17,9 @@ const char *host_runtime_version(host_t *host);
 
 /* Each call below returns false on failure and leaves the reason in
  * host_error, valid until the next call. */
+/* Before host_open: setColor accepts any opaque colour, not only the 16
+ * palette colours and white. */
+void host_allow_any_color(host_t *host);
 /* The disk is not owned and must outlive the host. */
 bool host_open(host_t *host, const char *game_dir, disk_t *disk);
 /* love.load gets a new sequence table holding the `count` strings. */

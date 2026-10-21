@@ -27,6 +27,7 @@ struct host {
     canvas_store_t *canvases;
     transform_t transform;
     unsigned held;
+    graphics_colors_t colors;
     char *game_dir;
     char *state_text;
     char error[8192];
@@ -82,6 +83,7 @@ host_t *host_new(void) {
     luaL_openlibs(host->lua);
     host->canvases = canvas_create_store();
     transform_init(&host->transform);
+    host->colors = GRAPHICS_PALETTE_OR_WHITE;
     return host;
 }
 
@@ -180,6 +182,11 @@ static bool run_conf(host_t *host) {
     return call(host, 1, 0, "love.conf", NO_FRAME);
 }
 
+void host_allow_any_color(host_t *host) {
+    assert(host->game_dir == NULL && "host_allow_any_color: graphics_install reads the switch in host_open");
+    host->colors = GRAPHICS_ANY_COLOR;
+}
+
 bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
     assert(host->game_dir == NULL && "host_open runs once per host");
     assert(disk != NULL);
@@ -197,7 +204,7 @@ bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
         return false;
     joystick_install(host->lua);
     filesystem_install(host->lua, disk);
-    graphics_install(host->lua, host->canvases, &host->transform);
+    graphics_install(host->lua, host->canvases, &host->transform, host->colors);
     image_install(host->lua, disk);
     return run_file(host, "main.lua");
 }

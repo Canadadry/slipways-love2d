@@ -61,6 +61,42 @@ static void test_capture_holds_canvas_zero_of_every_frame(void) {
     fake_love_cli_assert_text(STATE, "frames 3\n");
 }
 
+static void set_pixel(unsigned char frame[FRAME_SIZE], int x, int y, int colour) {
+    unsigned char *byte = frame + y * ROW_BYTES + x / 2;
+    *byte = (unsigned char)(x % 2 == 0 ? (*byte & 0xF0) | colour : (*byte & 0x0F) | colour << 4);
+}
+
+static void draw_expected_scene(unsigned char frame[FRAME_SIZE], int offset) {
+    for (int y = 10; y <= 11; y++)
+        for (int x = 0; x < 4; x++)
+            set_pixel(frame, offset + x, y, 11);
+    set_pixel(frame, offset + 5, 10, 10);
+    set_pixel(frame, offset, 20, 8);
+    set_pixel(frame, offset + 1, 21, 12);
+    set_pixel(frame, offset, 25, 8);
+    set_pixel(frame, offset + 2, 25, 8);
+}
+
+static void test_a_game_following_the_drawing_rules_runs_without_error(void) {
+    assert_runs(FIXTURES "drawing_rules " FIXTURES "three_frames.json " CAPTURE " " STATE);
+    static unsigned char expected[3 * FRAME_SIZE];
+    unsigned char *frame = expected;
+    memset(frame, 0x11, FRAME_SIZE);
+    for (int index = 0; index < 3; index++, frame += FRAME_SIZE) {
+        if (index > 0)
+            memcpy(frame, frame - FRAME_SIZE, FRAME_SIZE);
+        draw_expected_scene(frame, 20 * index);
+    }
+    assert(expected[FRAME_SIZE + 20 * ROW_BYTES + 10] == 0x18 && "frame 1: the sprite texel of colour 8 at (20, 20)");
+    assert(expected[2 * FRAME_SIZE + 25 * ROW_BYTES + 21] == 0x18 && "frame 2: a tinted letter texel at (42, 25)");
+    assert(expected[2 * FRAME_SIZE + 10 * ROW_BYTES + 0] == 0xBB && "frame 2: the frame-0 rectangle is kept");
+    assert_capture(expected, sizeof expected);
+    fake_love_cli_assert_text(STATE, "frames 3\n");
+    char *err = fake_love_cli_read_file(STDERR_LOG, NULL);
+    assert(err != NULL && err[0] == '\0' && "a game following the rules writes nothing on stderr");
+    free(err);
+}
+
 static void test_foreign_pixel_on_canvas_zero_is_fatal(void) {
     const char *const needles[] = {
         "fake_love: frame f3: pixel (0, 0) of canvas 0 is FF0000FF, not one of the 16 palette colours (1 such pixels "
@@ -88,6 +124,7 @@ static void test_zero_frames_give_an_empty_capture(void) {
 
 int main(void) {
     test_capture_holds_canvas_zero_of_every_frame();
+    test_a_game_following_the_drawing_rules_runs_without_error();
     test_foreign_pixel_on_canvas_zero_is_fatal();
     test_frame_without_canvas_is_fatal();
     test_zero_frames_give_an_empty_capture();
