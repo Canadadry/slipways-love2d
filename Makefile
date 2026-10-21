@@ -463,6 +463,10 @@ test_love_e2e_objs := $(call objs,tests/test_love_e2e.c tests/fake_love_cli.c)
 $(TMP_DIR)/test_love_e2e: $(test_love_e2e_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) tools/love_e2e_run.sh tools/love_e2e_report.sh tools/frames_check.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
+test_love_runtime_objs := $(call objs,tests/test_love_runtime.c tests/fake_love_cli.c src/p8/gfx.c src/p8/gfx_software.c src/p8/vram.c src/p8/sprite_sheet.c)
+$(TMP_DIR)/test_love_runtime: $(test_love_runtime_objs) $(TMP_DIR)/fake_love $(wildcard game/p8/*.lua game/love/*.lua tests/fixtures/love_runtime/*.lua tests/fixtures/love_runtime/*.txt) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
 $(TMP_DIR)/test_frames_check: $(call objs,tests/test_frames_check.c) tools/frames_check.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
@@ -1004,7 +1008,8 @@ UNIT_TESTS := \
     test_fake_love_frames \
     test_fake_love_function_list \
     test_fake_love_unlisted \
-    test_love_e2e
+    test_love_e2e \
+    test_love_runtime
 
 # One run per test, each its own target: that is what `-j` runs in parallel.
 UNIT_RUNS := $(addprefix unit-run-,$(UNIT_TESTS))
@@ -1087,7 +1092,7 @@ $(addprefix love-capture-check-,$(filter-out $(LOVE_CAPTURE_PNGS),$(LOVE_CAPTURE
 
 # Each check that runs the fake is its own target, listed here, so that `-j`
 # runs it beside the unit tests instead of after them.
-FAKE_LOVE_CHECKS := $(LOVE_CAPTURE_CHECKS) unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick unit-run-test_fake_love_files unit-run-test_fake_love_graphics unit-run-test_fake_love_points unit-run-test_fake_love_rectangle unit-run-test_fake_love_set_color unit-run-test_fake_love_image unit-run-test_fake_love_image_draw unit-run-test_fake_love_capture unit-run-test_fake_love_frame_capture unit-run-test_fake_love_frames unit-run-test_fake_love_function_list unit-run-test_fake_love_unlisted unit-run-test_love_e2e
+FAKE_LOVE_CHECKS := $(LOVE_CAPTURE_CHECKS) unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick unit-run-test_fake_love_files unit-run-test_fake_love_graphics unit-run-test_fake_love_points unit-run-test_fake_love_rectangle unit-run-test_fake_love_set_color unit-run-test_fake_love_image unit-run-test_fake_love_image_draw unit-run-test_fake_love_capture unit-run-test_fake_love_frame_capture unit-run-test_fake_love_frames unit-run-test_fake_love_function_list unit-run-test_fake_love_unlisted unit-run-test_love_e2e unit-run-test_love_runtime
 
 # Longest first: `-j` starts prerequisites in this order, and float-guard
 # alone (~4 s, serial) sets the wall time when it starts behind the checks.

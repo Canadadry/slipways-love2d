@@ -1,0 +1,60 @@
+# One runtime call per line, played by tests/test_love_runtime.c through the
+# C runtime and by main.lua through game/p8/ and game/love/. `frame` ends a
+# frame; integers are decimal or 0x hex.
+cls
+frame
+# pset: corners, every colour, off-screen on each side, under a camera.
+pset 0 0 7
+pset 159 0 8
+pset 0 119 9
+pset 159 119 10
+pset 10 10 0
+pset 11 10 1
+pset 12 10 2
+pset 13 10 3
+pset 14 10 4
+pset 15 10 5
+pset 16 10 6
+pset 17 10 11
+pset 18 10 12
+pset 19 10 13
+pset 20 10 14
+pset 21 10 15
+pset -1 5 7
+pset 160 5 7
+pset 5 -1 7
+pset 5 120 7
+pset -2000000 5 7
+camera -20 30
+pset 0 0 12
+pset 140 -30 13
+pset -21 50 7
+pset 0 90 7
+frame
+# psets: runs of one colour, colour changes, off-screen points inside a run,
+# the camera of the previous frame carried over.
+psets 30 40 8 31 40 8 32 40 8 33 40 9 34 40 9 35 40 8
+psets 40 50 3 -100 50 3 41 50 3 300 50 3 42 50 3
+psets 1 1 7
+camera 0 0
+psets 0 0 14 159 119 15 158 119 15
+frame
+# rectfill without a pattern: corners in either order, one pixel, a line,
+# partly and wholly off screen, the whole screen and beyond, a colour byte
+# with a high nibble (masked to the low one), under a camera.
+rectfill -5 -5 200 200 1
+rectfill 10 10 20 15 8
+rectfill 40 30 30 20 9
+rectfill 50 50 50 50 7
+rectfill 60 5 90 5 11
+rectfill 150 110 170 130 12
+rectfill -10 60 3 70 13
+rectfill 200 10 220 20 14
+rectfill 10 -30 20 -1 14
+rectfill 100 60 120 80 0x5a
+camera 15 -10
+rectfill 0 0 10 10 2
+rectfill 160 100 180 140 3
+rectfill -5000 50 5000 52 4
+camera 0 0
+frame

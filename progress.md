@@ -14,7 +14,7 @@
     - [x] chunk 1: static guard
     - [x] chunk 2: conventions and the plain runtime
     - [x] chunk 3: drawing core in Lua
-    - [ ] chunk 4: check harness and first LÖVE calls
+    - [x] chunk 4: check harness and first LÖVE calls
     - [ ] chunk 5: lines and circles
     - [ ] chunk 6: fill patterns
     - [ ] chunk 7: sprites, colour swaps and the map
