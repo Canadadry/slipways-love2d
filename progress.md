@@ -70,7 +70,7 @@
     - [x] chunk 1: particle_zone
     - [x] chunk 2: probe
     - [x] chunk 3: slipway
-    - [ ] chunk 4: wormhole
+    - [x] chunk 4: wormhole
     - [ ] chunk 5: cost and record
   - [ ] 3.9 game: include cycle, UI and message box, particles, background, scroll
   - [ ] 3.10 game: displays and panels
