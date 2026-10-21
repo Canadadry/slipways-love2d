@@ -1169,4 +1169,7 @@ function M.save_state_capture(out)
   capture_world(out, ids)
 end
 
+-- Lua only: the cart's static save_state_t starts at its C zero through this.
+M.save_state_zero = save_state_zero
+
 return M

@@ -1,0 +1,411 @@
+-- Copy of src/game/cart.h then src/game/cart.c.
+--
+-- Help and the score panel receive cart_request_start_game and cart_init_method at cart_load time,
+-- never by require: no game module requires the cart, so it requires everything at load.
+local bootstrap = require("engine.bootstrap")
+local dispatch_context = require("engine.dispatch_context")
+local entity = require("engine.entity")
+local entity_class = require("engine.entity_class")
+local entity_registry = require("engine.entity_registry")
+local exit_queue = require("engine.exit_queue")
+local frame_zone = require("engine.frame_zone")
+local game_zone = require("engine.game_zone")
+local background = require("game.background")
+local button_image = require("game.button_image")
+local data_init = require("game.data_init")
+local demo_overlay = require("game.demo_overlay")
+local economy_module = require("game.economy")
+local economy_score = require("game.economy_score")
+local galaxy = require("game.galaxy")
+local game_data = require("game.game_data")
+local grab_arena = require("game.grab_arena")
+local help = require("game.help")
+local hud = require("game.hud")
+local layout = require("game.layout")
+local loading_screen = require("game.loading_screen")
+local map_tables = require("game.map_tables")
+local menu = require("game.menu")
+local message_box = require("game.message_box")
+local mouse = require("game.mouse")
+local planet = require("game.planet")
+local planet_family = require("game.planet_family")
+local planet_family_trade = require("game.planet_family_trade")
+local probe = require("game.probe")
+local research = require("game.research")
+local save_load = require("game.save_load")
+local save_state = require("game.save_state")
+local save_storage = require("game.save_storage")
+local score_panel = require("game.score_panel")
+local scroll = require("game.scroll")
+local slipway = require("game.slipway")
+local structure_icon = require("game.structure_icon")
+local text_image = require("game.text_image")
+local trade = require("game.trade")
+local ui = require("game.ui")
+local ui_button = require("game.ui_button")
+local wormhole = require("game.wormhole")
+local fixed = require("p8.fixed")
+local gfx = require("p8.gfx")
+
+local M = {}
+
+M.CART_NO_DEMO_FRAME = -1
+
+M.SIZEOF = {
+  g_save_bytes = 8192,
+}
+local SIZEOF = M.SIZEOF
+
+local g_title_built = 0
+local g_save_cut = 0
+local g_demo_frame = M.CART_NO_DEMO_FRAME
+-- 0 when not loading, else the loading frame being played, from 1 (the press) to LOADING_SCREEN_FRAMES.
+local g_loading_frame = 0
+local g_requested_option = ui_button.button_zero()
+local g_has_requested_option = 0
+
+local function quit_game_zone()
+  entity_registry.entity_registry_abandon_live_entities()
+  M.cart_flush_exit_queue()
+  game_zone.game_zone_reset()
+  entity_registry.entity_registry_forget_registries()
+  grab_arena.grab_arena_forget_free()
+end
+
+-- Do not list the inits data_init() and score_panel_init() run themselves: they would run twice.
+function M.cart_load()
+  local memory
+
+  quit_game_zone()
+  g_title_built = 0
+  g_save_cut = 0
+  g_demo_frame = M.CART_NO_DEMO_FRAME
+  g_loading_frame = 0
+  entity.entity_init()
+  assert(entity.entity_ready() ~= 0, "cart_load: entity_init() must run before every class that extends entity_t")
+  scroll.camera_init()
+  mouse.mouse_init()
+  ui.ui_init()
+
+  layout.layout_init()
+  trade.trade_init()
+
+  ui_button.button_init()
+  ui_button.modal_backdrop_init()
+  background.background_init()
+  message_box.message_box_init()
+  message_box.toast_init()
+  probe.probe_init()
+  economy_module.economy_init()
+
+  memory = dispatch_context.dispatch_context_mem()
+  if memory ~= nil then
+    data_init.data_init()
+  end
+
+  planet.planet_init()
+  slipway.slipway_init()
+  planet_family.planet_family_init()
+  assert(planet_family.structure_ready() ~= 0 and planet_family.burst_ready() ~= 0 and planet.planet_ready() ~= 0,
+    "cart_load: structure and burst extend planet: planet_init() must run first")
+  planet_family_trade.planet_family_trade_init()
+  assert(planet_family_trade.slipgate_ready() ~= 0 and planet_family_trade.synthesizer_ready() ~= 0
+      and planet_family.structure_ready() ~= 0 and planet_family.ascension_ready() ~= 0,
+    "cart_load: slipgate extends structure and synthesizer extends ascension: planet_family_init() must run first")
+  wormhole.wormhole_init()
+
+  help.help_init()
+  assert(help.help_screen_ready() ~= 0 and probe.probe_ready() ~= 0,
+    "cart_load: the help screen extends probe: probe_init() must run first")
+  score_panel.score_panel_init()
+  structure_icon.structure_icon_init()
+  menu.menu_init()
+
+  help.help_set_start_game(M.cart_request_start_game)
+  score_panel.score_panel_set_init(M.cart_init_method)
+end
+
+local function forget_game_zone()
+  grab_arena.grab_arena_forget_free()
+end
+
+function M.cart_flush_exit_queue()
+  exit_queue.exit_queue_flush()
+  if game_zone.game_zone_pending() ~= 0 then
+    forget_game_zone()
+    game_zone.game_zone_release()
+  end
+end
+
+function M.cart_shutdown()
+  quit_game_zone()
+  menu.menu_shutdown()
+  structure_icon.structure_icon_shutdown()
+  score_panel.score_panel_shutdown()
+  help.help_shutdown()
+
+  wormhole.wormhole_shutdown()
+  planet_family_trade.planet_family_trade_shutdown()
+  planet_family.planet_family_shutdown()
+  slipway.slipway_shutdown()
+  planet.planet_shutdown()
+
+  data_init.data_init_shutdown()
+
+  economy_module.economy_shutdown()
+  probe.probe_shutdown()
+  message_box.toast_shutdown()
+  message_box.message_box_shutdown()
+  background.background_shutdown()
+  ui_button.modal_backdrop_shutdown()
+  ui_button.button_shutdown()
+
+  trade.trade_shutdown()
+  layout.layout_shutdown()
+
+  ui.ui_shutdown()
+  mouse.mouse_shutdown()
+  scroll.camera_shutdown()
+  entity.entity_shutdown()
+end
+
+local g_save_state = {}
+save_state.save_state_zero(g_save_state)
+local g_save_bytes = {}
+for i = 0, save_state.SAVE_STATE_MAX_BYTES - 1 do
+  g_save_bytes[i] = 0
+end
+
+local function resume_saved_game(self)
+  M.cart_resume_game(g_save_state)
+end
+
+local function title_resume_handler()
+  local count = save_storage.save_storage_read(g_save_bytes, SIZEOF.g_save_bytes)
+
+  if count > 0 and save_state.save_state_decode(g_save_bytes, count, g_save_state) ~= 0 then
+    return resume_saved_game
+  else
+    return nil
+  end
+end
+
+function M.cart_init()
+  assert(structure_icon.structure_icon_ready() ~= 0, "cart_init: cart_load() must run first")
+  assert(help.help_start_game_field_value() == M.cart_request_start_game
+      and score_panel.score_panel_init_field_value() == M.cart_init_method,
+    "cart_init: help_init() and score_panel_init() reset these bridges, so cart_load() must "
+      .. "install them afterwards: every button copies the value when it is built")
+
+  g_loading_frame = 0
+  if game_zone.game_zone_pending() == 0 and game_zone.game_zone_used() > 0 then game_zone.game_zone_flip() end
+  bootstrap.reset_world(nil)
+  research.research_expire_project_ids()
+
+  if structure_icon.structure_icon_rest_cursor() ~= nil then
+    structure_icon.structure_icon_set_cursor(structure_icon.structure_icon_rest_cursor())
+  end
+  message_box.message_box_set_shown(nil)
+
+  if probe.main_economy_typed() ~= nil then probe.probe_set_main_economy(nil) end
+  score_panel.score_panel_set_main(nil)
+
+  help.help_set_resume_game(title_resume_handler())
+  help.help_screen_new()
+  g_title_built = 1
+end
+
+function M.cart_title_shown()
+  return (g_title_built ~= 0 and g_loading_frame == 0 and message_box.shown_message_box() == nil
+    and entity_registry.entity_registry_count_tagged(entity_class.TAG_MESSAGE_BOX) == 0) and 1 or 0
+end
+
+-- Between frames only, never from a handler inside ui_update or update_entities: it releases
+-- every live entity while they are still being walked.
+function M.cart_return_to_title()
+  entity_registry.entity_registry_abandon_live_entities()
+  M.cart_flush_exit_queue()
+  -- After the flush: reset_world's own abandon would walk the released entries.
+  entity_registry.entity_registry_forget_registries()
+  g_save_cut = 0
+  g_demo_frame = M.CART_NO_DEMO_FRAME
+  M.cart_init()
+end
+
+function M.cart_cut_save()
+  g_save_cut = 1
+end
+
+function M.cart_set_demo_frame(frame)
+  g_demo_frame = frame
+end
+
+function M.cart_init_method(self)
+  M.cart_init()
+end
+
+M.cart_game_registry_reserve = { live = 329, by_message = {}, by_tag = {} }
+for i = 0, entity_registry.ENTITY_MESSAGE_COUNT - 1 do
+  M.cart_game_registry_reserve.by_message[i] = 0
+end
+for i = 0, entity_class.TAG_COUNT - 1 do
+  M.cart_game_registry_reserve.by_tag[i] = 0
+end
+M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_DRAW] = 322
+M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_DRAW_OVERLAY] = 265
+M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_HIT_TEST] = 125
+M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_NEW_YEAR] = 111
+M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_REFRESH] = 120
+M.cart_game_registry_reserve.by_tag[entity_class.TAG_STRUCTURE] = 8
+M.cart_game_registry_reserve.by_tag[entity_class.TAG_ASCENSION] = 3
+M.cart_game_registry_reserve.by_tag[entity_class.TAG_SLIPGATE] = 14
+M.cart_game_registry_reserve.by_tag[entity_class.TAG_PROBE] = 2
+M.cart_game_registry_reserve.by_tag[entity_class.TAG_MESSAGE_BOX] = 4
+M.cart_game_registry_reserve.by_tag[entity_class.TAG_SLIPWAY] = 216
+M.cart_game_registry_reserve.by_tag[entity_class.TAG_WORMHOLE] = 3
+M.cart_game_registry_reserve.by_tag[entity_class.TAG_PLANET] = 110
+M.cart_game_registry_reserve.by_tag[entity_class.TAG_NODE] = 110
+
+local function start_world(difficulty)
+  assert(economy_module.economy_ready() ~= 0 and planet_family.structure_ready() ~= 0,
+    "game start: cart_load() must run first")
+
+  economy_score.economy_score_set_difficulty(difficulty)
+  g_title_built = 0
+  game_zone.game_zone_flip()
+
+  bootstrap.reset_world(M.cart_game_registry_reserve)
+  research.research_expire_project_ids()
+  background.background_new()
+end
+
+local function start_interface()
+  local kind_table = {}
+
+  probe.probe_set_main_economy(economy_module.economy_new())
+  score_panel.score_panel_set_main(score_panel.score_panel_new())
+
+  if menu.pause_menu_open_box() ~= nil then
+    for j = 1, game_data.GALAXY_MENU_COUNT do
+      menu.galaxy_menu_button(j)
+    end
+  end
+
+  kind_table[0] = planet_family.structure_kind()
+  kind_table[1] = planet_family.processor_kind()
+  kind_table[2] = planet_family_trade.slipgate_kind()
+  kind_table[3] = planet_family_trade.infraspace_gate_kind()
+  kind_table[4] = planet_family.trading_hub_kind()
+  kind_table[5] = planet_family_trade.synthesizer_kind()
+  kind_table[6] = planet_family.ascension_kind()
+
+  for index = 0, 6 do
+    local keys = { kind = nil, tooltip = nil }
+
+    keys.kind = kind_table[index]
+    keys.tooltip = layout.tooltip_new(game_zone.game_zone(), map_tables.icon_tooltips_table[index])
+    structure_icon.structure_icon_new(keys)
+  end
+end
+
+local function recompute_economy()
+  assert(probe.main_economy_typed() ~= nil,
+    "game start: the main economy must be this game's economy before economy_recompute()")
+  economy_module.economy_recompute(probe.main_economy_typed())
+end
+
+function M.cart_start_game(chosen_option)
+  start_world(chosen_option)
+  galaxy.galaxy_populate(fixed.p8_fixed_from_int(90))
+  start_interface()
+  recompute_economy()
+end
+
+-- The title's difficulty buttons: copies the option's value, then the press frame and the next
+-- draw the loading screen and the frame after generates the galaxy. nil starts with no difficulty.
+function M.cart_request_start_game(chosen_option)
+  g_has_requested_option = (chosen_option ~= nil) and 1 or 0
+  g_requested_option = ui_button.button_zero()
+  if chosen_option ~= nil then
+    g_requested_option.name = chosen_option.name
+    g_requested_option.has_trade = chosen_option.has_trade
+    g_requested_option.trade = chosen_option.trade
+    g_requested_option.has_type_bias = chosen_option.has_type_bias
+    g_requested_option.type_bias = chosen_option.type_bias
+  end
+  g_loading_frame = 1
+end
+
+function M.cart_loading()
+  return (g_loading_frame ~= 0) and 1 or 0
+end
+
+function M.cart_resume_game(state)
+  local difficulty = {}
+
+  save_load.save_load_difficulty(state, difficulty)
+  save_load.save_load_background_seed(state)
+  start_world(difficulty)
+  assert(background.background_live().seed == state.background_seed,
+    "cart_resume_game: the RNG moved between the reseed and the background")
+  save_load.save_load_world(state)
+  start_interface()
+  save_load.save_load_globals(state)
+  recompute_economy()
+end
+
+local function save_at_frame_end()
+  local economy = probe.main_economy_typed()
+
+  if economy == nil or economy.save_pending == 0 or economy_score.economy_score_difficulty() == nil then return end
+  if economy.has_end_status ~= 0 and economy.end_status ~= nil then
+    save_storage.save_storage_erase()
+    economy.save_pending = 0
+  elseif wormhole.wormhole_live_count() == 0 then
+    save_state.save_state_capture(g_save_state)
+    save_storage.save_storage_write(g_save_bytes, save_state.save_state_encode(g_save_state, g_save_bytes))
+    economy.save_pending = 0
+  end
+end
+
+function M.cart_update60()
+  if g_loading_frame > 0 and g_loading_frame < loading_screen.LOADING_SCREEN_FRAMES then
+    g_loading_frame = g_loading_frame + 1
+    return
+  end
+  if g_loading_frame == loading_screen.LOADING_SCREEN_FRAMES then
+    frame_zone.frame_zone_reset()
+    M.cart_flush_exit_queue()
+    if g_has_requested_option ~= 0 then
+      M.cart_start_game(g_requested_option)
+    else
+      M.cart_start_game(nil)
+    end
+    g_loading_frame = 0
+    if g_save_cut == 0 then save_at_frame_end() end
+    return
+  end
+  frame_zone.frame_zone_reset()
+  M.cart_flush_exit_queue()
+  bootstrap.update_entities()
+  ui.ui_update(dispatch_context.dispatch_context_mem(), ui.main_ui())
+  if g_save_cut == 0 then save_at_frame_end() end
+end
+
+function M.cart_draw()
+  local mem = dispatch_context.dispatch_context_mem()
+
+  if g_loading_frame ~= 0 then
+    loading_screen.loading_screen_draw(dispatch_context.dispatch_context_gfx(), mem)
+    return
+  end
+  text_image.text_image_frame_begin()
+  button_image.button_image_frame_begin()
+  gfx.p8_cls(mem)
+  hud.hud_select_palette_block_default(mem)
+  entity_registry.draw_layers(entity_registry.ENTITY_MESSAGE_DRAW)
+  entity_registry.draw_layers(entity_registry.ENTITY_MESSAGE_DRAW_OVERLAY)
+  demo_overlay.demo_overlay_draw(dispatch_context.dispatch_context_gfx(), mem, g_demo_frame)
+end
+
+return M
