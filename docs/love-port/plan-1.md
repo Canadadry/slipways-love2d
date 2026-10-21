@@ -393,3 +393,20 @@ None.
 - `make test`: before 56b69a4 4.97 s, reference 6.95 s, current 5.05 s;
   paired −1.11 % / −28.25 %, 11 rounds, 4 cores.
 
+### Step 4.17
+
+- Unlisted function: `function_list.c` guards `love`, its four modules and
+  every method table; a missing read or a new field raises "<name> is not
+  in the function list of docs/love-port/design.md" with `file:line`. Only
+  the six callbacks may be set on `love`. Both binaries run under it.
+- Colour outside the 16: `setColor` accepts the 16 palette colours or white
+  (for images), judged on the drawn bytes; `love_capture_check` turns it off.
+- Foreign pixel: at frame end, `tmp/fake_love` exits 1 when canvas 0 is
+  missing or holds a non-palette pixel; `love_capture_check` never checks it.
+  19 fixtures got a canvas-0 block appended (line numbers unchanged).
+- Verified: one test game per error, every `love-capture-check-*` green, and
+  a `drawing_rules` game following design.md runs with its whole capture
+  checked. design.md "Fatal errors".
+- `make test`: before 3b68acd 5.06 s, reference 6.90 s, current 4.98 s;
+  paired −0.17 % / −28.17 %, 11 rounds, 4 cores.
+
