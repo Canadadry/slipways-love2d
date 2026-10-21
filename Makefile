@@ -1404,7 +1404,7 @@ lua-test-runtime: tests/lua/test_runtime.lua $(wildcard game/p8/*.lua) ## checks
 # wildcard, not find: the guard stays a single process.
 LUA_GUARD_FILES := $(wildcard game/*.lua game/*/*.lua game/*/*/*.lua)
 
-lua-guard: tools/lua_guard.lua ## fails when a game/ Lua file does not compile or uses a LÖVE name off the design's list
+lua-guard: tools/lua_guard.lua ## fails when a game/ Lua file does not compile, uses an undeclared global or an unlisted LÖVE name
 	@luajit tools/lua_guard.lua game $(LUA_GUARD_FILES)
 
 .PHONY: lua-guard

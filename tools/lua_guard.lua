@@ -14,6 +14,22 @@ local FUNCTIONS = {
 
 local GLUE_ONLY = { graphics = true, image = true }
 
+local READABLE_GLOBALS = {
+    assert = true, error = true, getmetatable = true, ipairs = true, next = true, pairs = true, pcall = true,
+    rawequal = true, rawget = true, rawset = true, require = true, select = true, setmetatable = true,
+    tonumber = true, tostring = true, type = true, unpack = true, xpcall = true, math = true, string = true,
+    table = true, love = true,
+}
+
+local jit_util = require("jit.util")
+local bcnames = require("jit.vmdef").bcnames
+
+local function opcode(name)
+    return (bcnames:find(name .. " ", 1, true) - 1) / 6
+end
+
+local GGET, GSET = opcode("GGET"), opcode("GSET")
+
 local function usage_failure(message)
     io.stderr:write("lua-guard: " .. message .. "\n")
     io.stderr:write("usage: luajit tools/lua_guard.lua <game dir> <file.lua>...\n")
@@ -134,11 +150,49 @@ local function scan(path, code, in_glue, report)
     end
 end
 
+-- Walks the compiled chunk and its nested prototypes: the bytecode resolves
+-- scoping, so a local shadowing a global name never shows up as GGET.
+local function check_globals(path, chunk, writable, report)
+    local info = jit_util.funcinfo(chunk)
+    for pc = 1, info.bytecodes - 1 do
+        local ins = jit_util.funcbc(chunk, pc)
+        local op = ins % 256
+        if op == GGET or op == GSET then
+            local name = jit_util.funck(chunk, -math.floor(ins / 65536) - 1)
+            local offence
+            if op == GGET and not READABLE_GLOBALS[name] then
+                offence = " is read but not declared"
+            elseif op == GSET and not writable[name] then
+                offence = " is written"
+            end
+            if offence ~= nil then
+                report(path .. ":" .. jit_util.funcinfo(chunk, pc).currentline .. ": global " .. name .. offence)
+            end
+        end
+    end
+    if info.children then
+        local index = -1
+        while true do
+            local constant = jit_util.funck(chunk, index)
+            if constant == nil then
+                break
+            end
+            if type(constant) == "proto" then
+                check_globals(path, constant, writable, report)
+            end
+            index = index - 1
+        end
+    end
+end
+
 local root = arg[1]
 if root == nil then
     usage_failure("no game directory")
 end
-local glue_prefix = root:gsub("/+$", "") .. "/love/"
+root = root:gsub("/+$", "")
+local glue_prefix = root .. "/love/"
+local WRITABLE_GLOBALS = { [root .. "/main.lua"] = { debug_state = true } }
+local NO_GLOBALS = {}
 
 local offences = {}
 local function report(message)
@@ -147,7 +201,7 @@ end
 
 for i = 2, #arg do
     local path = arg[i]
-    local _, err = loadfile(path)
+    local chunk, err = loadfile(path)
     if err ~= nil then
         report(err)
     else
@@ -155,6 +209,7 @@ for i = 2, #arg do
         local text = file:read("*a")
         file:close()
         scan(path, strip(text), path:sub(1, #glue_prefix) == glue_prefix, report)
+        check_globals(path, chunk, WRITABLE_GLOBALS[path] or NO_GLOBALS, report)
     end
 end
 

@@ -72,8 +72,8 @@ function next to its C original when a replay diverges. Read
 One step per group of related C files, in the order of the C include graph,
 leaves first, so that each step's modules only require modules already
 written; an include cycle is cut into consecutive steps, and if one of its
-files cannot load before its partners exist (step 3.3's note says), the load
-check of that cycle runs at its last step. The checklist's file
+files cannot load before its partners exist (2.1's conventions, extended by
+3.3's note, say), the load check of that cycle runs at its last step. The checklist's file
 assignment is authoritative. Each step is verified the same way: every C file
 assigned to it has its Lua file and every C function its Lua function (the
 checklist); every Lua file of the step loads under LuaJIT with its
@@ -90,9 +90,11 @@ left of the plan-wide 3 % (step 1.2's note).
    lists, slot groups, vectors and geometry.
 3.2. `game/engine/` entity classes, ids, id lists, entity lists, exit queue.
 3.3. `game/engine/` the registry, entity geometry, entities, bootstrap.
-   This step settles how modules in an include cycle load in Lua, on the
-   `entity_geom` / `entity_registry` pair, and records it in its step note;
-   later cycles, 3.6 to 3.9 first, follow that note.
+   On the `entity_geom` / `entity_registry` pair, this step applies 2.1's
+   include-cycle convention; its note extends it only for a partner's value
+   used at load time (constants, tables) and says whether a cycle file can
+   still fail to load before its partners exist. Later cycles, 3.6 to 3.9
+   first, follow both.
 3.4. `game/game/` leaves: game data, generation, bindings, mouse, map tables,
    images and text, draw functions.
 3.5. `game/game/` techs, HUD and layout.

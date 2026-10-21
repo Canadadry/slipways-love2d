@@ -179,6 +179,63 @@ static void test_graphics_and_image_outside_the_glue_directory_fail(void) {
     assert(out_lines() == 4);
 }
 
+static void test_an_undeclared_global_read_fails_with_file_line_and_name(void) {
+    reset();
+    write_file(ROOT "/p8/typo.lua", "local M = {}\n"
+                                    "local fixed = require('p8.fixed')\n"
+                                    "M.x = fixd\n"
+                                    "print(M.x)\n"
+                                    "return M\n");
+    assert(run_guard("p8/typo.lua") == 1);
+    assert(out_has(ROOT "/p8/typo.lua:3: global fixd is read but not declared\n"));
+    assert(out_has(ROOT "/p8/typo.lua:4: global print is read but not declared\n"));
+    assert(out_lines() == 2);
+}
+
+static void test_a_global_write_fails_except_debug_state_in_main(void) {
+    reset();
+    write_file(ROOT "/main.lua", "function debug_state()\n  return ''\nend\n"
+                                 "function love.load()\nend\n");
+    write_file(ROOT "/p8/leak.lua", "local M = {}\n"
+                                    "function helper()\nend\n"
+                                    "debug_state = nil\n"
+                                    "return M\n");
+    write_file(ROOT "/game/lovers/main.lua", "counter = 1\n");
+    assert(run_guard("main.lua p8/leak.lua game/lovers/main.lua") == 1);
+    assert(out_has(ROOT "/p8/leak.lua:2: global helper is written\n"));
+    assert(out_has(ROOT "/p8/leak.lua:4: global debug_state is written\n"));
+    assert(out_has(ROOT "/game/lovers/main.lua:1: global counter is written\n"));
+    assert(out_lines() == 3);
+}
+
+static void test_reads_are_found_in_nested_functions_and_locals_shadow_globals(void) {
+    reset();
+    write_file(ROOT "/p8/deep.lua", "local M = {}\n"
+                                    "local bit = require('bit')\n"
+                                    "local print = function() end\n"
+                                    "function M.f(io)\n"
+                                    "  return function()\n"
+                                    "    print(io, bit.band(1, 1), os)\n"
+                                    "  end\n"
+                                    "end\n"
+                                    "return M\n");
+    assert(run_guard("p8/deep.lua") == 1);
+    assert(out_has(ROOT "/p8/deep.lua:6: global os is read but not declared\n"));
+    assert(out_lines() == 1);
+}
+
+static void test_every_listed_global_read_passes(void) {
+    reset();
+    write_file(ROOT "/p8/ok.lua",
+               "local M = {}\n"
+               "local x = { assert, error, getmetatable, ipairs, next, pairs, pcall, rawequal, rawget, rawset,\n"
+               "  require, select, setmetatable, tonumber, tostring, type, unpack, xpcall, math, string, table }\n"
+               "function M.f()\n  return love.joystick.getJoysticks()\nend\n"
+               "return M\n");
+    assert(run_guard("p8/ok.lua") == 0);
+    assert(out_has("lua-guard: 1 files clean\n"));
+}
+
 int main(void) {
     assert(system("mkdir -p " DIR) == 0);
     test_a_file_that_does_not_compile_fails_with_its_line();
@@ -187,6 +244,10 @@ int main(void) {
     test_a_callback_used_without_being_defined_fails();
     test_an_alias_a_bracket_index_or_an_indirect_call_fails();
     test_graphics_and_image_outside_the_glue_directory_fail();
+    test_an_undeclared_global_read_fails_with_file_line_and_name();
+    test_a_global_write_fails_except_debug_state_in_main();
+    test_reads_are_found_in_nested_functions_and_locals_shadow_globals();
+    test_every_listed_global_read_passes();
     puts("test_lua_guard: ok");
     return 0;
 }

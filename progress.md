@@ -23,6 +23,13 @@
     - [x] chunk 10: meter, budget and record
 - [ ] Phase 3 — Engine and game
   - [ ] 3.1 engine: memory and basics
+    - [x] chunk 1: the global rule
+    - [ ] chunk 2: the load and data check
+    - [ ] chunk 3: zones and the allocator
+    - [ ] chunk 4: zone singletons and slot groups
+    - [ ] chunk 5: lists and strings
+    - [ ] chunk 6: vectors, geometry, dispatch context
+    - [ ] chunk 7: cost and record
   - [ ] 3.2 engine: entity classes, ids, lists, exit queue
   - [ ] 3.3 engine: registry, entity geometry, entities, bootstrap
   - [ ] 3.4 game: leaves
