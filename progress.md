@@ -44,7 +44,7 @@
     - [x] chunk 6: cost and record
   - [ ] 3.4 game: leaves
     - [x] chunk 1: leaves without drawing
-    - [ ] chunk 2: bindings
+    - [x] chunk 2: bindings
     - [ ] chunk 3: image caches
     - [ ] chunk 4: mouse
     - [ ] chunk 5: cost and record
