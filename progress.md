@@ -54,13 +54,13 @@
     - [x] chunk 3: HUD and draw functions
     - [x] chunk 4: layout and row images
     - [x] chunk 5: cost and record
-  - [ ] 3.6 game: include cycle, galaxy and planets
+  - [x] 3.6 game: include cycle, galaxy and planets
     - [x] chunk 1: ui_zone
     - [x] chunk 2: planet_trade and planet_display
     - [x] chunk 3: planet and galaxy
     - [x] chunk 4: deferred loads
     - [x] chunk 5: planet_family
-    - [ ] chunk 6: cost and record
+    - [x] chunk 6: cost and record
   - [ ] 3.7 game: include cycle, economy
   - [ ] 3.8 game: include cycle, slipways, probes and wormholes
   - [ ] 3.9 game: include cycle, UI and message box, particles, background, scroll

@@ -462,3 +462,42 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   tree; the paired figures count. `lua-guard` projected at 80–94 ms at the
   end (about 487 KB of Lua left, 70 tables).
 - The PRD's agent had no `guideline` and settled its points itself.
+
+### Step 3.6
+
+- `game/game/`: ui_zone (a leaf, not in the cycle), planet_trade,
+  planet_display, planet, galaxy, planet_family. `make checklist STEP=3.6`
+  passes (140/140, 15/15).
+- Cycle loading: planet requires planet_display and planet_trade at load
+  (its class holds their methods), one direction only; they, and galaxy,
+  require their partners at call time. planet_family cannot load before
+  3.9: its class tables hold probe's targeting methods by identity (`probe.c`
+  compares `drag` with `targeting_track_method`), and probe's own class needs
+  `particle` (3.9). The load check takes `--defer <module>` from the
+  Makefile's `LUA_DEFERRED_MODULES` (now `game.planet_family`): a deferred
+  module is skipped, with its reference blocks, only when a module not yet in
+  the tree is missing; any other error fails; a deferred module that loads
+  fails until dropped from the list, so 3.9 empties it.
+- Conventions: an object's own field named like an entity header field takes
+  a trailing underscore (the planet's `has` is `has_`, the header keeps
+  `has`; `button_t`, `ui_t`, `wormhole_t` and the particle structs meet the
+  same clash), decided by `guideline`. Structs owned by a later step's module
+  get local zero constructors there (`button_keys_t`, `toast_keys_t`, …); 3.8
+  and 3.9 may move them home. A function declared in a header but defined in
+  a sibling module is called from its defining module, not re-exported.
+  planet exports `planet_keys_zero` and `planet_row_signature_zero` (Lua
+  only); `planet_init_instance` creates the sub-tables later code fills.
+- For 3.8: probe must export `targeting_tooltip_method`,
+  `targeting_track_method`, `targeting_confirm_method` and
+  `probe_spawn_particle` as module fields and not require planet_family at
+  load; it will itself be deferred until `particle` exists.
+- Behaviour checked against the C with throwaway programs, all
+  byte-identical: ui_zone slots and overflows, trade offers and row
+  signatures, a 40-planet galaxy with rolls and installed projects, planet
+  family bobbing, kind lookup and burst particles.
+- Own-time gate, paired against `bb34696` (45 pairs; +85.4 KB Lua, +39
+  blocks of which 14 deferred, +364 lines): `lua-guard` 45.8 → 51.3 ms
+  (+5.5, about 0.064 ms per KB); `lua-test-modules` 38.3 → 40.9 ms (+2.4;
+  planet_family stops at its probe require). Pass. Projection at the end:
+  `lua-guard` 77–91 ms (about 402 KB left), `lua-test-modules` 63–70 ms.
+- The PRD's agent had no `guideline` and settled the load plan itself.
