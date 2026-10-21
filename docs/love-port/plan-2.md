@@ -715,3 +715,28 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   then +5.6 ms (78.9–80.6 ms, 0.061–0.078 ms/KB); `lua-test-modules` +4.3
   then +3.5 ms (54.0–54.9 ms). Pass. With about 20–30 KB of Lua left,
   `lua-guard` is projected at 82–86 ms at the end.
+
+### Step 3.14
+
+- `game/game/`: cart, input_step. `make checklist STEP=3.14` passes (32/32,
+  1/1); both load at once, `LUA_DEFERRED_MODULES` stays empty. Every
+  `H-3.13-k` of the PRD held. `game.save_state` exports `save_state_zero`
+  for the cart's static save state.
+- `input_step` copies the session bindings by value with a local
+  `copy_bindings` (3.13 exports none). `input_step_init` gives `cheat`,
+  `pad_nav` and `attract` new tables but zeroes `played_frame` and `played`
+  in place, so the input the dispatch context holds reads empty after a
+  re-init, as C's memset leaves it.
+- Behaviour checked against the C with throwaway scenarios mirroring
+  `test_cart.c` and `test_input_step.c`, all byte-identical with
+  framebuffers: the cart over 40 scenarios (208,471 lines, every corpus
+  resume included; mutations 35/47), the input step over 18 (24,559 lines,
+  a full demo included; 18/25). Each mutation missed is an independent
+  reorder or unreachable. The planet-field trap counted 0 reads.
+- Calling `cart_init` on the title with no flush between fails, in C and Lua
+  alike, on the help screen's particle slot; the game never takes that
+  path (restart comes from a game, the return to the title flushes first).
+- Own-time gate, paired against `ec42dda` (45 pairs, run twice; +18.5 KB
+  Lua, +5 blocks, +19 lines): `lua-guard` +0.6 then +1.9 ms (79.1–80.5 ms);
+  `lua-test-modules` +1.0 then +1.2 ms (54.0–54.5 ms). Pass. 3.15 adds about
+  20 KB: `lua-guard` projected at 81–84 ms at the end.
