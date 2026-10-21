@@ -94,7 +94,7 @@
   - [ ] 3.12 game: save
     - [x] chunk 1: codec
     - [x] chunk 2: capture
-    - [ ] chunk 3: load and storage
+    - [x] chunk 3: load and storage
     - [ ] chunk 4: cost and record
   - [ ] 3.13 game: menus, title and attract
   - [ ] 3.14 game: the cart and the input step

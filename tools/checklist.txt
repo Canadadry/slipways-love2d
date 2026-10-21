@@ -187,6 +187,7 @@ step 3.12 src/game/save_state.c
 step 3.12 src/game/save_state.h
 step 3.12 src/game/save_load.c
 step 3.12 src/game/save_load.h
+lua src/game/save_load.c SAVE_NODE_KIND_COUNT game/game/save_load.lua node_constructors
 step 3.13 src/game/menu.c
 step 3.13 src/game/menu.h
 step 3.13 src/game/attract.c
