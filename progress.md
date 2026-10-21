@@ -13,7 +13,7 @@
   - [ ] 2.1 `game/p8/` and `game/love/`
     - [x] chunk 1: static guard
     - [x] chunk 2: conventions and the plain runtime
-    - [ ] chunk 3: drawing core in Lua
+    - [x] chunk 3: drawing core in Lua
     - [ ] chunk 4: check harness and first LÖVE calls
     - [ ] chunk 5: lines and circles
     - [ ] chunk 6: fill patterns
