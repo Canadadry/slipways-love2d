@@ -5,7 +5,7 @@
     - [x] chunk 3: include order and the step gate
   - [ ] 1.2 `game/p8/fixed.lua`
     - [x] chunk 1: reference commit
-    - [ ] chunk 2: harness and integer arithmetic
+    - [x] chunk 2: harness and integer arithmetic
     - [ ] chunk 3: roots and trigonometry
     - [ ] chunk 4: random generator
     - [ ] chunk 5: budget, sweep and record
