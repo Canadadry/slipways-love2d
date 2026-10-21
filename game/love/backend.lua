@@ -5,10 +5,12 @@ local bit = require("bit")
 local cint = require("p8.cint")
 local fatal = require("p8.fatal")
 local gfx_module = require("p8.gfx")
+local gfx_software = require("p8.gfx_software")
 local vram = require("p8.vram")
 local pattern = require("love.pattern")
 local screen = require("love.screen")
 local sheet = require("love.sheet")
+local slot = require("love.slot")
 local text = require("love.text")
 
 local M = {}
@@ -327,9 +329,49 @@ local function love_print_outlined(gfx, mem, str, x, y, col)
   love_print(gfx, mem, str, x, y, col)
 end
 
+local SOFTWARE_BACKEND = gfx_software.p8_gfx_software_backend()
+local building = false
+
+local function love_image_begin(slot_index, w, h)
+  building = true
+  SOFTWARE_BACKEND.image_begin(slot_index, w, h)
+end
+
+local function love_image_window(slot_index, x, y)
+  SOFTWARE_BACKEND.image_window(slot_index, x, y)
+end
+
+local function love_image_end(slot_index)
+  SOFTWARE_BACKEND.image_end(slot_index)
+  building = false
+  slot.slot_build(slot_index)
+end
+
+local function love_image_draw(gfx, mem, slot_index, x, y)
+  slot.slot_draw(slot_index, x - gfx.camera_x, y - gfx.camera_y)
+end
+
+-- Between image_begin and image_end the software backend draws into the slot
+-- store, which love_image_end turns into the slot's image.
+local function building_forwards(name, draw)
+  local software_draw = SOFTWARE_BACKEND[name]
+  return function(...)
+    if building then
+      return software_draw(...)
+    end
+    return draw(...)
+  end
+end
+
 local LOVE_BACKEND = {
-  cls = love_cls, pset = love_pset, line = love_line, rect = love_rect, circ = love_circ, lines = love_lines, psets = love_psets, rectfill = love_rectfill, circfill = love_circfill, spr = love_spr,
-  print = love_print, print_outlined = love_print_outlined,
+  cls = love_cls, pset = building_forwards("pset", love_pset), line = building_forwards("line", love_line),
+  rect = building_forwards("rect", love_rect), rectfill = building_forwards("rectfill", love_rectfill),
+  circ = building_forwards("circ", love_circ), circfill = building_forwards("circfill", love_circfill),
+  spr = building_forwards("spr", love_spr), print = building_forwards("print", love_print),
+  print_outlined = building_forwards("print_outlined", love_print_outlined),
+  image_begin = love_image_begin, image_window = love_image_window, image_end = love_image_end,
+  image_draw = love_image_draw,
+  lines = building_forwards("lines", love_lines), psets = building_forwards("psets", love_psets),
 }
 
 -- Shared by every caller: never write it.

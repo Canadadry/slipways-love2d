@@ -432,4 +432,13 @@ function M.p8_gfx_software_backend()
   return SOFTWARE_BACKEND
 end
 
+-- Lua only, for love.slot: the slot store, the store index of the slot's
+-- pixel (0, 0), the width and height of its last build, and the byte of a
+-- pixel the build never wrote. Pixel (x, y) is at first + y * width + x.
+-- Never write the store.
+function M.p8_gfx_software_slot_pixels(slot)
+  local size = image_built[slot]
+  return image_store, slot_pixels(slot), size.width, size.height, IMAGE_EMPTY
+end
+
 return M

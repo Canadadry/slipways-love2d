@@ -19,7 +19,7 @@
     - [x] chunk 6: fill patterns
     - [x] chunk 7: sprites, colour swaps and the map
     - [x] chunk 8: text
-    - [ ] chunk 9: image slots
+    - [x] chunk 9: image slots
     - [ ] chunk 10: meter, budget and record
 - [ ] Phase 3 — Engine and game
   - [ ] 3.1 engine: memory and basics

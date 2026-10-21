@@ -3,6 +3,7 @@
 -- through the C runtime and compares the frames.
 local bit = require("bit")
 local gfx_module = require("p8.gfx")
+local image = require("p8.image")
 local sprite_sheet = require("p8.sprite_sheet")
 local vram = require("p8.vram")
 local backend = require("love.backend")
@@ -47,9 +48,11 @@ local function split_text(line, line_number)
 end
 
 -- Returns the frames, each a list of calls { operation, line_number, values }.
+-- A build is one call whose build_calls are the calls up to its end.
 local function parse_scene(text)
   local parsed = {}
   local calls = {}
+  local build = nil
   local line_number = 0
   for line in (text .. "\n"):gmatch("([^\n]*)\n") do
     line_number = line_number + 1
@@ -66,7 +69,18 @@ local function parse_scene(text)
     if #tokens == 0 then
       goto continue
     end
+    if tokens[1] == "end" then
+      if build == nil or #tokens ~= 1 then
+        error(string.format("scene.txt:%d: end outside a build", line_number), 0)
+      end
+      calls = build
+      build = nil
+      goto continue
+    end
     if tokens[1] == "frame" then
+      if build ~= nil then
+        error(string.format("scene.txt:%d: frame inside a build", line_number), 0)
+      end
       parsed[#parsed + 1] = calls
       calls = {}
       goto continue
@@ -76,11 +90,23 @@ local function parse_scene(text)
       for i = 2, #tokens do
         values[i - 2] = parse_integer(tokens[i], line_number)
       end
-      calls[#calls + 1] = {
+      local call = {
         operation = tokens[1], line_number = line_number, values = values, count = #tokens - 1, text = text,
       }
+      calls[#calls + 1] = call
+      if call.operation == "build" then
+        if build ~= nil then
+          error(string.format("scene.txt:%d: build inside a build", line_number), 0)
+        end
+        call.build_calls = {}
+        build = calls
+        calls = call.build_calls
+      end
     end
     ::continue::
+  end
+  if build ~= nil then
+    error("scene.txt: build without end", 0)
   end
   if #calls > 0 then
     error("scene.txt: calls after the last frame", 0)
@@ -94,7 +120,15 @@ local function require_count(call, count)
   end
 end
 
-local function play_call(call)
+local play_call
+
+local function draw_build(_, _, build_calls)
+  for _, call in ipairs(build_calls) do
+    play_call(call)
+  end
+end
+
+function play_call(call)
   local v = call.values
   local operation = call.operation
   if operation == "cls" then
@@ -173,6 +207,12 @@ local function play_call(call)
   elseif operation == "print_outlined" then
     require_count(call, 3)
     gfx_module.p8_print_outlined(gfx, mem, call.text, v[0], v[1], v[2])
+  elseif operation == "build" then
+    require_count(call, 3)
+    image.p8_image_build(gfx, mem, v[0], v[1], v[2], draw_build, call.build_calls)
+  elseif operation == "image" then
+    require_count(call, 3)
+    image.p8_image_draw(gfx, mem, v[0], v[1], v[2])
   else
     error(string.format("scene.txt:%d: unknown operation %s", call.line_number, operation), 0)
   end
