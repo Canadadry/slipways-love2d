@@ -111,5 +111,5 @@
     - [x] chunk 1: check the 3.14 hypotheses
     - [x] chunk 2: state_format
     - [x] chunk 3: the present
-    - [ ] chunk 4: conf.lua, main.lua and the smoke run
+    - [x] chunk 4: conf.lua, main.lua and the smoke run
     - [ ] chunk 5: checkpoint timing and the step note
