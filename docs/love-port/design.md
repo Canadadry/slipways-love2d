@@ -697,8 +697,10 @@ data; both are committed, and `make test` fails when either is stale.
 The C game computes with PICO-8 16.16 fixed-point numbers (`src/p8/fixed.c`)
 and its own random generator. The Lua game uses the same format and the same
 generator through a Lua library built on LuaJIT's `bit` library, bit-exact.
-Its tests (`tests/lua/`, run with LuaJIT) compare it with the C over millions
-of values while the C exists, then with saved reference values.
+Its tests (`tests/lua/`, run with LuaJIT) compare it with the C while the C
+exists, then with saved reference values: `make test` checks the edge values
+and a sample (`lua-test-fixed`), `make lua-sweep-fixed` millions of values,
+outside `make test-all`.
 
 ## Layout of the fork
 

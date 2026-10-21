@@ -8,7 +8,7 @@
     - [x] chunk 2: harness and integer arithmetic
     - [x] chunk 3: roots and trigonometry
     - [x] chunk 4: random generator
-    - [ ] chunk 5: budget, sweep and record
+    - [x] chunk 5: budget, sweep and record
 - [ ] Phase 2 — Runtime and LÖVE glue
   - [ ] 2.1 `game/p8/` and `game/love/`
 - [ ] Phase 3 — Engine and game

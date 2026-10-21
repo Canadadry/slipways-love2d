@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 # Reruns make under flock: one make of LOCKED_GOALS at a time over tmp/.
-LOCKED_GOALS := test e2e test-all love-e2e
+LOCKED_GOALS := test e2e test-all love-e2e lua-sweep-fixed
 
 ifneq ($(if $(MAKE_LOCK_HELD),,$(filter $(LOCKED_GOALS),$(MAKECMDGOALS))),)
 $(MAKECMDGOALS): make-lock ; @:
@@ -1364,6 +1364,9 @@ sin-table: $(TMP_DIR)/gen_quarter_wave ## regenerates src/p8/quarter_wave.h and 
 
 .PHONY: sin-table
 
+FIXED_SWEEP_COUNT ?= 400000
+FIXED_SWEEP_SEED ?= 0x2545F491
+
 $(TMP_DIR)/fixed_reference: $(call objs,tools/fixed_reference.c src/p8/fixed.c) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $^
 
@@ -1374,7 +1377,10 @@ $(TMP_DIR)/fixed_reference.bin: $(TMP_DIR)/fixed_reference
 lua-test-fixed: tests/lua/test_fixed.lua $(wildcard game/p8/*.lua) $(TMP_DIR)/fixed_reference.bin ## compares game/p8/fixed.lua with the C fixed-point library on edge and sampled values
 	luajit tests/lua/test_fixed.lua $(TMP_DIR)/fixed_reference.bin
 
-.PHONY: lua-test-fixed
+lua-sweep-fixed: tests/lua/test_fixed.lua $(wildcard game/p8/*.lua) $(TMP_DIR)/fixed_reference ## compares game/p8/fixed.lua with the C library on millions of sampled values (slow)
+	./$(TMP_DIR)/fixed_reference --sweep $(FIXED_SWEEP_COUNT) $(FIXED_SWEEP_SEED) | luajit tests/lua/test_fixed.lua -
+
+.PHONY: lua-test-fixed lua-sweep-fixed
 
 $(TMP_DIR)/asset_export: $(call objs,src/cmd/asset_export.c src/devtools/asset_image.c src/devtools/png_writer.c src/p8/palette.c src/p8/sprite_sheet.c src/p8/vram.c src/p8/gfx_software.c src/p8/gfx.c) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)

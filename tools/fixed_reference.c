@@ -1,16 +1,19 @@
-/* Host tool: writes to argv[1] the inputs and C results of src/p8/fixed.c,
- * the oracle of tests/lua/test_fixed.lua. Layout, every number a
+/* Host tool: writes the inputs and C results of src/p8/fixed.c, the oracle
+ * of tests/lua/test_fixed.lua: the make test set to argv[1], or with
+ * --sweep <count> <seed> the same edge values and <count> drawn records per
+ * section to standard output. Layout, every number a
  * little-endian uint32: "P8FIXREF", version; per section: name length, name,
  * input count, output count, record count, records; then 0 and the total
  * record count. */
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "p8/fixed.h"
 
 #define FORMAT_VERSION 1u
-#define SAMPLE_PER_SECTION 256
+#define TEST_SAMPLE_PER_SECTION 3000u
 
 typedef struct {
     FILE *file;
@@ -83,6 +86,7 @@ static const int32_t edge_values[] = {
 #define EDGE_COUNT ((int)(sizeof edge_values / sizeof edge_values[0]))
 
 static uint32_t sample_state = 0x9E3779B9u;
+static uint32_t sample_count = TEST_SAMPLE_PER_SECTION;
 
 static uint32_t sample_next(void) {
     sample_state ^= sample_state << 13;
@@ -158,7 +162,7 @@ static void write_unary(writer_t *w, const char *name, unary_fn fn, const int32_
     for (i = 0; i < extra_count; i++) {
         push_unary(w, fn, extra[i]);
     }
-    for (i = 0; i < SAMPLE_PER_SECTION; i++) {
+    for (i = 0; (uint32_t)i < sample_count; i++) {
         push_unary(w, fn, sample_value());
     }
     section_end(w);
@@ -197,7 +201,7 @@ static void write_binary(writer_t *w, const char *name, binary_fn fn) {
             section_push(w, (uint32_t)fn(edge_values[i], edge_values[j]));
         }
     }
-    for (i = 0; i < SAMPLE_PER_SECTION; i++) {
+    for (i = 0; (uint32_t)i < sample_count; i++) {
         int32_t a = sample_value();
         int32_t b = sample_value();
         section_push(w, (uint32_t)a);
@@ -222,7 +226,7 @@ static void write_shift(writer_t *w) {
             push_shift(w, edge_values[i], edge_shifts[j]);
         }
     }
-    for (i = 0; i < SAMPLE_PER_SECTION; i++) {
+    for (i = 0; (uint32_t)i < sample_count; i++) {
         int32_t x = sample_value();
         push_shift(w, x, (int32_t)(sample_next() % 80u) - 24);
     }
@@ -269,7 +273,7 @@ static void write_ternary(writer_t *w, const char *name, ternary_fn fn) {
             }
         }
     }
-    for (i = 0; i < SAMPLE_PER_SECTION; i++) {
+    for (i = 0; (uint32_t)i < sample_count; i++) {
         int32_t a = sample_value();
         int32_t b = sample_value();
         push_ternary(w, fn, a, b, sample_value());
@@ -294,7 +298,7 @@ static void write_rnd_stream(writer_t *w) {
     for (i = 0; i < EDGE_COUNT; i++) {
         push_rnd(w, edge_values[i]);
     }
-    for (i = 0; i < SAMPLE_PER_SECTION; i++) {
+    for (i = 0; (uint32_t)i < sample_count; i++) {
         push_rnd(w, sample_value());
     }
     section_end(w);
@@ -359,7 +363,7 @@ static void write_rnd_from_state_chains(writer_t *w) {
         }
     }
     state = sample_next();
-    for (i = 0; i < SAMPLE_PER_SECTION; i++) {
+    for (i = 0; (uint32_t)i < sample_count; i++) {
         push_rnd_from_state(w, &state, sample_value());
     }
     /* 0xA4B668AA advances to 0x80000001, and 0x7FFFFFFF * 0x80000001 is
@@ -375,15 +379,33 @@ static void write_rnd_from_state_chains(writer_t *w) {
     section_end(w);
 }
 
+static uint32_t parse_u32(const char *text, uint32_t min) {
+    char *end;
+    unsigned long value = strtoul(text, &end, 0);
+    if (*text == '-' || *end || end == text || value > 0xFFFFFFFFul || value < min) {
+        fprintf(stderr, "fixed_reference: bad number %s\n", text);
+        exit(2);
+    }
+    return (uint32_t)value;
+}
+
 int main(int argc, char **argv) {
     writer_t w = {0};
-    if (argc != 2) {
-        fprintf(stderr, "usage: fixed_reference <output file>\n");
+    const char *output = "standard output";
+    if (argc == 2) {
+        output = argv[1];
+        w.file = fopen(output, "wb");
+    } else if (argc == 4 && strcmp(argv[1], "--sweep") == 0) {
+        sample_count = parse_u32(argv[2], 1);
+        /* xorshift stays at 0 forever from a zero state. */
+        sample_state = parse_u32(argv[3], 1);
+        w.file = stdout;
+    } else {
+        fprintf(stderr, "usage: fixed_reference <output file> | --sweep <count> <seed>\n");
         return 2;
     }
-    w.file = fopen(argv[1], "wb");
     if (!w.file) {
-        perror(argv[1]);
+        perror(output);
         return 1;
     }
     if (fwrite("P8FIXREF", 1, 8, w.file) != 8) {
@@ -423,7 +445,7 @@ int main(int argc, char **argv) {
     write_u32(&w, w.total_records);
     free(w.section);
     if (fclose(w.file) != 0) {
-        perror(argv[1]);
+        perror(output);
         return 1;
     }
     return 0;
