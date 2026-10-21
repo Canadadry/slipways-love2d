@@ -205,3 +205,90 @@ camera 0 0
 fillp_reset
 circfill 120 70 4 0x67
 frame
+# spr through the start draw palette (colour 0 see-through): one cell,
+# several cells, boxes reaching past the right and bottom edges of the sheet
+# and from negative n (the off-sheet part is colour 0, so nothing), n of 256,
+# w or h of 0 or less (nothing), clipped on each side, under a camera.
+rectfill -5 -5 200 200 14
+spr 1 4 4 1 1
+spr 16 16 4 1 1
+spr 0 28 4 2 2
+spr 102 48 4 4 2
+spr 15 90 4 2 1
+spr 255 110 4 1 2
+spr -1 130 4 2 1
+spr -17 140 20 2 2
+spr 256 4 30 1 1
+spr 8 20 30 0 1
+spr 8 30 30 1 -1
+spr 5 -4 -3 1 1
+spr 6 155 115 1 1
+spr 7 300 50 1 1
+spr 7 50 -60 1 1
+camera -10 20
+spr 9 0 40 2 2
+camera 0 0
+frame
+# Colour swaps: colour 0 drawn, direct draw palette writes (a high nibble
+# masked off, the see-through bit set by hand), palt on another colour; the
+# off-sheet parts drawn in colour 0's entry. The map: cells set in and out
+# of range, a byte masked, cell 0 skipped, cells past the map, drawn partly
+# off screen and under a camera.
+rectfill -5 -5 200 200 14
+palt 0 0
+palette 0 0x25
+palette 3 8
+palette 7 0x8b
+palette 9 0x1c
+palt 13 1
+spr 1 4 4 1 1
+spr 0 28 4 2 2
+spr 102 48 4 4 2
+spr 15 90 4 2 1
+spr 255 110 4 1 2
+spr -1 130 4 2 1
+spr -17 140 20 2 2
+spr 256 4 30 1 1
+camera 6 -3
+spr 9 0 40 2 2
+spr 15 120 40 2 2
+camera 0 0
+mset 0 0 1
+mset 1 0 16
+mset 2 0 0
+mset 0 1 102
+mset 1 1 0x1ff
+mset 2 1 49
+mset -1 0 5
+mset 32 0 5
+mset 0 32 5
+mset 31 31 7
+map 0 0 40 60 3 2
+map 0 0 -4 100 3 2
+map 30 30 100 80 4 4
+map 0 0 -1000 90 200 1
+map 0 0 20 20 0 2
+camera 20 -10
+map 0 0 150 0 3 2
+camera 0 0
+frame
+# The map kept from the previous frame, through the start draw palette
+# restored, then the swapped draw palette again: both sheets reused.
+rectfill -5 -5 200 200 14
+palt 0 1
+palette 0 0x80
+palette 3 3
+palette 7 7
+palette 9 9
+palt 13 0
+map 0 0 10 10 3 2
+spr 0 60 10 2 2
+palt 0 0
+palette 0 0x25
+palette 3 8
+palette 7 0x8b
+palette 9 0x1c
+palt 13 1
+map 0 0 10 40 3 2
+spr 0 60 40 2 2
+frame

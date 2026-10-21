@@ -639,7 +639,8 @@ what the player sees:
   image, like a plain one, rather than built once per radius.
 - **See-through colours and colour swaps** (PICO-8 `palt` and the 16 palette
   blocks of `hud.c`): the game builds a recoloured copy of the sprite sheet per
-  combination it uses, the first time it is needed, and keeps it. Flat shapes
+  combination it uses, filling each 8×8 cell the first time a draw reaches
+  it, and keeps it. Flat shapes
   apply the swap by choosing the colour before drawing.
 - **Text:** the game places each letter itself from `font.png`, as pieces of
   an image: either per-colour letter images, or one image whose lit cells

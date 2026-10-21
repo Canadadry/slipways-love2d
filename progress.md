@@ -17,7 +17,7 @@
     - [x] chunk 4: check harness and first LÖVE calls
     - [x] chunk 5: lines and circles
     - [x] chunk 6: fill patterns
-    - [ ] chunk 7: sprites, colour swaps and the map
+    - [x] chunk 7: sprites, colour swaps and the map
     - [ ] chunk 8: text
     - [ ] chunk 9: image slots
     - [ ] chunk 10: meter, budget and record

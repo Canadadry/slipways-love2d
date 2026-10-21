@@ -20,7 +20,7 @@
 #define STATE DIR "/state.txt"
 #define LOG DIR "/stderr.txt"
 #define FRAME_SIZE (P8_SCREEN_WIDTH * P8_SCREEN_HEIGHT / 2)
-#define SCENE_FRAMES 11
+#define SCENE_FRAMES 14
 #define MAX_ARGUMENTS 64
 
 static unsigned char expected[SCENE_FRAMES][FRAME_SIZE];
@@ -114,6 +114,23 @@ static void play_call(p8_graphics_t *gfx, p8_vram_t *mem, const char *operation,
     } else if (strcmp(operation, "rectfill") == 0) {
         require_count(operation, count, 5);
         p8_rectfill(gfx, mem, v[0], v[1], v[2], v[3], v[4]);
+    } else if (strcmp(operation, "palt") == 0) {
+        require_count(operation, count, 2);
+        p8_palt(mem, v[0], v[1]);
+    } else if (strcmp(operation, "palette") == 0) {
+        require_count(operation, count, 2);
+        if (v[0] < 0 || v[0] > 15)
+            scene_fail("palette takes a colour 0..15", NULL);
+        mem->draw_palette[v[0]] = (unsigned char)v[1];
+    } else if (strcmp(operation, "spr") == 0) {
+        require_count(operation, count, 5);
+        p8_spr(gfx, mem, v[0], v[1], v[2], v[3], v[4]);
+    } else if (strcmp(operation, "mset") == 0) {
+        require_count(operation, count, 3);
+        p8_mset(mem, v[0], v[1], v[2]);
+    } else if (strcmp(operation, "map") == 0) {
+        require_count(operation, count, 6);
+        p8_map(gfx, mem, v[0], v[1], v[2], v[3], v[4], v[5]);
     } else {
         scene_fail("unknown operation", operation);
     }

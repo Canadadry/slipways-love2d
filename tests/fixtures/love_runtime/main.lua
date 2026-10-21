@@ -1,6 +1,7 @@
 -- Plays scene.txt through game/p8/ with the LÖVE backend, frame k of the
 -- scene in the k-th love.draw. tests/test_love_runtime.c plays the same file
 -- through the C runtime and compares the frames.
+local bit = require("bit")
 local gfx_module = require("p8.gfx")
 local sprite_sheet = require("p8.sprite_sheet")
 local vram = require("p8.vram")
@@ -124,6 +125,24 @@ local function play_call(call)
   elseif operation == "rectfill" then
     require_count(call, 5)
     gfx_module.p8_rectfill(gfx, mem, v[0], v[1], v[2], v[3], v[4])
+  elseif operation == "palt" then
+    require_count(call, 2)
+    gfx_module.p8_palt(mem, v[0], v[1])
+  elseif operation == "palette" then
+    require_count(call, 2)
+    if v[0] < 0 or v[0] > 15 then
+      error(string.format("scene.txt:%d: palette takes a colour 0..15", call.line_number), 0)
+    end
+    mem.draw_palette[v[0]] = bit.band(v[1], 0xFF)
+  elseif operation == "spr" then
+    require_count(call, 5)
+    gfx_module.p8_spr(gfx, mem, v[0], v[1], v[2], v[3], v[4])
+  elseif operation == "mset" then
+    require_count(call, 3)
+    gfx_module.p8_mset(mem, v[0], v[1], v[2])
+  elseif operation == "map" then
+    require_count(call, 6)
+    gfx_module.p8_map(gfx, mem, v[0], v[1], v[2], v[3], v[4], v[5])
   else
     error(string.format("scene.txt:%d: unknown operation %s", call.line_number, operation), 0)
   end

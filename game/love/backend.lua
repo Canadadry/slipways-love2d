@@ -2,10 +2,13 @@
 -- the game canvas of love.screen. Like a C backend it reads gfx and mem and
 -- never writes them; it applies the camera and clips to the screen itself.
 local bit = require("bit")
+local cint = require("p8.cint")
 local fatal = require("p8.fatal")
+local gfx_module = require("p8.gfx")
 local vram = require("p8.vram")
 local pattern = require("love.pattern")
 local screen = require("love.screen")
+local sheet = require("love.sheet")
 
 local M = {}
 
@@ -260,8 +263,53 @@ local function love_circfill(gfx, mem, cx, cy, r, col)
   end
 end
 
+-- src/p8/gfx_software.c's software_spr: the part of the box on the sheet is
+-- one quad of the recoloured sheet; the part off it reads colour 0 (sheet_get),
+-- so it is up to four rectangles of draw palette entry 0, or nothing.
+local function love_spr(gfx, mem, n, x, y, w, h)
+  if w <= 0 or h <= 0 then
+    return
+  end
+  local sprites_per_row = cint.div(vram.P8_SPRITE_SHEET_WIDTH, gfx_module.P8_SPRITE_SIZE)
+  local sheet_x = cint.mod(n, sprites_per_row) * gfx_module.P8_SPRITE_SIZE
+  local sheet_y = cint.div(n, sprites_per_row) * gfx_module.P8_SPRITE_SIZE
+  local box_x1 = x + w * gfx_module.P8_SPRITE_SIZE - 1
+  local box_y1 = y + h * gfx_module.P8_SPRITE_SIZE - 1
+  local wx0 = x + max(sheet_x, 0) - sheet_x
+  local wy0 = y + max(sheet_y, 0) - sheet_y
+  local wx1 = min(box_x1, x + vram.P8_SPRITE_SHEET_WIDTH - 1 - sheet_x)
+  local wy1 = min(box_y1, y + vram.P8_SPRITE_SHEET_HEIGHT - 1 - sheet_y)
+  local on_sheet = wx0 <= wx1 and wy0 <= wy1
+  if on_sheet then
+    local sx0, sy0, sx1, sy1 = clip_rectangle(gfx, wx0, wy0, wx1, wy1)
+    if sx0 ~= nil then
+      local qx = sheet_x + sx0 + gfx.camera_x - x
+      local qy = sheet_y + sy0 + gfx.camera_y - y
+      local qw = sx1 - sx0 + 1
+      local qh = sy1 - sy0 + 1
+      local image = sheet.sheet_image(mem, qx, qy, qx + qw - 1, qy + qh - 1)
+      local quad = love.graphics.newQuad(qx, qy, qw, qh, vram.P8_SPRITE_SHEET_WIDTH, vram.P8_SPRITE_SHEET_HEIGHT)
+      love.graphics.setColor(1, 1, 1)
+      love.graphics.draw(image, quad, sx0, sy0)
+    end
+  end
+  local entry = mem.draw_palette[0]
+  if bit.band(entry, vram.P8_DRAW_PALETTE_TRANSPARENT_BIT) ~= 0 then
+    return
+  end
+  set_color(bit.band(entry, 0x0F))
+  if not on_sheet then
+    fill_rectangle(gfx, x, y, box_x1, box_y1)
+    return
+  end
+  fill_rectangle(gfx, x, y, box_x1, wy0 - 1)
+  fill_rectangle(gfx, x, wy1 + 1, box_x1, box_y1)
+  fill_rectangle(gfx, x, wy0, wx0 - 1, wy1)
+  fill_rectangle(gfx, wx1 + 1, wy0, box_x1, wy1)
+end
+
 local LOVE_BACKEND = {
-  cls = love_cls, pset = love_pset, line = love_line, rect = love_rect, circ = love_circ, lines = love_lines, psets = love_psets, rectfill = love_rectfill, circfill = love_circfill,
+  cls = love_cls, pset = love_pset, line = love_line, rect = love_rect, circ = love_circ, lines = love_lines, psets = love_psets, rectfill = love_rectfill, circfill = love_circfill, spr = love_spr,
 }
 
 -- Shared by every caller: never write it.
