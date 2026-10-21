@@ -1,0 +1,10 @@
+-- Copy of src/game/pad_direction.h, which has no .c: its enum as fields.
+local M = {}
+
+M.PAD_DIRECTION_NONE = 0
+M.PAD_DIRECTION_UP = 1
+M.PAD_DIRECTION_DOWN = 2
+M.PAD_DIRECTION_LEFT = 3
+M.PAD_DIRECTION_RIGHT = 4
+
+return M

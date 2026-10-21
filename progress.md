@@ -87,6 +87,10 @@
     - [x] chunk 4: score panel
     - [x] chunk 5: cost and record
   - [ ] 3.11 game: pad modes
+    - [x] chunk 1: direction, target, back, cycle, cheat
+    - [ ] chunk 2: jump, select, slipway
+    - [ ] chunk 3: panel and build
+    - [ ] chunk 4: cost and record
   - [ ] 3.12 game: save
   - [ ] 3.13 game: menus, title and attract
   - [ ] 3.14 game: the cart and the input step
