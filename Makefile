@@ -1393,9 +1393,9 @@ love-check: $(TMP_DIR)/luajit_version ## checks that the installed LuaJIT is 2.1
 
 .PHONY: love-check
 
-checklist: $(BINDINGS_CORE_UNIT) $(DEMO_UNIT) love-check $(TMP_DIR)/test_checklist tools/checklist.txt ## tests the checklist script, then lists each C function and table with its Lua copy in tmp/checklist.txt
+checklist: $(BINDINGS_CORE_UNIT) $(DEMO_UNIT) love-check $(TMP_DIR)/test_checklist tools/checklist.txt ## tests the checklist script, lists each C function's Lua copy; STEP=<id> fails on missing ones up to it
 	./$(TMP_DIR)/test_checklist
-	luajit tools/checklist.lua --listing $(TMP_DIR)/checklist.txt
+	luajit tools/checklist.lua --listing $(TMP_DIR)/checklist.txt$(if $(STEP), --step $(STEP))
 
 .PHONY: checklist
 

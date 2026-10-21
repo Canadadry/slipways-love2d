@@ -20,7 +20,7 @@ end
 
 local function usage_failure(message)
     io.stderr:write("checklist: " .. message .. "\n")
-    io.stderr:write("usage: luajit tools/checklist.lua [--root <dir>] [--listing <file>]\n")
+    io.stderr:write("usage: luajit tools/checklist.lua [--root <dir>] [--listing <file>] [--step <id>]\n")
     os.exit(2)
 end
 
@@ -29,7 +29,7 @@ local function parse_arguments(argv)
     local i = 1
     while i <= #argv do
         local name, value = argv[i], argv[i + 1]
-        if name == "--root" or name == "--listing" then
+        if name == "--root" or name == "--listing" or name == "--step" then
             if value == nil then
                 usage_failure(name .. " needs a value")
             end
@@ -38,6 +38,9 @@ local function parse_arguments(argv)
         else
             usage_failure("unknown argument: " .. name)
         end
+    end
+    if options.step ~= nil and STEP_RANK[options.step] == nil then
+        usage_failure("unknown step " .. options.step)
     end
     return options
 end
@@ -473,6 +476,92 @@ local function check_stale_entries(root, data, found_in, lua_items)
     end
 end
 
+-- Returns the `#include "…"` targets of a C file, as paths under src/.
+local function quoted_includes(text)
+    local targets = {}
+    for line in (text .. "\n"):gmatch("([^\n]*)\n") do
+        local target = line:match('^%s*#%s*include%s*"([^"]+)"')
+        if target ~= nil then
+            targets[#targets + 1] = "src/" .. target
+        end
+    end
+    return targets
+end
+
+-- Tarjan's algorithm. `edges[node]` lists the nodes it points to; returns
+-- { [node] = component number } for every node of `nodes`.
+local function strongly_connected_components(nodes, edges)
+    local component, index, low, on_stack, stack = {}, {}, {}, {}, {}
+    local next_index, next_component = 0, 0
+    local function visit(node)
+        index[node], low[node] = next_index, next_index
+        next_index = next_index + 1
+        stack[#stack + 1], on_stack[node] = node, true
+        for _, target in ipairs(edges[node] or {}) do
+            if index[target] == nil then
+                visit(target)
+                low[node] = math.min(low[node], low[target])
+            elseif on_stack[target] then
+                low[node] = math.min(low[node], index[target])
+            end
+        end
+        if low[node] == index[node] then
+            next_component = next_component + 1
+            repeat
+                local member = table.remove(stack)
+                on_stack[member] = nil
+                component[member] = next_component
+            until member == node
+        end
+    end
+    for _, node in ipairs(nodes) do
+        if index[node] == nil then
+            visit(node)
+        end
+    end
+    return component
+end
+
+-- A module is a .c and its .h together: only headers are included, so a
+-- cycle seen between files alone would never contain a .c.
+local function module_of(path)
+    return path:match("^(src/.+)%.[ch]$") or path
+end
+
+-- An assigned file may include an assigned file of a later step only inside
+-- one module include cycle: that is how a cycle is cut into consecutive steps.
+local function check_include_order(root, c_paths, steps)
+    local scanned, includes, modules, edges = {}, {}, {}, {}
+    for _, path in ipairs(c_paths) do
+        scanned[path] = true
+    end
+    for _, path in ipairs(c_paths) do
+        local module = module_of(path)
+        if edges[module] == nil then
+            modules[#modules + 1], edges[module] = module, {}
+        end
+        includes[path] = {}
+        for _, target in ipairs(quoted_includes(read_file(root .. "/" .. path))) do
+            if scanned[target] then
+                includes[path][#includes[path] + 1] = target
+                table.insert(edges[module], module_of(target))
+            end
+        end
+    end
+    local component = strongly_connected_components(modules, edges)
+    for _, path in ipairs(c_paths) do
+        local step = steps[path]
+        for _, target in ipairs(includes[path]) do
+            local target_step = steps[target]
+            if step ~= nil and target_step ~= nil and STEP_RANK[target_step] > STEP_RANK[step]
+                and component[module_of(path)] ~= component[module_of(target)] then
+                report(path .. ": includes " .. target:sub(5) .. " of step " .. target_step
+                    .. ", after its step " .. step)
+            end
+        end
+    end
+end
+
 local function write_listing(path, entries)
     table.sort(entries, function(a, b)
         if a.step ~= b.step then
@@ -574,6 +663,7 @@ local function main(argv)
         return lua_cache[lua_path]
     end
     local parse_failed = false
+    local gate_rank = options.step and STEP_RANK[options.step]
     local found_in = {}
 
     for _, c_path in ipairs(c_paths) do
@@ -629,6 +719,10 @@ local function main(argv)
                     else
                         status = "MISSING"
                         totals[kind].missing = totals[kind].missing + 1
+                        if gate_rank ~= nil and step ~= "-" and STEP_RANK[step] <= gate_rank then
+                            report(c_path .. ":" .. item.line .. ": " .. kind .. " " .. item.name .. " MISSING in "
+                                .. item_lua_path .. ", step " .. step)
+                        end
                     end
                     if per_step[step] ~= nil and reason == nil then
                         local counts = per_step[step][kind]
@@ -651,6 +745,7 @@ local function main(argv)
     end
 
     check_stale_entries(root, data, found_in, lua_items)
+    check_include_order(root, c_paths, data.steps)
     for _, entry in ipairs(data.not_ported) do
         if entry.kind == "declaration" or entry.kind == "macro" or entry.kind == "rule" then
             entries[#entries + 1] = {

@@ -369,6 +369,75 @@ static void test_listing_is_sorted_by_path_then_line_with_the_file_first(void) {
                                       "3.1 function MISSING src/p8/zeta.c:1 zeta -> game/p8/zeta.lua zeta\n") == 0);
 }
 
+static void test_an_include_of_a_later_step_fails_unless_both_are_in_one_cycle(void) {
+    reset();
+    write_file(ROOT "/src/engine/zone.h", "#include \"engine/zone_sizes.h\"\n#include <stdint.h>\n");
+    write_file(ROOT "/src/engine/zone_sizes.h", "#include \"engine/zone.h\"\n");
+    write_file(ROOT "/src/engine/list.h", "  #  include \"game/planet.h\"\n#include \"engine/zone.h\"\n");
+    write_file(ROOT "/src/game/planet.h", "#include \"engine/list.h\"\n#include \"game/gone.h\"\n");
+    write_file(ROOT "/src/game/probe.h", "#include \"game/planet.h\"\n");
+    write_data("step 3.1 src/engine/zone.h\n"
+               "step 3.2 src/engine/zone_sizes.h\n"
+               "step 3.2 src/engine/list.h\n"
+               "step 3.6 src/game/planet.h\n"
+               "step 3.1 src/game/probe.h\n");
+    assert(run(CHECKLIST) == 1);
+    assert(has(OUT, "checklist: src/game/probe.h: includes game/planet.h of step 3.6, after its step 3.1\n"));
+    assert(!has(OUT, "src/engine/zone.h: includes"));
+    assert(!has(OUT, "src/engine/list.h: includes"));
+    assert(!has(OUT, "gone.h"));
+}
+
+static void test_an_include_of_an_unassigned_file_is_not_an_order_error(void) {
+    reset();
+    write_file(ROOT "/src/p8/format.h", "int p8_format(void);\n");
+    write_file(ROOT "/src/p8/gfx.h", "#include \"p8/format.h\"\n");
+    write_data("step 2.1 src/p8/gfx.h\n"
+               "not-ported file src/p8/format.h -- dead since plan 0\n");
+    assert(run(CHECKLIST) == 0);
+}
+
+static void test_a_cycle_is_between_modules_so_a_c_file_shares_its_header_cycle(void) {
+    reset();
+    write_file(ROOT "/src/game/planet.h", "int planet_count(void);\n");
+    write_file(ROOT "/src/game/planet.c", "#include \"game/planet.h\"\n#include \"game/ui.h\"\n");
+    write_file(ROOT "/src/game/ui.h", "int ui_count(void);\n");
+    write_file(ROOT "/src/game/ui.c", "#include \"game/ui.h\"\n#include \"game/planet.h\"\n");
+    write_file(ROOT "/src/game/probe.c", "#include \"game/ui.h\"\n");
+    write_data("step 3.6 src/game/planet.c\n"
+               "step 3.6 src/game/planet.h\n"
+               "step 3.9 src/game/ui.c\n"
+               "step 3.9 src/game/ui.h\n"
+               "step 3.8 src/game/probe.c\n");
+    assert(run(CHECKLIST) == 1);
+    assert(!has(OUT, "src/game/planet.c: includes"));
+    assert(has(OUT, "checklist: src/game/probe.c: includes game/ui.h of step 3.9, after its step 3.8\n"));
+}
+
+static void test_step_fails_on_a_missing_item_up_to_that_step_only(void) {
+    reset();
+    write_file(ROOT "/src/p8/fixed.c", "int p8_fixed_mul(void) { return 0; }\nint p8_fixed_div(void) { return 0; }\n");
+    write_file(ROOT "/src/p8/fixed.h", "int p8_fixed_mul(void);\n");
+    write_file(ROOT "/src/p8/gfx.c", "int p8_gfx(void) { return 0; }\nconst int p8_gfx_sizes[] = {1};\n");
+    write_file(ROOT "/src/game/planet.c", "int planet_count(void) { return 3; }\n");
+    write_file(ROOT "/game/p8/fixed.lua", "function p8_fixed_mul()\nend\nfunction p8_fixed_div()\nend\n");
+    write_data("step 1.2 src/p8/fixed.c\n"
+               "step 1.2 src/p8/fixed.h\n"
+               "step 2.1 src/p8/gfx.c\n"
+               "step 3.6 src/game/planet.c\n");
+    assert(run(CHECKLIST) == 0);
+    assert(run(CHECKLIST " --step 1.2") == 0);
+    assert(run(CHECKLIST " --step 2.1") == 1);
+    assert(has(OUT, "checklist: src/p8/gfx.c:1: function p8_gfx MISSING in game/p8/gfx.lua, step 2.1\n"));
+    assert(has(OUT, "checklist: src/p8/gfx.c:2: table p8_gfx_sizes MISSING in game/p8/gfx.lua, step 2.1\n"));
+    assert(!has(OUT, "planet_count MISSING"));
+    assert(has(OUT, "checklist: 2 ported, 2 missing"));
+    assert(run(CHECKLIST " --step 3.6") == 1);
+    assert(has(OUT, "planet_count MISSING in game/game/planet.lua, step 3.6\n"));
+    assert(run(CHECKLIST " --step 3.16") == 2);
+    assert(has(OUT, "checklist: unknown step 3.16\n"));
+}
+
 static void test_usage_errors_exit_2(void) {
     reset();
     write_file(ROOT "/src/game/a.c", "int a(void) { return 0; }\n");
@@ -396,6 +465,10 @@ int main(void) {
     test_each_lua_definition_form_counts_as_ported();
     test_state_format_is_scanned_and_other_devtools_are_not();
     test_listing_is_sorted_by_path_then_line_with_the_file_first();
+    test_an_include_of_a_later_step_fails_unless_both_are_in_one_cycle();
+    test_an_include_of_an_unassigned_file_is_not_an_order_error();
+    test_a_cycle_is_between_modules_so_a_c_file_shares_its_header_cycle();
+    test_step_fails_on_a_missing_item_up_to_that_step_only();
     test_usage_errors_exit_2();
     return 0;
 }

@@ -20,10 +20,10 @@ step 2.1 src/p8/palette.h
 step 2.1 src/p8/sprite_sheet.c
 step 2.1 src/p8/sprite_sheet.h
 step 2.1 src/p8/sprite_sheet_packed.h
-step 2.1 src/p8/str.c
-step 2.1 src/p8/str.h
 step 2.1 src/p8/vram.c
 step 2.1 src/p8/vram.h
+step 3.1 src/p8/str.c
+step 3.1 src/p8/str.h
 step 3.1 src/engine/zone.c
 step 3.1 src/engine/zone.h
 step 3.1 src/engine/zone_sizes.h

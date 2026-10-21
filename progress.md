@@ -2,7 +2,7 @@
   - [ ] 1.1 The checklist script
     - [x] chunk 1: scanner and listing
     - [x] chunk 2: data file, consistency, make target
-    - [ ] chunk 3: include order and the step gate
+    - [x] chunk 3: include order and the step gate
   - [ ] 1.2 `game/p8/fixed.lua`
 - [ ] Phase 2 — Runtime and LÖVE glue
   - [ ] 2.1 `game/p8/` and `game/love/`
