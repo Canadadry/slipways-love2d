@@ -50,7 +50,7 @@
     - [x] chunk 5: cost and record
   - [ ] 3.5 game: techs, HUD and layout
     - [x] chunk 1: economy leaves
-    - [ ] chunk 2: research
+    - [x] chunk 2: research
     - [ ] chunk 3: HUD and draw functions
     - [ ] chunk 4: layout and row images
     - [ ] chunk 5: cost and record
