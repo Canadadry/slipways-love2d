@@ -1,0 +1,213 @@
+-- Copy of src/game/pad_jump.h then src/game/pad_jump.c.
+--
+-- Shapes, with the C field names:
+--   pad_jump_t: { hovered, seeded, repeat_direction, repeat_frames }, hovered an entity id table.
+--   directions_by_priority is 0-indexed.
+local entity_class = require("engine.entity_class")
+local entity_id = require("engine.entity_id")
+local entity_id_type = require("engine.entity_id_type")
+local entity_list = require("engine.entity_list")
+local bindings_module = require("game.bindings")
+local galaxy = require("game.galaxy")
+local pad_direction = require("game.pad_direction")
+local pad_target = require("game.pad_target")
+local planet = require("game.planet")
+local fixed = require("p8.fixed")
+local vram = require("p8.vram")
+local bit = require("bit")
+
+local M = {}
+
+M.PAD_JUMP_REPEAT_DELAY = 18
+M.PAD_JUMP_REPEAT_PERIOD = 8
+M.PAD_JUMP_SCROLL_MARGIN = 20
+M.PAD_JUMP_SCROLL_MARGIN_BOTTOM = 31
+M.PAD_JUMP_SCROLL_SPEED = 8
+
+M.PAD_JUMP_DIRECTIONS = 4
+
+function M.pad_jump_init(jump)
+  local none = entity_id_type.ENTITY_ID_NONE
+  jump.hovered = { index = none.index, generation = none.generation }
+  jump.seeded = 0
+  jump.repeat_direction = pad_direction.PAD_DIRECTION_NONE
+  jump.repeat_frames = 0
+end
+
+function M.pad_jump_hover(jump, e)
+  jump.hovered = entity_id.entity_id_link(e)
+end
+
+function M.pad_jump_hovered(jump)
+  local hovered = entity_id.entity_get(jump.hovered)
+  return pad_target.pad_target_is_candidate(hovered) ~= 0 and hovered or nil
+end
+
+function M.pad_jump_hover_seeded(jump, e)
+  M.pad_jump_hover(jump, e)
+  jump.seeded = bit.bor(jump.seeded, (e ~= nil) and 1 or 0)
+end
+
+function M.pad_jump_reseed(jump, candidates, centre_x, centre_y)
+  local picked
+  if jump.seeded ~= 0 then
+    picked = M.pad_jump_nearest(centre_x, centre_y, candidates)
+  else
+    picked = M.pad_jump_seed(candidates, centre_x, centre_y)
+  end
+  M.pad_jump_hover_seeded(jump, picked)
+  return picked
+end
+
+M.directions_by_priority = {
+  [0] = pad_direction.PAD_DIRECTION_UP,
+  pad_direction.PAD_DIRECTION_DOWN,
+  pad_direction.PAD_DIRECTION_LEFT,
+  pad_direction.PAD_DIRECTION_RIGHT,
+}
+local directions_by_priority = M.directions_by_priority
+
+function M.pad_jump_direction(index)
+  assert(index >= 0 and index < M.PAD_JUMP_DIRECTIONS, "pad_jump_direction: index 0 to PAD_JUMP_DIRECTIONS - 1")
+  return directions_by_priority[index]
+end
+
+local function direction_mask(bindings, mode, direction)
+  if direction == pad_direction.PAD_DIRECTION_UP then
+    return bindings_module.bindings_mask(bindings, mode, bindings_module.BINDINGS_ACTION_JUMP_UP)
+  elseif direction == pad_direction.PAD_DIRECTION_DOWN then
+    return bindings_module.bindings_mask(bindings, mode, bindings_module.BINDINGS_ACTION_JUMP_DOWN)
+  elseif direction == pad_direction.PAD_DIRECTION_LEFT then
+    return bindings_module.bindings_mask(bindings, mode, bindings_module.BINDINGS_ACTION_JUMP_LEFT)
+  elseif direction == pad_direction.PAD_DIRECTION_RIGHT then
+    return bindings_module.bindings_mask(bindings, mode, bindings_module.BINDINGS_ACTION_JUMP_RIGHT)
+  end
+  return 0
+end
+
+local function first_pressed_direction(bindings, mode, pressed)
+  for i = 0, M.PAD_JUMP_DIRECTIONS - 1 do
+    if bit.band(pressed, direction_mask(bindings, mode, directions_by_priority[i])) ~= 0 then
+      return directions_by_priority[i]
+    end
+  end
+  return pad_direction.PAD_DIRECTION_NONE
+end
+
+function M.pad_jump_repeat_step(jump, bindings, mode, pad_buttons, pressed)
+  assert(bindings ~= nil and
+    bindings_module.bindings_mode_has_action(mode, bindings_module.BINDINGS_ACTION_JUMP_UP) ~= 0,
+    "pad_jump_repeat_step: a mode with jump_* actions (jump or slipway)")
+  local direction = first_pressed_direction(bindings, mode, pressed)
+  if direction ~= pad_direction.PAD_DIRECTION_NONE then
+    jump.repeat_direction = direction
+    jump.repeat_frames = 0
+    return jump.repeat_direction
+  end
+  if bit.band(pad_buttons, direction_mask(bindings, mode, jump.repeat_direction)) == 0 then
+    M.pad_jump_repeat_clear(jump)
+    return pad_direction.PAD_DIRECTION_NONE
+  end
+  jump.repeat_frames = jump.repeat_frames + 1
+  if jump.repeat_frames == M.PAD_JUMP_REPEAT_DELAY + M.PAD_JUMP_REPEAT_PERIOD then
+    jump.repeat_frames = M.PAD_JUMP_REPEAT_DELAY
+  end
+  return jump.repeat_frames == M.PAD_JUMP_REPEAT_DELAY and jump.repeat_direction or pad_direction.PAD_DIRECTION_NONE
+end
+
+function M.pad_jump_repeat_clear(jump)
+  jump.repeat_direction = pad_direction.PAD_DIRECTION_NONE
+  jump.repeat_frames = 0
+end
+
+local inner_left = M.PAD_JUMP_SCROLL_MARGIN
+local inner_right = vram.P8_SCREEN_WIDTH - 1 - M.PAD_JUMP_SCROLL_MARGIN
+local inner_top = M.PAD_JUMP_SCROLL_MARGIN
+-- PAD_JUMP_SCROLL_MARGIN_BOTTOM is the margin plus the bottom HUD row, which starts at P8_SCREEN_HEIGHT - 11.
+local inner_bottom = vram.P8_SCREEN_HEIGHT - 1 - M.PAD_JUMP_SCROLL_MARGIN_BOTTOM
+
+function M.pad_jump_inside(x, y)
+  return (x >= inner_left and x <= inner_right and y >= inner_top and y <= inner_bottom) and 1 or 0
+end
+
+local function shift_into(value, low, high)
+  local shift = value < low and value - low or value > high and value - high or 0
+  if shift > M.PAD_JUMP_SCROLL_SPEED then
+    return M.PAD_JUMP_SCROLL_SPEED
+  end
+  return shift < -M.PAD_JUMP_SCROLL_SPEED and -M.PAD_JUMP_SCROLL_SPEED or shift
+end
+
+function M.pad_jump_scroll(x, y, dx, dy)
+  dx = shift_into(x, inner_left, inner_right)
+  dy = shift_into(y, inner_top, inner_bottom)
+  return dx, dy
+end
+
+local function world_pixel(map_units)
+  return fixed.p8_fixed_flr_int(fixed.p8_fixed_mul(map_units, fixed.p8_fixed_from_int(galaxy.GALAXY_MAP_SCALE)))
+end
+
+function M.pad_jump_world_point(e, x, y)
+  assert(e ~= nil and entity_class.entity_has_map_pos(e) ~= 0, "pad_jump_world_point: the entity has a map position")
+  local map_pos = entity_class.entity_map_pos(e)
+  x = world_pixel(map_pos.x)
+  y = world_pixel(map_pos.y)
+  return x, y
+end
+
+function M.pad_jump_nearest(x, y, candidates)
+  if candidates == nil then
+    return nil
+  end
+  local best = nil
+  local best_distance = 0
+  for i = 0, candidates.count - 1 do
+    local e = candidates.items[i]
+    local ex, ey = M.pad_jump_world_point(e, 0, 0)
+    local distance = (ex - x) * (ex - x) + (ey - y) * (ey - y)
+    if best == nil or distance < best_distance then
+      best = e
+      best_distance = distance
+    end
+  end
+  return best
+end
+
+local function is_colony(e)
+  return (e.class == planet.planet_class() and e.state == entity_class.ENTITY_STATE_SETTLED) and 1 or 0
+end
+
+function M.pad_jump_seed(candidates, centre_x, centre_y)
+  if candidates == nil then
+    return nil
+  end
+  for i = 0, candidates.count - 1 do
+    if is_colony(candidates.items[i]) ~= 0 then
+      return candidates.items[i]
+    end
+  end
+  return M.pad_jump_nearest(centre_x, centre_y, candidates)
+end
+
+local function is_candidate(e, ctx)
+  return pad_target.pad_target_is_candidate(e)
+end
+
+function M.pad_jump_candidates(zone, nodes)
+  return entity_list.entity_list_filter(zone, nodes, is_candidate, nil)
+end
+
+function M.pad_jump_any_candidate(nodes)
+  if nodes == nil then
+    return 0
+  end
+  for i = 0, nodes.count - 1 do
+    if pad_target.pad_target_is_candidate(nodes.items[i]) ~= 0 then
+      return 1
+    end
+  end
+  return 0
+end
+
+return M
