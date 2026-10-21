@@ -12,13 +12,11 @@ local allocator = require("engine.allocator")
 local collect = require("engine.collect")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local frame_zone = require("engine.frame_zone")
 local game_zone = require("engine.game_zone")
 local pointer_list = require("engine.pointer_list")
-local vec = require("engine.vec")
 local economy_formulas = require("game.economy_formulas")
 local main_economy = require("game.main_economy")
 local game_data = require("game.game_data")
@@ -48,19 +46,6 @@ M.economy_archetype = {
   year_ticks = 0x10000,
   year = 0xd490000,
 }
-
--- toast_keys_t keys = {0}, from message_box.h (ported at step 3.9; may move there).
-local function toast_keys_zero()
-  local none = entity_id_type.ENTITY_ID_NONE
-  return {
-    has_pos = 0,
-    pos = vec.vec_make(0, 0),
-    source = { index = none.index, generation = none.generation },
-    has_text = 0,
-    text = "",
-    color = 0,
-  }
-end
 
 local function economy_create()
   local self = allocator.allocator_alloc(game_zone.game_zone(), SIZEOF.economy_t)
@@ -247,7 +232,7 @@ end
 function M.economy_spend(self, jt)
   local message_box = require("game.message_box")
   local nz
-  local keys = toast_keys_zero()
+  local keys = message_box.toast_keys_zero()
 
   assert_economy(self)
   nz = self ~= nil and self.credits or fixed.p8_fixed_from_int(0)

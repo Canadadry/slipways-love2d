@@ -5,9 +5,7 @@
 -- main_economy_typed and targeting_of) are required at call time, inside the functions that need
 -- them, so that this module loads before they exist.
 --
--- Local zero constructors, from the C headers' field lists, for structs whose owner is ported
--- later (they may move there): open_box_frame_t (message_box).
--- down_t and layout_row_tuple_t zeroes are local too.
+-- down_t and layout_row_tuple_t zeroes are local.
 --
 -- A planet is one table with its entity header: the planet's own `has` (PLANET_HAS_* bits) is
 -- `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
@@ -62,23 +60,6 @@ local function tuple_zero()
     scalars[i] = layout.layout_row_scalar_nothing()
   end
   return { count = 0, scalars = scalars }
-end
-
--- open_box_frame_t frame = {0}.
-local function open_box_frame_zero()
-  return {
-    has_description = 0,
-    description = "",
-    has_fixed_pos = 0,
-    fixed_pos = vec.vec_make(0, 0),
-    clear_ephemerals_after = 0,
-    has_back_color = 0,
-    back_color = 0,
-    has_row_step = 0,
-    row_step = vec.vec_make(0, 0),
-    has_pos = 0,
-    pos = vec.vec_make(0, 0),
-  }
 end
 
 local function lineage_has(self, l)
@@ -255,7 +236,7 @@ end
 
 local function planet_open_box_frame(self)
   local message_box = require("game.message_box")
-  local frame = open_box_frame_zero()
+  local frame = message_box.open_box_frame_zero()
 
   if self.description ~= nil then
     message_box.open_box_frame_set_description(frame, self.description)

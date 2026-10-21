@@ -77,7 +77,7 @@
     - [x] chunk 2: scroll and background
     - [x] chunk 3: ui_button
     - [x] chunk 4: ui
-    - [ ] chunk 5: message_box
+    - [x] chunk 5: message_box
     - [ ] chunk 6: research_display and bootstrap
     - [ ] chunk 7: cost, checkpoint and record
   - [ ] 3.10 game: displays and panels

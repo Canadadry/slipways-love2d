@@ -87,18 +87,6 @@ local function list_zero()
   return { items = nil, count = 0, capacity = 0, zone = nil }
 end
 
--- toast_keys_t keys = {0}, from message_box.h (ported at step 3.9; may move there).
-local function toast_keys_zero()
-  return {
-    has_pos = 0,
-    pos = vec.vec_make(0, 0),
-    source = entity_id_none(),
-    has_text = 0,
-    text = "",
-    color = 0,
-  }
-end
-
 -- A pointer_list_t assigned by value into dst, the inline list of its owner.
 local function pointer_list_assign(dst, src)
   dst.items = src.items
@@ -486,7 +474,7 @@ function M.planet_new_year(self)
   end
   do
     local message_box = require("game.message_box")
-    local keys = toast_keys_zero()
+    local keys = message_box.toast_keys_zero()
     local color = 0
     local text
 
