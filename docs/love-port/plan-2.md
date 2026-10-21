@@ -647,3 +647,35 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   2–6 ms higher than 3.10's on the same tree; on that scale `lua-guard` is
   projected at 85–95 ms at the end (about 160–200 KB of Lua left, demo data
   included), still the check to watch.
+
+### Step 3.12
+
+- `game/game/`: save_state (codec and capture), save_load, and the Lua-only
+  save_storage. `make checklist STEP=3.12` passes (78/78, 3/3) with the first
+  `lua` exception line, for `save_load`'s `node_constructors` (indexed by
+  kind, compared through its table reference unit).
+- save_storage keeps the record in `save.bin` through `love.filesystem.read`
+  and `write` only; the design's list has no `remove`, so erase writes an
+  empty `save.bin`, which read treats as no record (as it does a missing or
+  oversized file). 17 storage checks pass in `tmp/fake_love`.
+- The 3.10 planet-field finding holds for the save: capture and load read
+  none of `sprite`, `palette_block`, `acceleration_factor`, `speed`; an
+  instrumented trap counted 0 reads over every capture and load below (an
+  injected read fires it). The trap remains for 3.15.
+- Byte identity, throwaway C-vs-Lua programs: the 230 distinct records the
+  e2e and worst-case replays write (all nine node kinds, all eleven flags,
+  largest 4,519 bytes) decode alike, re-encode and CRC byte-identically, and
+  234,721 mutated records are accepted or refused alike; 400 captures (200
+  fresh galaxies, 200 synthetic worlds with every structure kind, probes,
+  routes, techs and the skip cases) encode identically; 630 records load to
+  the same bytes and the same full world dump, and every corpus record
+  re-captures to its own bytes (the synthetic worlds, captured without a
+  recompute, do not, in C as in Lua). Hand mutations caught: codec 48/51,
+  capture 11/15, load 16/24; each one missed cannot change a result.
+- Module locals that clash with a C local take the `_module` suffix
+  (`planet_module`, `background_module`), as 2.1 says.
+- Own-time gate, paired against `5b3aa02` (45 pairs, run twice; +58.1 KB
+  Lua, +36 blocks, +303 lines): `lua-guard` +3.2 then +4.4 ms (73.7–77.4
+  ms, 0.055–0.076 ms/KB); `lua-test-modules` +3.3 then +4.1 ms (51.4–55.3
+  ms). Pass. With about 100–140 KB of Lua left, `lua-guard` is projected at
+  82–90 ms at the end, still the check to watch.

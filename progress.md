@@ -91,11 +91,11 @@
     - [x] chunk 2: jump, select, slipway
     - [x] chunk 3: panel and build
     - [x] chunk 4: cost and record
-  - [ ] 3.12 game: save
+  - [x] 3.12 game: save
     - [x] chunk 1: codec
     - [x] chunk 2: capture
     - [x] chunk 3: load and storage
-    - [ ] chunk 4: cost and record
+    - [x] chunk 4: cost and record
   - [ ] 3.13 game: menus, title and attract
   - [ ] 3.14 game: the cart and the input step
   - [ ] 3.15 `game/main.lua` and `game/conf.lua`
