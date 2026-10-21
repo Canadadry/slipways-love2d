@@ -99,16 +99,6 @@ local function toast_keys_zero()
   }
 end
 
--- Lua only: targeting_t at its C zero, the inline sub-struct later code writes field by field.
-local function targeting_zero()
-  return {
-    archetype = nil,
-    target = { kind = targeting.TARGETING_TARGET_NONE, id = entity_id_none() },
-    cost = 0,
-    has_cost = 0,
-  }
-end
-
 -- Lua only: emitter_t at its C zero, the inline sub-struct later code writes field by field.
 local function emitter_zero()
   return {
@@ -230,7 +220,7 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.production = production_zero()
   self.synthesizable_resources = self.archetype.synthesizable_resources
   self.has_ = 0
-  self.targeting = targeting_zero()
+  self.targeting = targeting.targeting_zero()
   self.emitter = emitter_zero()
 end
 

@@ -198,6 +198,16 @@ static void test_a_deferred_module_requiring_a_module_not_yet_written_is_skipped
                    "equal to C\n"));
 }
 
+static void test_a_deferred_module_already_required_by_a_failed_deferred_one_is_skipped_too(void) {
+    reset(DEFERRED_REFERENCE);
+    write_file(ROOT "/p8/palette.lua", "return { COLORS = 2 }\n");
+    write_file(ROOT "/engine/vec.lua", "local zone = require('engine.zone')\nreturn { UNIT = 1 }\n");
+    write_file(ROOT "/engine/zone.lua", "local particle = require('game.particle')\nreturn {}\n");
+    assert(run_script_with("--defer engine.vec --defer engine.zone", "p8/palette.lua engine/vec.lua engine/zone.lua") ==
+           0);
+    assert(out_has("2 deferred: engine.vec, engine.zone (2 names skipped)"));
+}
+
 static void test_a_deferred_module_failing_for_another_reason_still_fails(void) {
     reset(DEFERRED_REFERENCE);
     write_file(ROOT "/p8/palette.lua", "return { COLORS = 2 }\n");
@@ -239,6 +249,7 @@ int main(void) {
     test_a_module_returning_its_table_is_compared_whole();
     test_strings_and_keys_are_quoted_and_a_boolean_never_equals_c();
     test_a_deferred_module_requiring_a_module_not_yet_written_is_skipped_with_its_names();
+    test_a_deferred_module_already_required_by_a_failed_deferred_one_is_skipped_too();
     test_a_deferred_module_failing_for_another_reason_still_fails();
     test_a_deferred_module_that_loads_fails_until_dropped_from_the_list();
     test_a_deferred_name_that_is_not_a_file_of_the_tree_fails();

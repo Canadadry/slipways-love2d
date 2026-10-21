@@ -75,7 +75,21 @@ end
 local load_failures, loaded = 0, 0
 local skipped_modules, skipped_names = {}, {}
 for _, module in ipairs(modules) do
+    local before = {}
+    for name in pairs(package.loaded) do
+        before[name] = true
+    end
     local ok, err = pcall(require, module)
+    if not ok then
+        -- A failed require leaves LuaJIT's sentinel (not a table) in
+        -- package.loaded: a later require of a module that failed nested would
+        -- report "loop or previous error" instead of its own missing module.
+        for name, value in pairs(package.loaded) do
+            if not before[name] and type(value) ~= "table" then
+                package.loaded[name] = nil
+            end
+        end
+    end
     if ok then
         loaded = loaded + 1
         if deferred[module] then
