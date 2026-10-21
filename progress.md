@@ -89,7 +89,7 @@
   - [ ] 3.11 game: pad modes
     - [x] chunk 1: direction, target, back, cycle, cheat
     - [x] chunk 2: jump, select, slipway
-    - [ ] chunk 3: panel and build
+    - [x] chunk 3: panel and build
     - [ ] chunk 4: cost and record
   - [ ] 3.12 game: save
   - [ ] 3.13 game: menus, title and attract
