@@ -583,4 +583,9 @@ function M.tooltip_new(zone, row)
   return tooltip_create(zone, row)
 end
 
+-- Lua only: a new layout_row_keys_t at its C zero, for the keys other modules hold inline.
+function M.layout_row_keys_zero()
+  return keys_zero()
+end
+
 return M
