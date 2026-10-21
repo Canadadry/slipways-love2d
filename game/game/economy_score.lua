@@ -4,20 +4,21 @@
 -- bits) and the button's: the header's `has` holds the ENTITY_HAS_* bits on the same table.
 --
 -- Include cycle: game.planet and game.probe are required at call time, inside the functions that
--- need them, so that this module loads before they exist.
+-- need them, so that this module loads before they exist. game.ui_button is required at load, one
+-- direction only: g_difficulty is built by ui_button.button_zero() at load, and none of
+-- ui_button's load-time requires reaches economy_score.
 local bit = require("bit")
 local allocator = require("engine.allocator")
 local entity_class = require("engine.entity_class")
-local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local frame_zone = require("engine.frame_zone")
-local vec = require("engine.vec")
 local economy_formulas = require("game.economy_formulas")
 local main_economy = require("game.main_economy")
 local game_data = require("game.game_data")
 local map_tables = require("game.map_tables")
 local trade = require("game.trade")
+local ui_button = require("game.ui_button")
 local fixed = require("p8.fixed")
 local str = require("p8.str")
 
@@ -33,37 +34,6 @@ local function final_score_zero()
     total = 0,
     tier = 0,
   }
-end
-
--- button_t b = {0}, from ui_button.h (ported at step 3.9; may move there).
-local function button_zero()
-  local none = entity_id_type.ENTITY_ID_NONE
-  local b = {}
-  entity_class.entity_init_header(b, nil)
-  b.slot = nil
-  b.has_ = 0
-  b.archetype = nil
-  b.layout_row = nil
-  b.layout_row_slot = nil
-  b.width = 0
-  b.side_tooltip = nil
-  b.has_side_tooltip = 0
-  b.tooltip = nil
-  b.slide_target = vec.vec_make(0, 0)
-  b.on_click = nil
-  b.has_on_click = 0
-  b.refresh = nil
-  b.name = nil
-  b.trade = 0
-  b.has_trade = 0
-  b.type_bias = 0
-  b.has_type_bias = 0
-  b.technology = nil
-  b.project_planet = { index = none.index, generation = none.generation }
-  b.project = { index = 0, epoch = 0 }
-  b.project_cost = 0
-  b.has_project_cost = 0
-  return b
 end
 
 local function fixed_min(a, b)
@@ -317,7 +287,7 @@ function M.economy_score_happiness()
 end
 
 -- The cart reads the difficulty all game long, after the menu button dies: keep a copy, never a link to the button.
-local g_difficulty = button_zero()
+local g_difficulty = ui_button.button_zero()
 local g_has_difficulty = 0
 
 function M.economy_score_difficulty()
@@ -327,7 +297,7 @@ end
 -- C `g_difficulty = copy` overwrites the storage a returned pointer still points at: written in
 -- place, every field, so that a holder of g_difficulty sees the new values.
 function M.economy_score_set_difficulty(dk)
-  local copy = button_zero()
+  local copy = ui_button.button_zero()
 
   g_has_difficulty = (dk ~= nil) and 1 or 0
   if dk == nil then

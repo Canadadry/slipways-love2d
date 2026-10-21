@@ -6,7 +6,7 @@
 -- them, so that this module loads before they exist.
 --
 -- Local zero constructors, from the C headers' field lists, for structs whose owner is ported
--- later (they may move there): button_keys_t (ui_button), open_box_frame_t (message_box).
+-- later (they may move there): open_box_frame_t (message_box).
 -- down_t and layout_row_tuple_t zeroes are local too.
 --
 -- A planet is one table with its entity header: the planet's own `has` (PLANET_HAS_* bits) is
@@ -62,38 +62,6 @@ local function tuple_zero()
     scalars[i] = layout.layout_row_scalar_nothing()
   end
   return { count = 0, scalars = scalars }
-end
-
--- memset of a button_keys_t: writes every field of keys at its C zero and returns keys.
-local function button_keys_zero(keys)
-  keys.has_layer = 0
-  keys.layer = 0
-  keys.layout_row_keys = layout.layout_row_keys_zero()
-  keys.has_side_tooltip = 0
-  keys.side_tooltip_is_false = 0
-  keys.has_side_tooltip_row = 0
-  keys.side_tooltip_row = layout.layout_row_keys_zero()
-  keys.has_tooltip = 0
-  keys.has_tooltip_row = 0
-  keys.tooltip_row = map_tables.map_tables_make_data_row({})
-  keys.has_pos = 0
-  keys.pos = vec.vec_make(0, 0)
-  keys.has_slide_target = 0
-  keys.slide_target = vec.vec_make(0, 0)
-  keys.has_on_click = 0
-  keys.on_click = nil
-  keys.refresh = nil
-  keys.name = nil
-  keys.has_trade = 0
-  keys.trade = 0
-  keys.has_type_bias = 0
-  keys.type_bias = 0
-  keys.technology = nil
-  keys.project_planet = entity_id_none()
-  keys.project = { index = 0, epoch = 0 }
-  keys.has_project_cost = 0
-  keys.project_cost = 0
-  return keys
 end
 
 -- open_box_frame_t frame = {0}.
@@ -318,6 +286,7 @@ local gap = map_tables.map_tables_make_data_row({ count = 2, items = gap_items }
 function M.planet_inspection_panel(self)
   local planet = require("game.planet")
   local message_box = require("game.message_box")
+  local ui_button = require("game.ui_button")
   local buttons = {}
   local row_count = 0
   local icon_row = nil
@@ -331,7 +300,7 @@ function M.planet_inspection_panel(self)
   end
 
   for i = 0, PLANET_INSPECTION_PANEL_ROWS - 1 do
-    buttons[i] = button_keys_zero({})
+    buttons[i] = ui_button.button_keys_zero({})
   end
   if lineage_has(self, entity_class.LINEAGE_STRUCTURE) and self.archetype.name ~= nil then
     icon_row = self.archetype.name
@@ -493,7 +462,7 @@ local function planet_projects_panel_keys(self, b, keys)
   local ui_button = require("game.ui_button")
   local od = research.research_project_cost(b)
 
-  button_keys_zero(keys)
+  ui_button.button_keys_zero(keys)
   if b.has_icon_sprite ~= 0 then
     keys.layout_row_keys = research_display.research_project_icon_row_keys(b)
   else
@@ -524,6 +493,7 @@ end
 function M.planet_projects_panel(self)
   local research_display = require("game.research_display")
   local message_box = require("game.message_box")
+  local ui_button = require("game.ui_button")
   local available_projects_list
   local bs
   local frame
@@ -538,7 +508,7 @@ function M.planet_projects_panel(self)
   cap = (available_projects_list.count > 0) and available_projects_list.count or 1
   bs = allocator.allocator_alloc(frame_zone.frame_zone(), cap * SIZEOF.button_keys_t)
   for i = 0, cap - 1 do
-    bs[i] = button_keys_zero({})
+    bs[i] = ui_button.button_keys_zero({})
   end
   for i = 0, available_projects_list.count - 1 do
     planet_projects_panel_keys(self, research.research_project_get(available_projects_list.items[i]), bs[n])
