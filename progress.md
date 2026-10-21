@@ -78,7 +78,7 @@
     - [x] chunk 3: ui_button
     - [x] chunk 4: ui
     - [x] chunk 5: message_box
-    - [ ] chunk 6: research_display and bootstrap
+    - [x] chunk 6: research_display and bootstrap
     - [ ] chunk 7: cost, checkpoint and record
   - [ ] 3.10 game: displays and panels
   - [ ] 3.11 game: pad modes
