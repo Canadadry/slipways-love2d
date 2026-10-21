@@ -6,17 +6,19 @@
 --     cursor_x, cursor_y, held_frames, probe_or_fold_engaged, game, jump, slipway, back, select, bindings };
 --     focus, suspended_carry and game entity id tables, held_frames 0-indexed. pad_nav_init creates the sub-tables
 --     only when absent and fills bindings.masks in place, so a re-init keeps their identity as the C struct does.
--- TODO: the rest of pad_nav.c, from map_binding_mode to pad_nav_step (step 3.13, chunk 4).
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
 local frame_zone = require("engine.frame_zone")
+local geom = require("engine.geom")
 local vec = require("engine.vec")
 local background = require("game.background")
 local bindings_module = require("game.bindings")
+local cheat = require("game.cheat")
 local menu = require("game.menu")
+local message_box = require("game.message_box")
 local pad_back = require("game.pad_back")
 local pad_build = require("game.pad_build")
 local pad_cycle = require("game.pad_cycle")
@@ -625,6 +627,718 @@ local function leave_panel(nav, played)
   else
     click(nav, played)
   end
+end
+
+local function map_binding_mode(nav)
+  if M.pad_nav_placing(nav) ~= nil then
+    return bindings_module.BINDINGS_MODE_PLACEMENT
+  end
+  local mode = map_mode_now(nav)
+  if mode == M.PAD_NAV_MAP_AIM then
+    return bindings_module.BINDINGS_MODE_AIM
+  elseif mode == M.PAD_NAV_MAP_SLIPWAY then
+    return bindings_module.BINDINGS_MODE_SLIPWAY
+  end
+  return bindings_module.BINDINGS_MODE_JUMP
+end
+
+-- The mode the dispatch would run from the nav state at the call: decide it before anything is unwound.
+local function nav_mode(nav)
+  if on_the_map(nav) ~= 0 and M.pad_nav_placing(nav) ~= nil then
+    return bindings_module.BINDINGS_MODE_PLACEMENT
+  end
+  if M.pad_nav_panel_open() ~= 0 then
+    return panel_mode(nav)
+  end
+  if cycle_open(nav) ~= 0 then
+    return bindings_module.BINDINGS_MODE_PANELS
+  end
+  if pad_build.pad_build_is_open(nav.build) ~= 0 then
+    return bindings_module.BINDINGS_MODE_BUILD_BAR
+  end
+  return map_binding_mode(nav)
+end
+
+local function back_mode(nav)
+  if pad_panel.pad_panel_box_open() ~= 0 and menu.pause_menu_shown() == 0 then
+    return (cycle_open(nav) ~= 0) and bindings_module.BINDINGS_MODE_PANELS or bindings_module.BINDINGS_MODE_MENU
+  end
+  return map_binding_mode(nav)
+end
+
+local function back_action(mode)
+  if mode == bindings_module.BINDINGS_MODE_JUMP or mode == bindings_module.BINDINGS_MODE_AIM then
+    return bindings_module.BINDINGS_ACTION_BACK
+  elseif mode == bindings_module.BINDINGS_MODE_SLIPWAY then
+    return bindings_module.BINDINGS_ACTION_CANCEL_SLIPWAY
+  elseif mode == bindings_module.BINDINGS_MODE_PLACEMENT then
+    return bindings_module.BINDINGS_ACTION_CANCEL_PLACEMENT
+  elseif mode == bindings_module.BINDINGS_MODE_MENU then
+    return bindings_module.BINDINGS_ACTION_CLOSE_MENU
+  elseif mode == bindings_module.BINDINGS_MODE_PANELS then
+    return bindings_module.BINDINGS_ACTION_CLOSE_PANEL
+  end
+  assert(false, "back_action: back_mode returns only a map, menu or panels mode")
+  return bindings_module.BINDINGS_ACTION_BACK
+end
+
+local function tech_shoulder_action(mode)
+  return (mode == bindings_module.BINDINGS_MODE_PANELS) and bindings_module.BINDINGS_ACTION_NEXT_PANEL or
+    bindings_module.BINDINGS_ACTION_OPEN_TECH_PANEL
+end
+
+local function one_shoulder(nav, pressed, mode)
+  return (action_pressed(nav, pressed, mode, tech_shoulder_action(mode)) ~=
+    action_pressed(nav, pressed, mode, bindings_module.BINDINGS_ACTION_OPEN_BUILD_BAR)) and 1 or 0
+end
+
+local function shoulder_switch(nav, pressed, mode, played)
+  leave_panel(nav, played)
+  if action_pressed(nav, pressed, mode, tech_shoulder_action(mode)) ~= 0 then
+    pad_build.pad_build_close(nav.build)
+    pad_cycle.pad_cycle_set(nav.cycle, pad_cycle.pad_cycle_next(pad_cycle.pad_cycle_panel(nav.cycle)))
+  elseif pad_build.pad_build_is_open(nav.build) ~= 0 then
+    pad_build.pad_build_close(nav.build)
+  else
+    pad_cycle.pad_cycle_set(nav.cycle, pad_cycle.PAD_CYCLE_CLOSED)
+    pad_build.pad_build_open(nav.build)
+  end
+end
+
+-- Off screen, so a press finds no left_press under the cursor.
+local PARKED_X = -16
+local PARKED_Y = -16
+
+local YEAR_SKIP_BUTTON = 1
+local PAUSE_BUTTON = 4
+
+local function cycle_button(nav)
+  local index = pad_cycle.pad_cycle_hud_button(pad_cycle.pad_cycle_panel(nav.cycle))
+  if index ~= 0 then
+    return menu.galaxy_menu_find_button(index)
+  end
+  return nil
+end
+
+local function build_step(nav, pressed, release, played)
+  local icon = pad_build.pad_build_focus(nav.build)
+  if icon ~= nil and action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_BUILD_BAR,
+      bindings_module.BINDINGS_ACTION_TAKE_STRUCTURE) ~= 0 and release == 0 then
+    played.mouse_buttons = input.P8_MOUSE_LEFT
+    nav.placement = M.PAD_NAV_PLACEMENT_PRESSED
+  end
+  -- The bar has no up or down: it borrows the panels' pair, which ranks before left and right.
+  if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PANELS, bindings_module.BINDINGS_ACTION_MOVE_UP) ~= 0 or
+    action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PANELS, bindings_module.BINDINGS_ACTION_MOVE_DOWN) ~= 0 then
+    return
+  end
+  if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_BUILD_BAR,
+      bindings_module.BINDINGS_ACTION_PICK_LEFT) ~= 0 then
+    pad_build.pad_build_pick(nav.build, -1)
+  elseif action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_BUILD_BAR,
+      bindings_module.BINDINGS_ACTION_PICK_RIGHT) ~= 0 then
+    pad_build.pad_build_pick(nav.build, 1)
+  end
+end
+
+local function place_cursor(nav)
+  local button = cycle_button(nav)
+  local icon = nil
+  if pad_build.pad_build_is_open(nav.build) ~= 0 then
+    icon = pad_build.pad_build_focus(nav.build)
+  end
+  if on_the_map(nav) ~= 0 then
+    local hovered = M.pad_nav_hovered(nav)
+    if hovered ~= nil then
+      nav.cursor_x, nav.cursor_y = screen_point(hovered, nav.cursor_x, nav.cursor_y)
+    else
+      nav.cursor_x = cint.div(vram.P8_SCREEN_WIDTH, 2)
+      nav.cursor_y = cint.div(vram.P8_SCREEN_HEIGHT, 2)
+    end
+  elseif button ~= nil then
+    nav.cursor_x, nav.cursor_y = pad_panel.pad_panel_focus_point(button, nav.cursor_x, nav.cursor_y)
+  elseif icon ~= nil then
+    nav.cursor_x, nav.cursor_y = pad_panel.pad_panel_focus_point(icon, nav.cursor_x, nav.cursor_y)
+  else
+    nav.cursor_x = PARKED_X
+    nav.cursor_y = PARKED_Y
+  end
+end
+
+local function bar_or_cycle_step(nav, pad_buttons, pressed, release, played)
+  if M.pad_nav_panel_open() ~= 0 then
+    panel_step(nav, pad_buttons, pressed, played)
+    return
+  end
+  nav.focus = entity_id_none()
+  if pad_build.pad_build_is_open(nav.build) ~= 0 then
+    build_step(nav, pressed, release, played)
+  end
+  place_cursor(nav)
+end
+
+local function begin_placement(nav)
+  if nav.placement == M.PAD_NAV_PLACEMENT_CARRYING and M.pad_nav_placing(nav) == nil then
+    nav.placement = M.PAD_NAV_PLACEMENT_NONE
+  end
+  if nav.placement ~= M.PAD_NAV_PLACEMENT_PRESSED then
+    return 0
+  end
+  if held_structure() == nil then
+    nav.placement = M.PAD_NAV_PLACEMENT_NONE
+    return 0
+  end
+  close_panels(nav)
+  nav.placement = M.PAD_NAV_PLACEMENT_CARRYING
+  if nav.map_mode == M.PAD_NAV_MAP_JUMP then
+    enter_aim_mode(nav)
+  end
+  return 1
+end
+
+local function cancel_point(nav)
+  local icon = pad_build.pad_build_icon(nav.build)
+  if icon ~= nil then
+    nav.cursor_x, nav.cursor_y = pad_panel.pad_panel_focus_point(icon, nav.cursor_x, nav.cursor_y)
+  else
+    nav.cursor_x = PARKED_X
+    nav.cursor_y = PARKED_Y
+  end
+  local at = vec.vec_make(fixed.p8_fixed_from_int(nav.cursor_x), fixed.p8_fixed_from_int(nav.cursor_y))
+  assert(ui_module.ui_panel_box() == nil or geom.box_contains(ui_module.ui_panel_box(), at) == 0,
+    "cancel_point: inside the ui's panel box the drop would be judged on the map, not cancelled")
+end
+
+local function placement_step(nav, pad_buttons, pressed, played)
+  nav.focus = entity_id_none()
+  nav.probe_or_fold_engaged = 0
+  if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PLACEMENT,
+      bindings_module.BINDINGS_ACTION_CANCEL_PLACEMENT) ~= 0 or M.pad_nav_panel_open() ~= 0 then
+    cancel_point(nav)
+    return
+  end
+  nav.cursor_x = cint.div(vram.P8_SCREEN_WIDTH, 2)
+  nav.cursor_y = cint.div(vram.P8_SCREEN_HEIGHT, 2)
+  aim_pan(nav, bindings_module.BINDINGS_MODE_PLACEMENT, pad_buttons)
+  -- place_structure drops by letting the held left button go for one frame: the ui's drop runs the cart's rules.
+  if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PLACEMENT,
+      bindings_module.BINDINGS_ACTION_PLACE_STRUCTURE) ~= 0 then
+    return
+  end
+  played.mouse_buttons = input.P8_MOUSE_LEFT
+end
+
+local function seed_hovered(nav)
+  if pad_jump.pad_jump_hovered(nav.jump) ~= nil then
+    return
+  end
+  local candidates = live_candidates()
+  local x, y = centre_world_point(0, 0)
+  pad_jump.pad_jump_reseed(nav.jump, candidates, x, y)
+end
+
+local function rest_screen_point(camera, hovered, x, y)
+  local from = scroll.camera_pos_before_shake(camera)
+  x, y = pad_jump.pad_jump_world_point(hovered, x, y)
+  x = x - fixed.p8_fixed_flr_int(from.x)
+  y = y - fixed.p8_fixed_flr_int(from.y)
+  return x, y
+end
+
+edge_scroll = function(hovered)
+  local camera = scroll.main_camera_typed()
+  if camera == nil then
+    return
+  end
+  local x, y = rest_screen_point(camera, hovered, 0, 0)
+  local dx, dy = pad_jump.pad_jump_scroll(x, y, 0, 0)
+  if dx ~= 0 or dy ~= 0 then
+    scroll.camera_pan(camera, dx, dy)
+  end
+end
+
+local function pressable(e)
+  local camera = scroll.main_camera_typed()
+  local x, y = 0, 0
+  if camera == nil then
+    return 0
+  end
+  x, y = rest_screen_point(camera, e, x, y)
+  if pad_jump.pad_jump_inside(x, y) == 0 then
+    return 0
+  end
+  x, y = screen_point(e, x, y)
+  return (pressed_before(e, x, y) == 0) and 1 or 0
+end
+
+local function click_hovered(nav, hovered, played)
+  if pressable(hovered) == 0 then
+    return 0
+  end
+  click(nav, played)
+  nav.menu_choose_row_armed = 0
+  return 1
+end
+
+local function press_slipway_start(nav, start, played)
+  nav.cursor_x, nav.cursor_y = screen_point(start, nav.cursor_x, nav.cursor_y)
+  played.mouse_buttons = input.P8_MOUSE_LEFT
+end
+
+local function act_on_hovered_starts_slipway(nav, hovered, played)
+  if pad_slipway.pad_slipway_can_start(hovered) == 0 or pressable(hovered) == 0 or nav.left_was_down ~= 0 then
+    return 0
+  end
+  press_slipway_start(nav, hovered, played)
+  nav.map_mode = M.PAD_NAV_MAP_SLIPWAY
+  pad_slipway.pad_slipway_init(nav.slipway)
+  nav.slipway.start = entity_id.entity_id_link(hovered)
+  nav.slipway.phase = pad_slipway.PAD_SLIPWAY_PRESSED
+  return 1
+end
+
+local function jump_from(nav, hovered, direction)
+  local candidates = live_candidates()
+  local target = pad_target.pad_target_pick(hovered, direction, candidates)
+  if target ~= nil then
+    pad_jump.pad_jump_hover(nav.jump, target)
+  end
+end
+
+local function jump_step(nav, pad_buttons, pressed, release, back_returns, select_tapped, played, shown)
+  reset_aim_mode(nav)
+  nav.focus = entity_id_none()
+  seed_hovered(nav)
+  if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_JUMP, bindings_module.BINDINGS_ACTION_ENTER_AIM) ~= 0 then
+    enter_aim_mode(nav)
+    return shown
+  end
+  -- Before the click check: the hold-repeat count keeps running through a click's frames.
+  local direction =
+    pad_jump.pad_jump_repeat_step(nav.jump, nav.bindings, bindings_module.BINDINGS_MODE_JUMP, pad_buttons, pressed)
+  local hovered = pad_jump.pad_jump_hovered(nav.jump)
+  local clicking = (release ~= 0 or nav.release_pending ~= 0) and 1 or 0
+  local back = nil
+  if back_returns ~= 0 and clicking == 0 then
+    back = pad_back.pad_back_target(nav.back, hovered)
+  end
+  if back ~= nil then
+    pad_jump.pad_jump_hover(nav.jump, back)
+    edge_scroll(back)
+    shown = back
+    nav.cursor_x, nav.cursor_y = screen_point(back, nav.cursor_x, nav.cursor_y)
+    return shown
+  end
+  if hovered == nil then
+    nav.cursor_x = cint.div(vram.P8_SCREEN_WIDTH, 2)
+    nav.cursor_y = cint.div(vram.P8_SCREEN_HEIGHT, 2)
+    return shown
+  end
+  if clicking == 0 and action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_JUMP,
+      bindings_module.BINDINGS_ACTION_OPEN_MENU) ~= 0 then
+    clicking = click_hovered(nav, hovered, played)
+  end
+  if clicking == 0 and action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_JUMP,
+      bindings_module.BINDINGS_ACTION_ACT_ON_HOVERED) ~= 0 and hovered.state == entity_class.ENTITY_STATE_KNOWN then
+    clicking = click_hovered(nav, hovered, played)
+    if clicking ~= 0 then
+      pad_back.pad_back_record(nav.back, hovered)
+    end
+  end
+  if clicking == 0 and action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_JUMP,
+      bindings_module.BINDINGS_ACTION_ACT_ON_HOVERED) ~= 0 and act_on_hovered_starts_slipway(nav, hovered, played) ~= 0 then
+    pad_back.pad_back_record(nav.back, hovered)
+    return shown
+  end
+  if clicking == 0 and select_tapped ~= 0 then
+    local jumps
+    jumps, shown = select_tap(nav, hovered, shown)
+    if jumps ~= 0 then
+      return shown
+    end
+  end
+  if direction ~= pad_direction.PAD_DIRECTION_NONE and clicking == 0 then
+    jump_from(nav, hovered, direction)
+    hovered = pad_jump.pad_jump_hovered(nav.jump)
+  end
+  if clicking == 0 then
+    edge_scroll(hovered)
+    shown = hovered
+  end
+  nav.cursor_x, nav.cursor_y = screen_point(hovered, nav.cursor_x, nav.cursor_y)
+  return shown
+end
+
+-- Not pressable: after the outcome the start's screen point may lie off screen.
+local function press_start_again(nav, start, played)
+  if pad_slipway.pad_slipway_can_start(start) == 0 then
+    return 0
+  end
+  local x, y = screen_point(start, 0, 0)
+  if pressed_before(start, x, y) ~= 0 then
+    return 0
+  end
+  press_slipway_start(nav, start, played)
+  return 1
+end
+
+local function slipway_step(nav, pad_buttons, pressed, back_returns, release, played, shown)
+  reset_aim_mode(nav)
+  nav.focus = entity_id_none()
+  local start = M.pad_nav_slipway_start(nav)
+  if start == nil or planet_module.planet_is_family(start) == 0 then
+    drop_held_slipway()
+    back_to_jump_mode(nav, M.pad_nav_slipway_target(nav))
+    return shown
+  end
+  if nav.slipway.phase == pad_slipway.PAD_SLIPWAY_RELEASED then
+    local outcome =
+      pad_slipway.pad_slipway_outcome(start, entity_id.entity_get(nav.slipway.target), nav.slipway.linked_before)
+    if outcome == pad_slipway.PAD_SLIPWAY_BUILT then
+      pad_back.pad_back_record(nav.back, entity_id.entity_get(nav.slipway.target))
+    end
+    pad_slipway.pad_slipway_rebase(nav.slipway, outcome)
+    start = live(entity_id.entity_get(nav.slipway.start))
+    if press_start_again(nav, start, played) == 0 then
+      back_to_jump_mode(nav, start)
+    end
+    return shown
+  end
+  if nav.slipway.phase == pad_slipway.PAD_SLIPWAY_PRESSED then
+    if held_slipway() == nil then
+      back_to_jump_mode(nav, start)
+      return shown
+    end
+    nav.slipway.phase = pad_slipway.PAD_SLIPWAY_HELD
+  end
+  if back_returns ~= 0 then
+    drop_held_slipway()
+    back_to_jump_mode(nav, start)
+    nav.cursor_x, nav.cursor_y = screen_point(start, nav.cursor_x, nav.cursor_y)
+    return shown
+  end
+  local direction =
+    pad_jump.pad_jump_repeat_step(nav.jump, nav.bindings, bindings_module.BINDINGS_MODE_SLIPWAY, pad_buttons, pressed)
+  local target = M.pad_nav_slipway_target(nav)
+  nav.slipway.target = entity_id.entity_id_link(target)
+  local build_on_target = action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_SLIPWAY,
+    bindings_module.BINDINGS_ACTION_BUILD_ON_TARGET)
+  if build_on_target ~= 0 and release == 0 and target ~= nil and pressable(target) ~= 0 then
+    pad_slipway.pad_slipway_release(nav.slipway, (pad_slipway.pad_slipway_between(start, target) ~= nil) and 1 or 0)
+    nav.cursor_x, nav.cursor_y = screen_point(target, nav.cursor_x, nav.cursor_y)
+    return shown
+  end
+  if direction ~= pad_direction.PAD_DIRECTION_NONE and build_on_target == 0 then
+    local candidates = live_candidates()
+    local targets = pad_slipway.pad_slipway_candidates(frame_zone.frame_zone(), candidates, start)
+    local origin = start
+    if target ~= nil then
+      origin = target
+    end
+    local picked = pad_target.pad_target_pick(origin, direction, targets)
+    if picked ~= nil then
+      target = picked
+      nav.slipway.target = entity_id.entity_id_link(target)
+    end
+  end
+  local aimed = start
+  if target ~= nil then
+    aimed = target
+  end
+  edge_scroll(aimed)
+  nav.cursor_x, nav.cursor_y = screen_point(aimed, nav.cursor_x, nav.cursor_y)
+  played.mouse_buttons = input.P8_MOUSE_LEFT
+  shown = aimed
+  return shown
+end
+
+local function map_step(nav, pad_buttons, pressed, release, back_returns, select, year_release, played, shown,
+                        repeat_kept)
+  if M.pad_nav_placing(nav) ~= nil then
+    placement_step(nav, pad_buttons, pressed, played)
+  elseif M.pad_nav_panel_open() ~= 0 then
+    reset_aim_mode(nav)
+    if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_MENU, bindings_module.BINDINGS_ACTION_OPEN_MENU) ~= 0 and
+      release == 0 and nav.release_pending == 0 and planet_menu_open(nav) ~= 0 then
+      ui_module.ui_clear_ephemerals(ui_module.main_ui())
+    else
+      panel_step(nav, pad_buttons, pressed, played)
+    end
+  elseif M.pad_nav_aim_mode(nav) ~= 0 then
+    shown = aim_mode_step(nav, pad_buttons, pressed, back_returns, release, year_release,
+      (select == pad_select.PAD_SELECT_TAP) and 1 or 0, played, shown)
+  elseif nav.map_mode == M.PAD_NAV_MAP_SLIPWAY then
+    shown = slipway_step(nav, pad_buttons, pressed, back_returns, release, played, shown)
+    repeat_kept = 1
+  else
+    assert(M.pad_nav_jump_mode(nav) ~= 0,
+      "map_step: after placement, panels, aim and slipway mode, only jump mode is left")
+    shown = jump_step(nav, pad_buttons, pressed, release, back_returns, (select == pad_select.PAD_SELECT_TAP) and 1 or 0,
+      played, shown)
+    repeat_kept = 1
+  end
+  return shown, repeat_kept
+end
+
+local function switch_panels(nav, pressed, release, foreign_was_open, cancelled, played)
+  cancelled = CANCELLED_NOTHING
+  if probe.main_economy_typed() == nil then
+    close_panels(nav)
+    return 0, cancelled
+  end
+  local mode = nav_mode(nav)
+  if one_shoulder(nav, pressed, mode) ~= 0 and shoulders_can_switch(nav, release) ~= 0 then
+    cancelled = unwind_sub_modes(nav)
+    shoulder_switch(nav, pressed, mode, played)
+    return 1, cancelled
+  end
+  -- The bar's state, not nav_mode: a box shown over the bar would read menu's buttons.
+  local bar = pad_build.pad_build_is_open(nav.build)
+  local leaving
+  if bar ~= 0 then
+    leaving = action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_BUILD_BAR,
+      bindings_module.BINDINGS_ACTION_CLOSE_BAR)
+  else
+    leaving = action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PANELS,
+      bindings_module.BINDINGS_ACTION_CLOSE_PANEL)
+  end
+  if on_the_map(nav) == 0 and leaving ~= 0 and foreign_was_open == 0 and release == 0 then
+    leave_panel(nav, played)
+    close_panels(nav)
+    return 1, cancelled
+  end
+  return 0, cancelled
+end
+
+local function pause_button_free(nav, release)
+  if probe.main_economy_typed() == nil or M.pad_nav_panel_open() ~= 0 or release ~= 0 or map_action_due(nav) ~= 0 or
+    nav.probe_or_fold_engaged ~= 0 or cycle_open(nav) ~= 0 then
+    return nil
+  end
+  return menu.galaxy_menu_find_button(PAUSE_BUTTON)
+end
+
+-- Held by the ui, the structure would be dragged onto a pressed row and dropped there.
+local function suspend_placement(nav, carried)
+  nav.suspended_carry = entity_id.entity_id_link(carried)
+  nav.placement = M.PAD_NAV_PLACEMENT_SUSPENDED
+  ui_module.ui_set_left_held(ui_module.main_ui(), nil)
+end
+
+-- Every close of pause leaves the left button down on its frame, so the resumed carry makes no press edge.
+local function resume_placement(nav)
+  if nav.placement ~= M.PAD_NAV_PLACEMENT_SUSPENDED then
+    return 0
+  end
+  local suspended = placing_structure(entity_id.entity_get(nav.suspended_carry))
+  if suspended == nil or probe.main_economy_typed() == nil then
+    nav.placement = M.PAD_NAV_PLACEMENT_NONE
+    nav.suspended_carry = entity_id_none()
+    return 0
+  end
+  if menu.pause_menu_shown() ~= 0 then
+    return 0
+  end
+  ui_module.ui_set_left_held(ui_module.main_ui(), suspended)
+  nav.placement = M.PAD_NAV_PLACEMENT_CARRYING
+  nav.suspended_carry = entity_id_none()
+  return 1
+end
+
+local function pause_step(nav, pressed, release, played)
+  if menu.pause_menu_shown() ~= 0 then
+    if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PAUSE, bindings_module.BINDINGS_ACTION_CLOSE_PAUSE) == 0 or
+      release ~= 0 then
+      return 0
+    end
+    nav.cursor_x = cint.div(vram.P8_SCREEN_WIDTH, 2)
+    nav.cursor_y = cint.div(vram.P8_SCREEN_HEIGHT, 2)
+    click(nav, played)
+    return 1
+  end
+  local due = nav.pause_due
+  nav.pause_due = 0
+  local opening = (due ~= 0 or
+    action_pressed(nav, pressed, nav_mode(nav), bindings_module.BINDINGS_ACTION_PAUSE) ~= 0) and 1 or 0
+  local button = nil
+  if opening ~= 0 then
+    button = pause_button_free(nav, release)
+  end
+  if button == nil then
+    return 0
+  end
+  nav.cursor_x, nav.cursor_y = pad_panel.pad_panel_focus_point(button, nav.cursor_x, nav.cursor_y)
+  local carried = M.pad_nav_placing(nav)
+  if carried ~= nil then
+    suspend_placement(nav, carried)
+  else
+    cancel_slipway(nav)
+  end
+  -- The opening click needs the left button up on the frame before.
+  if nav.left_was_down ~= 0 and due == 0 then
+    nav.pause_due = 1
+  else
+    click(nav, played)
+  end
+  return 1
+end
+
+local function lit_button(nav)
+  if probe.main_economy_typed() ~= nil then
+    return cycle_button(nav)
+  end
+  return nil
+end
+
+local function finish_step(nav, release, shown, played)
+  if release ~= 0 then
+    played.mouse_buttons = 0
+  end
+  nav.left_was_down = (bit.band(played.mouse_buttons, input.P8_MOUSE_LEFT) ~= 0) and 1 or 0
+  played.mouse_x = nav.cursor_x
+  played.mouse_y = nav.cursor_y
+  show_marker(nav, shown)
+  if ui_module.main_ui() ~= nil then
+    ui_module.ui_set_pad_tab(ui_module.main_ui(), lit_button(nav))
+    ui_module.ui_set_pad_crosshair(ui_module.main_ui(),
+      (M.pad_nav_aim_mode(nav) ~= 0 and M.pad_nav_placing(nav) == nil) and 1 or 0)
+  end
+end
+
+local function select_allowed(nav, panels_changing, release)
+  return (probe.main_economy_typed() ~= nil and on_the_map(nav) ~= 0 and panels_changing == 0 and
+    menu.pause_menu_shown() == 0 and M.pad_nav_panel_open() == 0 and
+    (nav.map_mode == M.PAD_NAV_MAP_JUMP or nav.map_mode == M.PAD_NAV_MAP_AIM) and
+    nav.placement == M.PAD_NAV_PLACEMENT_NONE and nav.probe_or_fold_engaged == 0 and release == 0 and
+    nav.release_pending == 0) and 1 or 0
+end
+
+-- Read in every mode, so the latch sees a Select held from elsewhere. Jump's and aim's buttons both count in either.
+local function select_held(nav, pad_buttons)
+  return (action_held(nav, pad_buttons, bindings_module.BINDINGS_MODE_JUMP,
+      bindings_module.BINDINGS_ACTION_SELECT_TAP_OR_YEAR) ~= 0 or
+    action_held(nav, pad_buttons, bindings_module.BINDINGS_MODE_AIM,
+      bindings_module.BINDINGS_ACTION_SELECT_TAP_OR_YEAR) ~= 0) and 1 or 0
+end
+
+local function select_ends_year(nav, played)
+  local button = menu.galaxy_menu_find_button(YEAR_SKIP_BUTTON)
+  if button == nil or nav.left_was_down ~= 0 then
+    return 0
+  end
+  nav.cursor_x, nav.cursor_y = pad_panel.pad_panel_focus_point(button, nav.cursor_x, nav.cursor_y)
+  click(nav, played)
+  pad_select.pad_select_year_ended(nav.select)
+  return 1
+end
+
+local function without_chord(nav, raw_buttons)
+  local face = cheat.cheat_chord_buttons()
+  if bit.band(raw_buttons, bit.bnot(nav.previous_pad), face) == face then
+    nav.chord_held = 1
+  elseif bit.band(raw_buttons, face) == 0 then
+    nav.chord_held = 0
+  end
+  if nav.chord_held ~= 0 then
+    return bit.band(raw_buttons, bit.bnot(face))
+  end
+  return raw_buttons
+end
+
+local function run_step(nav, raw_buttons, played)
+  local pad_buttons = without_chord(nav, raw_buttons)
+  local pressed = bit.band(pad_buttons, bit.bnot(nav.previous_pad))
+  local release = nav.release_pending
+  nav.previous_pad = raw_buttons
+  nav.release_pending = 0
+  played.mouse_buttons = 0
+  local shown = nil
+  if menu.pause_menu_shown() == 0 then
+    nav.pause_choose_row_armed = 0
+  end
+  if armed_panel_open(nav) == 0 then
+    nav.menu_choose_row_armed = 0
+  end
+  reset_on_new_game(nav)
+  local panels_changed = begin_placement(nav)
+  if resume_placement(nav) ~= 0 then
+    release = 0
+  end
+  local select_down = select_held(nav, pad_buttons)
+  if panels_changed == 0 and pause_step(nav, pressed, release, played) ~= 0 then
+    pad_select.pad_select_step(nav.select, select_down, 0)
+    pad_jump.pad_jump_repeat_clear(nav.jump)
+    reset_aim_mode(nav)
+    nav.focus = entity_id_none()
+    finish_step(nav, release, nil, played)
+    return
+  end
+  local foreign_was_open = foreign_panel_open(nav)
+  local back_in = back_mode(nav)
+  local back = bindings_module.bindings_mask(nav.bindings, back_in, back_action(back_in))
+  local back_returns = (bit.band(pressed, back) ~= 0 and pad_panel.pad_panel_box_open() == 0) and 1 or 0
+  if bit.band(pressed, back) ~= 0 then
+    back_closes_the_box()
+    if back_returns ~= 0 and on_the_map(nav) ~= 0 and message_box.shown_message_box() ~= nil then
+      message_box.message_box_close_shown()
+      back_returns = 0
+      pressed = bit.band(pressed, bit.bnot(back))
+    end
+  end
+  if M.pad_nav_panel_open() ~= 0 then
+    cancel_slipway(nav)
+  end
+  local cancelled = CANCELLED_NOTHING
+  local repeat_kept = 0
+  if panels_changed == 0 then
+    panels_changed, cancelled = switch_panels(nav, pressed, release, foreign_was_open, cancelled, played)
+  end
+  -- A leaving click and a landing click never share a frame: the landing waits for the release.
+  local clicks_due = (release ~= 0 or nav.release_pending ~= 0 or cancelled ~= CANCELLED_NOTHING) and 1 or 0
+  local landed = (pad_cycle.pad_cycle_landing_due(nav.cycle) ~= 0 and clicks_due == 0) and 1 or 0
+  if landed ~= 0 then
+    pad_cycle.pad_cycle_landed(nav.cycle)
+    if cycle_button(nav) ~= nil then
+      click(nav, played)
+    end
+  elseif panels_changed == 0 and cycle_open(nav) ~= 0 and pad_cycle.pad_cycle_landing_due(nav.cycle) == 0 and
+    clicks_due == 0 and own_panel_up(nav) == 0 then
+    close_panels(nav)
+    panels_changed = 1
+  end
+  local year_release = pad_select.pad_select_year_just_ended(nav.select)
+  local select = pad_select.pad_select_step(nav.select, select_down,
+    select_allowed(nav, (panels_changed ~= 0 or landed ~= 0) and 1 or 0, release))
+  -- The frame that opens or closes the bar or a cycle panel runs no other step, so one press never acts twice.
+  if panels_changed ~= 0 or landed ~= 0 then
+    reset_aim_mode(nav)
+    nav.focus = entity_id_none()
+    place_cursor(nav)
+    if cancelled == CANCELLED_STRUCTURE then
+      cancel_point(nav)
+    elseif M.pad_nav_placing(nav) ~= nil then
+      played.mouse_buttons = input.P8_MOUSE_LEFT
+    end
+  elseif select == pad_select.PAD_SELECT_YEAR and select_ends_year(nav, played) ~= 0 then
+    reset_aim_mode(nav)
+    nav.focus = entity_id_none()
+  elseif on_the_map(nav) ~= 0 then
+    shown, repeat_kept = map_step(nav, pad_buttons, pressed, release, back_returns, select, year_release, played, shown,
+      repeat_kept)
+  else
+    reset_aim_mode(nav)
+    bar_or_cycle_step(nav, pad_buttons, pressed, release, played)
+  end
+  if repeat_kept == 0 then
+    pad_jump.pad_jump_repeat_clear(nav.jump)
+  end
+  finish_step(nav, release, shown, played)
+end
+
+function M.pad_nav_step(nav, raw_buttons, played)
+  pad_panel.pad_panel_step_begin()
+  run_step(nav, raw_buttons, played)
+  pad_panel.pad_panel_step_end()
 end
 
 return M
