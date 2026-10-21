@@ -432,3 +432,33 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   blocks). Pass; not a checkpoint, so no full protocol. `lua-guard`
   projected at about 87 ms at the end.
 - The PRD's agent had no `guideline` and settled its points itself.
+
+### Step 3.5
+
+- `game/game/`: main_economy (constants only: its functions live in
+  `probe.c`, step 3.8), economy_formulas, trade, tech_gate, research,
+  data_init, hud, draw_functions, layout, row_image. `make checklist
+  STEP=3.5` passes (130/130, 5/5).
+- `tech_gate` requires `game.probe` at call time: it loads now and runs from
+  3.8 (so do `research_project_cost` and `research_project_production`).
+- A value copy of a trade route shares its id lists (the header's
+  immutability contract); a resource map's entries change in place, so a
+  copy of a map copies them. Pointer differences into a table go through
+  Lua-only reverse maps built at load; records created at load are zeroed in
+  place (identity kept). The research project epoch wraps at 16 bits, the
+  layout row serial at 32. Layout cells are `{ kind, as }`, never changed
+  after build.
+- The row image hash puts 0 where the C mixes in the vram address: the hash
+  is read only by `same_key`, which also compares `mem` and every entry, so
+  behaviour cannot differ (4,000 draws matched the C on slots, meter and
+  screens).
+- Behaviour checked against the C with throwaway programs, all
+  byte-identical: economy and trade, the 34 research projects, 86 HUD and
+  draw-function scenes, layout rows and tooltips.
+- Own-time gate, paired against `06dec0b` (45 pairs; +59.3 KB Lua, +27
+  blocks, +324 reference lines): `lua-guard` 41.5 → 45.5 ms (+4.2, about
+  0.071 ms per KB); `lua-test-modules` 38.1 → 41.0 ms (+2.7, 0.88× the 3.1
+  model). Pass. Absolute times ran about 2 ms higher than 3.4's on the same
+  tree; the paired figures count. `lua-guard` projected at 80–94 ms at the
+  end (about 487 KB of Lua left, 70 tables).
+- The PRD's agent had no `guideline` and settled its points itself.

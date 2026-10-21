@@ -48,12 +48,12 @@
     - [x] chunk 3: image caches
     - [x] chunk 4: mouse
     - [x] chunk 5: cost and record
-  - [ ] 3.5 game: techs, HUD and layout
+  - [x] 3.5 game: techs, HUD and layout
     - [x] chunk 1: economy leaves
     - [x] chunk 2: research
     - [x] chunk 3: HUD and draw functions
     - [x] chunk 4: layout and row images
-    - [ ] chunk 5: cost and record
+    - [x] chunk 5: cost and record
   - [ ] 3.6 game: include cycle, galaxy and planets
   - [ ] 3.7 game: include cycle, economy
   - [ ] 3.8 game: include cycle, slipways, probes and wormholes
