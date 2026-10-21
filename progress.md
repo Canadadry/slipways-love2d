@@ -63,7 +63,7 @@
     - [x] chunk 6: cost and record
   - [ ] 3.7 game: include cycle, economy
     - [x] chunk 1: economy_tiers
-    - [ ] chunk 2: economy_score
+    - [x] chunk 2: economy_score
     - [ ] chunk 3: economy
     - [ ] chunk 4: cost and record
   - [ ] 3.8 game: include cycle, slipways, probes and wormholes

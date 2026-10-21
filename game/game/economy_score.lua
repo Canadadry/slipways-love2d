@@ -1,0 +1,361 @@
+-- Copy of src/game/economy_score.h then src/game/economy_score.c.
+--
+-- A planet's own `has` (PLANET_HAS_* bits) is `has_`, and so is the economy's (ECONOMY_HAS_*
+-- bits) and the button's: the header's `has` holds the ENTITY_HAS_* bits on the same table.
+--
+-- Include cycle: game.planet and game.probe are required at call time, inside the functions that
+-- need them, so that this module loads before they exist.
+local bit = require("bit")
+local allocator = require("engine.allocator")
+local entity_class = require("engine.entity_class")
+local entity_id_type = require("engine.entity_id_type")
+local entity_list = require("engine.entity_list")
+local entity_registry = require("engine.entity_registry")
+local frame_zone = require("engine.frame_zone")
+local vec = require("engine.vec")
+local economy_formulas = require("game.economy_formulas")
+local main_economy = require("game.main_economy")
+local game_data = require("game.game_data")
+local map_tables = require("game.map_tables")
+local trade = require("game.trade")
+local fixed = require("p8.fixed")
+local str = require("p8.str")
+
+local M = {}
+
+-- final_score_t, returned by value: a new table per call.
+local function final_score_zero()
+  return {
+    development = 0,
+    population = 0,
+    technology = 0,
+    happiness = 0,
+    total = 0,
+    tier = 0,
+  }
+end
+
+-- button_t b = {0}, from ui_button.h (ported at step 3.9; may move there).
+local function button_zero()
+  local none = entity_id_type.ENTITY_ID_NONE
+  local b = {}
+  entity_class.entity_init_header(b, nil)
+  b.slot = nil
+  b.has_ = 0
+  b.archetype = nil
+  b.layout_row = nil
+  b.layout_row_slot = nil
+  b.width = 0
+  b.side_tooltip = nil
+  b.has_side_tooltip = 0
+  b.tooltip = nil
+  b.slide_target = vec.vec_make(0, 0)
+  b.on_click = nil
+  b.has_on_click = 0
+  b.refresh = nil
+  b.name = nil
+  b.trade = 0
+  b.has_trade = 0
+  b.type_bias = 0
+  b.has_type_bias = 0
+  b.technology = nil
+  b.project_planet = { index = none.index, generation = none.generation }
+  b.project = { index = 0, epoch = 0 }
+  b.project_cost = 0
+  b.has_project_cost = 0
+  return b
+end
+
+local function fixed_min(a, b)
+  return (a < b) and a or b
+end
+
+local function for_each_tagged(tag, fn, ctx)
+  local list = entity_registry.entities_by_tag(tag)
+  local it
+  local e
+  if list == nil then
+    return
+  end
+  it = entity_list.entity_list_all(list)
+  while true do
+    local more
+    more, e = entity_list.entity_list_iter_next(it, e)
+    if more == 0 then
+      break
+    end
+    if e ~= nil then
+      fn(e, ctx)
+    end
+  end
+end
+
+local function is_colonized_truthy(pt)
+  local planet = require("game.planet")
+  if pt == nil then
+    return 0
+  end
+  assert(planet.planet_is_family(pt) ~= 0, "is_colonized_truthy: the entity is a planet")
+  return planet.planet_is_colonized(pt)
+end
+
+function M.economy_score_planet_upkeep(pt)
+  if pt ~= nil and bit.band(pt.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)) ~= 0
+      and pt.archetype.is_structure ~= 0 then
+    local structure_list = entity_registry.entities_by_tag(entity_class.TAG_STRUCTURE)
+    return fixed.p8_fixed_from_int(structure_list ~= nil and structure_list.count or 0)
+  end
+  if is_colonized_truthy(pt) ~= 0 then
+    local jo = pt
+    local found
+    local es
+    if jo.has_development_tier ~= 0 then
+      found, es = game_data.int_seq_at(game_data.upkeep_by_tier_table, game_data.UPKEEP_BY_TIER_COUNT,
+        fixed.p8_fixed_flr_int(jo.development_tier), es)
+      if found ~= 0 then
+        return fixed.p8_fixed_from_int(es)
+      end
+    end
+  end
+  return fixed.p8_fixed_from_int(0)
+end
+
+local function colony_upkeep_predicate(e, ctx)
+  if e == nil then
+    return 0
+  end
+  return is_colonized_truthy(e)
+end
+
+function M.economy_score_colony_upkeep()
+  local planet_list = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
+  local filtered = entity_list.entity_list_filter(frame_zone.frame_zone(), planet_list, colony_upkeep_predicate, nil)
+  local mu = filtered.count
+  local result
+  result = fixed.p8_fixed_mul(fixed.P8_FIXED_LIT(0x00002e14, 0.18), fixed.p8_fixed_from_int(mu * mu))
+  return fixed.p8_fixed_flr(result)
+end
+
+function M.economy_score_trade_income(entity)
+  local planet_module = require("game.planet")
+  local total = fixed.p8_fixed_from_int(0)
+  local planet
+  local outgoing
+  local difficulty = M.economy_score_difficulty()
+
+  if entity == nil then
+    return total
+  end
+  assert(planet_module.planet_is_family(entity) ~= 0, "economy_score_trade_income: the entity is a planet")
+  planet = entity
+  outgoing = (bit.band(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES) ~= 0) and planet.outgoing_routes or nil
+
+  if outgoing ~= nil then
+    for i = 0, trade.trade_route_list_count(outgoing) - 1 do
+      local found
+      local partner
+      found, partner = trade.trade_last_planet(trade.trade_route_list_at(outgoing, i), partner)
+      if found ~= 0 then
+        local oz
+        assert(planet_module.planet_is_family(partner) ~= 0, "economy_score_trade_income: a trade leads to a planet")
+        oz = partner
+        if oz.archetype.is_planet ~= 0 then
+          local trade_mult = fixed.p8_fixed_from_int(0)
+          local hs = planet.archetype.trade_multiplier
+          local planet_bonus = fixed.p8_fixed_from_int(0)
+          local partner_bonus = fixed.p8_fixed_from_int(0)
+          local bonus
+          local _
+
+          if difficulty ~= nil and difficulty.has_trade ~= 0 then
+            trade_mult = difficulty.trade
+          end
+          if planet.has_development_tier ~= 0 then
+            _, planet_bonus = game_data.game_data_fixed_seq_at(game_data.partner_bonus_by_tier_table,
+              game_data.PARTNER_BONUS_BY_TIER_COUNT, fixed.p8_fixed_flr_int(planet.development_tier), planet_bonus)
+          end
+          if oz.has_development_tier ~= 0 then
+            _, partner_bonus = game_data.game_data_fixed_seq_at(game_data.partner_bonus_by_tier_table,
+              game_data.PARTNER_BONUS_BY_TIER_COUNT, fixed.p8_fixed_flr_int(oz.development_tier), partner_bonus)
+          end
+          bonus = fixed.p8_fixed_add(fixed.p8_fixed_from_int(1), fixed.p8_fixed_add(planet_bonus, partner_bonus))
+          total = fixed.p8_fixed_add(total, fixed.p8_fixed_mul(fixed.p8_fixed_mul(trade_mult, hs), bonus))
+        end
+      end
+    end
+  end
+
+  do
+    local kw = planet_module.planet_production_read(planet)
+    local found
+    local w
+    if kw.has_resource ~= 0 then
+      found, w = map_tables.resource_code_lookup("w", w)
+      if found ~= 0 and kw.resource == fixed.p8_fixed_from_int(w) then
+        local mu = kw.amount
+        local trade_mult = fixed.p8_fixed_from_int(0)
+        if difficulty ~= nil and difficulty.has_trade ~= 0 then
+          trade_mult = difficulty.trade
+        end
+        total = fixed.p8_fixed_add(
+          total, fixed.p8_fixed_mul(fixed.p8_fixed_mul(mu, trade_mult), fixed.P8_FIXED_LIT(0x00018000, 1.5)))
+      end
+    end
+  end
+
+  return total
+end
+
+-- sum_by_development_tier_ctx_t: { total, seq, count }; seq is the very game_data table.
+local function sum_by_development_tier_visit(pt, ctx)
+  local jo
+  local found
+  local v
+  if is_colonized_truthy(pt) == 0 then
+    return
+  end
+  jo = pt
+  if jo.has_development_tier ~= 0 then
+    found, v = game_data.int_seq_at(ctx.seq, ctx.count, fixed.p8_fixed_flr_int(jo.development_tier), v)
+    if found ~= 0 then
+      ctx.total = fixed.p8_fixed_add(ctx.total, fixed.p8_fixed_from_int(v))
+    end
+  end
+end
+
+-- Returns `value` printed with a trailing '%', allocated in `zone`.
+function M.economy_score_percent_text(zone, value)
+  local s = str.p8_tostr_fixed(zone, value)
+  local len = #s
+  allocator.allocator_alloc(zone, len + 2)
+  return s .. "%"
+end
+
+function M.economy_score_final()
+  local development_ctx = {}
+  local population = fixed.p8_fixed_from_int(0)
+  local base
+  local technology
+  local total
+  local fm = require("game.probe").main_economy_typed()
+  local happiness = (fm ~= nil and fm.has_happiness ~= 0) and fm.happiness or fixed.p8_fixed_from_int(0)
+  local invented_count = fm ~= nil and fm.invented.count or 0
+  local main_economy_production = (fm ~= nil and bit.band(fm.has_, main_economy.ECONOMY_HAS_PRODUCTION) ~= 0)
+    and fm.production or nil
+  local result = final_score_zero()
+
+  development_ctx.total = fixed.p8_fixed_from_int(0)
+  development_ctx.seq = game_data.development_score_by_tier_table
+  development_ctx.count = game_data.DEVELOPMENT_SCORE_BY_TIER_COUNT
+  for_each_tagged(entity_class.TAG_PLANET, sum_by_development_tier_visit, development_ctx)
+
+  if main_economy_production ~= nil then
+    local found
+    local p
+    local population_val
+    found, p = map_tables.resource_code_lookup("p", p)
+    if found ~= 0 then
+      found, population_val = economy_formulas.resource_map_get(main_economy_production, fixed.p8_fixed_from_int(p),
+        population_val)
+      if found ~= 0 then
+        population = fixed.p8_fixed_mul(population_val, fixed.p8_fixed_from_int(40))
+      end
+    end
+  end
+
+  base = fixed.p8_fixed_mul(fixed.p8_fixed_from_int(invented_count), fixed.P8_FIXED_LIT(0x00013333, 1.2))
+  technology = fixed.p8_fixed_mul(fixed.p8_fixed_flr(fixed.p8_fixed_mul(base, base)), fixed.p8_fixed_from_int(10))
+
+  total = fixed.p8_fixed_flr(fixed.p8_fixed_mul(
+    fixed.p8_fixed_mul(fixed.p8_fixed_add(fixed.p8_fixed_add(development_ctx.total, population), technology),
+      fixed.P8_FIXED_LIT(0x0000028f, 0.01)),
+    happiness))
+
+  result.development = development_ctx.total
+  result.population = population
+  result.technology = technology
+  result.happiness = happiness
+  result.total = total
+  result.tier = fixed_min(fixed.p8_fixed_flr(fixed.p8_fixed_div(total, fixed.p8_fixed_from_int(2000))),
+    fixed.p8_fixed_from_int(5))
+  return result
+end
+
+function M.economy_score_happiness()
+  local fm = require("game.probe").main_economy_typed()
+  local main_economy_production = (fm ~= nil and bit.band(fm.has_, main_economy.ECONOMY_HAS_PRODUCTION) ~= 0)
+    and fm.production or nil
+  local r_h = fixed.p8_fixed_from_int(0)
+  local r_w = fixed.p8_fixed_from_int(0)
+  local h_val
+  local ctx = {}
+
+  if main_economy_production ~= nil then
+    local found
+    local h_key
+    local w_key
+    local _
+    found, h_key = map_tables.resource_code_lookup("h", h_key)
+    if found ~= 0 then
+      _, r_h = economy_formulas.resource_map_get(main_economy_production, fixed.p8_fixed_from_int(h_key), r_h)
+    end
+    found, w_key = map_tables.resource_code_lookup("w", w_key)
+    if found ~= 0 then
+      _, r_w = economy_formulas.resource_map_get(main_economy_production, fixed.p8_fixed_from_int(w_key), r_w)
+    end
+  end
+  h_val =
+    fixed.p8_fixed_add(fixed.p8_fixed_from_int(100), fixed.p8_fixed_mul(fixed.p8_fixed_from_int(2),
+      fixed.p8_fixed_add(r_h, r_w)))
+
+  ctx.total = fixed.p8_fixed_from_int(0)
+  ctx.seq = game_data.happiness_by_tier_table
+  ctx.count = game_data.HAPPINESS_BY_TIER_COUNT
+  for_each_tagged(entity_class.TAG_PLANET, sum_by_development_tier_visit, ctx)
+
+  return fixed.p8_fixed_add(h_val, ctx.total)
+end
+
+-- The cart reads the difficulty all game long, after the menu button dies: keep a copy, never a link to the button.
+local g_difficulty = button_zero()
+local g_has_difficulty = 0
+
+function M.economy_score_difficulty()
+  return (g_has_difficulty ~= 0) and g_difficulty or nil
+end
+
+-- C `g_difficulty = copy` overwrites the storage a returned pointer still points at: written in
+-- place, every field, so that a holder of g_difficulty sees the new values.
+function M.economy_score_set_difficulty(dk)
+  local copy = button_zero()
+
+  g_has_difficulty = (dk ~= nil) and 1 or 0
+  if dk == nil then
+    return
+  end
+  copy.name = dk.name
+  copy.has_trade = dk.has_trade
+  copy.trade = dk.trade
+  copy.has_type_bias = dk.has_type_bias
+  copy.type_bias = dk.type_bias
+  for key in pairs(g_difficulty) do
+    g_difficulty[key] = nil
+  end
+  for key, value in pairs(copy) do
+    g_difficulty[key] = value
+  end
+end
+
+function M.economy_score_net_income(p)
+  local planet = require("game.planet")
+  local kr = fixed.p8_fixed_flr(fixed.p8_fixed_sub(M.economy_score_trade_income(p), M.economy_score_planet_upkeep(p)))
+  local jo
+
+  assert(planet.planet_is_family(p) ~= 0, "economy_score_net_income: the planet tag holds planets only")
+  jo = p
+  jo.net_income = kr
+  jo.has_net_income = 1
+  return kr
+end
+
+return M
