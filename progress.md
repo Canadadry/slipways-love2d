@@ -64,7 +64,7 @@
   - [ ] 3.7 game: include cycle, economy
     - [x] chunk 1: economy_tiers
     - [x] chunk 2: economy_score
-    - [ ] chunk 3: economy
+    - [x] chunk 3: economy
     - [ ] chunk 4: cost and record
   - [ ] 3.8 game: include cycle, slipways, probes and wormholes
   - [ ] 3.9 game: include cycle, UI and message box, particles, background, scroll

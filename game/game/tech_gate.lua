@@ -52,7 +52,7 @@ local function research_cost_with_discount(od, has_planet_type, nk)
   local fu = fixed.p8_fixed_from_int(0)
   local threshold = fixed.P8_FIXED_LIT(0x00008ccc, 0.55)
   local factor
-  if has_planet_type ~= 0 and fm ~= nil and bit.band(fm.has, main_economy.ECONOMY_HAS_DEMAND) ~= 0 then
+  if has_planet_type ~= 0 and fm ~= nil and bit.band(fm.has_, main_economy.ECONOMY_HAS_DEMAND) ~= 0 then
     local _
     _, fu = economy_formulas.resource_map_get(fm.demand, nk, fu)
   end
