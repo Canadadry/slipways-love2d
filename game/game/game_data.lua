@@ -11,6 +11,12 @@
 --   difficulty_options_entry_t: { layout_row, name, trade, type_bias }.
 --   score_rows_entry_t: { row (a data_row_t held inline), has_score, score,
 --     has_pos, pos_x, pos_y }.
+--   kind_record_t: { required_tech, has_sprite, sprite, state, has_cost, cost,
+--     archetype }.
+--   The *_archetype_t, targeting_archetype_t, emitter_archetype_t and
+--     burst_construct_keys_t: their C fields, box_t { left, top, right,
+--     bottom } and vec_t { x, y } held inline as new tables.
+-- A char[] table is its Lua string, and so is a pointer to one.
 -- int_seq_at and game_data_fixed_seq_at return found, value: value is out
 -- unchanged when found is 0.
 -- Every data table is a module field, also the C statics: a local per table
@@ -531,6 +537,635 @@ M.score_panel_readouts_items = {
 }
 M.score_panel_readouts_row = data_row({ count = 7, items = M.score_panel_readouts_items })
 M.wormhole_too_far_target_status_text = "-too far-"
+
+local NORMAL = entity_class.ENTITY_STATE_NORMAL
+local PLACING = entity_class.ENTITY_STATE_PLACING
+local SETTLED = entity_class.ENTITY_STATE_SETTLED
+local FIXED_INT = fixed.P8_FIXED_INT
+
+local function vec(x, y)
+  return { x = x, y = y }
+end
+
+local function box(left, top, right, bottom)
+  return { left = left, top = top, right = right, bottom = bottom }
+end
+
+local function targeting(fields)
+  return check_fields(fields, {
+    attach_distance = fields.attach_distance or 0,
+    cost = fields.cost or 0,
+    has_cost = fields.has_cost or 0,
+    confirmed_state = fields.confirmed_state or NONE,
+    clock_ticks = fields.clock_ticks or 0,
+    clock_skips_recompute = fields.clock_skips_recompute or 0,
+  }, "targeting_archetype_t")
+end
+
+local function emitter(fields)
+  return check_fields(fields, {
+    angle_slices = fields.angle_slices or 0,
+    base_radius = fields.base_radius or 0,
+    speed_factor = fields.speed_factor or 0,
+    lifetime = fields.lifetime or 0,
+    quarter_turn = fields.quarter_turn or 0,
+    spawn_rate = fields.spawn_rate or 0,
+    trail_colors = fields.trail_colors,
+    matrix_xx = fields.matrix_xx or 0,
+    matrix_xy = fields.matrix_xy or 0,
+    matrix_yx = fields.matrix_yx or 0,
+    matrix_yy = fields.matrix_yy or 0,
+  }, "emitter_archetype_t")
+end
+
+local function probe_archetype(fields)
+  return check_fields(fields, {
+    state = fields.state or NONE,
+    state_time = fields.state_time or 0,
+    fold_anchor = fields.fold_anchor or 0,
+    layer = fields.layer or 0,
+    pos = fields.pos or vec(0, 0),
+    has_pos = fields.has_pos or 0,
+    fixed_pos = fields.fixed_pos or vec(0, 0),
+    back_color = fields.back_color or 0,
+    row_step = fields.row_step or vec(0, 0),
+    clear_ephemerals_after = fields.clear_ephemerals_after or 0,
+    hit_box = fields.hit_box or box(0, 0, 0, 0),
+    rows = fields.rows,
+    emitter = fields.emitter or emitter({}),
+    targeting = fields.targeting or targeting({}),
+  }, "probe_archetype_t")
+end
+
+local function kind_record(required_tech, has_sprite, sprite, state, has_cost, cost, archetype)
+  return {
+    required_tech = required_tech,
+    has_sprite = has_sprite,
+    sprite = sprite,
+    state = state,
+    has_cost = has_cost,
+    cost = cost,
+    archetype = archetype,
+  }
+end
+
+local function planet_archetype(fields)
+  return check_fields(fields, {
+    state = fields.state or NONE,
+    state_time = fields.state_time or 0,
+    is_planet = fields.is_planet or 0,
+    trade_multiplier = fields.trade_multiplier or 0,
+    layer = fields.layer or 0,
+    hit_box = fields.hit_box or box(0, 0, 0, 0),
+    shake = fields.shake or 0,
+    ring_colors = fields.ring_colors,
+    mood_rows = fields.mood_rows,
+    made_resources = fields.made_resources,
+    row_step = fields.row_step or vec(0, 0),
+    back_color = fields.back_color or 0,
+    spacer = fields.spacer,
+    development_tier = fields.development_tier or 0,
+    has_development_tier = fields.has_development_tier or 0,
+    project_index = fields.project_index or 0,
+    name = fields.name,
+    is_structure = fields.is_structure or 0,
+    sprite = fields.sprite or 0,
+    accepted_resources = fields.accepted_resources,
+    required_tech = fields.required_tech,
+    is_trading_hub = fields.is_trading_hub or 0,
+    palette_block = fields.palette_block or 0,
+    spawn_offset = fields.spawn_offset or vec(0, 0),
+    class_name = fields.class_name,
+    acceleration_factor = fields.acceleration_factor or 0,
+    speed = fields.speed or 0,
+    link_sprites = fields.link_sprites,
+    infraspace = fields.infraspace or 0,
+    synthesizable_resources = fields.synthesizable_resources,
+    targeting = fields.targeting or targeting({}),
+    emitter = fields.emitter or emitter({}),
+  }, "planet_archetype_t")
+end
+
+M.background_archetype = {
+  state = NORMAL, state_time = 0x0, layer = 0x10000, hit_test = 0x10000, tile_choices = M.background_tile_choices_seq,
+}
+
+M.ui_archetype = {
+  state = NORMAL,
+  state_time = 0x0,
+  layer = 0xf0000,
+  panel_box = box(0xa0000, 0xa0000, FIXED_INT(vram.P8_SCREEN_WIDTH - 10), FIXED_INT(vram.P8_SCREEN_HEIGHT - 10)),
+}
+
+M.button_archetype = { state = NORMAL, state_time = 0x0, layer = 0xb0000 }
+
+M.modal_backdrop_archetype = { state = NORMAL, state_time = 0x0, layer = 0xe0000, hit_test = 0x10000 }
+
+M.camera_archetype = {
+  state = NORMAL,
+  state_time = 0x0,
+  shake = 0x0,
+  pos_before_shake = vec(0xb00000, 0xc40000),
+  pos = vec(0xb00000, 0xc40000),
+}
+
+M.mouse_archetype = { state = NORMAL, state_time = 0x0 }
+
+M.message_box_archetype = { state = NORMAL, state_time = 0x0, layer = 0xe0000, duration_scale = 0x50000 }
+
+M.toast_archetype = { state = NORMAL, state_time = 0x0, layer = 0x90000, fade = 0x0, velocity = vec(0x0, -0x570a) }
+
+M.research_project_archetype = { row_tail = M.research_project_row_tail_row }
+
+M.structure_icon_archetype = {
+  state = NORMAL,
+  state_time = 0x0,
+  hit_box = box(0x0, 0x0, 0x90000, 0x80000),
+  layer = 0xc0000,
+  pos = vec(0x3e70000, 0x3e70000),
+  rest_cursor = vec(FIXED_INT(vram.P8_SCREEN_WIDTH - 10), FIXED_INT(vram.P8_SCREEN_HEIGHT - 8)),
+}
+
+M.score_panel_archetype = {
+  state = NORMAL,
+  state_time = 0x0,
+  layer = 0xa0000,
+  countdown_rows = M.score_panel_countdown_rows_row,
+  frame_rows = M.score_panel_frame_rows_row,
+}
+
+M.wormhole_archetype = {
+  state = PLACING,
+  state_time = 0x0,
+  spawn_snd = 0x340000,
+  radius = 0x0,
+  layer = 0x50000,
+  color_ramp = M.wormhole_color_ramp_seq,
+  targeting = targeting({
+    attach_distance = 0x0,
+    cost = 0x30000,
+    has_cost = 1,
+    confirmed_state = entity_class.ENTITY_STATE_UNFOLDING,
+    clock_ticks = 0x10000,
+    clock_skips_recompute = 1,
+  }),
+}
+
+M.slipway_archetype = {
+  state = PLACING,
+  state_time = 0x0,
+  layer = 0x20000,
+  trail_colors = M.slipway_trail_colors_seq,
+  fade_in_step = 0x140000,
+  targeting = targeting({
+    attach_distance = 0x106, cost = 0x0, has_cost = 0, confirmed_state = NONE, clock_ticks = 0x0,
+  }),
+}
+
+M.targeting_archetype_none = targeting({
+  attach_distance = 0x0, cost = 0x0, has_cost = 0, confirmed_state = NONE, clock_ticks = 0x0,
+})
+
+M.probe_archetype = probe_archetype({
+  state = NORMAL,
+  state_time = 0x0,
+  fold_anchor = 0x10000,
+  layer = 0x20000,
+  has_pos = 0,
+  emitter = emitter({
+    angle_slices = 0x30000,
+    base_radius = 0x20000,
+    speed_factor = 0xf5c,
+    lifetime = 0x90000,
+    quarter_turn = 0x10000,
+    spawn_rate = 0x10000,
+    trail_colors = M.probe_trail_colors_seq,
+    matrix_xx = 0x1051e,
+    matrix_xy = -0xd70,
+    matrix_yx = 0xd70,
+    matrix_yy = 0x1051e,
+  }),
+  targeting = targeting({
+    attach_distance = 0x666, cost = 0x0, has_cost = 1, confirmed_state = SETTLED, clock_ticks = 0x0,
+  }),
+})
+
+M.help_screen_archetype = probe_archetype({
+  state = NORMAL,
+  state_time = 0x0,
+  fold_anchor = 0x10000,
+  layer = 0xa0000,
+  pos = vec(FIXED_INT(HALF_WIDTH), FIXED_INT(HALF_HEIGHT - 36)),
+  has_pos = 1,
+  fixed_pos = vec(FIXED_INT(HALF_WIDTH - 30), FIXED_INT(HALF_HEIGHT - 8)),
+  back_color = 0xb0000,
+  row_step = vec(0x0, 0xb0000),
+  clear_ephemerals_after = 0x10000,
+  hit_box = box(-0x280000, 0x4e0000, 0x280000, 0x620000),
+  rows = M.help_screen_rows_row,
+  emitter = emitter({
+    angle_slices = 0x50000,
+    base_radius = 0xf0000,
+    speed_factor = 0x1b6,
+    lifetime = 0x110000,
+    quarter_turn = 0x10000,
+    spawn_rate = 0x50000,
+    trail_colors = M.help_screen_trail_colors_seq,
+    matrix_xx = 0x1051e,
+    matrix_xy = -0x1ca,
+    matrix_yx = 0x1ca,
+    matrix_yy = 0x1051e,
+  }),
+  targeting = targeting({
+    attach_distance = 0x666, cost = 0x0, has_cost = 1, confirmed_state = SETTLED, clock_ticks = 0x0,
+  }),
+})
+
+M.trading_hub_required_tech_text = "trade league"
+M.ascension_required_tech_text = "ascension"
+M.protostar_class_name_text = "protostar"
+M.burst_class_name_text = "burst"
+M.slipgate_required_tech_text = "slipgates"
+M.infraspace_gate_required_tech_text = "infraspace"
+M.synthesizer_required_tech_text = "void synthesis"
+
+M.protostar_burst_construct_keys = {
+  matrix_xx = 0xf850,
+  matrix_xy = -0x2020,
+  matrix_yx = 0x2020,
+  matrix_yy = 0xf850,
+  acceleration_factor = -0x24e,
+  speed_factor = 0x90000,
+  speed = 0x18000,
+  trail_colors = M.protostar_burst_trail_colors_seq,
+}
+
+M.planet_archetype = planet_archetype({
+  state = entity_class.ENTITY_STATE_UNKNOWN,
+  state_time = 0x0,
+  is_planet = 1,
+  trade_multiplier = 0x10000,
+  layer = 0x60000,
+  hit_box = box(-0x70000, -0x70000, 0x70000, 0x70000),
+  shake = 0x0,
+  ring_colors = M.planet_ring_colors_seq,
+  mood_rows = M.planet_mood_rows_rows,
+  made_resources = M.planet_made_resources_seq,
+  row_step = vec(0x0, 0xb0000),
+  back_color = 0x90000,
+  spacer = M.planet_spacer_row,
+  development_tier = 0x0,
+  has_development_tier = 0,
+})
+
+M.structure_archetype = planet_archetype({
+  state = PLACING,
+  state_time = 0x0,
+  is_planet = 0,
+  trade_multiplier = 0x10000,
+  layer = 0x60000,
+  hit_box = box(-0x70000, -0x70000, 0x70000, 0x70000),
+  shake = 0x0,
+  ring_colors = M.planet_ring_colors_seq,
+  mood_rows = M.planet_mood_rows_rows,
+  made_resources = M.planet_made_resources_seq,
+  row_step = vec(0x0, 0xb0000),
+  back_color = 0x90000,
+  spacer = M.planet_spacer_row,
+  development_tier = 0x10000,
+  has_development_tier = 1,
+  project_index = 0x10000,
+  name = M.structure_name_row,
+  is_structure = 1,
+  sprite = 0xae0000,
+  accepted_resources = M.structure_accepted_resources_seq,
+  targeting = targeting({
+    attach_distance = 0x666,
+    cost = 0xf0000,
+    has_cost = 1,
+    confirmed_state = SETTLED,
+    clock_ticks = 0x20000,
+  }),
+})
+
+M.trading_hub_archetype = planet_archetype({
+  state = PLACING,
+  state_time = 0x0,
+  is_planet = 0,
+  trade_multiplier = 0x10000,
+  layer = 0x60000,
+  hit_box = box(-0x70000, -0x70000, 0x70000, 0x70000),
+  shake = 0x0,
+  ring_colors = M.planet_ring_colors_seq,
+  mood_rows = M.planet_mood_rows_rows,
+  made_resources = M.planet_made_resources_seq,
+  row_step = vec(0x0, 0xb0000),
+  back_color = 0x90000,
+  spacer = M.planet_spacer_row,
+  development_tier = 0x10000,
+  has_development_tier = 1,
+  project_index = 0x60000,
+  name = M.trading_hub_name_row,
+  is_structure = 0,
+  sprite = 0x440000,
+  accepted_resources = M.trading_hub_accepted_resources_seq,
+  required_tech = M.trading_hub_required_tech_text,
+  is_trading_hub = 0x10000,
+  palette_block = 0xf0000,
+  targeting = targeting({
+    attach_distance = 0x666,
+    cost = 0x140000,
+    has_cost = 1,
+    confirmed_state = SETTLED,
+    clock_ticks = 0x20000,
+  }),
+})
+
+M.processor_archetype = planet_archetype({
+  state = PLACING,
+  state_time = 0x0,
+  is_planet = 0,
+  trade_multiplier = 0x8000,
+  layer = 0x60000,
+  hit_box = box(-0x70000, -0x70000, 0x70000, 0x70000),
+  shake = 0x0,
+  ring_colors = M.planet_ring_colors_seq,
+  mood_rows = M.planet_mood_rows_rows,
+  made_resources = M.planet_made_resources_seq,
+  row_step = vec(0x0, 0xb0000),
+  back_color = 0x90000,
+  spacer = M.planet_spacer_row,
+  development_tier = 0x10000,
+  has_development_tier = 1,
+  project_index = 0x40000,
+  name = M.processor_name_row,
+  is_structure = 0,
+  sprite = 0x640000,
+  accepted_resources = M.structure_accepted_resources_seq,
+  targeting = targeting({
+    attach_distance = 0x666,
+    cost = 0xf0000,
+    has_cost = 1,
+    confirmed_state = SETTLED,
+    clock_ticks = 0x20000,
+  }),
+})
+
+M.ascension_archetype = planet_archetype({
+  state = PLACING,
+  state_time = 0x0,
+  is_planet = 0,
+  trade_multiplier = 0x10000,
+  layer = 0x60000,
+  hit_box = box(-0x70000, -0x70000, 0x70000, 0x70000),
+  shake = 0x0,
+  ring_colors = M.planet_ring_colors_seq,
+  mood_rows = M.planet_mood_rows_rows,
+  made_resources = M.planet_made_resources_seq,
+  row_step = vec(0x0, 0xb0000),
+  back_color = 0x90000,
+  spacer = M.planet_spacer_row,
+  development_tier = 0x10000,
+  has_development_tier = 1,
+  project_index = 0x20000,
+  name = M.ascension_name_row,
+  is_structure = 0,
+  sprite = 0xa60000,
+  accepted_resources = M.structure_accepted_resources_seq,
+  required_tech = M.ascension_required_tech_text,
+  targeting = targeting({
+    attach_distance = 0x666,
+    cost = 0x3c0000,
+    has_cost = 1,
+    confirmed_state = SETTLED,
+    clock_ticks = 0x20000,
+  }),
+  emitter = emitter({
+    angle_slices = 0x50000,
+    base_radius = 0x78000,
+    speed_factor = 0x1eb8,
+    lifetime = 0x90000,
+    quarter_turn = 0x10000,
+    spawn_rate = 0x8000,
+    trail_colors = M.ascension_trail_colors_seq,
+    matrix_xx = 0xfae0,
+    matrix_xy = -0x11ec,
+    matrix_yx = 0x11ea,
+    matrix_yy = 0xfae0,
+  }),
+})
+
+M.protostar_archetype = planet_archetype({
+  state = SETTLED,
+  state_time = 0x0,
+  is_planet = 0,
+  trade_multiplier = 0x10000,
+  layer = 0x60000,
+  hit_box = box(-0x70000, -0x70000, 0x70000, 0x70000),
+  shake = 0x0,
+  ring_colors = M.planet_ring_colors_seq,
+  mood_rows = M.planet_mood_rows_rows,
+  made_resources = M.planet_made_resources_seq,
+  row_step = vec(0x0, 0xb0000),
+  back_color = 0x90000,
+  spacer = M.planet_spacer_row,
+  development_tier = 0x10000,
+  has_development_tier = 1,
+  project_index = 0x30000,
+  name = M.protostar_name_row,
+  is_structure = 0,
+  sprite = 0x620000,
+  accepted_resources = M.structure_accepted_resources_seq,
+  required_tech = M.ascension_required_tech_text,
+  spawn_offset = vec(0x10000, 0x0),
+  class_name = M.protostar_class_name_text,
+  targeting = targeting({
+    attach_distance = 0x666,
+    cost = 0x3c0000,
+    has_cost = 1,
+    confirmed_state = SETTLED,
+    clock_ticks = 0x20000,
+  }),
+  emitter = emitter({
+    angle_slices = 0x80000,
+    base_radius = 0x20000,
+    speed_factor = 0xf5c,
+    lifetime = 0x90000,
+    quarter_turn = 0x0,
+    spawn_rate = 0x10000,
+    trail_colors = M.protostar_trail_colors_seq,
+    matrix_xx = 0x1051e,
+    matrix_xy = -0xd70,
+    matrix_yx = 0xd70,
+    matrix_yy = 0x1051e,
+  }),
+})
+
+M.synthesizer_archetype = planet_archetype({
+  state = PLACING,
+  state_time = 0x0,
+  is_planet = 0,
+  trade_multiplier = 0x10000,
+  layer = 0x60000,
+  hit_box = box(-0x70000, -0x70000, 0x70000, 0x70000),
+  shake = 0x0,
+  ring_colors = M.planet_ring_colors_seq,
+  mood_rows = M.planet_mood_rows_rows,
+  made_resources = M.planet_made_resources_seq,
+  row_step = vec(0x0, 0xb0000),
+  back_color = 0x90000,
+  spacer = M.planet_spacer_row,
+  development_tier = 0x10000,
+  has_development_tier = 1,
+  project_index = 0x50000,
+  name = M.synthesizer_name_row,
+  is_structure = 0,
+  sprite = 0x420000,
+  accepted_resources = M.structure_accepted_resources_seq,
+  required_tech = M.synthesizer_required_tech_text,
+  synthesizable_resources = M.synthesizer_synthesizable_resources_seq,
+  targeting = targeting({
+    attach_distance = 0x666,
+    cost = 0x280000,
+    has_cost = 1,
+    confirmed_state = SETTLED,
+    clock_ticks = 0x20000,
+  }),
+  emitter = emitter({
+    angle_slices = 0x50000,
+    base_radius = 0x50000,
+    speed_factor = 0x1eb8,
+    lifetime = 0x90000,
+    quarter_turn = 0x10000,
+    spawn_rate = 0x4ccc,
+    trail_colors = M.synthesizer_trail_colors_seq,
+    matrix_xx = 0xfae0,
+    matrix_xy = -0x11ec,
+    matrix_yx = 0x11ea,
+    matrix_yy = 0xfae0,
+  }),
+})
+
+M.burst_archetype = planet_archetype({
+  state = entity_class.ENTITY_STATE_UNKNOWN,
+  state_time = 0x0,
+  is_planet = 0,
+  trade_multiplier = 0x10000,
+  layer = 0x30000,
+  hit_box = box(0x0, 0x0, -0x10000, -0x10000),
+  shake = 0x0,
+  ring_colors = M.planet_ring_colors_seq,
+  mood_rows = M.planet_mood_rows_rows,
+  made_resources = M.planet_made_resources_seq,
+  row_step = vec(0x0, 0xb0000),
+  back_color = 0x90000,
+  spacer = M.planet_spacer_row,
+  development_tier = 0x0,
+  has_development_tier = 0,
+  class_name = M.burst_class_name_text,
+  acceleration_factor = -0xf5c,
+  speed = 0x30000,
+  emitter = emitter({
+    angle_slices = 0x0,
+    base_radius = 0x0,
+    speed_factor = 0x60000,
+    lifetime = 0x0,
+    quarter_turn = 0x0,
+    spawn_rate = 0x0,
+    trail_colors = M.burst_trail_colors_seq,
+    matrix_xx = 0xe666,
+    matrix_xy = 0x0,
+    matrix_yx = 0x0,
+    matrix_yy = 0xe666,
+  }),
+})
+
+M.slipgate_archetype = planet_archetype({
+  state = PLACING,
+  state_time = 0x0,
+  is_planet = 0,
+  trade_multiplier = 0x10000,
+  layer = 0x60000,
+  hit_box = box(-0x40000, -0x40000, 0x50000, 0x50000),
+  shake = 0x0,
+  ring_colors = M.planet_ring_colors_seq,
+  mood_rows = M.planet_mood_rows_rows,
+  made_resources = M.planet_made_resources_seq,
+  row_step = vec(0x0, 0xb0000),
+  back_color = 0x90000,
+  spacer = M.planet_spacer_row,
+  development_tier = 0x10000,
+  has_development_tier = 1,
+  project_index = 0x10000,
+  name = M.structure_name_row,
+  is_structure = 1,
+  sprite = 0xaa0000,
+  accepted_resources = M.structure_accepted_resources_seq,
+  required_tech = M.slipgate_required_tech_text,
+  link_sprites = M.slipgate_link_sprites_seq,
+  targeting = targeting({
+    attach_distance = 0x28e,
+    cost = 0xa0000,
+    has_cost = 1,
+    confirmed_state = SETTLED,
+    clock_ticks = 0x10000,
+  }),
+})
+
+M.infraspace_gate_archetype = planet_archetype({
+  state = PLACING,
+  state_time = 0x0,
+  is_planet = 0,
+  trade_multiplier = 0x10000,
+  layer = 0x60000,
+  hit_box = box(-0x40000, -0x40000, 0x50000, 0x50000),
+  shake = 0x0,
+  ring_colors = M.planet_ring_colors_seq,
+  mood_rows = M.planet_mood_rows_rows,
+  made_resources = M.planet_made_resources_seq,
+  row_step = vec(0x0, 0xb0000),
+  back_color = 0x90000,
+  spacer = M.planet_spacer_row,
+  development_tier = 0x10000,
+  has_development_tier = 1,
+  project_index = 0x10000,
+  name = M.structure_name_row,
+  is_structure = 1,
+  sprite = 0x4e0000,
+  accepted_resources = M.structure_accepted_resources_seq,
+  required_tech = M.infraspace_gate_required_tech_text,
+  link_sprites = M.infraspace_gate_link_sprites_seq,
+  infraspace = 0x10000,
+  targeting = targeting({
+    attach_distance = 0x28e,
+    cost = 0x190000,
+    has_cost = 1,
+    confirmed_state = SETTLED,
+    clock_ticks = 0x10000,
+  }),
+})
+
+M.structure_kind_record = kind_record(nil, 1, 0xae0000, PLACING, 1, 0xf0000, M.structure_archetype)
+M.trading_hub_kind_record = kind_record(
+  M.trading_hub_required_tech_text, 1, 0x440000, PLACING, 1, 0x140000, M.trading_hub_archetype
+)
+M.processor_kind_record = kind_record(nil, 1, 0x640000, PLACING, 1, 0xf0000, M.processor_archetype)
+M.ascension_kind_record = kind_record(
+  M.ascension_required_tech_text, 1, 0xa60000, PLACING, 1, 0x3c0000, M.ascension_archetype
+)
+M.protostar_kind_record = kind_record(
+  M.ascension_required_tech_text, 1, 0x620000, SETTLED, 1, 0x3c0000, M.protostar_archetype
+)
+M.burst_kind_record = kind_record(nil, 0, 0x0, entity_class.ENTITY_STATE_UNKNOWN, 0, 0x0, M.burst_archetype)
+M.slipgate_kind_record = kind_record(
+  M.slipgate_required_tech_text, 1, 0xaa0000, PLACING, 1, 0xa0000, M.slipgate_archetype
+)
+M.infraspace_gate_kind_record = kind_record(
+  M.infraspace_gate_required_tech_text, 1, 0x4e0000, PLACING, 1, 0x190000, M.infraspace_gate_archetype
+)
+M.synthesizer_kind_record = kind_record(
+  M.synthesizer_required_tech_text, 1, 0x420000, PLACING, 1, 0x280000, M.synthesizer_archetype
+)
 
 -- seq is the 0-indexed array, i 1-based as in the cart.
 function M.int_seq_at(seq, count, i, out)

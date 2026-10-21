@@ -176,7 +176,50 @@
     STRUCT(score_panel_readouts_7, reference_data_row) \
     ARRAY(score_panel_readouts_items, reference_data_items) \
     STRUCT(score_panel_readouts_row, reference_data_row) \
-    TEXT(wormhole_too_far_target_status_text, render_text)
+    TEXT(wormhole_too_far_target_status_text, render_text) \
+    STRUCT(background_archetype, render_background_archetype) \
+    STRUCT(ui_archetype, render_ui_archetype) \
+    STRUCT(button_archetype, render_button_archetype) \
+    STRUCT(modal_backdrop_archetype, render_modal_backdrop_archetype) \
+    STRUCT(camera_archetype, render_camera_archetype) \
+    STRUCT(mouse_archetype, render_mouse_archetype) \
+    STRUCT(message_box_archetype, render_message_box_archetype) \
+    STRUCT(toast_archetype, render_toast_archetype) \
+    STRUCT(research_project_archetype, render_research_project_archetype) \
+    STRUCT(structure_icon_archetype, render_structure_icon_archetype) \
+    STRUCT(score_panel_archetype, render_score_panel_archetype) \
+    STRUCT(wormhole_archetype, render_wormhole_archetype) \
+    STRUCT(slipway_archetype, render_slipway_archetype) \
+    STRUCT(targeting_archetype_none, render_targeting) \
+    STRUCT(probe_archetype, render_probe_archetype) \
+    STRUCT(help_screen_archetype, render_probe_archetype) \
+    TEXT(trading_hub_required_tech_text, render_text) \
+    TEXT(ascension_required_tech_text, render_text) \
+    TEXT(protostar_class_name_text, render_text) \
+    TEXT(burst_class_name_text, render_text) \
+    TEXT(slipgate_required_tech_text, render_text) \
+    TEXT(infraspace_gate_required_tech_text, render_text) \
+    TEXT(synthesizer_required_tech_text, render_text) \
+    STRUCT(protostar_burst_construct_keys, render_burst_construct_keys) \
+    STRUCT(planet_archetype, render_planet_archetype) \
+    STRUCT(structure_archetype, render_planet_archetype) \
+    STRUCT(trading_hub_archetype, render_planet_archetype) \
+    STRUCT(processor_archetype, render_planet_archetype) \
+    STRUCT(ascension_archetype, render_planet_archetype) \
+    STRUCT(protostar_archetype, render_planet_archetype) \
+    STRUCT(synthesizer_archetype, render_planet_archetype) \
+    STRUCT(burst_archetype, render_planet_archetype) \
+    STRUCT(slipgate_archetype, render_planet_archetype) \
+    STRUCT(infraspace_gate_archetype, render_planet_archetype) \
+    STRUCT(structure_kind_record, render_kind_record) \
+    STRUCT(trading_hub_kind_record, render_kind_record) \
+    STRUCT(processor_kind_record, render_kind_record) \
+    STRUCT(ascension_kind_record, render_kind_record) \
+    STRUCT(protostar_kind_record, render_kind_record) \
+    STRUCT(burst_kind_record, render_kind_record) \
+    STRUCT(slipgate_kind_record, render_kind_record) \
+    STRUCT(infraspace_gate_kind_record, render_kind_record) \
+    STRUCT(synthesizer_kind_record, render_kind_record)
 
 #define NAME_ARRAY(name, render) {name, #name},
 #define NAME_STRUCT(name, render) {&name, #name},
@@ -263,6 +306,251 @@ static void render_score_rows(const reference_data_t *data, const char *name, co
         table_reference_int(data->module, table[i].pos_x, "%s[%d].pos_x", name, i);
         table_reference_int(data->module, table[i].pos_y, "%s[%d].pos_y", name, i);
     }
+}
+
+#define INT_FIELD(owner, field) table_reference_int(data->module, (owner)->field, "%s." #field, name)
+#define POINTER_FIELD(owner, field) \
+    (snprintf(path, sizeof path, "%s." #field, name), reference_data_pointer(data, (owner)->field, path))
+#define VEC_FIELD(owner, field) (snprintf(path, sizeof path, "%s." #field, name), render_vec(data, &(owner)->field, path))
+#define BOX_FIELD(owner, field) (snprintf(path, sizeof path, "%s." #field, name), render_box(data, &(owner)->field, path))
+
+static void render_vec(const reference_data_t *data, const vec_t *vec, const char *name) {
+    INT_FIELD(vec, x);
+    INT_FIELD(vec, y);
+}
+
+static void render_box(const reference_data_t *data, const box_t *box, const char *name) {
+    INT_FIELD(box, left);
+    INT_FIELD(box, top);
+    INT_FIELD(box, right);
+    INT_FIELD(box, bottom);
+}
+
+static void render_targeting(const reference_data_t *data, const targeting_archetype_t *targeting, const char *name) {
+    INT_FIELD(targeting, attach_distance);
+    INT_FIELD(targeting, cost);
+    INT_FIELD(targeting, has_cost);
+    INT_FIELD(targeting, confirmed_state);
+    INT_FIELD(targeting, clock_ticks);
+    INT_FIELD(targeting, clock_skips_recompute);
+}
+
+#define TARGETING_FIELD(owner, field) \
+    (snprintf(path, sizeof path, "%s." #field, name), render_targeting(data, &(owner)->field, path))
+
+static void render_emitter(const reference_data_t *data, const emitter_archetype_t *emitter, const char *name) {
+    char path[256];
+    INT_FIELD(emitter, angle_slices);
+    INT_FIELD(emitter, base_radius);
+    INT_FIELD(emitter, speed_factor);
+    INT_FIELD(emitter, lifetime);
+    INT_FIELD(emitter, quarter_turn);
+    INT_FIELD(emitter, spawn_rate);
+    POINTER_FIELD(emitter, trail_colors);
+    INT_FIELD(emitter, matrix_xx);
+    INT_FIELD(emitter, matrix_xy);
+    INT_FIELD(emitter, matrix_yx);
+    INT_FIELD(emitter, matrix_yy);
+}
+
+#define EMITTER_FIELD(owner, field) \
+    (snprintf(path, sizeof path, "%s." #field, name), render_emitter(data, &(owner)->field, path))
+
+static void render_background_archetype(const reference_data_t *data, const background_archetype_t *archetype,
+                                        const char *name) {
+    char path[256];
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    INT_FIELD(archetype, layer);
+    INT_FIELD(archetype, hit_test);
+    POINTER_FIELD(archetype, tile_choices);
+}
+
+static void render_ui_archetype(const reference_data_t *data, const ui_archetype_t *archetype, const char *name) {
+    char path[256];
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    INT_FIELD(archetype, layer);
+    BOX_FIELD(archetype, panel_box);
+}
+
+static void render_button_archetype(const reference_data_t *data, const button_archetype_t *archetype,
+                                    const char *name) {
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    INT_FIELD(archetype, layer);
+}
+
+static void render_modal_backdrop_archetype(const reference_data_t *data, const modal_backdrop_archetype_t *archetype,
+                                            const char *name) {
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    INT_FIELD(archetype, layer);
+    INT_FIELD(archetype, hit_test);
+}
+
+static void render_camera_archetype(const reference_data_t *data, const camera_archetype_t *archetype,
+                                    const char *name) {
+    char path[256];
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    INT_FIELD(archetype, shake);
+    VEC_FIELD(archetype, pos_before_shake);
+    VEC_FIELD(archetype, pos);
+}
+
+static void render_mouse_archetype(const reference_data_t *data, const mouse_archetype_t *archetype, const char *name) {
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+}
+
+static void render_message_box_archetype(const reference_data_t *data, const message_box_archetype_t *archetype,
+                                         const char *name) {
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    INT_FIELD(archetype, layer);
+    INT_FIELD(archetype, duration_scale);
+}
+
+static void render_toast_archetype(const reference_data_t *data, const toast_archetype_t *archetype, const char *name) {
+    char path[256];
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    INT_FIELD(archetype, layer);
+    INT_FIELD(archetype, fade);
+    VEC_FIELD(archetype, velocity);
+}
+
+static void render_research_project_archetype(const reference_data_t *data,
+                                              const research_project_archetype_t *archetype, const char *name) {
+    char path[256];
+    POINTER_FIELD(archetype, row_tail);
+}
+
+static void render_structure_icon_archetype(const reference_data_t *data, const structure_icon_archetype_t *archetype,
+                                            const char *name) {
+    char path[256];
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    BOX_FIELD(archetype, hit_box);
+    INT_FIELD(archetype, layer);
+    VEC_FIELD(archetype, pos);
+    VEC_FIELD(archetype, rest_cursor);
+}
+
+static void render_score_panel_archetype(const reference_data_t *data, const score_panel_archetype_t *archetype,
+                                         const char *name) {
+    char path[256];
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    INT_FIELD(archetype, layer);
+    POINTER_FIELD(archetype, countdown_rows);
+    POINTER_FIELD(archetype, frame_rows);
+}
+
+static void render_wormhole_archetype(const reference_data_t *data, const wormhole_archetype_t *archetype,
+                                      const char *name) {
+    char path[256];
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    INT_FIELD(archetype, spawn_snd);
+    INT_FIELD(archetype, radius);
+    INT_FIELD(archetype, layer);
+    POINTER_FIELD(archetype, color_ramp);
+    TARGETING_FIELD(archetype, targeting);
+}
+
+static void render_slipway_archetype(const reference_data_t *data, const slipway_archetype_t *archetype,
+                                     const char *name) {
+    char path[256];
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    INT_FIELD(archetype, layer);
+    POINTER_FIELD(archetype, trail_colors);
+    INT_FIELD(archetype, fade_in_step);
+    TARGETING_FIELD(archetype, targeting);
+}
+
+static void render_probe_archetype(const reference_data_t *data, const probe_archetype_t *archetype, const char *name) {
+    char path[256];
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    INT_FIELD(archetype, fold_anchor);
+    INT_FIELD(archetype, layer);
+    VEC_FIELD(archetype, pos);
+    INT_FIELD(archetype, has_pos);
+    VEC_FIELD(archetype, fixed_pos);
+    INT_FIELD(archetype, back_color);
+    VEC_FIELD(archetype, row_step);
+    INT_FIELD(archetype, clear_ephemerals_after);
+    BOX_FIELD(archetype, hit_box);
+    POINTER_FIELD(archetype, rows);
+    EMITTER_FIELD(archetype, emitter);
+    TARGETING_FIELD(archetype, targeting);
+}
+
+static void render_burst_construct_keys(const reference_data_t *data, const burst_construct_keys_t *keys,
+                                        const char *name) {
+    char path[256];
+    INT_FIELD(keys, matrix_xx);
+    INT_FIELD(keys, matrix_xy);
+    INT_FIELD(keys, matrix_yx);
+    INT_FIELD(keys, matrix_yy);
+    INT_FIELD(keys, acceleration_factor);
+    INT_FIELD(keys, speed_factor);
+    INT_FIELD(keys, speed);
+    POINTER_FIELD(keys, trail_colors);
+}
+
+#define TEXT_FIELD(owner, field) \
+    if ((owner)->field != NULL) table_reference_string(data->module, (owner)->field, "%s." #field, name)
+
+static void render_planet_archetype(const reference_data_t *data, const planet_archetype_t *archetype,
+                                    const char *name) {
+    char path[256];
+    INT_FIELD(archetype, state);
+    INT_FIELD(archetype, state_time);
+    INT_FIELD(archetype, is_planet);
+    INT_FIELD(archetype, trade_multiplier);
+    INT_FIELD(archetype, layer);
+    BOX_FIELD(archetype, hit_box);
+    INT_FIELD(archetype, shake);
+    POINTER_FIELD(archetype, ring_colors);
+    POINTER_FIELD(archetype, mood_rows);
+    POINTER_FIELD(archetype, made_resources);
+    VEC_FIELD(archetype, row_step);
+    INT_FIELD(archetype, back_color);
+    POINTER_FIELD(archetype, spacer);
+    INT_FIELD(archetype, development_tier);
+    INT_FIELD(archetype, has_development_tier);
+    INT_FIELD(archetype, project_index);
+    POINTER_FIELD(archetype, name);
+    INT_FIELD(archetype, is_structure);
+    INT_FIELD(archetype, sprite);
+    POINTER_FIELD(archetype, accepted_resources);
+    TEXT_FIELD(archetype, required_tech);
+    INT_FIELD(archetype, is_trading_hub);
+    INT_FIELD(archetype, palette_block);
+    VEC_FIELD(archetype, spawn_offset);
+    TEXT_FIELD(archetype, class_name);
+    INT_FIELD(archetype, acceleration_factor);
+    INT_FIELD(archetype, speed);
+    POINTER_FIELD(archetype, link_sprites);
+    INT_FIELD(archetype, infraspace);
+    POINTER_FIELD(archetype, synthesizable_resources);
+    TARGETING_FIELD(archetype, targeting);
+    EMITTER_FIELD(archetype, emitter);
+}
+
+static void render_kind_record(const reference_data_t *data, const kind_record_t *record, const char *name) {
+    char path[256];
+    TEXT_FIELD(record, required_tech);
+    INT_FIELD(record, has_sprite);
+    INT_FIELD(record, sprite);
+    INT_FIELD(record, state);
+    INT_FIELD(record, has_cost);
+    INT_FIELD(record, cost);
+    POINTER_FIELD(record, archetype);
 }
 
 void table_reference_game_game_data(void) {
