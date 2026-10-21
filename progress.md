@@ -83,7 +83,7 @@
   - [ ] 3.10 game: displays and panels
     - [x] chunk 1: slipway and wormhole displays
     - [x] chunk 2: planet_family_trade
-    - [ ] chunk 3: structure_icon and help
+    - [x] chunk 3: structure_icon and help
     - [ ] chunk 4: score panel
     - [ ] chunk 5: cost and record
   - [ ] 3.11 game: pad modes
