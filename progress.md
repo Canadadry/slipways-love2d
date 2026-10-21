@@ -25,7 +25,7 @@
   - [ ] 3.1 engine: memory and basics
     - [x] chunk 1: the global rule
     - [x] chunk 2: the load and data check
-    - [ ] chunk 3: zones and the allocator
+    - [x] chunk 3: zones and the allocator
     - [ ] chunk 4: zone singletons and slot groups
     - [ ] chunk 5: lists and strings
     - [ ] chunk 6: vectors, geometry, dispatch context
