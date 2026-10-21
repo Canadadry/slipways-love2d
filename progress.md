@@ -59,7 +59,7 @@
     - [x] chunk 2: planet_trade and planet_display
     - [x] chunk 3: planet and galaxy
     - [x] chunk 4: deferred loads
-    - [ ] chunk 5: planet_family
+    - [x] chunk 5: planet_family
     - [ ] chunk 6: cost and record
   - [ ] 3.7 game: include cycle, economy
   - [ ] 3.8 game: include cycle, slipways, probes and wormholes

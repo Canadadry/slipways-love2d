@@ -1422,7 +1422,7 @@ lua-guard: tools/lua_guard.lua ## fails when a game/ Lua file does not compile, 
 # unit includes the source to reach its statics, so the source's own object
 # leaves the link. The unit list reaches table_reference.o as a -D flag, hence
 # its rebuild on a Makefile edit.
-TABLE_REFERENCE_SOURCES := src/p8/quarter_wave.h src/p8/sprite_sheet_packed.h src/p8/palette.c src/p8/draw_cost.c src/p8/draw_meter.c src/p8/gfx_software.c src/p8/image.c src/engine/zone.h src/engine/zone_sizes.h src/engine/allocator.h src/engine/slot_tally.h src/engine/pointer_list.h src/engine/geom.h src/engine/entity_id_type.h src/engine/entity_class.h src/engine/entity_id_list.h src/engine/entity_list.h src/engine/exit_queue.h src/game/map_tables.c src/game/game_data.c src/engine/entity_registry.c src/game/gen.h src/game/grab_arena.c src/game/targeting.h src/game/bindings.c src/game/image_slot.h src/game/button_image.c src/game/mouse.c src/game/main_economy.h src/game/economy_formulas.h src/game/trade.h src/game/research.c src/game/hud.c src/game/draw_functions.c src/game/layout.c src/game/ui_zone.c src/game/planet_display.h src/game/planet.c src/game/galaxy.h
+TABLE_REFERENCE_SOURCES := src/p8/quarter_wave.h src/p8/sprite_sheet_packed.h src/p8/palette.c src/p8/draw_cost.c src/p8/draw_meter.c src/p8/gfx_software.c src/p8/image.c src/engine/zone.h src/engine/zone_sizes.h src/engine/allocator.h src/engine/slot_tally.h src/engine/pointer_list.h src/engine/geom.h src/engine/entity_id_type.h src/engine/entity_class.h src/engine/entity_id_list.h src/engine/entity_list.h src/engine/exit_queue.h src/game/map_tables.c src/game/game_data.c src/engine/entity_registry.c src/game/gen.h src/game/grab_arena.c src/game/targeting.h src/game/bindings.c src/game/image_slot.h src/game/button_image.c src/game/mouse.c src/game/main_economy.h src/game/economy_formulas.h src/game/trade.h src/game/research.c src/game/hud.c src/game/draw_functions.c src/game/layout.c src/game/ui_zone.c src/game/planet_display.h src/game/planet.c src/game/galaxy.h src/game/planet_family.c
 TABLE_REFERENCE_UNITS := $(foreach source,$(TABLE_REFERENCE_SOURCES),$(subst /,_,$(basename $(patsubst src/%,%,$(source)))))
 table_reference_objs := $(call objs,tools/table_reference.c $(patsubst %,tools/table_reference/%.c,$(TABLE_REFERENCE_UNITS)) $(filter-out $(TABLE_REFERENCE_SOURCES),$(ENGINE_SRCS)))
 
@@ -1438,7 +1438,7 @@ $(TMP_DIR)/table_reference.txt: $(TMP_DIR)/table_reference
 
 # Modules that may fail to load only on a module not yet in game/: their
 # tables are skipped, and the check fails once one of them loads.
-LUA_DEFERRED_MODULES :=
+LUA_DEFERRED_MODULES := game.planet_family
 
 lua-test-modules: tests/lua/test_modules.lua $(TMP_DIR)/table_reference.txt ## requires every game/ module under plain LuaJIT, compares its data tables and constants with the C ones
 	@luajit tests/lua/test_modules.lua $(addprefix --defer ,$(LUA_DEFERRED_MODULES)) game $(TMP_DIR)/table_reference.txt $(LUA_GUARD_FILES)
