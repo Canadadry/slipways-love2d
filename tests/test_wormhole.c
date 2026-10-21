@@ -24,6 +24,7 @@
 #include "engine/entity_registry.h"
 #include "p8/fixed.h"
 #include "game/main_economy.h"
+#include "game/message_box.h"
 #include "p8/gfx.h"
 #include "p8/input.h"
 #include "p8/vram.h"
@@ -1057,6 +1058,55 @@ static void test_fold_on_its_only_anchor(void) {
     }
 }
 
+/* A refused probe stays registered, flagged dead, while the update skips it
+ * (the entity before it was removed); a background press then builds a
+ * wormhole, which must not anchor on it. */
+static p8_input_frame_t g_refused[6];
+
+static void test_no_anchor_on_a_refused_probe(void) {
+    static const int buttons[6] = {0, 1, 0, 1, 1, 1};
+    probe_t *refused;
+    wormhole_t *mz;
+    int i;
+
+    start_game();
+    main_economy_typed()->credits = 0;
+    for (i = 0; i < 6; i++) {
+        memset(&g_refused[i], 0, sizeof g_refused[i]);
+        g_refused[i].mouse_x = 64;
+        g_refused[i].mouse_y = 100;
+        g_refused[i].mouse_buttons = buttons[i];
+    }
+    input.frames = g_refused;
+    input.frame_count = 6;
+    input.current_frame = 0;
+    dispatch_context_set_input(&input);
+
+    cart_update60();
+    p8_input_step(&input);
+    message_box_new(NULL);
+    cart_update60();
+    refused = (probe_t *)ui_left_held(main_ui());
+    assert(refused != NULL && refused->header.class == probe_class());
+    p8_input_step(&input);
+    cart_update60();
+    assert(refused->header.is_dead && entity_list_listed(live_entities(), refused));
+
+    message_box_close_shown();
+    p8_input_step(&input);
+    cart_update60();
+    mz = (wormhole_t *)ui_left_held(main_ui());
+    assert(mz != NULL && mz->header.class == wormhole_class());
+    assert(!entity_id_list_has(&mz->anchors, entity_id_of(&refused->header)) &&
+           "a wormhole anchors on no probe already flagged dead");
+
+    for (i = 4; i < 6; i++) {
+        p8_input_step(&input);
+        cart_update60();
+    }
+    assert(entity_get(mz->anchor) == NULL && target_kind(mz) == TARGET_TOO_FAR);
+}
+
 int main(void) {
     p8_vram_init(&memory);
     p8_gfx_init(&graphics);
@@ -1079,6 +1129,7 @@ int main(void) {
     in_fresh_child(test_too_far_target_wrapper);
     in_fresh_child(test_wormhole_is_a_struct);
     in_fresh_child(test_fold_on_its_only_anchor);
+    in_fresh_child(test_no_anchor_on_a_refused_probe);
 
     printf("test_wormhole: all tests passed\n");
     return 0;

@@ -679,3 +679,39 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   ms, 0.055–0.076 ms/KB); `lua-test-modules` +3.3 then +4.1 ms (51.4–55.3
   ms). Pass. With about 100–140 KB of Lua left, `lua-guard` is projected at
   82–90 ms at the end, still the check to watch.
+
+### Step 3.13
+
+- `game/game/`: demo_data (generated), loading_screen, demo_overlay,
+  attract, menu, pad_nav. `make checklist STEP=3.13` passes (135/135, 9/9).
+  Nothing is in a cycle; `LUA_DEFERRED_MODULES` stays empty.
+- `demo_generate --lua` and `make demo-lua` (outside `make test`, as
+  `bindings-lua`) write `demo_data.lua` in decimal; the data check compares
+  it with the C unit, so a stale copy fails `make test`.
+- New conventions: a forward-declared `static` is a `local name` filled
+  later by `name = function`, never `local function name`; a C table entry
+  naming a forward-declared function is stored right after its definition
+  (`galaxy_menu_on_click_table[3]`); a by-value `p8_graphics_t` is a local
+  `graphics_copy` of its five fields. `pad_nav_init` keeps its sub-tables
+  and bindings table across a re-init and copies the bindings by value with
+  a local `copy_bindings` (not exported).
+- Behaviour checked against the C with throwaway programs, all
+  byte-identical: loading screen, overlay and attract (244,940 lines;
+  mutations 16/17), menu over 24 games and 960 steps (21,215 lines; 18/18),
+  pad_nav queries (6,897 lines; 20/21), and a frame loop copying the cart's
+  pad path over every pad replay stream, the demo's buttons, random
+  streams, the 230 save-corpus worlds and three binding sets (637,366
+  frames, 96.9% of pad_nav.c's lines run; 71/82). Each mutation missed is
+  unreachable or in a state no stream reached. The planet-field trap
+  counted 0 reads over the pad comparison.
+- fix-bug: the frame loop hit `entity_id_list_at`'s dead-id assert in
+  `wormhole_drag`, in C and Lua alike; reproduced with the unmodified
+  `tmp/replay` from the title (a bindings file with `aim.back` off 5 and 6).
+  A probe refused on the frame before stayed registered and became a new
+  wormhole's anchor; `wormhole_is_anchor` now skips `is_dead` entities, in C
+  and Lua, with a test in `test_wormhole.c`; every e2e hash unchanged.
+- Own-time gate, paired against `263257a` (45 pairs, run twice; +91.5 KB
+  Lua, 23.3 KB of it demo data, +31 blocks, +6,671 lines): `lua-guard` +7.1
+  then +5.6 ms (78.9–80.6 ms, 0.061–0.078 ms/KB); `lua-test-modules` +4.3
+  then +3.5 ms (54.0–54.9 ms). Pass. With about 20–30 KB of Lua left,
+  `lua-guard` is projected at 82–86 ms at the end.

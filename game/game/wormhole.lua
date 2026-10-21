@@ -61,7 +61,7 @@ entity_class.entity_init_header(M.g_wormhole_too_far_target_wrapper, M.wormhole_
 M.g_wormhole_too_far_target_wrapper.status_text = game_data.wormhole_too_far_target_status_text
 
 local function wormhole_is_anchor(p)
-  return (p ~= nil and entity_class.entity_has(p, entity_class.ENTITY_HAS_FOLD_ANCHOR) ~= 0 and p.fold_anchor ~= 0)
+  return (p ~= nil and p.is_dead == 0 and entity_class.entity_has(p, entity_class.ENTITY_HAS_FOLD_ANCHOR) ~= 0 and p.fold_anchor ~= 0)
     and 1 or 0
 end
 
