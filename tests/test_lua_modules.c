@@ -7,7 +7,7 @@
 #define ROOT DIR "/game"
 #define REFERENCE DIR "/reference.txt"
 #define OUT DIR "/out.txt"
-#define SCRIPT "luajit tests/lua/test_modules.lua " ROOT " " REFERENCE
+#define SCRIPT "luajit tests/lua/test_modules.lua "
 
 /* Static buffer, NUL-terminated, overwritten by each call. */
 static const char *read_file(const char *path) {
@@ -47,9 +47,10 @@ static void reset(const char *lines) {
     fclose(file);
 }
 
-/* The files are relative to ROOT, separated by spaces. The exit code is read
- * back from a file: the raw status of system() needs <sys/wait.h>. */
-static int run_script(const char *files) {
+/* The files are relative to ROOT, separated by spaces; the options go before
+ * the arguments as given. The exit code is read back from a file: the raw
+ * status of system() needs <sys/wait.h>. */
+static int run_script_with(const char *options, const char *files) {
     char cmd[2048];
     char paths[1024] = "";
     char copy[1024];
@@ -58,9 +59,14 @@ static int run_script(const char *files) {
         size_t used = strlen(paths);
         snprintf(paths + used, sizeof paths - used, " " ROOT "/%s", name);
     }
-    snprintf(cmd, sizeof cmd, SCRIPT "%s > " OUT " 2>&1; echo $? > " DIR "/code", paths);
+    snprintf(cmd, sizeof cmd, SCRIPT "%s " ROOT " " REFERENCE "%s > " OUT " 2>&1; echo $? > " DIR "/code", options,
+             paths);
     assert(system(cmd) == 0);
     return atoi(read_file(DIR "/code"));
+}
+
+static int run_script(const char *files) {
+    return run_script_with("", files);
 }
 
 static int out_has(const char *text) {
@@ -179,6 +185,48 @@ static void test_strings_and_keys_are_quoted_and_a_boolean_never_equals_c(void) 
     assert(out_has("p8.text FLAG: C 1, Lua true\n"));
 }
 
+static const char *DEFERRED_REFERENCE = "p8.palette COLORS 2\n"
+                                        "engine.vec ORIGIN.x 0\n"
+                                        "engine.vec UNIT 1\n";
+
+static void test_a_deferred_module_requiring_a_module_not_yet_written_is_skipped_with_its_names(void) {
+    reset(DEFERRED_REFERENCE);
+    write_file(ROOT "/p8/palette.lua", "return { COLORS = 2 }\n");
+    write_file(ROOT "/engine/vec.lua", "local probe = require('game.probe')\nreturn { UNIT = 1 }\n");
+    assert(run_script_with("--defer engine.vec", "p8/palette.lua engine/vec.lua") == 0);
+    assert(out_has("lua-test-modules: 1 modules loaded, 1 deferred: engine.vec (2 names skipped), 1 names and 1 lines "
+                   "equal to C\n"));
+}
+
+static void test_a_deferred_module_failing_for_another_reason_still_fails(void) {
+    reset(DEFERRED_REFERENCE);
+    write_file(ROOT "/p8/palette.lua", "return { COLORS = 2 }\n");
+    write_file(ROOT "/engine/vec.lua", "local M = {}\nerror('vec broke')\nreturn M\n");
+    assert(run_script_with("--defer engine.vec", "p8/palette.lua engine/vec.lua") == 1);
+    assert(out_has("load engine.vec: " ROOT "/engine/vec.lua:2: vec broke\n"));
+    assert(out_has("engine.vec UNIT: missing in Lua\n"));
+    write_file(ROOT "/engine/vec.lua", "error(\"module 'p8.palette' not found\")\n");
+    assert(run_script_with("--defer engine.vec", "p8/palette.lua engine/vec.lua") == 1);
+    assert(out_has("load engine.vec: " ROOT "/engine/vec.lua:1: module 'p8.palette' not found\n"));
+}
+
+static void test_a_deferred_module_that_loads_fails_until_dropped_from_the_list(void) {
+    reset(DEFERRED_REFERENCE);
+    write_file(ROOT "/p8/palette.lua", "return { COLORS = 2 }\n");
+    write_file(ROOT "/engine/vec.lua", "return { ORIGIN = { x = 0 }, UNIT = 1 }\n");
+    assert(run_script_with("--defer engine.vec", "p8/palette.lua engine/vec.lua") == 1);
+    assert(out_has("engine.vec loads now: drop it from the deferred modules\n"));
+    assert(run_script("p8/palette.lua engine/vec.lua") == 0);
+}
+
+static void test_a_deferred_name_that_is_not_a_file_of_the_tree_fails(void) {
+    reset(DEFERRED_REFERENCE);
+    write_file(ROOT "/p8/palette.lua", "return { COLORS = 2 }\n");
+    write_file(ROOT "/engine/vec.lua", "local probe = require('game.probe')\nreturn { UNIT = 1 }\n");
+    assert(run_script_with("--defer engine.vec --defer engine.vex", "p8/palette.lua engine/vec.lua") == 1);
+    assert(out_has("engine.vex is deferred but is not a file of the tree\n"));
+}
+
 int main(void) {
     assert(system("mkdir -p " DIR) == 0);
     test_a_clean_tree_passes_with_a_summary();
@@ -190,6 +238,10 @@ int main(void) {
     test_a_function_field_compares_as_function_and_a_registered_table_by_name();
     test_a_module_returning_its_table_is_compared_whole();
     test_strings_and_keys_are_quoted_and_a_boolean_never_equals_c();
+    test_a_deferred_module_requiring_a_module_not_yet_written_is_skipped_with_its_names();
+    test_a_deferred_module_failing_for_another_reason_still_fails();
+    test_a_deferred_module_that_loads_fails_until_dropped_from_the_list();
+    test_a_deferred_name_that_is_not_a_file_of_the_tree_fails();
     puts("test_lua_modules: ok");
     return 0;
 }

@@ -1,9 +1,11 @@
 -- Requires every module of the game directory, then compares its data tables
 -- and constants with the C rendering written by tools/table_reference.c.
 -- Usage, from the repository root:
---   luajit tests/lua/test_modules.lua <game dir> <reference file> <file.lua>...
+--   luajit tests/lua/test_modules.lua [--defer <module>]... <game dir> <reference file> <file.lua>...
 -- The reference holds one block per table: "= <module> <name> <bytes>", then
 -- lines "<module> <name><path> <value>" in the order render() writes them.
+-- A deferred module may fail to load only on a module not yet in the tree,
+-- and its blocks are then skipped; it fails the check once it loads.
 local MAX_REPORTED = 5
 
 -- Run by the fake in their own check: they define LÖVE callbacks.
@@ -16,11 +18,23 @@ local sort = table.sort
 
 local function usage_failure(message)
     io.stderr:write("lua-test-modules: " .. message .. "\n")
-    io.stderr:write("usage: luajit tests/lua/test_modules.lua <game dir> <reference file> <file.lua>...\n")
+    io.stderr:write("usage: luajit tests/lua/test_modules.lua [--defer <module>]... <game dir> <reference file>"
+        .. " <file.lua>...\n")
     os.exit(2)
 end
 
-local root, reference_path = arg[1], arg[2]
+local deferred, deferred_names = {}, {}
+local first = 1
+while arg[first] == "--defer" do
+    if arg[first + 1] == nil then
+        usage_failure("--defer needs a module name")
+    end
+    deferred[arg[first + 1]] = true
+    deferred_names[#deferred_names + 1] = arg[first + 1]
+    first = first + 2
+end
+
+local root, reference_path = arg[first], arg[first + 1]
 if root == nil or reference_path == nil then
     usage_failure("missing arguments")
 end
@@ -34,24 +48,48 @@ local function report(message)
 end
 
 local modules = {}
-for i = 3, #arg do
+local in_tree = {}
+for i = first + 2, #arg do
     local path = arg[i]
     if path:sub(1, #root + 1) ~= root .. "/" or path:sub(-4) ~= ".lua" then
         usage_failure(path .. " is not a .lua file under " .. root)
     end
     local module = path:sub(#root + 2, -5):gsub("/", ".")
+    in_tree[module] = true
     if not SKIPPED[module] then
         modules[#modules + 1] = module
     end
 end
 sort(modules)
 
-local load_failures = 0
+local checked = {}
+for _, module in ipairs(modules) do
+    checked[module] = true
+end
+for _, module in ipairs(deferred_names) do
+    if not checked[module] then
+        report(module .. " is deferred but is not a file of the tree")
+    end
+end
+
+local load_failures, loaded = 0, 0
+local skipped_modules, skipped_names = {}, {}
 for _, module in ipairs(modules) do
     local ok, err = pcall(require, module)
-    if not ok then
-        load_failures = load_failures + 1
-        report("load " .. module .. ": " .. tostring(err))
+    if ok then
+        loaded = loaded + 1
+        if deferred[module] then
+            report(module .. " loads now: drop it from the deferred modules")
+        end
+    else
+        local missing = tostring(err):match("module '([^']+)' not found")
+        if deferred[module] and missing ~= nil and not in_tree[missing] then
+            skipped_modules[module] = true
+            skipped_names[#skipped_names + 1] = module
+        else
+            load_failures = load_failures + 1
+            report("load " .. module .. ": " .. tostring(err))
+        end
     end
 end
 
@@ -275,9 +313,11 @@ for _, block in ipairs(blocks) do
     end
 end
 
-local differing, compared_lines = 0, 0
+local differing, compared_lines, skipped_blocks = 0, 0, 0
 for _, block in ipairs(blocks) do
-    if block.value == nil then
+    if skipped_modules[block.module] then
+        skipped_blocks = skipped_blocks + 1
+    elseif block.value == nil then
         differing = differing + 1
         report(block.id .. ": missing in Lua")
     else
@@ -309,5 +349,10 @@ if #failures > 0 then
         " names differ from C\n")
     os.exit(1)
 end
-io.stdout:write("lua-test-modules: ", #modules, " modules loaded, ", #blocks, " names and ", compared_lines,
-    " lines equal to C\n")
+local deferral = ""
+if #skipped_names > 0 then
+    deferral = " " .. #skipped_names .. " deferred: " .. table.concat(skipped_names, ", ") .. " (" .. skipped_blocks
+        .. " names skipped),"
+end
+io.stdout:write("lua-test-modules: ", loaded, " modules loaded,", deferral, " ", #blocks - skipped_blocks,
+    " names and ", compared_lines, " lines equal to C\n")
