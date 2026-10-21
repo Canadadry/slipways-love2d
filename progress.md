@@ -57,7 +57,7 @@
   - [ ] 3.6 game: include cycle, galaxy and planets
     - [x] chunk 1: ui_zone
     - [x] chunk 2: planet_trade and planet_display
-    - [ ] chunk 3: planet and galaxy
+    - [x] chunk 3: planet and galaxy
     - [ ] chunk 4: deferred loads
     - [ ] chunk 5: planet_family
     - [ ] chunk 6: cost and record

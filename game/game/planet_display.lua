@@ -749,7 +749,7 @@ function M.planet_apply_project(self, research_project_instance)
       "a linked planet never dies: the routes kept in outgoing_routes would name it, and the cart never drops them")
     self.is_dead = 1
 
-    target_kind = planet.planet_kind_named(research_project_instance.class_name)
+    target_kind = require("game.planet_family").planet_kind_named(research_project_instance.class_name)
 
     keys.map_pos = vec.vec_make(self.map_pos.x, self.map_pos.y)
     keys.has_map_pos = entity_class.entity_has_map_pos(self)
