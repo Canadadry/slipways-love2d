@@ -61,11 +61,11 @@
     - [x] chunk 4: deferred loads
     - [x] chunk 5: planet_family
     - [x] chunk 6: cost and record
-  - [ ] 3.7 game: include cycle, economy
+  - [x] 3.7 game: include cycle, economy
     - [x] chunk 1: economy_tiers
     - [x] chunk 2: economy_score
     - [x] chunk 3: economy
-    - [ ] chunk 4: cost and record
+    - [x] chunk 4: cost and record
   - [ ] 3.8 game: include cycle, slipways, probes and wormholes
   - [ ] 3.9 game: include cycle, UI and message box, particles, background, scroll
   - [ ] 3.10 game: displays and panels

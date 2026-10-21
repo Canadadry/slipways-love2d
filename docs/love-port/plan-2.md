@@ -501,3 +501,29 @@ and the GPU backend budgets of `src/p8/gpu_sizes.h` (still measured by
   planet_family stops at its probe require). Pass. Projection at the end:
   `lua-guard` 77–91 ms (about 402 KB left), `lua-test-modules` 63–70 ms.
 - The PRD's agent had no `guideline` and settled the load plan itself.
+
+### Step 3.7
+
+- `game/game/`: economy_tiers, economy_score, economy. `make checklist
+  STEP=3.7` passes (43/43, 2/2). All three load now: their only load-time
+  values (a zero class, a four-literal archetype, a zero button) need no
+  partner; message_box, slipway, probe, planet and the siblings are required
+  at call time. `LUA_DEFERRED_MODULES` stays `game.planet_family`.
+- The economy's own bits are `has_`. That exposed a step 3.5 bug: tech_gate
+  read the header's `has` for `ECONOMY_HAS_DEMAND`, so the crowding discount
+  never applied; fixed in the economy commit (`d420259`).
+- A C `int *` context is a `{ value = 0 }` table. `economy_score_set_difficulty`
+  clears and refills `g_difficulty` in place, so a pointer handed out earlier
+  sees the new values.
+- For 3.8: probe requires `game.economy` at call time only; slipway must
+  export `slipway_class` and `slipway_served_planets_add`.
+- Behaviour checked against the C with throwaway programs, all
+  byte-identical: tiers over 387 planets, scores over 160 planets and seven
+  economy states, 30 clock calls across new years with spending, all 19
+  inventions and both end states.
+- Own-time gate, paired against `05325e9` (45 pairs; +34.4 KB Lua, +3
+  blocks, +11 lines): `lua-guard` +0.7 ms wall, +2.4 CPU (55 ms);
+  `lua-test-modules` −0.3 wall, +0.1 CPU (45 ms); within noise and the
+  model. Pass. Projection at the end: `lua-guard` 79–88 ms,
+  `lua-test-modules` 65–72 ms.
+- The PRD's agent had no `guideline` and settled its points itself.
