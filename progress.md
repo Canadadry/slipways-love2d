@@ -11,6 +11,16 @@
     - [x] chunk 5: budget, sweep and record
 - [ ] Phase 2 — Runtime and LÖVE glue
   - [ ] 2.1 `game/p8/` and `game/love/`
+    - [x] chunk 1: static guard
+    - [ ] chunk 2: conventions and the plain runtime
+    - [ ] chunk 3: drawing core in Lua
+    - [ ] chunk 4: check harness and first LÖVE calls
+    - [ ] chunk 5: lines and circles
+    - [ ] chunk 6: fill patterns
+    - [ ] chunk 7: sprites, colour swaps and the map
+    - [ ] chunk 8: text
+    - [ ] chunk 9: image slots
+    - [ ] chunk 10: meter, budget and record
 - [ ] Phase 3 — Engine and game
   - [ ] 3.1 engine: memory and basics
   - [ ] 3.2 engine: entity classes, ids, lists, exit queue

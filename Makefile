@@ -502,6 +502,9 @@ $(TMP_DIR)/test_button_guard: $(call objs,tests/test_button_guard.c) tools/butto
 $(TMP_DIR)/test_checklist: $(call objs,tests/test_checklist.c) tools/checklist.lua | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
+$(TMP_DIR)/test_lua_guard: $(call objs,tests/test_lua_guard.c) tools/lua_guard.lua | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
 test_fake_love_guard_objs := $(call objs,tests/test_fake_love_guard.c)
 $(TMP_DIR)/test_fake_love_guard: $(test_fake_love_guard_objs) tools/fake_love_guard.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
@@ -892,6 +895,7 @@ UNIT_TESTS := \
     test_random_guard \
     test_button_guard \
     test_fake_love_guard \
+    test_lua_guard \
     test_float_link \
     test_constants_check \
     test_background_draw \
@@ -1087,7 +1091,7 @@ FAKE_LOVE_CHECKS := $(LOVE_CAPTURE_CHECKS) unit-run-test_fake_love unit-run-test
 
 # Longest first: `-j` starts prerequisites in this order, and float-guard
 # alone (~4 s, serial) sets the wall time when it starts behind the checks.
-test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) lua-test-fixed pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
+test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) lua-test-fixed lua-guard pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
 
 test-all: test e2e ## test + e2e, the full suite
 
@@ -1381,6 +1385,14 @@ lua-sweep-fixed: tests/lua/test_fixed.lua $(wildcard game/p8/*.lua) $(TMP_DIR)/f
 	./$(TMP_DIR)/fixed_reference --sweep $(FIXED_SWEEP_COUNT) $(FIXED_SWEEP_SEED) | luajit tests/lua/test_fixed.lua -
 
 .PHONY: lua-test-fixed lua-sweep-fixed
+
+# wildcard, not find: the guard stays a single process.
+LUA_GUARD_FILES := $(wildcard game/*.lua game/*/*.lua game/*/*/*.lua)
+
+lua-guard: tools/lua_guard.lua ## fails when a game/ Lua file does not compile or uses a LÖVE name off the design's list
+	@luajit tools/lua_guard.lua game $(LUA_GUARD_FILES)
+
+.PHONY: lua-guard
 
 $(TMP_DIR)/asset_export: $(call objs,src/cmd/asset_export.c src/devtools/asset_image.c src/devtools/png_writer.c src/p8/palette.c src/p8/sprite_sheet.c src/p8/vram.c src/p8/gfx_software.c src/p8/gfx.c) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)

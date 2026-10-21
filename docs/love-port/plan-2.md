@@ -81,6 +81,10 @@ checklist); every Lua file of the step loads under LuaJIT with its
 read or write of an undeclared global; a check in `make test`, under the
 timing rules of `docs/love-port/design.md`, finds the step's data tables
 equal to the C ones.
+Step 3.1 creates these three checks once, each over the whole tree; steps
+3.2 to 3.15 add their files and tables to them and add no `make test` target.
+Step 3.1's note records their cost per file and per table, against what is
+left of the plan-wide 3 % (step 1.2's note).
 
 3.1. `game/engine/` memory and basics: zones, allocator, value and pointer
    lists, slot groups, vectors and geometry.
