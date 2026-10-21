@@ -14,10 +14,23 @@
 --     unsigned 0 .. 2^32-1, i32 values the signed raw value.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
+local entity_id = require("engine.entity_id")
+local entity_id_type = require("engine.entity_id_type")
+local entity_registry = require("engine.entity_registry")
+local background_module = require("game.background")
+local economy_score = require("game.economy_score")
 local game_data = require("game.game_data")
 local gen = require("game.gen")
 local map_tables = require("game.map_tables")
+local planet_module = require("game.planet")
+local planet_family = require("game.planet_family")
+local planet_family_trade = require("game.planet_family_trade")
+local probe = require("game.probe")
+local research = require("game.research")
+local structure_icon = require("game.structure_icon")
+local trade = require("game.trade")
 local cint = require("p8.cint")
+local fixed = require("p8.fixed")
 
 local M = {}
 
@@ -820,6 +833,340 @@ function M.save_state_crc32(bytes, count)
     crc = crc + 0x100000000
   end
   return crc
+end
+
+
+local function vec_of(vec)
+  local out = {}
+  out.x = vec.x
+  out.y = vec.y
+  return out
+end
+
+local function difficulty_index()
+  local difficulty = economy_score.economy_score_difficulty()
+  assert(difficulty ~= nil and difficulty.name ~= nil, "save_state_capture: a running game has a difficulty")
+  for i = 0, game_data.DIFFICULTY_OPTIONS_COUNT - 1 do
+    if game_data.difficulty_options_table[i].name == difficulty.name then
+      return i + 1
+    end
+  end
+  assert(false, "save_state_capture: the difficulty is not a difficulty_options_table entry")
+  return 0
+end
+
+local function technology_index(name)
+  for i = 0, map_tables.TECHNOLOGIES_COUNT - 1 do
+    if map_tables.technologies_table[i].name == name then
+      return i
+    end
+  end
+  assert(false, "save_state_capture: an invented tech is not a technologies_table entry")
+  return 0
+end
+
+-- Lua only: planet_types_table entry -> its C index.
+local planet_type_index_of = {}
+for i = 0, game_data.PLANET_TYPES_COUNT - 1 do
+  planet_type_index_of[game_data.planet_types_table[i]] = i
+end
+
+local function planet_type_index(type)
+  assert(planet_type_index_of[type] ~= nil,
+    "save_state_capture: a planet type is not a planet_types_table entry")
+  return planet_type_index_of[type]
+end
+
+-- The 1-based planet_types_table entry that owns the description pointer
+-- (the current type first, terraform leaves the old one's); 0 for NULL.
+local function description_type_index(planet)
+  if planet.description == nil then
+    return 0
+  end
+  if planet.planet_type ~= nil and planet.description == planet.planet_type.description then
+    return planet_type_index(planet.planet_type) + 1
+  end
+  for i = 0, game_data.PLANET_TYPES_COUNT - 1 do
+    if planet.description == game_data.planet_types_table[i].description then
+      return i + 1
+    end
+  end
+  assert(false, "save_state_capture: a planet description is not a planet_types_table entry's")
+  return 0
+end
+
+local function capture_economy(out)
+  local economy = probe.main_economy_typed()
+  assert(economy ~= nil, "save_state_capture: a running game has an economy")
+  assert(economy.invented.count <= map_tables.TECHNOLOGIES_COUNT)
+  out.credits = economy.credits
+  out.research_points = economy.research_points
+  out.era = economy.era
+  out.year = economy.year
+  out.year_ticks = economy.year_ticks
+  out.invented_count = economy.invented.count
+  for i = 0, economy.invented.count - 1 do
+    out.invented[i] = technology_index(economy.invented.items[i])
+  end
+end
+
+local function capture_type_picker(out)
+  local picker = planet_module.planet_type_picker()
+  local walk
+  assert(picker ~= nil, "save_state_capture: a running game has a type picker")
+  walk = gen.weighted_picker_walk(picker)
+  assert(walk ~= nil, "save_state_capture: the type picker draws from a random walk")
+  out.tickets_count = picker.tickets_count
+  for i = 0, picker.tickets_count - 1 do
+    out.tickets[i] = planet_type_index(picker.tickets[i])
+  end
+  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
+    out.recent_set[i] = (picker.recent_set[i] ~= 0) and 1 or 0
+    out.recent[i] = (picker.recent_set[i] ~= 0) and planet_type_index(picker.recent[i]) or 0
+  end
+  out.multiplier = picker.multiplier
+  out.walk_step = walk.step
+  out.walk_bias = walk.bias
+end
+
+-- The tag's entities in registration order; 0 entities when the tag has no list.
+local function tagged_count(tag)
+  local list = entity_registry.entities_by_tag(tag)
+  return (list ~= nil) and list.count or 0
+end
+
+local function tagged_at(tag, index)
+  return entity_registry.entities_by_tag(tag).items[index]
+end
+
+local function capture_probe(out)
+  for i = 0, tagged_count(entity_class.TAG_PROBE) - 1 do
+    local e = tagged_at(entity_class.TAG_PROBE, i)
+    if e.class ~= probe.probe_class() or e.is_dead ~= 0 or e.state ~= entity_class.ENTITY_STATE_SETTLED then
+      goto continue
+    end
+    out.has_probe = 1
+    out.probe.pos = vec_of(entity_class.entity_pos(e))
+    out.probe.map_pos = vec_of(entity_class.entity_map_pos(e))
+    out.probe.fold_anchor = e.fold_anchor
+    do return end
+    ::continue::
+  end
+end
+
+local function is_saved(e)
+  return (e.is_dead == 0 and e.state ~= entity_class.ENTITY_STATE_PLACING) and 1 or 0
+end
+
+local function node_kind(cls)
+  local classes = {}
+  classes[M.SAVE_NODE_PLANET] = planet_module.planet_class()
+  classes[M.SAVE_NODE_PROTOSTAR] = planet_family.protostar_class()
+  classes[M.SAVE_NODE_STRUCTURE] = planet_family.structure_class()
+  classes[M.SAVE_NODE_PROCESSOR] = planet_family.processor_class()
+  classes[M.SAVE_NODE_SLIPGATE] = planet_family_trade.slipgate_class()
+  classes[M.SAVE_NODE_INFRASPACE_GATE] = planet_family_trade.infraspace_gate_class()
+  classes[M.SAVE_NODE_TRADING_HUB] = planet_family.trading_hub_class()
+  classes[M.SAVE_NODE_SYNTHESIZER] = planet_family_trade.synthesizer_class()
+  classes[M.SAVE_NODE_ASCENSION] = planet_family.ascension_class()
+  for i = 0, M.SAVE_NODE_KIND_COUNT - 1 do
+    if cls == classes[i] then
+      return i
+    end
+  end
+  assert(false, "save_state_capture: a TAG_NODE entity is not one of the nine node classes")
+  return 0
+end
+
+local function project_index(id)
+  local project = research.research_project_get(id)
+  if project == nil then
+    return 0
+  end
+  for k = 1, research.research_projects_count() do
+    if research.research_projects_at(k) == project then
+      return k
+    end
+  end
+  assert(false, "save_state_capture: a planet's project is not in the research project table")
+  return 0
+end
+
+-- The ids of the captured nodes and slipways, in save order:
+-- { nodes, node_count, slipways, slipway_count }, both id arrays 0-indexed.
+
+local function index_of(ids, count, id)
+  for i = 0, count - 1 do
+    if entity_id_type.entity_id_equal(ids[i], id) ~= 0 then
+      return i
+    end
+  end
+  assert(false, "save_state_capture: a route, slipway or slipway list names an entity the save did not capture")
+  return 0
+end
+
+local function capture_node_fields(node, planet)
+  local header = planet
+  local id = planet_module.planet_id_or_null(planet)
+
+  node.kind = node_kind(header.class)
+  node.state = bit.band(header.state, 0xFF)
+  if entity_class.entity_has_pos(header) ~= 0 then
+    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_POS)
+    node.pos = vec_of(header.pos)
+  end
+  if entity_class.entity_has_map_pos(header) ~= 0 then
+    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_MAP_POS)
+    node.map_pos = vec_of(header.map_pos)
+  end
+  if id ~= nil then
+    assert(#id <= M.SAVE_STATE_PLANET_ID_MAX)
+    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_PLANET_ID)
+    node.planet_id = id
+  end
+  node.fold_anchor = header.fold_anchor
+  node.infraspace = header.infraspace
+  if planet.planet_type ~= nil then
+    node.planet_type = planet_type_index(planet.planet_type) + 1
+  end
+  node.description_type = description_type_index(planet)
+  node.project = project_index(planet.project)
+  if bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) ~= 0 then
+    assert(planet.needs.count <= M.SAVE_STATE_NEEDS_CAP)
+    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_NEEDS)
+    node.need_count = planet.needs.count
+    for i = 0, planet.needs.count - 1 do
+      local need = planet.needs.items[i]
+      assert(need ~= nil)
+      node.needs[i].has_resource = (need.row.has_resource ~= 0) and 1 or 0
+      node.needs[i].resource = (need.row.has_resource ~= 0) and need.row.resource or 0
+    end
+  end
+  if planet.has_development_tier ~= 0 then
+    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_DEVELOPMENT_TIER)
+    node.development_tier = planet.development_tier
+  end
+  if planet.has_production_bonus ~= 0 then
+    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_PRODUCTION_BONUS)
+    node.production_bonus = planet.production_bonus
+  end
+  if bit.band(planet.has_, planet_module.PLANET_HAS_PRODUCTION) ~= 0 then
+    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_PRODUCTION)
+    if planet.production.has_resource ~= 0 then
+      node.flags = bit.bor(node.flags, M.SAVE_NODE_PRODUCTION_HAS_RESOURCE)
+      node.production_resource = planet.production.resource
+    end
+  end
+  if planet.synthesizable_resources ~= planet.archetype.synthesizable_resources then
+    node.flags = bit.bor(node.flags, M.SAVE_NODE_SYNTHESIZER_SPENT)
+  end
+  if node_has_state_time(node.kind, node.state) ~= 0 then
+    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_STATE_TIME)
+    node.state_time = header.state_time
+  end
+end
+
+-- Returns first, then the C's *added.
+local function add_route_indices(out, list, ids, count)
+  local first = out.route_index_count
+  assert(list.count <= 0xFF and first + list.count <= M.SAVE_STATE_ROUTE_INDICES_CAP)
+  for i = 0, list.count - 1 do
+    out.route_indices[out.route_index_count] = index_of(ids, count, list.items[i])
+    out.route_index_count = out.route_index_count + 1
+  end
+  return first, list.count
+end
+
+local function capture_node_links(out, node, planet, ids)
+  node.first_route = out.route_count
+  if bit.band(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES) ~= 0 then
+    local count = trade.trade_route_list_count(planet.outgoing_routes)
+    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_OUTGOING_ROUTES)
+    assert(out.route_count + count <= M.SAVE_STATE_ROUTES_CAP)
+    for i = 0, count - 1 do
+      local route = trade.trade_route_list_at(planet.outgoing_routes, i)
+      local saved = save_route_zero()
+      out.routes[out.route_count] = saved
+      out.route_count = out.route_count + 1
+      saved.first_planet, saved.planet_count = add_route_indices(out, route.planets, ids.nodes, ids.node_count)
+      saved.first_slipway, saved.slipway_count = add_route_indices(out, route.slipways, ids.slipways, ids.slipway_count)
+      saved.has_resource = (route.has_resource ~= 0) and 1 or 0
+      saved.resource_is_bool = (route.resource_is_bool ~= 0) and 1 or 0
+      saved.resource = (route.has_resource ~= 0) and route.resource or 0
+    end
+    node.route_count = count
+  end
+  node.first_slipway = out.node_slipway_count
+  assert(planet.slipways.count <= 0xFF and out.node_slipway_count + planet.slipways.count <= M.SAVE_STATE_NODE_SLIPWAYS_CAP)
+  for i = 0, planet.slipways.count - 1 do
+    out.node_slipways[out.node_slipway_count] = index_of(ids.slipways, ids.slipway_count, planet.slipways.items[i])
+    out.node_slipway_count = out.node_slipway_count + 1
+  end
+  node.slipway_count = planet.slipways.count
+end
+
+local function capture_world(out, ids)
+  for i = 0, tagged_count(entity_class.TAG_NODE) - 1 do
+    local e = tagged_at(entity_class.TAG_NODE, i)
+    if is_saved(e) ~= 0 then
+      assert(ids.node_count < M.SAVE_STATE_NODES_CAP, "save_state_capture: node indices are one byte")
+      ids.nodes[ids.node_count] = entity_id.entity_id_link(e)
+      ids.node_count = ids.node_count + 1
+    end
+  end
+  for i = 0, tagged_count(entity_class.TAG_SLIPWAY) - 1 do
+    local e = tagged_at(entity_class.TAG_SLIPWAY, i)
+    local slipway = e
+    local saved
+    if is_saved(e) == 0 or slipway.end_is_point ~= 0 then
+      goto continue
+    end
+    assert(ids.slipway_count < M.SAVE_STATE_SLIPWAYS_CAP, "save_state_capture: slipway indices are one byte")
+    ids.slipways[ids.slipway_count] = entity_id.entity_id_link(e)
+    ids.slipway_count = ids.slipway_count + 1
+    saved = save_slipway_zero()
+    out.slipways[out.slipway_count] = saved
+    out.slipway_count = out.slipway_count + 1
+    saved.start = index_of(ids.nodes, ids.node_count, slipway.start)
+    saved.end_ = index_of(ids.nodes, ids.node_count, slipway.end_)
+    saved.state_time = e.state_time
+    ::continue::
+  end
+  for i = 0, ids.node_count - 1 do
+    local planet = entity_id.entity_get(ids.nodes[i])
+    local node = save_node_zero()
+    out.nodes[out.node_count] = node
+    out.node_count = out.node_count + 1
+    capture_node_fields(node, planet)
+    capture_node_links(out, node, planet, ids)
+  end
+end
+
+function M.save_state_capture(out)
+  local ids = {}
+  local vanish_walk = planet_module.planet_vanish_roll()
+  local background = background_module.background_live()
+  local ok, counter
+
+  assert(vanish_walk ~= nil, "save_state_capture: a running game has a vanish walk")
+  assert(background ~= nil, "save_state_capture: a running game has a background")
+  save_state_zero(out)
+  ids.nodes = {}
+  ids.node_count = 0
+  ids.slipways = {}
+  ids.slipway_count = 0
+  out.difficulty = difficulty_index()
+  capture_economy(out.economy)
+  out.rnd_state = fixed.p8_fixed_rnd_state()
+  out.background_seed = background.seed
+  capture_type_picker(out.type_picker)
+  out.vanish_walk.step = vanish_walk.step
+  out.vanish_walk.bias = vanish_walk.bias
+  ok, counter = structure_icon.structure_icon_id_counter(0)
+  out.structure_id_counter = (ok ~= 0) and counter or 0
+  capture_probe(out)
+  out.camera_map_pos = vec_of(entity_registry.main_camera().map_pos)
+  capture_world(out, ids)
 end
 
 return M

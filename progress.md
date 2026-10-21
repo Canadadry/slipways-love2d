@@ -93,7 +93,7 @@
     - [x] chunk 4: cost and record
   - [ ] 3.12 game: save
     - [x] chunk 1: codec
-    - [ ] chunk 2: capture
+    - [x] chunk 2: capture
     - [ ] chunk 3: load and storage
     - [ ] chunk 4: cost and record
   - [ ] 3.13 game: menus, title and attract
