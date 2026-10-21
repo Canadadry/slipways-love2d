@@ -463,7 +463,7 @@ test_love_e2e_objs := $(call objs,tests/test_love_e2e.c tests/fake_love_cli.c)
 $(TMP_DIR)/test_love_e2e: $(test_love_e2e_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) tools/love_e2e_run.sh tools/love_e2e_report.sh tools/frames_check.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-test_love_runtime_objs := $(call objs,tests/test_love_runtime.c tests/fake_love_cli.c src/p8/gfx.c src/p8/gfx_software.c src/p8/image.c src/p8/vram.c src/p8/sprite_sheet.c)
+test_love_runtime_objs := $(call objs,tests/test_love_runtime.c tests/fake_love_cli.c src/p8/gfx.c src/p8/gfx_software.c src/p8/image.c src/p8/vram.c src/p8/sprite_sheet.c src/p8/draw_cost.c src/p8/draw_meter.c)
 $(TMP_DIR)/test_love_runtime: $(test_love_runtime_objs) $(TMP_DIR)/fake_love $(wildcard game/p8/*.lua game/love/*.lua tests/fixtures/love_runtime*/*.lua tests/fixtures/love_runtime*/*.txt) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 

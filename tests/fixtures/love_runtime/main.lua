@@ -1,7 +1,8 @@
 -- Plays scene.txt through game/p8/ with the LÖVE backend, frame k of the
 -- scene in the k-th love.draw. tests/test_love_runtime.c plays the same file
--- through the C runtime and compares the frames.
+-- through the C runtime and compares the frames and the meter's counts.
 local bit = require("bit")
+local draw_meter = require("p8.draw_meter")
 local gfx_module = require("p8.gfx")
 local image = require("p8.image")
 local sprite_sheet = require("p8.sprite_sheet")
@@ -224,6 +225,7 @@ function love.load()
   gfx_module.p8_gfx_init(gfx)
   sprite_sheet.p8_sprite_sheet_load(mem)
   gfx_module.p8_draw_backend_set(backend.backend_get())
+  draw_meter.p8_draw_meter_install()
   frames = parse_scene(love.filesystem.read("scene.txt"))
 end
 
@@ -234,5 +236,15 @@ function love.draw()
     play_call(call)
   end
   screen.screen_frame_end()
+  draw_meter.p8_draw_meter_frame_end()
   next_frame = next_frame + 1
+end
+
+local function format_counts(counts)
+  return string.format("%d %d %d %d %d\n", counts.bytes, counts.build_bytes, counts.primitives, counts.cluts,
+    counts.patterns)
+end
+
+function debug_state()
+  return format_counts(draw_meter.p8_draw_meter_last_frame()) .. format_counts(draw_meter.p8_draw_meter_peak())
 end

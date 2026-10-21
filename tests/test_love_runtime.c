@@ -1,7 +1,8 @@
 /* The scene of a fixture game directory (tests/fixtures/love_runtime/ or one
  * symlinking its main.lua) played by the C runtime and by game/p8/ with the
- * LÖVE backend in tmp/fake_love: every frame must be the same, pixel for
- * pixel. Usage: test_love_runtime <fixture dir> <scene frame count>. */
+ * LÖVE backend in tmp/fake_love, the draw meter installed on both: every
+ * frame must be the same, pixel for pixel, and so must the meter's counts.
+ * Usage: test_love_runtime <fixture dir> <scene frame count>. */
 
 #include <assert.h>
 #include <stdio.h>
@@ -9,6 +10,7 @@
 #include <string.h>
 
 #include "fake_love_cli.h"
+#include "p8/draw_meter.h"
 #include "p8/fatal.h"
 #include "p8/gfx.h"
 #include "p8/image.h"
@@ -21,8 +23,10 @@
 #define MAX_ARGUMENTS 64
 #define MAX_TEXT 256
 #define MAX_BUILD_CALLS 64
+#define MAX_STATE 256
 
 static unsigned char expected[MAX_SCENE_FRAMES][FRAME_SIZE];
+static char expected_state[MAX_STATE];
 
 static const char *game_dir;
 static char scene[MAX_PATH];
@@ -241,6 +245,17 @@ static void record_build_call(const char *operation, const int *values, int coun
         strcpy(call->text, text);
 }
 
+static int append_counts(char *text, size_t size, p8_draw_meter_counts_t counts) {
+    return snprintf(text, size, "%lu %lu %d %d %d\n", counts.bytes, counts.build_bytes, counts.primitives,
+                    counts.cluts, counts.patterns);
+}
+
+/* The scene program's debug_state(): the meter's last frame, then its peak. */
+static void write_expected_state(void) {
+    int length = append_counts(expected_state, sizeof expected_state, p8_draw_meter_last_frame());
+    append_counts(expected_state + length, sizeof expected_state - (size_t)length, p8_draw_meter_peak());
+}
+
 /* Returns the number of frames the scene ends. */
 static int play_scene_in_c(void) {
     char *text = fake_love_cli_read_file(scene, NULL);
@@ -250,6 +265,7 @@ static int play_scene_in_c(void) {
     p8_vram_init(&mem);
     p8_gfx_init(&gfx);
     p8_sprite_sheet_load(&mem);
+    p8_draw_meter_install();
     int frames = 0;
     bool open_frame = false;
     int build_slot = -1, build_width = 0, build_height = 0, build_line = 0;
@@ -305,6 +321,7 @@ static int play_scene_in_c(void) {
             if (frames == MAX_SCENE_FRAMES)
                 scene_fail("more frames than MAX_SCENE_FRAMES", NULL);
             pack_screen(&mem, expected[frames++]);
+            p8_draw_meter_frame_end();
             open_frame = false;
             continue;
         }
@@ -316,6 +333,7 @@ static int play_scene_in_c(void) {
         scene_fail("build without end", NULL);
     if (open_frame)
         scene_fail("calls after the last frame", NULL);
+    write_expected_state();
     return frames;
 }
 
@@ -361,12 +379,12 @@ static int compare_frames(const unsigned char *capture, int frames) {
     return differing_frames;
 }
 
-static void test_the_lua_runtime_draws_every_scene_frame_as_the_c_runtime(int scene_frames) {
+static void test_the_lua_runtime_draws_and_meters_every_scene_frame_as_the_c_runtime(int scene_frames) {
     int frames = play_scene_in_c();
     assert(frames == scene_frames && "the scene must end exactly the frame count given on the command line");
     write_replay(frames);
-    char args[3 * MAX_PATH];
-    snprintf(args, sizeof args, "%s %s %s", game_dir, replay_path, capture_path);
+    char args[4 * MAX_PATH];
+    snprintf(args, sizeof args, "%s %s %s %s", game_dir, replay_path, capture_path, state_path);
     int status = fake_love_cli_run("", args, capture_path, state_path, log_path);
     if (status != 0) {
         char *log = fake_love_cli_read_file(log_path, NULL);
@@ -380,6 +398,12 @@ static void test_the_lua_runtime_draws_every_scene_frame_as_the_c_runtime(int sc
     int differing_frames = compare_frames(capture, frames);
     free(capture);
     assert(differing_frames == 0 && "every Lua frame must equal the C frame");
+    char *state = fake_love_cli_read_file(state_path, NULL);
+    assert(state != NULL && "the scene program must write its state");
+    if (strcmp(state, expected_state) != 0)
+        fprintf(stderr, "test_love_runtime: %s: meter counts differ:\nC:\n%sLua:\n%s", game_dir, expected_state, state);
+    assert(strcmp(state, expected_state) == 0 && "the Lua meter must count as the C meter");
+    free(state);
 }
 
 int main(int argc, char **argv) {
@@ -396,7 +420,7 @@ int main(int argc, char **argv) {
     char command[3 * MAX_PATH];
     snprintf(command, sizeof command, "rm -rf %s && mkdir -p %s", work_dir, work_dir);
     assert(system(command) == 0);
-    test_the_lua_runtime_draws_every_scene_frame_as_the_c_runtime(atoi(argv[2]));
+    test_the_lua_runtime_draws_and_meters_every_scene_frame_as_the_c_runtime(atoi(argv[2]));
     snprintf(command, sizeof command, "rm -rf %s", work_dir);
     assert(system(command) == 0);
     printf("test_love_runtime: %s: all tests passed\n", game_dir);
