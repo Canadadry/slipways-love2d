@@ -20,7 +20,7 @@
 #define STATE DIR "/state.txt"
 #define LOG DIR "/stderr.txt"
 #define FRAME_SIZE (P8_SCREEN_WIDTH * P8_SCREEN_HEIGHT / 2)
-#define SCENE_FRAMES 9
+#define SCENE_FRAMES 11
 #define MAX_ARGUMENTS 64
 
 static unsigned char expected[SCENE_FRAMES][FRAME_SIZE];
@@ -102,6 +102,15 @@ static void play_call(p8_graphics_t *gfx, p8_vram_t *mem, const char *operation,
     } else if (strcmp(operation, "circfill") == 0) {
         require_count(operation, count, 4);
         p8_circfill(gfx, mem, v[0], v[1], v[2], v[3]);
+    } else if (strcmp(operation, "fillp") == 0) {
+        require_count(operation, count, 1);
+        p8_fillp(gfx, (unsigned int)v[0]);
+    } else if (strcmp(operation, "fillp_transparent") == 0) {
+        require_count(operation, count, 1);
+        p8_fillp_transparent(gfx, (unsigned int)v[0]);
+    } else if (strcmp(operation, "fillp_reset") == 0) {
+        require_count(operation, count, 0);
+        p8_fillp_reset(gfx);
     } else if (strcmp(operation, "rectfill") == 0) {
         require_count(operation, count, 5);
         p8_rectfill(gfx, mem, v[0], v[1], v[2], v[3], v[4]);

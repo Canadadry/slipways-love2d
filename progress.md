@@ -16,7 +16,7 @@
     - [x] chunk 3: drawing core in Lua
     - [x] chunk 4: check harness and first LÖVE calls
     - [x] chunk 5: lines and circles
-    - [ ] chunk 6: fill patterns
+    - [x] chunk 6: fill patterns
     - [ ] chunk 7: sprites, colour swaps and the map
     - [ ] chunk 8: text
     - [ ] chunk 9: image slots

@@ -148,3 +148,60 @@ camera 20 -20
 circfill 40 40 15 5
 camera 0 0
 frame
+# rectfill with a pattern: the high nibble on set bits, the low one on clear
+# bits, the pattern aligned on the world coordinates under several camera
+# phases (negative ones included), corners in either order, clipped on every
+# side, one pixel; transparent bits leaving what is under them; the pattern
+# kept across calls until fillp_reset, then a plain fill again.
+rectfill -5 -5 200 200 1
+fillp 0x5a5a
+rectfill 2 3 41 22 0x8c
+rectfill 50 30 44 4 0x8c
+rectfill -7 -6 5 8 0x8c
+rectfill 150 110 175 130 0x8c
+rectfill 60 60 60 60 0x8c
+camera -1 2
+rectfill 70 10 101 29 0x8c
+camera 3 -5
+rectfill 110 10 141 29 0x8c
+camera -6 -7
+rectfill 0 40 33 59 0x8c
+camera 1001 -2003
+rectfill 1045 -1963 1078 -1944 0x8c
+camera 0 0
+fillp 0x8421
+rectfill 120 70 155 100 0x3b
+fillp_transparent 0x0f0f
+rectfill 2 70 50 105 0x2e
+camera 2 1
+rectfill 55 70 100 105 0x2e
+camera 0 0
+fillp_reset
+rectfill 104 104 112 112 0x67
+frame
+# circfill with a pattern: span by span on the world phase, radius 0 and
+# small radii, partly off screen, under several camera phases, transparent
+# bits over an earlier fill, the patterns of the previous frame reused.
+rectfill -5 -5 200 200 1
+fillp 0x5a5a
+circfill 20 20 15 0x8c
+circfill 50 10 0 0x8c
+circfill 60 10 1 0x8c
+circfill 75 12 3 0x8c
+circfill 0 60 14 0x8c
+circfill 159 100 18 0x8c
+camera -3 1
+circfill 100 30 17 0x8c
+camera 5 -6
+circfill 140 30 12 0x8c
+camera 0 0
+fillp 0x8421
+circfill 40 90 22 0x3b
+fillp_transparent 0x0f0f
+circfill 40 90 16 0x2e
+camera -7 -2
+circfill 90 80 20 0x2e
+camera 0 0
+fillp_reset
+circfill 120 70 4 0x67
+frame

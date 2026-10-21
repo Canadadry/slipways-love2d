@@ -631,10 +631,12 @@ what the player sees:
 - **Circles and lines:** drawn by the game itself, pixel by pixel (`points`)
   or in spans (`rectangle`), with the C game's algorithms.
 - **Fill patterns** (PICO-8 `fillp`): the game builds them as images and draws
-  those. The pattern is aligned to the **screen**, not the shape: the drawn
-  image is offset accordingly. Rectangles and lines tile a 4×4 pattern image;
-  a patterned disk is built pixel by pixel into an image once per radius and
-  kept.
+  those. The pattern is aligned to the **world** coordinates, the ones before
+  the camera, as the C aligns it, not to the screen or the shape: each span
+  draws the quad of a screen-sized pattern image (one per pattern, colour
+  byte and transparent flag, built once and kept) that starts at the world
+  phase of its first pixel. A patterned disk is drawn span by span from that
+  image, like a plain one, rather than built once per radius.
 - **See-through colours and colour swaps** (PICO-8 `palt` and the 16 palette
   blocks of `hud.c`): the game builds a recoloured copy of the sprite sheet per
   combination it uses, the first time it is needed, and keeps it. Flat shapes

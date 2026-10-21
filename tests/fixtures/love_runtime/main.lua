@@ -112,6 +112,15 @@ local function play_call(call)
   elseif operation == "circfill" then
     require_count(call, 4)
     gfx_module.p8_circfill(gfx, mem, v[0], v[1], v[2], v[3])
+  elseif operation == "fillp" then
+    require_count(call, 1)
+    gfx_module.p8_fillp(gfx, v[0])
+  elseif operation == "fillp_transparent" then
+    require_count(call, 1)
+    gfx_module.p8_fillp_transparent(gfx, v[0])
+  elseif operation == "fillp_reset" then
+    require_count(call, 0)
+    gfx_module.p8_fillp_reset(gfx)
   elseif operation == "rectfill" then
     require_count(call, 5)
     gfx_module.p8_rectfill(gfx, mem, v[0], v[1], v[2], v[3], v[4])

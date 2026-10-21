@@ -4,6 +4,7 @@
 local bit = require("bit")
 local fatal = require("p8.fatal")
 local vram = require("p8.vram")
+local pattern = require("love.pattern")
 local screen = require("love.screen")
 
 local M = {}
@@ -163,25 +164,61 @@ local function max(a, b)
   return a < b and b or a
 end
 
--- In the current colour, the world rectangle with inclusive corners
--- (x0, y0) <= (x1, y1), under the camera and clipped to the screen.
-local function fill_rectangle(gfx, x0, y0, x1, y1)
+-- Clips the world rectangle with inclusive corners (x0, y0) <= (x1, y1) to
+-- the screen under the camera; returns its screen corners, or nil when
+-- nothing is left.
+local function clip_rectangle(gfx, x0, y0, x1, y1)
   local sx0 = max(x0 - gfx.camera_x, 0)
   local sx1 = min(x1 - gfx.camera_x, vram.P8_SCREEN_WIDTH - 1)
   local sy0 = max(y0 - gfx.camera_y, 0)
   local sy1 = min(y1 - gfx.camera_y, vram.P8_SCREEN_HEIGHT - 1)
   if sx0 > sx1 or sy0 > sy1 then
+    return nil
+  end
+  return sx0, sy0, sx1, sy1
+end
+
+-- In the current colour, the world rectangle with inclusive corners
+-- (x0, y0) <= (x1, y1), under the camera and clipped to the screen.
+local function fill_rectangle(gfx, x0, y0, x1, y1)
+  local sx0, sy0, sx1, sy1 = clip_rectangle(gfx, x0, y0, x1, y1)
+  if sx0 == nil then
     return
   end
   love.graphics.rectangle("fill", sx0, sy0, sx1 - sx0 + 1, sy1 - sy0 + 1)
 end
 
--- The C's fillp_color with no pattern: the low nibble, never a fatal.
+-- Selects how fill_span draws, as the C's fillp_color: returns the pattern
+-- image (colour set to white), or nil after setting the colour col & 0x0F.
+local function begin_fill(gfx, col)
+  if gfx.fillp_pattern == 0 then
+    set_color(bit.band(col, 0x0F))
+    return nil
+  end
+  love.graphics.setColor(1, 1, 1)
+  return pattern.pattern_image(gfx, col)
+end
+
+-- The world rectangle (x0, y0) <= (x1, y1) as begin_fill chose: one integer
+-- rectangle, or one quad of the pattern image cut at the world phase of its
+-- first pixel, since the C aligns the pattern before the camera.
+local function fill_span(gfx, image, x0, y0, x1, y1)
+  if image == nil then
+    fill_rectangle(gfx, x0, y0, x1, y1)
+    return
+  end
+  local sx0, sy0, sx1, sy1 = clip_rectangle(gfx, x0, y0, x1, y1)
+  if sx0 == nil then
+    return
+  end
+  local quad = love.graphics.newQuad((sx0 + gfx.camera_x) % 4, (sy0 + gfx.camera_y) % 4, sx1 - sx0 + 1, sy1 - sy0 + 1,
+    pattern.PATTERN_IMAGE_WIDTH, pattern.PATTERN_IMAGE_HEIGHT)
+  love.graphics.draw(image, quad, sx0, sy0)
+end
+
 local function love_rectfill(gfx, mem, x1, y1, x2, y2, col)
-  -- TODO: fill patterns, with love.pattern.
-  assert(gfx.fillp_pattern == 0, "love backend rectfill: fill patterns are not drawn yet")
-  set_color(bit.band(col, 0x0F))
-  fill_rectangle(gfx, min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2))
+  local image = begin_fill(gfx, col)
+  fill_span(gfx, image, min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2))
 end
 
 local function love_rect(gfx, mem, x1, y1, x2, y2, col)
@@ -198,22 +235,20 @@ local function love_rect(gfx, mem, x1, y1, x2, y2, col)
 end
 
 -- src/p8/gfx_software.c's software_circfill loop, copied: each span is one
--- rectangle, in the C's fillp_color colour with no pattern.
+-- fill_span.
 local function love_circfill(gfx, mem, cx, cy, r, col)
-  -- TODO: fill patterns, with love.pattern.
-  assert(gfx.fillp_pattern == 0, "love backend circfill: fill patterns are not drawn yet")
   if r < 0 then
     return
   end
-  set_color(bit.band(col, 0x0F))
+  local image = begin_fill(gfx, col)
   local x = r
   local y = 0
   local err = 0
   while x >= y do
-    fill_rectangle(gfx, cx - x, cy + y, cx + x, cy + y)
-    fill_rectangle(gfx, cx - x, cy - y, cx + x, cy - y)
-    fill_rectangle(gfx, cx - y, cy + x, cx + y, cy + x)
-    fill_rectangle(gfx, cx - y, cy - x, cx + y, cy - x)
+    fill_span(gfx, image, cx - x, cy + y, cx + x, cy + y)
+    fill_span(gfx, image, cx - x, cy - y, cx + x, cy - y)
+    fill_span(gfx, image, cx - y, cy + x, cx + y, cy + x)
+    fill_span(gfx, image, cx - y, cy - x, cx + y, cy - x)
     y = y + 1
     if err <= 0 then
       err = err + 2 * y + 1
