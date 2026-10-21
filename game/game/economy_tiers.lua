@@ -1,0 +1,281 @@
+-- Copy of src/game/economy_tiers.h then src/game/economy_tiers.c.
+--
+-- A planet's own `has` (PLANET_HAS_* bits) is `has_`: the header's `has` holds the ENTITY_HAS_*
+-- bits on the same table.
+--
+-- Include cycle: game.planet, game.planet_trade and game.slipway are required at call time,
+-- inside the functions that need them, so that this module loads before they exist.
+local bit = require("bit")
+local entity_class = require("engine.entity_class")
+local entity_id_list = require("engine.entity_id_list")
+local entity_list = require("engine.entity_list")
+local entity_registry = require("engine.entity_registry")
+local game_zone = require("engine.game_zone")
+local pointer_list = require("engine.pointer_list")
+local research = require("game.research")
+local trade = require("game.trade")
+local fixed = require("p8.fixed")
+
+local M = {}
+
+local function fixed_min(a, b)
+  return (a < b) and a or b
+end
+
+local function for_each_tagged(tag, fn, ctx)
+  local list = entity_registry.entities_by_tag(tag)
+  local it
+  local e
+  if list == nil then
+    return
+  end
+  it = entity_list.entity_list_all(list)
+  while true do
+    local more
+    more, e = entity_list.entity_list_iter_next(it, e)
+    if more == 0 then
+      break
+    end
+    if e ~= nil then
+      fn(e, ctx)
+    end
+  end
+end
+
+local function rebuild_incoming_routes_reset_visit(pt, ctx)
+  local planet = require("game.planet")
+  local jo
+  if pt == nil then
+    return
+  end
+  assert(planet.planet_is_family(pt) ~= 0, "rebuild_incoming_routes_reset_visit: the planet tag holds planets only")
+  jo = pt
+  if bit.band(jo.has_, planet.PLANET_HAS_INCOMING_ROUTES) ~= 0 then
+    trade.trade_route_list_clear(jo.incoming_routes)
+    return
+  end
+  trade.trade_route_list_init(jo.incoming_routes, game_zone.game_zone())
+  jo.has_ = bit.bor(jo.has_, planet.PLANET_HAS_INCOMING_ROUTES)
+end
+
+local function rebuild_incoming_routes_route_visit(entity, context)
+  local planet_module = require("game.planet")
+  local planet_trade = require("game.planet_trade")
+  local slipway = require("game.slipway")
+  local from_planet
+  local outgoing
+  if entity == nil then
+    return
+  end
+
+  assert(planet_module.planet_is_family(entity) ~= 0,
+    "rebuild_incoming_routes_route_visit: the planet tag holds planets only")
+  from_planet = entity
+  outgoing = planet_trade.planet_rebuild_trades(from_planet)
+
+  for route_index = 0, trade.trade_route_list_count(outgoing) - 1 do
+    local route = trade.trade_route_list_at(outgoing, route_index)
+    local slipways = route.slipways
+    local planets = route.planets
+    local to_val
+    local found
+
+    for index = 0, slipways.count - 1 do
+      local w_val = entity_id_list.entity_id_list_at(slipways, index)
+
+      if not (index + 1 >= planets.count) then
+        local planet_val = entity_id_list.entity_id_list_at(planets, index + 1)
+        assert(planet_module.planet_is_family(planet_val) ~= 0,
+          "rebuild_incoming_routes_route_visit: a trade's planets list holds planets only")
+        local planet = planet_val
+        if bit.band(planet.has_, planet_module.PLANET_HAS_ID) ~= 0 then
+          assert(w_val.class == slipway.slipway_class(),
+            "rebuild_incoming_routes_route_visit: a trade's slipways list holds slipways only")
+          local w = w_val
+          slipway.slipway_served_planets_add(w.served_planets, planet.planet_id)
+        end
+      end
+    end
+
+    found, to_val = trade.trade_last_planet(route, to_val)
+    if found ~= 0 then
+      local dest
+
+      assert(planet_module.planet_is_family(to_val) ~= 0, "rebuild_incoming_routes_route_visit: a trade leads to a planet")
+      dest = to_val
+      if bit.band(dest.has_, planet_module.PLANET_HAS_INCOMING_ROUTES) ~= 0 then
+        trade.trade_route_list_add(dest.incoming_routes, route)
+      end
+    end
+  end
+end
+
+function M.economy_tiers_rebuild_incoming_routes()
+  for_each_tagged(entity_class.TAG_PLANET, rebuild_incoming_routes_reset_visit, nil)
+  for_each_tagged(entity_class.TAG_PLANET, rebuild_incoming_routes_route_visit, nil)
+end
+
+local function update_tiers_visit(entity, context)
+  local planet_module = require("game.planet")
+  local changed = context
+  local planet
+  local tier
+  local has_development_tier
+  local development_tier = fixed.p8_fixed_from_int(0)
+  local production
+
+  if entity == nil then
+    return
+  end
+  tier = M.economy_tiers_compute_tier(entity)
+  assert(planet_module.planet_is_family(entity) ~= 0, "update_tiers_visit: the planet tag holds planets only")
+  planet = entity
+  has_development_tier = planet.has_development_tier
+  if has_development_tier ~= 0 then
+    development_tier = planet.development_tier
+  end
+
+  if has_development_tier == 0 or tier > development_tier then
+    if has_development_tier ~= 0 and development_tier == fixed.p8_fixed_from_int(1) then
+      local hn = research.research_project_get(planet.project)
+      if hn ~= nil and hn.has_byproduct ~= 0 then
+        if bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) ~= 0 then
+          local entry = research.need_new(game_zone.game_zone(),
+            { kind = trade.RESOURCE_FIXED, number = hn.byproduct })
+          pointer_list.pointer_list_add(planet.needs, entry)
+        end
+      end
+    end
+    planet.development_tier = tier
+    planet.has_development_tier = 1
+    development_tier = tier
+    changed.value = 1
+  end
+
+  production = planet_module.planet_production(planet)
+  local _
+  _, production.amount = M.economy_tiers_compute_production_amount(planet, production.amount)
+end
+
+-- Returns 0, leaving *out untouched, when the tier or the project gives no amount.
+-- Returns found, out.
+function M.economy_tiers_compute_production_amount(planet, out)
+  local project
+  local production_table
+  local idx
+  local clamped_idx
+  local base = fixed.p8_fixed_from_int(0)
+  local bonus = fixed.p8_fixed_from_int(0)
+
+  assert(planet ~= nil and out ~= nil)
+  if planet.has_development_tier == 0 or planet.development_tier == fixed.p8_fixed_from_int(0) then
+    return 0, out
+  end
+  project = research.research_project_get(planet.project)
+  production_table = (project ~= nil) and research.research_project_production(project) or nil
+  if production_table == nil then
+    return 0, out
+  end
+  idx = fixed.p8_fixed_flr_int(planet.development_tier)
+  clamped_idx = (idx < production_table.count) and idx or production_table.count
+  if clamped_idx >= 1 then
+    base = fixed.p8_fixed_from_int(production_table.values[clamped_idx - 1])
+  end
+  if planet.has_production_bonus ~= 0 then
+    bonus = planet.production_bonus
+  end
+  out = fixed.p8_fixed_add(base, bonus)
+  return 1, out
+end
+
+function M.economy_tiers_update_tiers()
+  local jg = { value = 0 }
+  for_each_tagged(entity_class.TAG_PLANET, update_tiers_visit, jg)
+  return jg.value
+end
+
+function M.economy_tiers_compute_tier(entity)
+  local planet_module = require("game.planet")
+  local planet
+  local needs
+  local incoming_routes
+  local tier = fixed.p8_fixed_from_int(1)
+
+  if entity == nil then
+    return fixed.p8_fixed_from_int(0)
+  end
+  assert(planet_module.planet_is_family(entity) ~= 0, "economy_tiers_compute_tier: the entity is a planet")
+  planet = entity
+  if planet.state ~= entity_class.ENTITY_STATE_SETTLED then
+    return fixed.p8_fixed_from_int(0)
+  end
+
+  needs = (bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) ~= 0) and planet.needs or nil
+  incoming_routes = (bit.band(planet.has_, planet_module.PLANET_HAS_INCOMING_ROUTES) ~= 0)
+    and planet.incoming_routes or nil
+  if needs ~= nil then
+    for index = 0, needs.count - 1 do
+      local i_val = needs.items[index]
+
+      if i_val ~= nil then
+        local want = i_val
+        local resource_val = research.need_resource(want)
+        local gc = 0
+
+        if incoming_routes ~= nil then
+          for j = 0, trade.trade_route_list_count(incoming_routes) - 1 do
+            local im = trade.trade_route_list_at(incoming_routes, j)
+            if im.has_resource ~= 0 and trade.resource_equal(trade.trade_resource(im), resource_val) ~= 0 then
+              gc = gc + 1
+            end
+          end
+        end
+        want.has_satisfied = 1
+        want.satisfied = fixed.p8_fixed_from_int(gc)
+        tier = fixed.p8_fixed_mul(tier, fixed.p8_fixed_from_int(gc))
+      end
+    end
+  end
+
+  if tier == fixed.p8_fixed_from_int(0) then
+    return fixed.p8_fixed_from_int(1)
+  end
+
+  if bit.band(entity.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_TRADING_HUB)) ~= 0 then
+    local count = 0
+    if needs ~= nil then
+      for index = 0, needs.count - 1 do
+        local want = needs.items[index]
+        if want ~= nil then
+          if want.has_satisfied ~= 0 and want.satisfied > fixed.p8_fixed_from_int(0) then
+            count = count + 1
+          end
+        end
+      end
+    end
+    return fixed_min(fixed.p8_fixed_from_int(count), fixed.p8_fixed_from_int(3))
+  end
+
+  if planet.archetype.is_planet == 0 then
+    if needs ~= nil and needs.count > 0 then
+      local last = needs.items[needs.count - 1]
+      if last ~= nil then
+        if last.has_satisfied ~= 0 then
+          return fixed_min(fixed.p8_fixed_add(last.satisfied, fixed.p8_fixed_from_int(1)), fixed.p8_fixed_from_int(4))
+        end
+      end
+    end
+    return fixed.p8_fixed_from_int(2)
+  end
+
+  do
+    local by = (bit.band(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES) ~= 0) and planet.outgoing_routes or nil
+    local by_count = (by ~= nil) and trade.trade_route_list_count(by) or 0
+    local incoming_routes_count = (incoming_routes ~= nil) and trade.trade_route_list_count(incoming_routes) or 0
+    local mid_val = fixed.p8_fixed_mid(fixed.p8_fixed_from_int(by_count), fixed.p8_fixed_from_int(incoming_routes_count),
+      fixed.p8_fixed_from_int(1))
+    return fixed_min(fixed.p8_fixed_from_int(4), fixed.p8_fixed_add(fixed.p8_fixed_from_int(1), mid_val))
+  end
+end
+
+return M
