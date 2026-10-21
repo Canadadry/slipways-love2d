@@ -6,8 +6,8 @@
 -- them, so that this module loads before they exist.
 --
 -- Local zero constructors, from the C headers' field lists, for structs whose owner is ported
--- later (they may move there): button_keys_t (ui_button), open_box_frame_t (message_box),
--- slipway_keys_t (slipway). down_t and layout_row_tuple_t zeroes are local too.
+-- later (they may move there): button_keys_t (ui_button), open_box_frame_t (message_box).
+-- down_t and layout_row_tuple_t zeroes are local too.
 --
 -- A planet is one table with its entity header: the planet's own `has` (PLANET_HAS_* bits) is
 -- `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
@@ -111,11 +111,6 @@ local function open_box_frame_zero()
     has_pos = 0,
     pos = vec.vec_make(0, 0),
   }
-end
-
--- slipway_keys_t keys = {0}.
-local function slipway_keys_zero()
-  return { start = entity_id_none() }
 end
 
 local function lineage_has(self, l)
@@ -718,7 +713,7 @@ function M.planet_left_press(self)
   end
   if self.state == entity_class.ENTITY_STATE_SETTLED then
     local slipway = require("game.slipway")
-    local keys = slipway_keys_zero()
+    local keys = slipway.slipway_keys_zero()
     local made
 
     assert(slipway.slipway_ready() ~= 0, "slipway_init() must run before planet_left_press builds a slipway")

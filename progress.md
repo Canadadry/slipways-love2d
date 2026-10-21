@@ -69,7 +69,7 @@
   - [ ] 3.8 game: include cycle, slipways, probes and wormholes
     - [x] chunk 1: particle_zone
     - [x] chunk 2: probe
-    - [ ] chunk 3: slipway
+    - [x] chunk 3: slipway
     - [ ] chunk 4: wormhole
     - [ ] chunk 5: cost and record
   - [ ] 3.9 game: include cycle, UI and message box, particles, background, scroll
