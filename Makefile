@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 # Reruns make under flock: one make of LOCKED_GOALS at a time over tmp/.
-LOCKED_GOALS := test e2e test-all
+LOCKED_GOALS := test e2e test-all love-e2e
 
 ifneq ($(if $(MAKE_LOCK_HELD),,$(filter $(LOCKED_GOALS),$(MAKECMDGOALS))),)
 $(MAKECMDGOALS): make-lock ; @:
@@ -1148,6 +1148,23 @@ e2e-baseline: $(foreach e,$(E2E_EVENTS),$(call frames_current,$(e))) ## sets or 
 
 e2e-ref: $(foreach e,$(E2E_EVENTS),$(if $(wildcard $(call frames_reference,$(e))),$(call frames_current,$(e)))) $(FRAMES_TOOL) tools/frames_ref.sh ## for each diverging e2e, replays the commit that set its reference and gives the first diverging frame
 	@sh tools/frames_ref.sh ./$(FRAMES_TOOL) $(FRAMES_DIR) $(TMP_DIR)/frames-ref $(foreach e,$(E2E_EVENTS),$(e) $(call frames_reference,$(e)) $(call frames_current,$(e)) $(call frames_capture,$(e)))
+
+# A `%` in LOVE_E2E_GAME becomes the replay's file name: one game directory
+# per replay. Forced: make does not see a Lua edit.
+LOVE_E2E_GAME ?= game
+LOVE_E2E_DIR := $(TMP_DIR)/love-e2e
+LOVE_E2E_HASHES := $(foreach e,$(E2E_EVENTS),$(LOVE_E2E_DIR)/$(e).sha256)
+
+$(LOVE_E2E_HASHES): $(LOVE_E2E_DIR)/%.sha256: % $(TMP_DIR)/fake_love tools/love_e2e_run.sh FORCE
+	@mkdir -p $(@D)
+	@sh tools/love_e2e_run.sh "$(SHA256_CMD)" ./$(TMP_DIR)/fake_love $(subst %,$(notdir $*),$(LOVE_E2E_GAME)) $* $(@:.sha256=.bin) $@ $(@:.sha256=.error)
+
+love-e2e: $(LOVE_E2E_HASHES) tools/love_e2e_report.sh tools/frames_check.sh ## runs tmp/fake_love on every tests/e2e/ replay in parallel and checks each capture's sha256 (LOVE_E2E_GAME=game)
+	@sh tools/love_e2e_report.sh $(foreach e,$(E2E_EVENTS),$(e) $(call frames_reference,$(e)) $(LOVE_E2E_DIR)/$(e).sha256 $(LOVE_E2E_DIR)/$(e).error)
+
+FORCE:
+
+.PHONY: love-e2e FORCE
 
 # offsetof, void *self, a field read by name, a spec or defaults table: the
 # model the composition migration removed, which a port of the cart brings

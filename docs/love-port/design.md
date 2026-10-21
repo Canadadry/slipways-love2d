@@ -89,7 +89,8 @@ fake follows these rules, and every step that adds one measures it.
    fails naming the missing half. Budget: 100 ms of wall time per check
    on the container. A check over budget is split before its step closes.
 3. **Out of `make e2e`.** No fake check is a prerequisite of `e2e`;
-   `make love-e2e` is its own target, outside `make test` and `make e2e`.
+   `make love-e2e` is its own target, outside `make test` and `make e2e`
+   (see `make love-e2e`).
 4. **Measured, with one protocol, against two baselines.**
    - Baselines: the step's "before" commit, and the plan-wide reference,
      commit `2e7215c` (4 cores, plain median 7.70 s over 15 runs when
@@ -112,6 +113,37 @@ fake follows these rules, and every step that adds one measures it.
 5. A check that rules 1 and 2 cannot hold under 3 % goes into a separate
    target outside `make test-all`, and this file then says that `make test`
    no longer runs every capture.
+
+### `make love-e2e`
+
+`make love-e2e` runs `tmp/fake_love <game dir> <replay> <capture>` on every
+replay of `tests/e2e/`, one make job per replay, every replay rerun on every
+invocation (make does not see a Lua edit). The game directory is
+`LOVE_E2E_GAME`, default `game`; a `%` in it becomes the replay's file name
+(`pad_title.json`), so a verification can give each replay its own stub.
+The replay's `initial_save`, `bindings` and `attract_after` reach the game
+as the fake gives them; no state path is passed, so `debug_state` is not
+needed.
+
+Per replay, under `tmp/love-e2e/tests/e2e/`: `<name>.json.bin` (the
+capture) and `<name>.json.sha256` when the fake exits 0, `<name>.json.error`
+otherwise (`fake_love exited <status>` or `killed by signal <n>`, then the
+fake's stderr); the three are removed before each run. Each replay is
+reported on one line:
+
+- **matches**: the capture's sha256 equals the replay's `.json.sha256`;
+- **DIVERGENT**: it does not (`tools/frames_check.sh --no-baseline-hints`):
+  a bug in the Lua game or the fake, never a reason to change the
+  `.json.sha256`;
+- **FAILED**: the fake stopped before the last frame, with its message
+  indented below.
+
+All replays are run and reported before the count line
+`love-e2e: <m> match, <d> diverge, <f> failed, of <n> replays in tests/e2e`;
+the exit status is 0 only when every replay matches. The target takes
+`tmp/make.lock` like `test`, `e2e` and `test-all`, reads nothing from
+`src/` nor `tmp/frames/`, does not check end states, has no timeout, and
+is not run by `make test`, `make e2e`, `make test-all` or CI.
 
 ### Pad buttons
 
