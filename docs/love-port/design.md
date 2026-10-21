@@ -480,8 +480,10 @@ fractional draws stay refused.** Capture: `filter_nearest`.
 The fake implements exactly this list; extending it is a decision recorded
 here, with its real-LÖVE capture.
 
-- Loop: `love.load(arg)`, `love.update(dt)`, `love.draw()`. The game ignores
-  `dt`: one `update` is one game frame (60 per second).
+- Loop: `love.conf(t)`, `love.load(arg)`, `love.update(dt)`, `love.draw()`.
+  The fake calls `love.conf` with empty `window`, `modules` and `audio`
+  tables and reads nothing back. The game ignores `dt`: one `update` is one
+  game frame (60 per second).
 - Drawing: `love.graphics.newCanvas(160, 120)`, `setCanvas`, `clear`,
   `setColor(r, g, b)` or `setColor(r, g, b, 1)`, `points(x1, y1, …)` or
   `points({x1, y1, …})`,
@@ -494,6 +496,15 @@ here, with its real-LÖVE capture.
 - Pad: `love.joystick.getJoysticks`, `Joystick:isGamepadDown`, the callbacks
   `love.gamepadpressed` and `love.gamepadreleased`.
 - Files: `love.filesystem.read`, `write`, `getInfo`.
+
+Reading anything else from `love`, a module table or an object, or creating
+a field in `love` or a module table, fails at that line with
+`love.timer is not in the function list of docs/love-port/design.md`
+(`love.graphics.getWidth`, `ImageData:mapPixel`, `love[1]` for other keys).
+The six callbacks are the only fields the game may set on `love`; before it
+sets them, and for the four modules while `conf.lua` runs, they read `nil`.
+It is an ordinary Lua error, like every refusal of the fake. Both binaries,
+`tmp/fake_love` and `tmp/love_capture_check`, run under this guard.
 
 In real LÖVE the game draws its canvas scaled up to the window at the end of
 `love.draw()`; the fake reads the canvas and needs nothing more.

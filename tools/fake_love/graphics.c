@@ -6,6 +6,7 @@
 
 #include <lauxlib.h>
 
+#include "function_list.h"
 #include "image.h"
 #include "image_rules.h"
 #include "point.h"
@@ -361,6 +362,7 @@ static int set_default_filter(lua_State *lua) {
 static void new_metatable_without_methods(lua_State *lua, const char *name) {
     luaL_newmetatable(lua, name);
     lua_newtable(lua);
+    function_list_protect_methods(lua, -1, name);
     lua_setfield(lua, -2, "__index");
     lua_pop(lua, 1);
 }
@@ -374,11 +376,11 @@ static void set_function(lua_State *lua, canvas_store_t *store, transform_t *tra
 }
 
 void graphics_install(lua_State *lua, canvas_store_t *store, transform_t *transform) {
-    luaL_newmetatable(lua, METATABLE);
-    lua_pop(lua, 1);
+    new_metatable_without_methods(lua, METATABLE);
     new_metatable_without_methods(lua, IMAGE_METATABLE);
     new_metatable_without_methods(lua, QUAD_METATABLE);
     lua_getglobal(lua, "love");
+    lua_pushliteral(lua, "graphics");
     lua_createtable(lua, 0, 13);
     set_function(lua, store, transform, new_canvas, "newCanvas");
     set_function(lua, store, transform, set_canvas, "setCanvas");
@@ -393,6 +395,7 @@ void graphics_install(lua_State *lua, canvas_store_t *store, transform_t *transf
     set_function(lua, store, transform, push, "push");
     set_function(lua, store, transform, pop, "pop");
     set_function(lua, store, transform, translate, "translate");
-    lua_setfield(lua, -2, "graphics");
+    function_list_protect_module(lua, -1, "love.graphics");
+    lua_rawset(lua, -3);
     lua_pop(lua, 1);
 }

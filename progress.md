@@ -69,4 +69,8 @@
     - [x] Chunk 2 — command writes the capture
     - [x] Chunk 3 — timing, note
   - [ ] Step 4.17 — fatal errors
+    - [x] Chunk 1 — unlisted functions
+    - [ ] Chunk 2 — foreign pixel fatal
+    - [ ] Chunk 3 — colour check, drawing-rules game
+    - [ ] Chunk 4 — timing
   - [ ] Step 4.18 — make love-e2e

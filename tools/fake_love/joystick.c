@@ -5,6 +5,7 @@
 
 #include <lauxlib.h>
 
+#include "function_list.h"
 #include "pad.h"
 
 #define METATABLE "Joystick"
@@ -59,15 +60,18 @@ void joystick_install(lua_State *lua) {
     lua_createtable(lua, 0, 1);
     lua_pushcfunction(lua, is_gamepad_down);
     lua_setfield(lua, -2, "isGamepadDown");
+    function_list_protect_methods(lua, -1, METATABLE);
     lua_setfield(lua, -2, "__index");
     lua_setmetatable(lua, -2);
     lua_setfield(lua, LUA_REGISTRYINDEX, REGISTRY_KEY);
 
     lua_getglobal(lua, "love");
+    lua_pushliteral(lua, "joystick");
     lua_createtable(lua, 0, 1);
     lua_pushcfunction(lua, get_joysticks);
     lua_setfield(lua, -2, "getJoysticks");
-    lua_setfield(lua, -2, "joystick");
+    function_list_protect_module(lua, -1, "love.joystick");
+    lua_rawset(lua, -3);
     lua_pop(lua, 1);
 }
 

@@ -12,6 +12,7 @@
 
 #include "canvas.h"
 #include "filesystem.h"
+#include "function_list.h"
 #include "graphics.h"
 #include "image.h"
 #include "joystick.h"
@@ -129,7 +130,8 @@ static bool run_file(host_t *host, const char *name) {
 static bool push_callback(host_t *host, const char *name, size_t frame, bool *defined) {
     lua_State *lua = host->lua;
     lua_getglobal(lua, "love");
-    lua_getfield(lua, -1, name);
+    lua_pushstring(lua, name);
+    lua_rawget(lua, -2);
     lua_remove(lua, -2);
     *defined = !lua_isnil(lua, -1);
     if (!*defined) {
@@ -190,6 +192,7 @@ bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
     set_package_paths(host);
     lua_newtable(host->lua);
     lua_setglobal(host->lua, "love");
+    function_list_protect_love(host->lua);
     if (!run_conf(host))
         return false;
     joystick_install(host->lua);

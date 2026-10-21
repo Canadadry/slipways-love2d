@@ -8,6 +8,7 @@
 #include <lauxlib.h>
 
 #include "filesystem.h"
+#include "function_list.h"
 #include "png_file.h"
 
 #define METATABLE "ImageData"
@@ -147,14 +148,17 @@ void image_install(lua_State *lua, disk_t *disk) {
     lua_setfield(lua, -2, "setPixel");
     lua_pushcfunction(lua, get_pixel);
     lua_setfield(lua, -2, "getPixel");
+    function_list_protect_methods(lua, -1, METATABLE);
     lua_setfield(lua, -2, "__index");
     lua_pop(lua, 1);
 
     lua_getglobal(lua, "love");
+    lua_pushliteral(lua, "image");
     lua_createtable(lua, 0, 1);
     lua_pushlightuserdata(lua, disk);
     lua_pushcclosure(lua, new_image_data, 1);
     lua_setfield(lua, -2, "newImageData");
-    lua_setfield(lua, -2, "image");
+    function_list_protect_module(lua, -1, "love.image");
+    lua_rawset(lua, -3);
     lua_pop(lua, 1);
 }

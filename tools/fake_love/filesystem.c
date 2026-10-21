@@ -5,6 +5,8 @@
 
 #include <lauxlib.h>
 
+#include "function_list.h"
+
 static disk_t *upvalue_disk(lua_State *lua) {
     return lua_touserdata(lua, lua_upvalueindex(1));
 }
@@ -104,10 +106,12 @@ static void set_closure(lua_State *lua, disk_t *disk, lua_CFunction function, co
 
 void filesystem_install(lua_State *lua, disk_t *disk) {
     lua_getglobal(lua, "love");
+    lua_pushliteral(lua, "filesystem");
     lua_createtable(lua, 0, 3);
     set_closure(lua, disk, read_file, "read");
     set_closure(lua, disk, write_file, "write");
     set_closure(lua, disk, get_info, "getInfo");
-    lua_setfield(lua, -2, "filesystem");
+    function_list_protect_module(lua, -1, "love.filesystem");
+    lua_rawset(lua, -3);
     lua_pop(lua, 1);
 }
