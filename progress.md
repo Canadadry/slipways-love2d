@@ -43,6 +43,11 @@
     - [x] chunk 5: entity
     - [x] chunk 6: cost and record
   - [ ] 3.4 game: leaves
+    - [x] chunk 1: leaves without drawing
+    - [ ] chunk 2: bindings
+    - [ ] chunk 3: image caches
+    - [ ] chunk 4: mouse
+    - [ ] chunk 5: cost and record
   - [ ] 3.5 game: techs, HUD and layout
   - [ ] 3.6 game: include cycle, galaxy and planets
   - [ ] 3.7 game: include cycle, economy

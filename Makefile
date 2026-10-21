@@ -1417,7 +1417,7 @@ lua-guard: tools/lua_guard.lua ## fails when a game/ Lua file does not compile, 
 # unit includes the source to reach its statics, so the source's own object
 # leaves the link. The unit list reaches table_reference.o as a -D flag, hence
 # its rebuild on a Makefile edit.
-TABLE_REFERENCE_SOURCES := src/p8/quarter_wave.h src/p8/sprite_sheet_packed.h src/p8/palette.c src/p8/draw_cost.c src/p8/draw_meter.c src/p8/gfx_software.c src/p8/image.c src/engine/zone.h src/engine/zone_sizes.h src/engine/allocator.h src/engine/slot_tally.h src/engine/pointer_list.h src/engine/geom.h src/engine/entity_id_type.h src/engine/entity_class.h src/engine/entity_id_list.h src/engine/entity_list.h src/engine/exit_queue.h src/game/map_tables.c src/game/game_data.c src/engine/entity_registry.c
+TABLE_REFERENCE_SOURCES := src/p8/quarter_wave.h src/p8/sprite_sheet_packed.h src/p8/palette.c src/p8/draw_cost.c src/p8/draw_meter.c src/p8/gfx_software.c src/p8/image.c src/engine/zone.h src/engine/zone_sizes.h src/engine/allocator.h src/engine/slot_tally.h src/engine/pointer_list.h src/engine/geom.h src/engine/entity_id_type.h src/engine/entity_class.h src/engine/entity_id_list.h src/engine/entity_list.h src/engine/exit_queue.h src/game/map_tables.c src/game/game_data.c src/engine/entity_registry.c src/game/gen.h src/game/grab_arena.c src/game/targeting.h
 TABLE_REFERENCE_UNITS := $(foreach source,$(TABLE_REFERENCE_SOURCES),$(subst /,_,$(basename $(patsubst src/%,%,$(source)))))
 table_reference_objs := $(call objs,tools/table_reference.c $(patsubst %,tools/table_reference/%.c,$(TABLE_REFERENCE_UNITS)) $(filter-out $(TABLE_REFERENCE_SOURCES),$(ENGINE_SRCS)))
 
