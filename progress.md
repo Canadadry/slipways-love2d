@@ -98,7 +98,7 @@
     - [x] chunk 4: cost and record
   - [ ] 3.13 game: menus, title and attract
     - [x] chunk 1: demo data and the leaves
-    - [ ] chunk 2: the menu
+    - [x] chunk 2: the menu
     - [ ] chunk 3: pad navigation, part one
     - [ ] chunk 4: pad navigation, part two
     - [ ] chunk 5: own-time gate and step note
