@@ -76,7 +76,7 @@
     - [x] chunk 1: particle
     - [x] chunk 2: scroll and background
     - [x] chunk 3: ui_button
-    - [ ] chunk 4: ui
+    - [x] chunk 4: ui
     - [ ] chunk 5: message_box
     - [ ] chunk 6: research_display and bootstrap
     - [ ] chunk 7: cost, checkpoint and record
