@@ -166,7 +166,16 @@ its alpha is `FF` and its RGB equals triple n byte for byte:
 
 Any other pixel is not a palette colour: alpha `00`, even over a palette
 RGB (a fresh canvas's `00000000` included), and every RGB outside the
-table; a frame drawn while no canvas exists has no palette pixel. **The
+table. In `tmp/fake_love`, after the "Canvas is active" check of each
+frame, a foreign pixel on canvas 0 or no canvas at all stops the run at
+once (exit 1, no capture nor state file), naming the first such pixel in
+row order and the frame's count:
+`fake_love: frame f<N>: pixel (<x>, <y>) of canvas 0 is <RRGGBBAA>, not one of the 16 palette colours (<count> such pixels in the frame)`
+or
+`fake_love: frame f<N>: no canvas exists at the end of the frame (create the game canvas first, in love.load)`.
+No game code can catch it; zero frames give an empty capture and no
+error. `love_capture_check` never runs this check: it compares all four
+channels with a PNG, transparent pixels included. **The
 rule for the game: create the game canvas first, in `love.load`, before any
 other canvas; end every frame with every pixel of it opaque and one of the
 16 triples, drawn as `byte / 255`.**

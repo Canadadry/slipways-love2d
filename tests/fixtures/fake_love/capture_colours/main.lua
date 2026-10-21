@@ -11,6 +11,8 @@ local game_canvas
 local scratch_canvas
 local pair_image
 local pair_quad
+local red_image
+local red_quad
 local frames_drawn = 0
 
 local function components(colour)
@@ -35,6 +37,10 @@ function love.load()
     data:setPixel(1, 0, components(10))
     pair_image = graphics.newImage(data)
     pair_quad = graphics.newQuad(0, 0, 2, 1, 2, 1)
+    local red = love.image.newImageData(1, 1)
+    red:setPixel(0, 0, components(8))
+    red_image = graphics.newImage(red)
+    red_quad = graphics.newQuad(0, 0, 1, 1, 1, 1)
 end
 
 local function draw_bands()
@@ -71,8 +77,8 @@ end
 
 local function draw_foreign_pixel()
     graphics.setCanvas(game_canvas)
-    graphics.setColor(0.3, 0, 0)
-    graphics.points(0.5, 0.5)
+    set_colour(9)
+    graphics.draw(red_image, red_quad, 0, 0)
     graphics.setCanvas()
 end
 

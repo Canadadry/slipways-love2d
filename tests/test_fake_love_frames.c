@@ -37,19 +37,7 @@ static void assert_capture(const unsigned char *expected, long size) {
     free(capture);
 }
 
-static void assert_stderr_holds(const char *const *needles) {
-    char *err = fake_love_cli_read_file(STDERR_LOG, NULL);
-    assert(err != NULL);
-    for (const char *const *needle = needles; *needle != NULL; needle++) {
-        if (strstr(err, *needle) == NULL) {
-            fprintf(stderr, "stderr:\n%s\nmissing: %s\n", err, *needle);
-            assert(!"stderr must hold the warning");
-        }
-    }
-    free(err);
-}
-
-static void build_colours_capture(unsigned char capture[4 * FRAME_SIZE]) {
+static void build_colours_capture(unsigned char capture[3 * FRAME_SIZE]) {
     unsigned char *bands = capture;
     for (int y = 0; y < 120; y++)
         for (int byte = 0; byte < ROW_BYTES; byte++) {
@@ -63,40 +51,45 @@ static void build_colours_capture(unsigned char capture[4 * FRAME_SIZE]) {
     single_pixels[FRAME_SIZE - 1] = 0xF0;
     unsigned char *elsewhere = capture + 2 * FRAME_SIZE;
     memcpy(elsewhere, single_pixels, FRAME_SIZE);
-    unsigned char *foreign_pixel = capture + 3 * FRAME_SIZE;
-    memcpy(foreign_pixel, single_pixels, FRAME_SIZE);
-    foreign_pixel[0] = 0x20;
 }
 
 static void test_capture_holds_canvas_zero_of_every_frame(void) {
-    assert_runs(FIXTURES "capture_colours " FIXTURES "capture_colours.json " CAPTURE " " STATE);
-    static unsigned char expected[4 * FRAME_SIZE];
+    assert_runs(FIXTURES "capture_colours " FIXTURES "three_frames.json " CAPTURE " " STATE);
+    static unsigned char expected[3 * FRAME_SIZE];
     build_colours_capture(expected);
     assert_capture(expected, sizeof expected);
-    fake_love_cli_assert_text(STATE, "frames 4\n");
-    const char *const needles[] = {"warning: 1 pixels", "first f3 pixel (0, 0) 4C0000FF\n", NULL};
-    assert_stderr_holds(needles);
+    fake_love_cli_assert_text(STATE, "frames 3\n");
 }
 
-static void test_frames_without_canvas_are_black_and_warned(void) {
-    assert_runs(FIXTURES "counting " FIXTURES "three_frames.json " CAPTURE " " STATE);
-    static unsigned char expected[3 * FRAME_SIZE];
-    assert_capture(expected, sizeof expected);
-    const char *const needles[] = {"warning: 57600 pixels", "first f0 no canvas\n", NULL};
-    assert_stderr_holds(needles);
+static void test_foreign_pixel_on_canvas_zero_is_fatal(void) {
+    const char *const needles[] = {
+        "fake_love: frame f3: pixel (0, 0) of canvas 0 is FF0000FF, not one of the 16 palette colours (1 such pixels "
+        "in the frame)\n",
+        NULL};
+    fake_love_cli_assert_failure("", FIXTURES "capture_colours " FIXTURES "capture_colours.json " CAPTURE " " STATE,
+                                 CAPTURE, STATE, STDERR_LOG, needles);
+}
+
+static void test_frame_without_canvas_is_fatal(void) {
+    const char *const needles[] = {
+        "fake_love: frame f0: no canvas exists at the end of the frame (create the game canvas first, in love.load)\n",
+        NULL};
+    fake_love_cli_assert_failure("", FIXTURES "no_canvas " FIXTURES "three_frames.json " CAPTURE " " STATE, CAPTURE,
+                                 STATE, STDERR_LOG, needles);
 }
 
 static void test_zero_frames_give_an_empty_capture(void) {
     assert_runs(FIXTURES "counting " FIXTURES "zero_frames.json " CAPTURE " " STATE);
     assert_capture(NULL, 0);
     char *err = fake_love_cli_read_file(STDERR_LOG, NULL);
-    assert(err != NULL && strstr(err, "warning") == NULL && "no frame, no warning");
+    assert(err != NULL && err[0] == '\0' && "no frame, nothing on stderr");
     free(err);
 }
 
 int main(void) {
     test_capture_holds_canvas_zero_of_every_frame();
-    test_frames_without_canvas_are_black_and_warned();
+    test_foreign_pixel_on_canvas_zero_is_fatal();
+    test_frame_without_canvas_is_fatal();
     test_zero_frames_give_an_empty_capture();
     remove(CAPTURE);
     remove(STATE);

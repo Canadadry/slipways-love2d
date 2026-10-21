@@ -47,9 +47,6 @@ static bool check_version(host_t *host) {
 typedef struct capture_writer {
     const char *path;
     FILE *file;
-    long foreign;
-    size_t first_frame;
-    frame_capture_foreign_t first;
 } capture_writer_t;
 
 static bool capture_open(capture_writer_t *writer, const char *path) {
@@ -66,10 +63,22 @@ static bool capture_append(capture_writer_t *writer, host_t *host, size_t frame)
     assert((pixels == NULL || (width == FRAME_CAPTURE_WIDTH && height == FRAME_CAPTURE_HEIGHT)) &&
            "newCanvas accepts only 160x120");
     unsigned char bytes[FRAME_CAPTURE_FRAME_SIZE];
-    bool found_before = writer->first.found;
-    writer->foreign += frame_capture_pack(pixels, bytes, &writer->first);
-    if (!found_before && writer->first.found)
-        writer->first_frame = frame;
+    frame_capture_foreign_t first = {0};
+    int foreign = frame_capture_pack(pixels, bytes, &first);
+    if (first.no_canvas) {
+        fprintf(stderr,
+                "fake_love: frame f%zu: no canvas exists at the end of the frame (create the game canvas first, in "
+                "love.load)\n",
+                frame);
+        return false;
+    }
+    if (foreign > 0) {
+        fprintf(stderr,
+                "fake_love: frame f%zu: pixel (%d, %d) of canvas 0 is %02X%02X%02X%02X, not one of the 16 palette "
+                "colours (%d such pixels in the frame)\n",
+                frame, first.x, first.y, first.rgba[0], first.rgba[1], first.rgba[2], first.rgba[3], foreign);
+        return false;
+    }
     if (fwrite(bytes, 1, sizeof bytes, writer->file) == sizeof bytes)
         return true;
     fprintf(stderr, "fake_love: %s: cannot write\n", writer->path);
@@ -82,20 +91,6 @@ static bool capture_close(capture_writer_t *writer) {
     if (!closed)
         fprintf(stderr, "fake_love: %s: cannot write\n", writer->path);
     return closed;
-}
-
-/* TODO step 17: a foreign pixel becomes a fatal error instead of this warning. */
-static void capture_warn(const capture_writer_t *writer) {
-    if (writer->foreign == 0)
-        return;
-    const frame_capture_foreign_t *first = &writer->first;
-    fprintf(stderr, "fake_love: warning: %ld pixels outside the palette written as colour 0, first f%zu ",
-            writer->foreign, writer->first_frame);
-    if (first->no_canvas)
-        fprintf(stderr, "no canvas\n");
-    else
-        fprintf(stderr, "pixel (%d, %d) %02X%02X%02X%02X\n", first->x, first->y, first->rgba[0], first->rgba[1],
-                first->rgba[2], first->rgba[3]);
 }
 
 static bool write_state(host_t *host, const char *path) {
@@ -140,7 +135,6 @@ static bool run_game(host_t *host, const arguments_t *arguments, const replay_t 
     }
     if (!capture_close(capture))
         return false;
-    capture_warn(capture);
     return arguments->state_path == NULL || write_state(host, arguments->state_path);
 }
 
