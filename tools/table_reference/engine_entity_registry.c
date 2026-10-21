@@ -1,34 +1,10 @@
 #include "engine/entity_registry.c"
 #include <stdlib.h>
 
+#include "reference_class.h"
 #include "table_reference.h"
 
 #define MODULE "engine.entity_registry"
-
-static void render_class(const char *name, const entity_class_t *cls) {
-    table_reference_function(MODULE, cls->draw != NULL, "%s.draw", name);
-    table_reference_function(MODULE, cls->draw_overlay != NULL, "%s.draw_overlay", name);
-    table_reference_function(MODULE, cls->hit_test != NULL, "%s.hit_test", name);
-    table_reference_function(MODULE, cls->new_year != NULL, "%s.new_year", name);
-    table_reference_function(MODULE, cls->refresh != NULL, "%s.refresh", name);
-    table_reference_function(MODULE, cls->has_refresh != NULL, "%s.has_refresh", name);
-    table_reference_function(MODULE, cls->left_press != NULL, "%s.left_press", name);
-    table_reference_function(MODULE, cls->accept_drop != NULL, "%s.accept_drop", name);
-    table_reference_function(MODULE, cls->drag != NULL, "%s.drag", name);
-    table_reference_function(MODULE, cls->drop != NULL, "%s.drop", name);
-    table_reference_function(MODULE, cls->attach_slipway != NULL, "%s.attach_slipway", name);
-    table_reference_function(MODULE, cls->offer_trade != NULL, "%s.offer_trade", name);
-    table_reference_function(MODULE, cls->draw_at != NULL, "%s.draw_at", name);
-    table_reference_function(MODULE, cls->spawn_particle != NULL, "%s.spawn_particle", name);
-    for (int i = 0; i < STATE_COUNT; i++) {
-        table_reference_function(MODULE, cls->states[i] != NULL, "%s.states[%d]", name, i);
-    }
-    table_reference_int(MODULE, cls->tags, "%s.tags", name);
-    table_reference_int(MODULE, cls->lineage, "%s.lineage", name);
-    table_reference_function(MODULE, cls->apply_camera != NULL, "%s.apply_camera", name);
-    table_reference_function(MODULE, cls->release != NULL, "%s.release", name);
-    table_reference_int(MODULE, cls->skip_draw_off_screen, "%s.skip_draw_off_screen", name);
-}
 
 /* The header only: the Lua placeholder is one table, the cast to entity_t * the identity. */
 static void render_header(const char *name, const entity_t *e) {
@@ -67,6 +43,6 @@ void table_reference_engine_entity_registry(void) {
     table_reference_int(MODULE, ENTITY_MESSAGE_REFRESH, "ENTITY_MESSAGE_REFRESH");
     table_reference_int(MODULE, ENTITY_MESSAGE_COUNT, "ENTITY_MESSAGE_COUNT");
     table_reference_int(MODULE, ENTITY_REGISTRY_LAYERS, "ENTITY_REGISTRY_LAYERS");
-    render_class("main_camera_placeholder_class_def", &main_camera_placeholder_class_def);
+    reference_class(MODULE, "main_camera_placeholder_class_def", &main_camera_placeholder_class_def);
     render_header("g_main_camera_placeholder", &g_main_camera_placeholder.header);
 }
