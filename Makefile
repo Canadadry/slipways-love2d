@@ -468,8 +468,8 @@ test_love_e2e_objs := $(call objs,tests/test_love_e2e.c tests/fake_love_cli.c)
 $(TMP_DIR)/test_love_e2e: $(test_love_e2e_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) tools/love_e2e_run.sh tools/love_e2e_report.sh tools/love_e2e_state_report.sh tools/frames_check.sh tools/end_state.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-test_love_runtime_objs := $(call objs,tests/test_love_runtime.c tests/fake_love_cli.c src/p8/gfx.c src/p8/gfx_software.c src/p8/image.c src/p8/vram.c src/p8/sprite_sheet.c src/p8/draw_cost.c src/p8/draw_meter.c)
-$(TMP_DIR)/test_love_runtime: $(test_love_runtime_objs) $(TMP_DIR)/fake_love $(wildcard game/p8/*.lua game/love/*.lua tests/fixtures/love_runtime*/*.lua tests/fixtures/love_runtime*/*.txt) | $(TMP_DIR)
+test_love_runtime_objs := $(call objs,tests/test_love_runtime.c tests/fake_love_cli.c)
+$(TMP_DIR)/test_love_runtime: $(test_love_runtime_objs) $(TMP_DIR)/fake_love $(wildcard game/p8/*.lua game/love/*.lua tests/fixtures/love_runtime*/*.lua tests/fixtures/love_runtime*/*.txt tests/fixtures/love_runtime*/*.bin) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_frames_check: $(call objs,tests/test_frames_check.c) tools/frames_check.sh | $(TMP_DIR)
@@ -1388,9 +1388,9 @@ random-guard: tools/random_guard.sh $(RANDOM_GUARD_EXCEPTIONS) ## ratchet on the
 # `<binary> <objects>` per binary of the fake side: each name below has its
 # `<name>_objs` beside its link rule. tmp/luajit_version has no object: the
 # include scan of tools/love_capture/ covers it.
-FAKE_SIDE_BINARIES := fake_love love_capture_check test_fake_love_replay test_fake_love_pad test_fake_love_canvas test_fake_love_image_data test_fake_love_image_rules test_fake_love_point test_fake_love_transform test_fake_love_disk test_fake_love_png_file test_fake_love test_fake_love_failures test_fake_love_joystick test_fake_love_files test_fake_love_graphics test_fake_love_points test_fake_love_rectangle test_fake_love_set_color test_fake_love_image test_fake_love_image_draw test_fake_love_capture test_fake_love_frame_capture test_fake_love_frames test_fake_love_function_list test_fake_love_unlisted test_fake_love_guard test_love_e2e
+FAKE_SIDE_BINARIES := fake_love love_capture_check test_fake_love_replay test_fake_love_pad test_fake_love_canvas test_fake_love_image_data test_fake_love_image_rules test_fake_love_point test_fake_love_transform test_fake_love_disk test_fake_love_png_file test_fake_love test_fake_love_failures test_fake_love_joystick test_fake_love_files test_fake_love_graphics test_fake_love_points test_fake_love_rectangle test_fake_love_set_color test_fake_love_image test_fake_love_image_draw test_fake_love_capture test_fake_love_frame_capture test_fake_love_frames test_fake_love_function_list test_fake_love_unlisted test_fake_love_guard test_love_e2e test_love_runtime
 FAKE_SIDE_LINKS := $(foreach binary,$(FAKE_SIDE_BINARIES),$(TMP_DIR)/$(binary) $($(binary)_objs))
-FAKE_SIDE_SRCS := tools/fake_love tools/love_capture $(wildcard tests/test_fake_love*.c tests/fake_love_*.[ch]) tests/test_love_e2e.c
+FAKE_SIDE_SRCS := tools/fake_love tools/love_capture $(wildcard tests/test_fake_love*.c tests/fake_love_*.[ch]) tests/test_love_e2e.c tests/test_love_runtime.c
 
 fake-love-guard: tools/fake_love_guard.sh $(filter %.o,$(FAKE_SIDE_LINKS)) ## fails when the fake side includes a header or links an object from src/
 	@sh tools/fake_love_guard.sh $(OBJ_DIR) $(FAKE_SIDE_LINKS) -- $(FAKE_SIDE_SRCS)
