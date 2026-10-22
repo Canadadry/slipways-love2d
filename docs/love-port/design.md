@@ -147,6 +147,33 @@ the exit status is 0 only when every replay matches. The target takes
 `src/` nor `tmp/frames/`, does not check end states, has no timeout, and
 is not run by `make test`, `make e2e`, `make test-all` or CI.
 
+### `make love-e2e-state`
+
+`make love-e2e-state` runs `tmp/fake_love <game dir> <replay> <capture>
+<state>` on every replay of `tests/e2e/`, in runs of its own (not shared
+with `make love-e2e`), one make job per replay, every replay rerun on every
+invocation. `LOVE_E2E_GAME` and its `%` substitution work as for
+`make love-e2e`; the game must define `debug_state`.
+
+Per replay, under `tmp/love-e2e-state/tests/e2e/`: `<name>.json.bin`,
+`<name>.json.sha256` and `<name>.json.state` (the game's `debug_state()`)
+when the fake exits 0, `<name>.json.error` otherwise; all four are removed
+before each run. The Lua end state is checked against the replay's
+committed `<name>.json.end-state` by `tools/end_state.sh check`, with the
+normalization of the C `make end-state`; the target never writes an
+`.end-state`. Each replay is reported:
+
+- **matches**: the normalized state equals the reference;
+- **differs**: it does not, with the `-` reference and `+` Lua lines;
+- **FAILED**: the fake stopped before the last frame (a missing
+  `debug_state` included), with its message indented below.
+
+All replays are run and reported before the count line
+`love-e2e-state: <m> match, <d> differ, <f> failed, of <n> replays in tests/e2e`;
+the exit status is 0 only when every replay matches. The target takes
+`tmp/make.lock`, has no timeout, and is not run by `make test`, `make e2e`,
+`make test-all` or CI.
+
 ### Pad buttons
 
 The replays hold button numbers 1–12. The fixed table, from the PSX mapping

@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 # Reruns make under flock: one make of LOCKED_GOALS at a time over tmp/.
-LOCKED_GOALS := test e2e test-all love-e2e lua-sweep-fixed
+LOCKED_GOALS := test e2e test-all love-e2e love-e2e-state lua-sweep-fixed
 
 ifneq ($(if $(MAKE_LOCK_HELD),,$(filter $(LOCKED_GOALS),$(MAKECMDGOALS))),)
 $(MAKECMDGOALS): make-lock ; @:
@@ -1197,7 +1197,17 @@ love-e2e: $(LOVE_E2E_HASHES) tools/love_e2e_report.sh tools/frames_check.sh ## r
 
 FORCE:
 
-.PHONY: love-e2e FORCE
+LOVE_E2E_STATE_DIR := $(TMP_DIR)/love-e2e-state
+LOVE_E2E_STATES := $(foreach e,$(E2E_EVENTS),$(LOVE_E2E_STATE_DIR)/$(e).state)
+
+$(LOVE_E2E_STATES): $(LOVE_E2E_STATE_DIR)/%.state: % $(TMP_DIR)/fake_love tools/love_e2e_run.sh FORCE
+	@mkdir -p $(@D)
+	@sh tools/love_e2e_run.sh "$(SHA256_CMD)" ./$(TMP_DIR)/fake_love $(subst %,$(notdir $*),$(LOVE_E2E_GAME)) $* $(@:.state=.bin) $(@:.state=.sha256) $(@:.state=.error) $@
+
+love-e2e-state: $(LOVE_E2E_STATES) tools/love_e2e_state_report.sh tools/end_state.sh ## runs tmp/fake_love on every tests/e2e/ replay and checks each Lua end state against its .end-state
+	@sh tools/love_e2e_state_report.sh $(foreach e,$(E2E_EVENTS),$(e) $(LOVE_E2E_STATE_DIR)/$(e).state $(e).end-state $(LOVE_E2E_STATE_DIR)/$(e).error)
+
+.PHONY: love-e2e love-e2e-state FORCE
 
 # offsetof, void *self, a field read by name, a spec or defaults table: the
 # model the composition migration removed, which a port of the cart brings
