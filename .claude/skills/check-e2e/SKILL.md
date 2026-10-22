@@ -27,7 +27,7 @@ Run `make e2e`. Green → report `E2E-GREEN:` with the list of `fix:` commits ma
 ### 2. Split the red into failures
 One failure = one replay, reported either way:
 
-- `frames: DIVERGENT <events>` and its three `frames:` lines below: the capture differs from the reference.
+- `frames: DIVERGENT <events>` and its `frames:` lines below (expected, actual, and a `make e2e-baseline` hint never to follow): the capture differs from the reference.
 - `e2e: FAILED <events>` and its indented `e2e:` lines below: the fake stopped before the last frame (a Lua error, a crash). Never skipped: it is a failure like a divergence.
 
 Keep the full output of each.
@@ -47,7 +47,7 @@ Invoke the `fix-bug` skill in place. Its argument is a bug report you write, con
 - **Reproduction**, on the Lua game, no `src/` needed:
   - `make fake-love`, then `./tmp/fake_love game <events> tmp/debug/<name>.bin tmp/debug/<name>.state` (`mkdir -p tmp/debug` first): the capture and the Lua state after the last frame. A failed replay exits non-zero with the error on stderr; a divergent one exits 0, and the capture's `sha256sum` (macOS: `shasum -a 256`) differs from `<events>.sha256`. `make e2e` already left its capture at `tmp/love-e2e/<events>.bin`.
   - Alternative: `make end-state EVENTS=<events>` writes the capture and state to `tmp/end-state/<name>.json.bin` and `.state` and checks the end state against `<events>.end-state`.
-  - The reference commit, a known-good `game/` for this replay: the output of `git rev-parse --verify -q '@{upstream}' || git log -1 --format=%H -- <events>.sha256`, written into the report as a hash.
+  - The reference commit, a known-good `game/` for this replay: written into the report as a hash: `git rev-parse --verify -q '@{upstream}'`; with no upstream, the first of `git log -20 --format=%H HEAD -- game/` whose `game/`, run by the fake on this replay, gives a capture whose sha256 equals `<events>.sha256` (extract and run each as `help-me-debug`'s "The reference game" says); none matches → no good reference, say so in the report. Every `.sha256` predates the Lua game, so the commit that last set it is never a reference.
   - The `.txt` next to each e2e says what it does and at which frames.
 - **Constraints on the fix**, to be carried into every stage:
   - The RED test is a **Lua test run by `make test`**: `tests/lua/game/test_<module>.lua`, named after the `game/` module it drives, found by wildcard (no Makefile registration). Only when the proven cause is in the fake's C code (`tools/fake_love/`): a C test in the Makefile's `UNIT_TESTS`. Never a new e2e in `tests/e2e/`.
