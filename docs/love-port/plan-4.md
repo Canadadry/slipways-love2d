@@ -106,3 +106,16 @@ serves the C.
   `e2e-order-check` (C line coverage); `e2e-ref` (plan rule); `checklist`,
   `lua-sweep-fixed` (compare the Lua with the C itself); `sanitize-net`,
   `full-game` (replay the C).
+
+### Step 1.1
+
+`make e2e` and `make end-state` run `tmp/fake_love` with the Lua game: one
+shared run per replay under `tmp/love-e2e/` writes the capture, its hash
+and the end state, longest replay first; `make e2e end-state` runs each
+replay once. `make end-state EVENTS=<f> [REFERENCE=<r>]` runs one replay,
+`worst-case/` included. `e2e-baseline` and `end-state-baseline` were ported
+here, since they write the references these targets read; `state` and
+`replay` stay on the C until step 1.2. `love-e2e` and `love-e2e-state` are
+gone; `e2e-ref` stays until step 2.4, but a divergence only names
+`make e2e-baseline`. N = 9 s: six cold runs on 4 cores, median 7.107 s,
+rounded up plus 1 s. Both targets: 20 match.
