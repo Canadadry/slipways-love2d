@@ -83,3 +83,26 @@ an amendment, never decided silently inside a step.
 None.
 
 ## 6. Step notes
+
+### Target inventory
+
+Every target of `make help` at the start of the run. Kept: unchanged, needs
+no C. Ported: rewired to the fake LÖVE or to frozen data. Deleted: only
+serves the C.
+
+- Kept: `help`, `test`, `test-all`, `unit` (its fake LÖVE binaries),
+  `fake-love`, `fake-love-guard`, `love`, `love-capture`, `love-check`,
+  `lua-guard`, `lua-test-runtime`.
+- Ported: `e2e`, `end-state` (absorbing `love-e2e` and `love-e2e-state`,
+  which go once absorbed), `e2e-baseline`, `end-state-baseline` (set the
+  references from the fake LÖVE), `state`, `replay` (the fake LÖVE's state
+  dump and capture of one replay), `lua-test-fixed`, `lua-test-modules`
+  (frozen reference files).
+- Deleted, C-only: `alloc-guard`, `button-guard`, `data-guard`, `p8-guard`,
+  `pointer-guard`, `random-guard`, `float-guard`, `float-grep`,
+  `float-link`, `constants-check` (they scan `src/`); `asset-export`,
+  `sin-table`, `bindings-lua`, `demo-lua` (generators built from `src/`:
+  the Lua files they wrote become the source); `coverage`, `e2e-order`,
+  `e2e-order-check` (C line coverage); `e2e-ref` (plan rule); `checklist`,
+  `lua-sweep-fixed` (compare the Lua with the C itself); `sanitize-net`,
+  `full-game` (replay the C).

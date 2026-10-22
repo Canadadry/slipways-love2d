@@ -1,5 +1,5 @@
 - [ ] Phase 1 — Cut the tests loose from the C
-  - [ ] Target inventory
+  - [x] Target inventory
   - [ ] Step 1.1 — `make e2e` and `make end-state` on the fake LÖVE, N rule
   - [ ] Step 1.2 — fix loop independent of the C
   - [ ] Step 1.3 — every surviving check freed from `src/`
