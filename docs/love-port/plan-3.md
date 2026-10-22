@@ -22,22 +22,33 @@ Read `docs/love-port/design.md` first.
 
 ## 3. Phases and steps
 
-### Phase 1 — The diff tool
+### Phase 1 — The state check
 
-1. C side: the replay can write the state dump after **every** frame
+1. `make love-e2e-state`: the runner passes a state path to the fake LÖVE and
+   checks each Lua end state against its `.end-state`. Verified both ways:
+   `make love-e2e-state` and `make love-e2e` both report 20/20 on the
+   current tree, and a deliberately wrong reference is reported as
+   differing. If both report 20/20, step 1's note commit also gives steps
+   2, 3 and 4 each a note ("not needed: step 1 found 20/20 on both checks")
+   and ticks their `progress.md` items, and deletes the step-2 PRD written
+   ahead in `docs/prd/next/`, so the pilot goes straight to "Done when"; a replay failing either check sends the plan to Phase 2.
+
+### Phase 2 — The diff tool (only if a replay diverges)
+
+2. C side: the replay can write the state dump after **every** frame
    (`STATE_EACH_FRAME=<file>`), in the format of `debug_state()`. Lua side:
    the fake LÖVE can call `debug_state()` after every frame the same way.
    Verified by both dumps of `pad_title.json`'s first frame agreeing on the
    lines both sides already produce.
-2. `make e2e-diff E=<replay>`: runs the C replay and the fake LÖVE on the
+3. `make e2e-diff E=<replay>`: runs the C replay and the fake LÖVE on the
    same file and prints the first frame whose pixels differ and how many
    pixels differ, writes `tmp/e2e-diff/<replay>.png` (C, Lua, differing
    pixels highlighted, side by side) and the lines of the two state dumps that
    differ at that frame. Verified on a deliberately broken Lua colour.
 
-### Phase 2 — The replays
+### Phase 3 — The diverging replays
 
-3. One step per replay of `tests/e2e/order.txt`, in order: run
+4. One step per diverging replay, in the order of `tests/e2e/order.txt`: run
    `make e2e-diff`, fix the Lua game until its sha256 matches, check every
    replay above still matches, and its `.end-state` matches through
    `make love-e2e-state`. Verified by `make love-e2e` showing that replay and
@@ -57,12 +68,11 @@ None.
 
 ### From plan 1
 
-- `make love-e2e-state` does not exist yet, and step 3, "Done when" and
+- `make love-e2e-state` does not exist yet, and step 4, "Done when" and
   plan 4's start condition and step 2 depend on it. What exists:
   `tmp/fake_love <game> <replay> <capture> [<state>]` writes `debug_state()`
   to the optional fourth argument; `make love-e2e` passes no state path, and
-  its runner (`tools/love_e2e_run.sh`) can be extended to. Plan 3's
-  plan-converge places the work, before the first replay step.
+  its runner (`tools/love_e2e_run.sh`) can be extended to. Step 1 builds it.
 - `make love-e2e` is proven both ways: a game that fails to load gives 20
   FAILED, a fixed stub 20 DIVERGENT, and a stub redrawing the C captures
   matches all 20 hashes. A divergence is therefore the Lua game's, or a
@@ -71,9 +81,7 @@ None.
 ### From plan 2
 
 - `make love-e2e` matches all 20 replays on the closing commit of plan 2:
-  each replay step may shrink to confirming its match and end state (the
-  state comparison still needs `make love-e2e-state`, above). Plan 3's
-  plan-converge decides.
+  hence step 1's confirmation before any diff tool or per-replay step.
 - The rules for reading a Lua function against its C original (names,
   0-indexed arrays, `cint`, out-parameters as extra returns, `has_`, module
   loading) are in design.md § Reading the Lua against the C.
