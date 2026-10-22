@@ -15,10 +15,15 @@ colony A. In aim mode the cursor is the screen centre (80, 60), marked
 by the colour-7 crosshair (x78-82 on y=60, y58-62 on x=80, the centre
 pixel undrawn). The aimed line is the slipway's core, two pixels
 thick: colour 1 once faded in, colour 2 when refused (a target set,
-slipway_display.c). Labels are colour 8 (targeting_tooltip_show,
-probe.c). Readings below
-come from the framebuffer of each frame (the capture, or the dump and
-`make state` of the file cut after that frame).
+game/game/slipway_display.lua). Labels are colour 8
+(targeting_tooltip_show, game/game/probe.lua). Readings below come
+from the framebuffer of each frame (the capture) and the state at the
+frame: `tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=319; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_slipway.json > tmp/debug/pad_slipway_f$k.json
+    make state EVENTS=tmp/debug/pad_slipway_f$k.json
 
 - f0-100: as pad_colonise up to its X on the colonise row (f12-13 the
   loading screen), p47's menu
@@ -90,7 +95,7 @@ drag's drop refused on it, circle dropping the drag into network mode
 (the drag). The already linked planet is still refused the cross way at
 f265-269.
 
-`make state` at f319 (the file's end): clock year 3401 month 10,
+The state at f319 (the file's end): clock year 3401 month 10,
 credits 64, income 0, camera world 218 276, `slipway p47 p28 normal`,
 planets 88, colonies 2, slipways 1, structures 0, techs 0. p47
 colonized type r, p28 colonized type x, p25 known type f; every other
@@ -117,9 +122,3 @@ Covers the second colony and the slipway of keyboard_slipway
 
 Length: 320 frames, listed in tools/e2e_long_exceptions.txt: the
 shared prefix alone is 101 frames.
-
-Cost: cold `make e2e` (tmp/frames removed), 5 runs each against the
-tree before the drag, median about 1044 ms before and 1188 ms after
-(ranges 910-1077 and 1064-1241); warm about 390 ms before and 450 ms
-after. This replay alone takes about 225 ms, the longest of the
-directory.

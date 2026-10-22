@@ -9,21 +9,22 @@ its eight years within 162 frames. The four labs, the free starting
 probe and the title's game moved into the record. Their placement stays
 covered by pad_build, pad_tech_costs and pad_planet_projects.
 
-The record is cut, never typed, from this file at b2a2369 (its title, the
-probe, labs s1-s4) replayed to f95, after the record of s4's drop and
-before the cheat:
-
-    make replay EVENTS=<b2a2369's pad_bankrupt.json cut to f0-95> SAVE_HEX=tmp/bankrupt.hex
-
-which prints `save: clock year 3401 month 9`, `save: resources
-credits 40`, `save: count nodes 94`; the hex is the header's
-initial_save. No wormhole lives there, so the record is written. The
-cheat typed before the cut would be lost, so it is typed after the
-resume.
+The record was cut, never typed, from this file at b2a2369 (its title,
+the probe, labs s1-s4) replayed to f95, after the record of s4's drop
+and before the cheat, with the C game's save dump, since removed. The
+dump read `save: clock year 3401 month 9`, `save: resources credits
+40`, `save: count nodes 94`; its hex is the header's initial_save. No
+wormhole lives there, so the record is written. The cheat typed before
+the cut would be lost, so it is typed after the resume.
 
 A lab is the build bar's basic structure ($15, 2 months, upkeep the
-square of the colony count). Readings come from `make state` of the
-file cut after the frame and from the capture.
+square of the colony count). Readings come from the capture and from
+the state at the frame: `tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=94; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_bankrupt.json > tmp/debug/pad_bankrupt_f$k.json
+    make state EVENTS=tmp/debug/pad_bankrupt_f$k.json
 
 - f10: Up onto "resume", f12: X: the record's game, year 3401 month 9,
   $40, income -16, camera 206 225, s1 (254, 248), s2 (246, 270), s3
@@ -52,7 +53,7 @@ file cut after the frame and from the capture.
   (167 pixels in x58-103, y97-105), the row game_end_bankrupt's last
   frame showed in colour 13.
 
-`make state` at f94: year 3409 month 1, credits -15, research 107,
+The state at f94: year 3409 month 1, credits -15, research 107,
 income -25, camera 208 191, s1-s5 colonized structure, planets 95,
 colonies 5, slipways 0, techs 0. Peaks: toast 42 (from f92),
 entity_table 161, message_box 3, modal_backdrop 1. Before the cut the

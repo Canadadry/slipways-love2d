@@ -16,8 +16,13 @@ tab ring's R1 R1 and X taps went with it (plan 12 step 12 removed the
 ring, and pad_end_turn's last ring year with it). HUD buttons are read at one fill pixel each: tech (1, 1), score
 (64, 1), year skip (152, 1). "again?" is read at (70, 98), the title
 rows at x=108 (forgiving y57, reasonable y68, challenging y79, tough
-y90). Readings come from the framebuffer dump of the file cut after
-each frame, the clock from `make state` of the same cut.
+y90). Readings come from the capture's framebuffer at each frame, the
+clock from the state at the frame: `tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=93; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_game_end.json > tmp/debug/pad_game_end_f$k.json
+    make state EVENTS=tmp/debug/pad_game_end_f$k.json
 
 - f0-14: as pad_end_turn (f12-13 the loading screen). After f14: year 3401, research 0, aim mode.
 - f16-45: Select held 30 frames: on f45, its 30th frame, the cursor on
@@ -45,13 +50,13 @@ each frame, the clock from `make state` of the same cut.
   gives the first row no press edge.
 - f112-113: nothing, the title.
 
-`make state` after f93: clock year 3426 month 1, credits 100, research
+The state at f93: clock year 3426 month 1, credits 100, research
 25, income 0, camera world 176 196, planets 90, colonies 0, slipways 0,
 structures 0, techs 0; every planet unknown. That is pad_end_turn's
 start with 25 years skipped: year +25, research +25, credits + 25 x
 income (income 0 with no colony). The same lines after f104.
 
-`make state` after f113 (the file's end): clock year - month -, credits
+The state at f113 (the file's end): clock year - month -, credits
 -, research -, income -, camera world 176 196, planets 0, colonies 0,
 slipways 0, structures 0, techs 0: the title. Same after f108 and f111.
 
@@ -76,10 +81,3 @@ press edges (the title, the X held into the panel, "again?") and no O,
 none a chord; Select is no part of a chord.
 
 No long-replay exception: 114 frames, within 180.
-
-Cost: cold `make e2e` (tmp/frames removed), 13 runs without this file
-(8 of them interleaved) and 8 with it, median about 1310 ms without
-(range 1165-1418) and 1436 ms with it (range 1322-1551); a warm `make
-e2e` stays about 0.6 s. The file adds 104 frames (its replay alone
-about 66 ms); deleting keyboard_game_end (160 frames, about 99 ms) in
-step 4.1 gives more back.

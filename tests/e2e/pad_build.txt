@@ -14,8 +14,13 @@ list apply. In aim mode the cursor is the screen centre (80, 60),
 marked by the colour-7 crosshair (x78-82 on y=60, y58-62 on x=80, the
 centre pixel undrawn). The basic structure's icon has its focus point at
 (154, 116), the processor's at (144, 116). Readings below come from the
-framebuffer of each frame (the capture) and `make state` of the file cut
-after that frame.
+framebuffer of each frame (the capture) and the state at the frame:
+`tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=85; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_build.json > tmp/debug/pad_build_f$k.json
+    make state EVENTS=tmp/debug/pad_build_f$k.json
 
 - f10: Down, f12: X on "reasonable", held through f14: f12-13 are the
   loading screen, f14 the new game, camera (176, 196), centre world
@@ -29,7 +34,7 @@ after that frame.
   the processor's icon (x139-147).
 - f24: X: the processor taken. On this frame the icon area changes
   and a colour-2 hatched disk is drawn round p7 (x109-147, y88-117): at
-  the icon's world point the processor is 17 px from p7. `make state`:
+  the icon's world point the processor is 17 px from p7. The state:
   `planet s1 placing processor`, world (320, 312), screen (144, 116),
   planets 91.
 - f25: the map, carrying. The tooltip is gone; the processor is
@@ -40,7 +45,7 @@ after that frame.
 - f26-37: Up held 12 frames, camera y 196 -> 182, s1 world (256, 242).
   The hatched disk is gone from f30, and at f38 the colour-8 "15"
   stands above the processor (x75-83, y52-56): the spot is accepted.
-- f39: X: the processor built. `make state` at f39: `planet s1
+- f39: X: the processor built. The state at f39: `planet s1
   colonized processor`, $100 -> $85, month 1 -> 3, colonies 1. From
   f40 a colour-8 "-15" label rises above it (y54-58 at f40). f40-42:
   aim mode, the crosshair at the centre.
@@ -86,7 +91,7 @@ Planets 91 from f24 (s1 carried, then built); 92 at f47-54 while s2 is
 carried; 91 again from f55; 92 at f69-72 while s3 is carried; 91 again
 from f73.
 
-`make state` at f85: clock year 3401 month 3, credits 85, science 0,
+The state at f85: clock year 3401 month 3, credits 85, science 0,
 income 0, camera world 180 182, `planet s1 colonized processor - world
 256 242`, planets 91, colonies 1, slipways 0, structures 0, techs 0;
 every p planet unknown. No s2 or s3 line: the cancelled structures are
@@ -97,12 +102,7 @@ The X and O edges (X at f12, f24, f39, f47, f69; O at f54, f65, f77,
 f81) never type the cheat (four X + O chords): none of them is a chord.
 
 Covers no keyboard_* scenario: no keyboard replay places a structure
-(their `make state` end states have no s line and structures 0). The
+(their end states had no s line and structures 0). The
 processor of place_processor_ascension (mouse, deleted in the
 remove-mouse-mode PRD) is this one; its ascension gate is
 pad_planet_projects'.
-
-Cost: cold `make e2e` (tmp/frames removed), 6 runs each, median about
-1193 ms before this replay (range 1095-1222) and 1254
-ms after (range 1234-1323); it added 63 frames, and plan 12 step 10's
-bar situations 21 more (84).

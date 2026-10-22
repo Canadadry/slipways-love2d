@@ -13,7 +13,12 @@ f0-14 are pad_probe's frames (Down, X on "reasonable"), so the galaxy is
 pad_probe's. HUD buttons are read at one fill pixel each: tech (1, 1),
 score (64, 1), year skip (152, 1); colour 12 is a lit button, 13 the
 others. Readings come from the capture's framebuffer at each frame, and
-the clock from `make state` of the file cut after that frame.
+the clock from the state at the frame: `tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=129; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_end_turn.json > tmp/debug/pad_end_turn_f$k.json
+    make state EVENTS=tmp/debug/pad_end_turn_f$k.json
 
 - f0-14: as pad_probe (f12-13 the loading screen). After f14: aim mode, the colour-7 crosshair at
   the centre (x78-82 on y=60, y58-62 on x=80, the centre pixel
@@ -48,7 +53,7 @@ the clock from `make state` of the file cut after that frame.
   top-left: on f138-154 the diagonal x28-77, y9-57 (x - y = 19) holds
   only the colour-1 pixels (57, 38) and (58, 39). f154: X released:
   nothing is charged and no month passes. f155: the label is gone.
-- When the fix landed, the same file replayed by the build of
+- When the fix landed, the same file replayed by the C game built at
   85399b1~1 (the commit before "draw no anchor line for a fold without
   an anchor") differed from the capture of that time on f73-89 only,
   by 33 or 34 colour-1 pixels each, all on that diagonal: (28, 9),
@@ -56,13 +61,13 @@ the clock from `make state` of the file cut after that frame.
   the line drawn toward world (0, 0) that the user saw. The f0-72
   frames were identical (frame numbers of that time).
 
-`make state` at f129: clock year 3403 month 1, credits 100, research 2,
+The state at f129: clock year 3403 month 1, credits 100, research 2,
 income 0, camera world 176 196, planets 90, colonies 0, slipways 0,
 structures 0, techs 0; every planet unknown. That is pad_title's end
 state with two years skipped: year +2, research +2, credits + 2 x
 income (income 0 with no colony).
 
-`make state` at f155 (the file's end): the same lines but camera world
+The state at f155 (the file's end): the same lines but camera world
 176 190: the probe is free and the refused fold charged nothing ($100,
 year 3403 month 1).
 
@@ -84,6 +89,3 @@ phase on f63-117 because the box opened at another frame.
 Covers no keyboard_* scenario on its own. Its HUD year skip is the
 mechanism pad_game_end (step 3.4) uses to cover keyboard_game_end,
 whose 25 years are skipped through the same HUD button.
-
-Cost: the three replays of step 3.1 add 186 frames; cold `make e2e`,
-measured before and after them, in pad_score.txt.

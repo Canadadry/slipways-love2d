@@ -27,5 +27,5 @@
     - [x] Chunk 2 — `CLAUDE.md`, README, `.gitignore`, `demo/`
     - [x] Chunk 3 — `design.md` and `save-format.md`
     - [x] Chunk 4 — skills
-    - [ ] Chunk 5 — e2e notes
+    - [x] Chunk 5 — e2e notes
     - [ ] Chunk 6 — search and dry run

@@ -11,20 +11,27 @@ is known) are shared: every capture frame but f18 is the one this file
 had before plan 12 step 17.
 
 f0-78 are pad_probe's 79 frames verbatim: the first 79 frames of this
-capture equal pad_probe's capture byte for byte (`cmp -n 758400`, both
+capture equal pad_probe's capture byte for byte (`cmp -n 758400` on
+the two captures `make replay EVENTS=` writes in tmp/love-replay/, both
 start with an empty storage). Readings come from the capture's
-framebuffer at each frame, and the state and the stored record from
-`make state` / `make replay ... SAVE_HEX=<file>` of the file cut after
-that frame. The hovered pause row is read at x=7, the title rows at
+framebuffer at each frame, and the state at the frame: `tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=156; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_restart_resume.json > tmp/debug/pad_restart_resume_f$k.json
+    make state EVENTS=tmp/debug/pad_restart_resume_f$k.json
+
+The stored record at each frame was read with the C game's save dump,
+since removed, on the same cuts. The hovered pause row is read at x=7, the title rows at
 x=108, the crosshair at (78, 60) and (80, 58), as in
 pad_pause_restart.txt.
 
-- f0-78: as pad_probe (f12-13 the loading screen). The stored record up to f85 is the probe's (year
+- f0-78: as pad_probe (f12-13 the loading screen). The stored record up to f85 was the probe's (year
   3401 month 1, credits 100): the fold is confirmed at f59, but the
   wormhole lives until f86 and no save is written while one lives.
 - f86: the wormhole is gone, the end-of-frame save lands: month 2,
-  credits 97, 90 nodes. It is the last write of the replay: the record
-  is identical at f86, f113, f134 and f156.
+  credits 97, 90 nodes. It was the last write of the replay: the record
+  read identical at f86, f113, f134 and f156.
 - f87-110: the fold's red "-3" label (from f59) still rises over the
   map; gone from f111. f111-113: idle, nothing on screen but the map,
   the probe and its particles.
@@ -39,13 +46,14 @@ pad_pause_restart.txt.
   resumed during that frame's update; the crosshair is back from f135.
   f135-156: idle in aim mode.
 
-`make state` at f113, at f134 and at f156, the same lines apart from
+The state at f113, at f134 and at f156, the same lines apart from
 zone and cap: clock year 3401 month 2, difficulty reasonable, credits
 97, science 0, income 0, camera world 188 184, planets 90, colonies 0,
 slipways 0, structures 0, techs 0, nodes 90. Known: p25 type f, p47
 type r; the other 88 planets unknown.
 
-Why not the PRD's plan (BEFORE=78, Start at f79): at f78 the wormhole
+Why not the PRD's plan (the resume check before at f78, Start at
+f79): at f78 the wormhole
 is still live, so the frame fails the save-frame conditions ("save
 frame: a wormhole is live"), and the stored record is still the
 probe's: a resume there brings back camera (176, 190), month 1, $100,
@@ -55,19 +63,16 @@ check, moved: 35 idle frames (f79-113) after pad_probe's frames, Start
 at f114, so that the frame before Start holds exactly what the record
 holds.
 
-Check (the save-check criteria: bytes, dump, screen without particles):
+Checked with the C game's resume check, since removed (the save-check
+criteria: bytes, dump, screen without particles): f113 against f135
+passed, the record 3939 bytes. The after frame was f135, not f134: the
+resumed game starts in jump mode and f135's press is what brings it
+back to aim mode, where f113 was. Against f134 only the pad overlay
+differed (crosshair against hover circle).
 
-    make resume-check EVENTS=tests/e2e/pad_restart_resume.json BEFORE=113 AFTER=135
-    resume-check: tests/e2e/pad_restart_resume.json f113 vs f135 (3939 bytes): ok
-
-AFTER is 135, not 134: the resumed game starts in jump mode and f135's
-press is what brings it back to aim mode, where f113 was. At AFTER=134
-only the pad overlay differs (crosshair against hover circle).
-
-The negative run, never committed, with BEFORE before the fold:
-
-    make resume-check EVENTS=tests/e2e/pad_restart_resume.json BEFORE=42 AFTER=134
-    resume-check: tests/e2e/pad_restart_resume.json f42 vs f134: resumed side: the storage changed before the resume
+The negative run, never committed, with the before frame ahead of the
+fold: f42 against f134 failed, "resumed side: the storage changed
+before the resume".
 
 Covers the act-restart-resume path: the title's "resume" row present
 after a restart with a save on disk, Up onto it, X resuming the saved
@@ -76,6 +81,3 @@ hid the row, Up would stay on forgiving, X would start a new game and
 the hash would change.
 
 No long-replay exception: 157 frames, within 180.
-
-Cost: the replay alone about 80 ms (pad_probe's 77 frames about 43 ms),
-on 4 cores.
