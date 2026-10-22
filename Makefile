@@ -1086,16 +1086,6 @@ unit-run-test_replay_from_resume: | unit-run-test_frames_tool
 
 .PHONY: $(UNIT_RUNS) unit-run-test_love_runtime_slots
 
-# Fails before any compilation rather than replay a default file.
-ifneq ($(filter replay,$(MAKECMDGOALS)),)
-    ifeq ($(strip $(EVENTS)),)
-        $(error EVENTS missing: make replay EVENTS=<events.json>)
-    endif
-endif
-
-replay: $(TMP_DIR)/replay ## EVENTS=<events> [SAVE_HEX=<file>] [DIGEST=<file>]: replays one file headless, dump in tmp/replay_dump.txt
-	$(if $(ATTRACT_STATE),ATTRACT_STATE=$(ATTRACT_STATE) )$(if $(REPLAY_STARTS),REPLAY_STARTS=$(REPLAY_STARTS) )$(if $(SAVE_HEX),SAVE_HEX=$(SAVE_HEX) )$(if $(DIGEST),DIGEST=$(DIGEST) )./$(TMP_DIR)/replay $(EVENTS)
-
 # One target per name of tools/love_capture/, from its .lua and .png alike,
 # so that a lone half fails instead of being skipped. The halves are sorted
 # here, not in a recipe: a pair's recipe then runs without a shell.
@@ -1302,28 +1292,50 @@ $(STATE_RUNS): state-run-%: % $(TMP_DIR)/replay
 
 .PHONY: $(STATE_RUNS)
 
-ifneq ($(strip $(EVENTS)),)
-state: $(TMP_DIR)/replay ## [EVENTS=<events>]: last-frame state in tmp/state.txt; without EVENTS, zone and cap peaks over every replay
-	$(if $(ATTRACT_STATE),ATTRACT_STATE=$(ATTRACT_STATE) )$(if $(REPLAY_STARTS),REPLAY_STARTS=$(REPLAY_STARTS) )$(if $(SAVE_HEX),SAVE_HEX=$(SAVE_HEX) )$(if $(DIGEST),DIGEST=$(DIGEST) )STATE=$(TMP_DIR)/state.txt ./$(TMP_DIR)/replay $(EVENTS)
-else
-state: $(STATE_RUNS) tools/state_peaks.sh
-	@sh tools/state_peaks.sh $(TMP_DIR)/state.txt $(foreach e,$(STATE_EVENTS),$(e) $(call state_file,$(e)))
-	@echo "state: $(words $(STATE_EVENTS)) replays, peaks in $(TMP_DIR)/state.txt"
+# Fails before any compilation rather than replay a default file.
+ifneq ($(filter replay state,$(MAKECMDGOALS)),)
+    ifeq ($(strip $(EVENTS)),)
+        $(error EVENTS missing: make $(firstword $(filter replay state,$(MAKECMDGOALS))) EVENTS=<events.json>)
+    endif
 endif
+
+# $(1): the run's path without extension, $(2): the target named on failure.
+# The outputs of a stopped fake are removed, so no stale file is read.
+define love_run_events
+	@mkdir -p $(dir $(1))
+	@sh tools/love_e2e_run.sh "$(SHA256_CMD)" ./$(TMP_DIR)/fake_love $(subst %,$(notdir $(EVENTS)),$(LOVE_E2E_GAME)) $(EVENTS) $(1).bin $(1).sha256 $(1).error $(1).state
+	@if [ -f $(1).error ]; then \
+		echo "$(2): FAILED $(EVENTS) -- the fake stopped before the last frame." >&2; \
+		sed 's/^/$(2):   /' $(1).error >&2; \
+		exit 1; \
+	fi
+endef
+
+REPLAY_RUN := $(TMP_DIR)/love-replay/$(notdir $(EVENTS))
+
+replay: $(TMP_DIR)/fake_love tools/love_e2e_run.sh tools/capture_read.lua ## EVENTS=<events>: runs the Lua game in tmp/fake_love, last frame in tmp/replay_dump.txt, capture in tmp/love-replay/
+	@rm -f $(TMP_DIR)/replay_dump.txt
+	$(call love_run_events,$(REPLAY_RUN),replay)
+	@frames=$$(( $$(wc -c < $(REPLAY_RUN).bin) / 9600 )); \
+	{ echo "160 120"; luajit tools/capture_read.lua frame $(REPLAY_RUN).bin $$((frames - 1)); } > $(TMP_DIR)/replay_dump.txt.part || { rm -f $(TMP_DIR)/replay_dump.txt.part; exit 1; }; \
+	mv $(TMP_DIR)/replay_dump.txt.part $(TMP_DIR)/replay_dump.txt; \
+	echo "replay: $$frames frame(s) of $(EVENTS); last frame in $(TMP_DIR)/replay_dump.txt, capture in $(REPLAY_RUN).bin"
+
+STATE_RUN := $(TMP_DIR)/love-state/$(notdir $(EVENTS))
+
+state: $(TMP_DIR)/fake_love tools/love_e2e_run.sh ## EVENTS=<events>: runs the Lua game in tmp/fake_love, its last-frame state dump in tmp/state.txt
+	@rm -f $(TMP_DIR)/state.txt
+	$(call love_run_events,$(STATE_RUN),state)
+	@cp $(STATE_RUN).state $(TMP_DIR)/state.txt
+	@echo "state: last-frame state of $(EVENTS) in $(TMP_DIR)/state.txt"
 
 END_STATE_DIR := $(TMP_DIR)/end-state
 END_STATE_RUN := $(END_STATE_DIR)/$(notdir $(EVENTS))
 
 ifneq ($(strip $(EVENTS)),)
 end-state: $(TMP_DIR)/fake_love tools/love_e2e_run.sh tools/end_state.sh ## [EVENTS=<events> [REFERENCE=<file>]]: compares the Lua game's end states in tmp/fake_love with the committed .end-state files
-	@mkdir -p $(END_STATE_DIR)
-	@sh tools/love_e2e_run.sh "$(SHA256_CMD)" ./$(TMP_DIR)/fake_love $(subst %,$(notdir $(EVENTS)),$(LOVE_E2E_GAME)) $(EVENTS) $(END_STATE_RUN).bin $(END_STATE_RUN).sha256 $(END_STATE_RUN).error $(END_STATE_RUN).state
-	@if [ -f $(END_STATE_RUN).error ]; then \
-		echo "end-state: FAILED $(EVENTS) -- the fake stopped before the last frame." >&2; \
-		sed 's/^/end-state:   /' $(END_STATE_RUN).error >&2; \
-		exit 1; \
-	fi; \
-	sh tools/end_state.sh check $(EVENTS) $(END_STATE_RUN).state $(or $(REFERENCE),$(EVENTS).end-state)
+	$(call love_run_events,$(END_STATE_RUN),end-state)
+	@sh tools/end_state.sh check $(EVENTS) $(END_STATE_RUN).state $(or $(REFERENCE),$(EVENTS).end-state)
 else
 end-state: $(LOVE_E2E_LONGEST_FIRST) tools/love_e2e_state_report.sh tools/end_state.sh
 	@sh tools/love_e2e_state_report.sh $(foreach e,$(E2E_EVENTS),$(e) $(LOVE_E2E_DIR)/$(e).state $(e).end-state $(LOVE_E2E_DIR)/$(e).error)

@@ -13,7 +13,7 @@
     - [x] Chunk 1 — frozen fixed-point reference
     - [x] Chunk 2 — frozen table reference
     - [x] Chunk 3 — `test_love_runtime` without `src/`
-    - [ ] Chunk 4 — `make state` and `make replay` on the fake
+    - [x] Chunk 4 — `make state` and `make replay` on the fake
     - [ ] Chunk 5 — C-only group in `test` and `unit`
     - [ ] Chunk 6 — dry run without `src/`
 - [ ] Phase 2 — Delete
