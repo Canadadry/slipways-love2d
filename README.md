@@ -22,6 +22,10 @@ make checklist                     # each C function and table with its Lua copy
 make help                          # every target
 ```
 
+## Playing the Lua game
+
+`make love` writes `tmp/slipways.love`; run it with LÖVE 11.5 (`love tmp/slipways.love`). It needs a gamepad: the game reads no keyboard.
+
 ## Controls
 
 The game reads 12 numbered buttons. `bindings.default.cfg` says what each button does in each mode, and explains every mode and action; replays and tests compile it. The pad table of `docs/love-port/design.md` maps the numbers to LÖVE gamepad buttons.

@@ -35,12 +35,10 @@ the tests that do not need the C. Read `docs/love-port/design.md` first.
    (`asset_export`, coverage, float/pointer/alloc guards, …) and their
    Makefile targets. `make e2e` and `make e2e-state` now run the fake LÖVE.
    Verified by `make test-all` green and no `src/` left.
-3. `make love` zips `game/` into `tmp/slipways.love`. Verified by the archive
-   listing `main.lua`, `conf.lua` and the PNGs.
 
 ### Phase 3 — Rules and docs
 
-4. Measure `make e2e` (6 cold runs, median); write the N-seconds rule into
+3. Measure `make e2e` (6 cold runs, median); write the N-seconds rule into
    `CLAUDE.md`. Update `CLAUDE.md`, `README` and `docs/love-port/design.md`
    to describe a Lua repository. Verified by reading: no mention of the
    deleted C left as current.
