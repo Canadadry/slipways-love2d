@@ -1120,7 +1120,7 @@ LUA_GAME_TEST_RUNS := $(patsubst tests/lua/game/%.lua,lua-run-%,$(LUA_GAME_TESTS
 
 # Longest first: `-j` starts prerequisites in this order, and float-guard
 # alone (~4 s, serial) sets the wall time when it starts behind the checks.
-test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) lua-test-fixed lua-test-runtime lua-guard lua-test-modules $(LUA_GAME_TEST_RUNS) pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
+test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) lua-test-fixed lua-test-runtime lua-guard lua-test-modules $(LUA_GAME_TEST_RUNS) lua-test-capture-read pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
 
 test-all: test e2e ## test + e2e, the full suite
 
@@ -1433,7 +1433,10 @@ lua-sweep-fixed: tests/lua/test_fixed.lua $(wildcard game/p8/*.lua) $(TMP_DIR)/f
 lua-test-runtime: tests/lua/test_runtime.lua $(wildcard game/p8/*.lua) ## checks the Lua-only behaviour of game/p8/ modules
 	luajit tests/lua/test_runtime.lua
 
-.PHONY: lua-test-fixed lua-sweep-fixed lua-test-runtime
+lua-test-capture-read: tests/lua/test_capture_read.lua tools/capture_read.lua ## checks tools/capture_read.lua prints and compares fake-LÖVE capture frames correctly
+	luajit tests/lua/test_capture_read.lua
+
+.PHONY: lua-test-fixed lua-sweep-fixed lua-test-runtime lua-test-capture-read
 
 # wildcard, not find: the guard stays a single process.
 LUA_GUARD_FILES := $(wildcard game/*.lua game/*/*.lua game/*/*/*.lua)
