@@ -1197,6 +1197,15 @@ love-e2e: $(LOVE_E2E_HASHES) tools/love_e2e_report.sh tools/frames_check.sh ## r
 
 FORCE:
 
+LOVE_ARCHIVE := $(TMP_DIR)/slipways.love
+
+$(LOVE_ARCHIVE): $(shell find game -type f) | $(TMP_DIR)
+	@rm -f $@
+	@cd game && zip -q -9 -X -r $(CURDIR)/$@ .
+	@echo "love: $@"
+
+love: $(LOVE_ARCHIVE) ## zips game/ into tmp/slipways.love, playable with LÖVE 11.5 and a gamepad
+
 LOVE_E2E_STATE_DIR := $(TMP_DIR)/love-e2e-state
 LOVE_E2E_STATES := $(foreach e,$(E2E_EVENTS),$(LOVE_E2E_STATE_DIR)/$(e).state)
 
@@ -1207,7 +1216,7 @@ $(LOVE_E2E_STATES): $(LOVE_E2E_STATE_DIR)/%.state: % $(TMP_DIR)/fake_love tools/
 love-e2e-state: $(LOVE_E2E_STATES) tools/love_e2e_state_report.sh tools/end_state.sh ## runs tmp/fake_love on every tests/e2e/ replay and checks each Lua end state against its .end-state
 	@sh tools/love_e2e_state_report.sh $(foreach e,$(E2E_EVENTS),$(e) $(LOVE_E2E_STATE_DIR)/$(e).state $(e).end-state $(LOVE_E2E_STATE_DIR)/$(e).error)
 
-.PHONY: love-e2e love-e2e-state FORCE
+.PHONY: love love-e2e love-e2e-state FORCE
 
 # offsetof, void *self, a field read by name, a spec or defaults table: the
 # model the composition migration removed, which a port of the cart brings
