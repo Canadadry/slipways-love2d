@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 
 #include "fake_love_cli.h"
 
@@ -13,6 +14,7 @@
 #define CAPTURE DIR "/replay.json.bin"
 #define HASH DIR "/replay.json.sha256"
 #define ERROR DIR "/replay.json.error"
+#define STATE DIR "/replay.json.state"
 #define LOG DIR "/log.txt"
 #define EXPECTED DIR "/expected.bin"
 #define EXPECTED_HASH DIR "/expected.sha256"
@@ -29,7 +31,7 @@
 #define OUTPUTS " " CAPTURE " " HASH " " ERROR
 
 static const char *const WORK_FILES[] = {
-    CAPTURE, HASH, ERROR, LOG, EXPECTED, EXPECTED_HASH,
+    CAPTURE, HASH, ERROR, STATE, LOG, EXPECTED, EXPECTED_HASH,
     DIR "/match.ref", DIR "/match.cur", DIR "/diverge.ref", DIR "/diverge.cur", DIR "/stop.ref", DIR "/stop.error",
 };
 
@@ -49,6 +51,7 @@ static void write_stale_outputs(void) {
     write_text(CAPTURE, "stale capture");
     write_text(HASH, "stale hash\n");
     write_text(ERROR, "stale error\n");
+    write_text(STATE, "stale state\n");
 }
 
 static int run(const char *command) {
@@ -104,6 +107,45 @@ static void test_a_finished_run_leaves_its_capture_and_hash_only(void) {
     fake_love_cli_assert_text(HASH, expected);
     free(expected);
     assert(!fake_love_cli_file_exists(ERROR) && "an older failure must not look current");
+}
+
+static void test_seven_arguments_write_no_state(void) {
+    reset();
+    assert(run(RUN FIXTURES "minimal " FIXTURES "three_frames.json" OUTPUTS) == 0);
+    assert(fake_love_cli_file_exists(HASH));
+    assert(!fake_love_cli_file_exists(STATE) && "make love-e2e must not need debug_state");
+}
+
+static void test_a_finished_run_with_a_state_path_leaves_the_state(void) {
+    reset();
+    write_stale_outputs();
+    assert(run(RUN FIXTURES "minimal " FIXTURES "three_frames.json" OUTPUTS " " STATE) == 0);
+    fake_love_cli_assert_text(STATE, "updates 3\n");
+    long size = -1;
+    free(fake_love_cli_read_file(CAPTURE, &size));
+    assert(size == FRAMES * FRAME_SIZE);
+    assert(fake_love_cli_file_exists(HASH));
+    assert(!fake_love_cli_file_exists(ERROR) && "an older failure must not look current");
+}
+
+static void test_a_game_without_debug_state_leaves_the_error_only(void) {
+    reset();
+    write_stale_outputs();
+    assert(run(RUN FIXTURES "e2e_fixed " FIXTURES "three_frames.json" OUTPUTS " " STATE) == 0);
+    char *error = fake_love_cli_read_file(ERROR, NULL);
+    assert(error != NULL && "the error file must be written");
+    assert(strstr(error, "debug_state") != NULL && "the fake's message names the missing function");
+    free(error);
+    assert(!fake_love_cli_file_exists(STATE) && "an older state must not look current");
+    assert(!fake_love_cli_file_exists(CAPTURE));
+    assert(!fake_love_cli_file_exists(HASH));
+}
+
+static void test_a_wrong_argument_count_is_a_usage_error(void) {
+    reset();
+    int status = run(RUN FIXTURES "minimal " FIXTURES "three_frames.json" OUTPUTS " " STATE " extra");
+    assert(WIFEXITED(status) && WEXITSTATUS(status) == 2);
+    assert_log_holds("[<state>]");
 }
 
 static void test_a_stopped_run_leaves_the_fake_message_only(void) {
@@ -167,6 +209,10 @@ int main(void) {
     assert(system("rm -rf " DIR " && mkdir -p " DIR) == 0);
     test_a_finished_run_leaves_its_capture_and_hash_only();
     test_a_stopped_run_leaves_the_fake_message_only();
+    test_seven_arguments_write_no_state();
+    test_a_finished_run_with_a_state_path_leaves_the_state();
+    test_a_game_without_debug_state_leaves_the_error_only();
+    test_a_wrong_argument_count_is_a_usage_error();
     test_the_report_names_each_outcome_and_counts_them();
     test_the_report_passes_when_every_replay_matches();
     test_a_failure_alone_fails_the_report();

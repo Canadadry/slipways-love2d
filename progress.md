@@ -1,5 +1,8 @@
 - [ ] Phase 1 — The state check
   - [ ] Step 1.1 — make love-e2e-state
+    - [x] Chunk 1 — runner state argument
+    - [ ] Chunk 2 — state report script
+    - [ ] Chunk 3 — make target, docs, run on the tree
 - [ ] Phase 2 — The diff tool (only if a replay diverges)
   - [ ] Step 2.2 — per-frame state dumps, C and Lua
   - [ ] Step 2.3 — make e2e-diff
