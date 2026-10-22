@@ -90,3 +90,35 @@ None.
   nowhere, by audit only; no code compares the score panel's text
   addresses, by audit only; `game.pad_nav` and `game.save_state` have no
   direct test (their C-vs-Lua checks were throwaway programs).
+
+### Step 1.1
+
+- `make love-e2e-state` added in three chunks: the runner takes an optional
+  eighth `<state>` argument, `tools/love_e2e_state_report.sh` checks each
+  state through `tools/end_state.sh check`, and the target runs the fake
+  again into `tmp/love-e2e-state/` so `make love-e2e` still works with
+  stub games that have no `debug_state`. design.md and CLAUDE.md list it.
+- On the tree: `love-e2e-state: 20 match, 0 differ, 0 failed`,
+  `love-e2e: 20 match, 0 diverge, 0 failed`; with `attract.json.end-state`'s
+  clock edited to 3408 the target reported that replay differing on that
+  line (19/1/0, exit 2), file restored. `make test`, `make e2e` green.
+- Deviation: the step-2 PRD was not written ahead, as the expected 20/20
+  made it throwaway; there was nothing in `docs/prd/next/` to delete.
+- `warn-review` on Phase 1, not acted on (the plan ends here, so no
+  plan-review consultation): the state report repeats
+  `love_e2e_report.sh`'s loop, FAILED block and count line; the Makefile
+  repeats the `love-e2e` per-replay recipe and writes a capture and hash
+  the target never reads; differing replays are counted by parsing
+  `end_state.sh`'s text, not its exit status.
+
+### Step 2.2
+
+Not needed: step 1 found 20/20 on both checks.
+
+### Step 2.3
+
+Not needed: step 1 found 20/20 on both checks.
+
+### Step 3.4
+
+Not needed: step 1 found 20/20 on both checks.
