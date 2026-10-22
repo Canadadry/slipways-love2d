@@ -1,5 +1,5 @@
 -- Requires every module of the game directory, then compares its data tables
--- and constants with the C rendering written by tools/table_reference.c.
+-- and constants with a reference frozen from the C (deleted in plan 4).
 -- Usage, from the repository root:
 --   luajit tests/lua/test_modules.lua [--defer <module>]... <game dir> <reference file> <file.lua>...
 -- The reference holds one block per table: "= <module> <name> <bytes>", then
@@ -107,15 +107,15 @@ for _, module in ipairs(modules) do
     end
 end
 
--- The C side writes the same quoting: one line per string whatever it holds.
+-- The reference holds the same quoting: one line per string whatever it holds.
 local function quote(text)
     return '"' .. text:gsub('[%c"\\\128-\255]', function(c)
         return string.format("\\%03d", c:byte())
     end) .. '"'
 end
 
--- tostring spells an integer below 10^14 exactly, and -0 as "-0", which no C
--- integer prints.
+-- tostring spells an integer below 10^14 exactly, and -0 as "-0", which no reference
+-- integer holds.
 local function scalar(value)
     local kind = type(value)
     if kind == "number" then
@@ -146,7 +146,7 @@ end
 
 -- Appends to the buffer out one line "<path> <value>\n" per scalar: integer
 -- keys ascending, then the other keys by the spelling of their step, depth
--- first, as the C side sorts. Returns the count of lines it appended.
+-- first, as the reference is sorted. Returns the count of lines it appended.
 local function render(out, prefix, value, registered, visiting)
     if type(value) ~= "table" then
         out:put(prefix, " ", scalar(value), "\n")
@@ -297,20 +297,20 @@ local function read_lines(text)
     return values, keys
 end
 
-local function differences_of(c_text, lua_text)
-    local c_values, c_keys = read_lines(c_text)
+local function differences_of(reference_text, lua_text)
+    local reference_values, reference_keys = read_lines(reference_text)
     local lua_values, lua_keys = read_lines(lua_text)
     local differences = {}
-    for _, key in ipairs(c_keys) do
-        local c_value, lua = c_values[key], lua_values[key]
+    for _, key in ipairs(reference_keys) do
+        local reference_value, lua = reference_values[key], lua_values[key]
         if lua == nil then
-            differences[#differences + 1] = key .. ": missing in Lua, C " .. c_value
-        elseif lua ~= c_value then
-            differences[#differences + 1] = key .. ": C " .. c_value .. ", Lua " .. lua
+            differences[#differences + 1] = key .. ": missing in Lua, reference " .. reference_value
+        elseif lua ~= reference_value then
+            differences[#differences + 1] = key .. ": reference " .. reference_value .. ", Lua " .. lua
         end
     end
     for _, key in ipairs(lua_keys) do
-        if c_values[key] == nil then
+        if reference_values[key] == nil then
             differences[#differences + 1] = key .. ": extra in Lua, Lua " .. lua_values[key]
         end
     end
@@ -337,11 +337,11 @@ for _, block in ipairs(blocks) do
     else
         local rendered = buffer.new()
         local count = render(rendered, block.id, block.value, registered, {})
-        local c_text, lua_text = text:sub(block.first, block.last), rendered:tostring()
-        if lua_text == c_text then
+        local reference_text, lua_text = text:sub(block.first, block.last), rendered:tostring()
+        if lua_text == reference_text then
             compared_lines = compared_lines + count
         else
-            local differences = differences_of(c_text, lua_text)
+            local differences = differences_of(reference_text, lua_text)
             if #differences == 0 then
                 compared_lines = compared_lines + count
             else
@@ -360,7 +360,7 @@ end
 if #failures > 0 then
     io.stdout:write(table.concat(failures, "\n"), "\n")
     io.stdout:write("lua-test-modules: ", load_failures, " modules fail to load, ", differing, " of ", #blocks,
-        " names differ from C\n")
+        " names differ from the reference\n")
     os.exit(1)
 end
 local deferral = ""
@@ -369,4 +369,4 @@ if #skipped_names > 0 then
         .. " names skipped),"
 end
 io.stdout:write("lua-test-modules: ", loaded, " modules loaded,", deferral, " ", #blocks - skipped_blocks,
-    " names and ", compared_lines, " lines equal to C\n")
+    " names and ", compared_lines, " lines equal to the reference\n")

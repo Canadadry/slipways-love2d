@@ -26,17 +26,12 @@ Kept, because the fixture leaves these modes on the default:
   A swap leaking from jump into menu or aim turns this file red.
 
 The mode of each press is the one it is read in, before the frame
-runs, from the mode log of pad_colonise's frames proof alone:
-
-    ./tmp/pad_author tools/pad_author_proofs/pad_colonise.frames.pad \
-        tmp/pad-author/pad_colonise.frames.json --no-aim-budget
-
-(its JSON is tests/e2e/pad_colonise.json; the log is
-tmp/pad-author/pad_colonise.modes.txt, which `make pad-author-proof`
-overwrites with the end-state proof's log). Its lines `f<N> jump`
-pressing 7 or 8 up to f176 are exactly f137, f143 and f148. f177, a
-jump-mode 7, is past the cut. Every 7 or 8 press here is a one-frame
-tap, so no hold starts in jump mode and continues in another.
+runs. It was read from the mode log of pad_colonise's frames proof
+alone, written by the pad author tool, since removed (the proof's JSON
+is tests/e2e/pad_colonise.json): its lines `f<N> jump` pressing 7 or 8
+up to f176 were exactly f137, f143 and f148. f177, a jump-mode 7, is
+past the cut. Every 7 or 8 press here is a one-frame tap, so no hold
+starts in jump mode and continues in another.
 
 Every captured frame is identical to pad_colonise's first 177 frames,
 so pad_colonise.txt's readings for f0-176 apply, and this file's
@@ -45,6 +40,8 @@ fixture's swap undone, the frames diverge from f137; the end state
 does not, because it records neither the camera nor the nav mode: the
 .sha256 is the proof of the remap, not the .end-state.
 
-`make state` at f176: clock year 3401 month 6, credits 89, income -1,
-colonies 1, slipways 0, structures 0, techs 0. p47 colonized type r,
+The state at f176, the file's end (`make state
+EVENTS=tests/e2e/pad_swap_aim_menu.json`, which reads the fixture beside
+the file): clock year 3401 month 6, credits 89, income -1, colonies 1,
+slipways 0, structures 0, techs 0. p47 colonized type r,
 p25 known type f; every other planet unknown.

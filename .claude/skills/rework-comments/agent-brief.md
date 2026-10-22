@@ -1,20 +1,25 @@
 # Agent brief — adapt and paste
 
 One agent, one module. Replace the `<...>`. The bold passages are the ones that
-were paid for dearly: do not soften them.
+were paid for dearly: do not soften them. For a C module of the fake LÖVE, keep
+the C lines and drop the Lua ones; for a Lua module, the reverse.
 
 ---
 
-You are reworking the comments of **<MODULE>**: `<path/module.h>` and
-`<path/module.c>`. **Both together** — the trap is often stated in the header
-while the check that replaces it must live in the body.
+You are reworking the comments of **<MODULE>**.
+
+- C: `<path/module.h>` and `<path/module.c>`. **Both together** — the trap is
+  often stated in the header while the check that replaces it must live in the
+  body.
+- Lua: `<path/module.lua>`, one file. It has no header: the block at its top
+  gets the body's bar.
 
 This repository has accumulated work-log narration in its comments: phase and
 batch numbers, references to design documents, copied-in reference code,
 justifications for how modules were split, histories of abandoned fixes. We are
 removing it. **You change no behavior**: not a signature, not a value, not a
-call order. The only code you are allowed to add is `#include <assert.h>` and
-`assert`s, under the conditions below.
+call order. The only code you are allowed to add is `assert`s (and, in C,
+`#include <assert.h>`), under the conditions below.
 
 ## The bar: delete by default
 
@@ -24,7 +29,7 @@ useful" are not reasons: nearly every comment is both. The only question:
 reintroduce a bug that no assert and no test catches?** If not, delete it. **In
 doubt, delete**: git keeps it, and I put what matters in the commit message.
 
-- **The header ends with no comments.** Not one per declaration, not one per
+- **A C header ends with no comments.** Not one per declaration, not one per
   field, not a file banner. The signature and the names are the documentation.
   "Must outlive the handle", "may be NULL", "returns 0 on failure", "called
   once per frame": all deleted. Only three things may remain, listed below.
@@ -33,8 +38,8 @@ doubt, delete**: git keeps it, and I put what matters in the commit message.
 - **A test file keeps the reason for a literal value**, nothing else (see
   below).
 
-Example of the expected result: `src/engine/allocator.h` went from a comment on
-every declaration to none, and `allocator.c` kept two one-line traps ("`handle`
+Example of the expected result, from the C port: `allocator.h` went from a
+comment on every declaration to none, and `allocator.c` kept two one-line traps ("`handle`
 must stay first: arena_t is reached by casting the handle"; "Not
 bump_zone_init: under ASan it poisons two halves, past the block").
 
@@ -45,13 +50,14 @@ What may survive, each in exactly one place:
    you list in your report the entries to add or correct. The code does not
    repeat the glossary.
 2. **A trap a future reader would reintroduce** → an
-   `assert(cond && "short message")` at the exact site **if you can establish
+   `assert(cond, "short message")` in Lua, `assert(cond && "short message")`
+   in C, at the exact site **if you can establish
    that it holds**, otherwise **one sentence** in the body, at that line. Read
    the next section before writing a single assert.
 3. **A file format that something outside the repository must read** → it may
-   stay in full in the header that writes it. A format read only by this
-   repository's code or tests does not qualify: the tests pin it. Say in your
-   report which header you claim this for, and why.
+   stay in full in the header or the Lua module that writes it. A format read
+   only by this repository's code or tests does not qualify: the tests pin it.
+   Say in your report which file you claim this for, and why.
 
 `TODO` is still allowed: it admits that a case is not handled.
 
@@ -160,16 +166,18 @@ usual check (identical non-comment lines) does not see them.
 
 ## Check before handing back
 
-- No declaration and no line of code lost. Compare the preprocessor output
-  (`<gcc -fpreprocessed -dD -E -P>`) before/after: it must be identical, apart
-  from the `assert`s. **This check works even on a file you cannot compile**:
-  the option does not resolve `#include`s, it strips comments. Never fall back
-  on eyeballing.
+- No declaration and no line of code lost. In C, compare the preprocessor
+  output (`<gcc -fpreprocessed -dD -E -P>`) before/after: it must be identical,
+  apart from the `assert`s. **This check works even on a file you cannot
+  compile**: the option does not resolve `#include`s, it strips comments. In
+  Lua, compare the stripped bytecode (`<luajit -b -s file.lua out>`)
+  before/after: it holds no comment and no line number, so it must be
+  identical, apart from the `assert`s. Never fall back on eyeballing.
 - The number of lines of code is identical before and after. A second, free
   safety net.
-- No nested block comment (a `/* */` does not nest).
-- `#include <assert.h>` present if you added an assert.
-- `<header_residue.sh> <your headers>` prints nothing (`-x <header>` only
+- C: no nested block comment (a `/* */` does not nest).
+- C: `#include <assert.h>` present if you added an assert.
+- C: `<header_residue.sh> <your headers>` prints nothing (`-x <header>` only
   for a header you claim under destination 3).
 - Count the comment lines before and after with **the command given in this
   brief**, not with your own: otherwise your figure is comparable to no other.

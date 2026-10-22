@@ -1,4 +1,6 @@
--- Compares game/p8/fixed.lua with the C results written by tools/fixed_reference.c.
+-- Reference format (frozen from the C, deleted in plan 4): one "<name> <input>... = <output>..."
+-- line of hex words per record, then "end <record count>". Records run in file
+-- order: the random sections share one state.
 -- Usage, from the repository root: luajit tests/lua/test_fixed.lua <reference file | ->
 package.path = "game/?.lua;" .. package.path
 
@@ -44,6 +46,12 @@ local SIGNATURES = {
   p8_fixed_rnd_state = { inputs = {}, outputs = { "u" } },
 }
 
+local WORD = " (%x%x%x%x%x%x%x%x)"
+local PATTERNS = {}
+for name, signature in pairs(SIGNATURES) do
+  PATTERNS[name] = "^" .. name .. WORD:rep(#signature.inputs) .. " =" .. WORD:rep(#signature.outputs) .. "$"
+end
+
 -- Sections whose C call also reads the global random state: each record
 -- holds the call's results then the state it leaves.
 local ADAPTERS = {
@@ -74,28 +82,13 @@ local path = arg[1]
 if not path then
   fail("usage: luajit tests/lua/test_fixed.lua <reference file | ->")
 end
-local file = path == "-" and io.stdin or io.open(path, "rb")
+local file = path == "-" and io.stdin or io.open(path, "r")
 if not file then
   fail("cannot open " .. path)
 end
-local data = file:read("*a")
-if path ~= "-" then
-  file:close()
-end
 
-local byte = string.byte
-local position = 1
-
-local function read_u32()
-  if position + 3 > #data then
-    fail(string.format("truncated reference at byte %d", position - 1))
-  end
-  local b1, b2, b3, b4 = byte(data, position, position + 3)
-  position = position + 4
-  return b1 + b2 * 0x100 + b3 * 0x10000 + b4 * 0x1000000
-end
-
-local function decode(raw, kind)
+local function decode(word, kind)
+  local raw = tonumber(word, 16)
   if kind == "f" and raw >= 0x80000000 then
     return raw - 0x100000000
   end
@@ -109,45 +102,19 @@ local function show(value)
   return tostring(value)
 end
 
-if data:sub(1, 8) ~= "P8FIXREF" then
-  fail("malformed reference: bad magic")
-end
-position = 9
-local version = read_u32()
-if version ~= 1 then
-  fail("malformed reference: version " .. version)
-end
-
 local mismatches = {}
--- Per C name, summed over its sections: a name may have several.
 local differing, checked = {}, {}
-local seen = {}
+local functions = {}
 local records_read = 0
+local trailer
+local line_number = 0
 local failed = false
 
-while true do
-  local name_length = read_u32()
-  if name_length == 0 then
-    break
-  end
-  if position + name_length - 1 > #data then
-    fail("truncated reference in a section name")
-  end
-  local name = data:sub(position, position + name_length - 1)
-  position = position + name_length
-  local signature = SIGNATURES[name]
-  if not signature then
-    fail("unknown section " .. name)
-  end
-  local input_count, output_count, record_count = read_u32(), read_u32(), read_u32()
-  if input_count ~= #signature.inputs or output_count ~= #signature.outputs then
-    fail(string.format("section %s: %d inputs, %d outputs, expected %d and %d", name, input_count, output_count,
-      #signature.inputs, #signature.outputs))
-  end
-  if output_count > 3 then
-    fail(string.format("section %s: %d outputs, the reader keeps 3 return values", name, output_count))
-  end
-  seen[name] = true
+local function malformed(message)
+  fail(string.format("malformed reference line %d: %s", line_number, message))
+end
+
+local function function_for(name)
   local fn = ADAPTERS[name] and ADAPTERS[name](fixed) or fixed[name]
   if type(fn) == "number" then
     local value = fn
@@ -155,41 +122,82 @@ while true do
       return value
     end
   end
-  local count = differing[name] or 0
-  local inputs, actual, expected = {}, {}, {}
-  for _ = 1, record_count do
-    for i = 1, input_count do
-      inputs[i] = decode(read_u32(), signature.inputs[i])
-    end
-    if fn then
-      actual[1], actual[2], actual[3] = fn(unpack(inputs, 1, input_count))
-    end
-    local bad = not fn
-    for i = 1, output_count do
-      expected[i] = decode(read_u32(), signature.outputs[i])
-      if actual[i] ~= expected[i] then
-        bad = true
+  return fn or false
+end
+
+local inputs, actual, expected, words = {}, {}, {}, {}
+for line in file:lines() do
+  line_number = line_number + 1
+  if trailer then
+    malformed("after the trailer")
+  end
+  if line:sub(1, 1) ~= "#" then
+    local name = line:match("^[%w_]+")
+    if name == "end" then
+      trailer = tonumber(line:match("^end (%d+)$"))
+      if not trailer then
+        malformed("trailer is not \"end <record count>\"")
       end
-    end
-    if bad then
-      count = count + 1
-      if count <= MAX_REPORTED then
-        local shown_inputs, shown_expected, shown_actual = {}, {}, {}
-        for i = 1, input_count do
-          shown_inputs[i] = show(inputs[i])
-        end
-        for i = 1, output_count do
-          shown_expected[i] = show(expected[i])
-          shown_actual[i] = fn and show(actual[i]) or "missing function"
-        end
-        io.stderr:write(string.format("%s(%s): expected %s, got %s\n", name, table.concat(shown_inputs, ", "),
-          table.concat(shown_expected, ", "), table.concat(shown_actual, ", ")))
+    else
+      local signature = SIGNATURES[name]
+      if not signature then
+        malformed("unknown name " .. tostring(name))
       end
+      local input_count, output_count = #signature.inputs, #signature.outputs
+      words[1], words[2], words[3], words[4], words[5] = line:match(PATTERNS[name])
+      if not words[1] then
+        malformed(string.format("%s takes %d inputs and %d outputs, each an 8-digit hex word", name, input_count,
+          output_count))
+      end
+      local fn = functions[name]
+      if fn == nil then
+        fn = function_for(name)
+        functions[name] = fn
+      end
+      for i = 1, input_count do
+        inputs[i] = decode(words[i], signature.inputs[i])
+      end
+      if fn then
+        actual[1], actual[2], actual[3] = fn(unpack(inputs, 1, input_count))
+      end
+      local bad = not fn
+      for i = 1, output_count do
+        expected[i] = decode(words[input_count + i], signature.outputs[i])
+        if actual[i] ~= expected[i] then
+          bad = true
+        end
+      end
+      local count = differing[name] or 0
+      if bad then
+        count = count + 1
+        if count <= MAX_REPORTED then
+          local shown_inputs, shown_expected, shown_actual = {}, {}, {}
+          for i = 1, input_count do
+            shown_inputs[i] = show(inputs[i])
+          end
+          for i = 1, output_count do
+            shown_expected[i] = show(expected[i])
+            shown_actual[i] = fn and show(actual[i]) or "missing function"
+          end
+          io.stderr:write(string.format("%s(%s): expected %s, got %s\n", name, table.concat(shown_inputs, ", "),
+            table.concat(shown_expected, ", "), table.concat(shown_actual, ", ")))
+        end
+      end
+      differing[name] = count
+      checked[name] = (checked[name] or 0) + 1
+      records_read = records_read + 1
     end
   end
-  records_read = records_read + record_count
-  differing[name] = count
-  checked[name] = (checked[name] or 0) + record_count
+end
+if path ~= "-" then
+  file:close()
+end
+
+if not trailer then
+  fail("malformed reference: no trailer line")
+end
+if trailer ~= records_read then
+  fail(string.format("malformed reference: trailer says %d records, read %d", trailer, records_read))
 end
 for name, count in pairs(differing) do
   if count > 0 then
@@ -197,16 +205,8 @@ for name, count in pairs(differing) do
     failed = true
   end
 end
-
-local total = read_u32()
-if total ~= records_read then
-  fail(string.format("malformed reference: trailer says %d records, read %d", total, records_read))
-end
-if position <= #data then
-  fail("malformed reference: bytes after the trailer")
-end
 for name in pairs(SIGNATURES) do
-  if not seen[name] then
+  if not checked[name] then
     mismatches[#mismatches + 1] = name .. ": section missing from the reference"
     failed = true
   end
@@ -218,4 +218,4 @@ if failed then
   end
   os.exit(1)
 end
-print(string.format("test_fixed: %d records equal to the C", records_read))
+print(string.format("test_fixed: %d records equal to the reference", records_read))

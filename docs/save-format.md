@@ -1,23 +1,25 @@
 # Save format
 
-The binary record that `src/game/save_state.c` writes and reads: one save of a running game, pointer-free, at most `SAVE_STATE_MAX_BYTES` = 8192 bytes. This page describes version 1 as the code has it. Any change to the encoder or the decoder updates this page in the same commit.
+The binary record that `game/game/save_state.lua` writes and reads: one save of a running game, pointer-free, at most `SAVE_STATE_MAX_BYTES` = 8192 bytes. This page describes version 1 as the code has it. Any change to the encoder or the decoder updates this page in the same commit.
 
-The module has four entry points (`src/game/save_state.h`):
+The module (`require("game.save_state")`) has four entry points. A byte buffer is a 0-indexed array of integers 0–255, filled in place.
 
-- `save_state_capture` reads the live game into a `save_state_t`, changing nothing;
-- `save_state_encode` writes a `save_state_t` to bytes and asserts that the record fits 8 KiB; it writes what it is given and validates nothing;
-- `save_state_decode` reads bytes back into a `save_state_t` and returns 1 for a valid record, 0 otherwise, never asserting on the bytes;
-- `save_state_crc32` is the trailer checksum.
+- `save_state_capture(out)` reads the live game into the save state table `out`, changing nothing else;
+- `save_state_encode(state, buffer)` writes a save state table to `buffer` and returns the record's byte count, asserting that the record fits 8 KiB; it writes what it is given and validates nothing;
+- `save_state_decode(bytes, count, out)` reads `count` bytes back into the table `out` and returns 1 for a valid record, 0 otherwise, never asserting on the bytes;
+- `save_state_crc32(bytes, count)` is the trailer checksum.
 
-The largest record of the `worst-case/` games is 4519 bytes (`worst-case/full_game.json`, frame 5964), 3673 bytes under the limit. If the size assert ever fires, the encoding gets more compact; the limit never moves.
+`save_state_zero(out)` resets a table to the empty save state. The module exports the constants this page names as `M.SAVE_STATE_*` fields (`M.SAVE_STATE_MAX_BYTES`) and `M.SAVE_NODE_*` fields (`M.SAVE_NODE_HAS_POS` for the flag `HAS_POS`).
 
-When the record format changes (a version bump, a new field), `tests/e2e/pad_resume_at_start.json`'s `initial_save` stops decoding and its hash changes: re-cut the fixture with the two commands in `tests/e2e/pad_resume_at_start.txt`, rerun its checks and rebaseline that one hash.
+The largest record of the `worst-case/` games, measured with the C game before plan 4 deleted it, is 4519 bytes (`worst-case/full_game.json`, frame 5964), 3673 bytes under the limit. If the size assert ever fires, the encoding gets more compact; the limit never moves.
 
-Visual-only effects (particles, the probe and title emitters, harvest bursts, transit dots, the flicker of a vanishing planet) draw from a second random stream, `src/game/visual_random.c`, that the record does not hold. Particles restart from nothing after a resume, but a vanishing planet's flicker is on the compared screen: `save_check_capture` keeps the stream's state beside the record and `save_check_resume` restores it, so both runs draw the same flicker.
+When the record format changes (a version bump, a new field), `tests/e2e/pad_resume_at_start.json`'s `initial_save` stops decoding and its hash changes: the fixture must be re-cut from `pad_research`'s last record, as `tests/e2e/pad_resume_at_start.txt` records, and that one hash rebaselined. No target writes a save to a file today, so re-cutting it first needs one (a leftover for plan 5).
+
+Visual-only effects (particles, the probe and title emitters, harvest bursts, transit dots, the flicker of a vanishing planet) draw from a second random stream, `game/game/visual_random.lua`, that the record does not hold. The stream is seeded once at boot and never reseeded: a resumed game draws from wherever the stream stands at the resume, and particles restart from nothing. `visual_random_state` and `visual_random_set_state` read and set the stream; nothing in `game/` calls them.
 
 ## Encoding rules
 
-- Every multi-byte value is little-endian and written byte by byte; no struct is ever copied to the buffer.
+- Every multi-byte value is little-endian and written byte by byte.
 - `u8`, `u16`, `u32` are unsigned; `i32` is a two's-complement 32-bit value. Every fixed-point game value is its raw 16.16 `i32`.
 - Every reference is a table index. Node and slipway indices are one byte, so a save holds at most 255 nodes and 255 slipways.
 - A field marked "if `FLAG`" is present only when that bit of the node's flags is set; otherwise it takes no byte, and the decoder leaves it at 0.
@@ -137,9 +139,9 @@ A node's slipway list and its routes name slipways that come later in the bytes.
 
 The CRC is CRC-32 IEEE 802.3, reflected: polynomial `0xEDB88320`, initial value `0xFFFFFFFF`, final XOR `0xFFFFFFFF`. Check value: `"123456789"` gives `0xCBF43926`.
 
-## In memory: `save_state_t`
+## In memory: the save state table
 
-Decode fills one flat `save_state_t`; `background_seed` is the `uint32_t` right after `rnd_state`. Each node's routes and slipway list live in shared pools, filled in node order (`routes`, `route_indices` for the route planet and slipway indices, `node_slipways`); a node or route holds a first index and a count into them. Those offsets never appear in the bytes: the encoder writes each slice inline in its node record. Pool caps, exceeded means invalid: `SAVE_STATE_ROUTES_CAP` = 8192 / 3 routes, `SAVE_STATE_ROUTE_INDICES_CAP` = 8192 indices, `SAVE_STATE_NODE_SLIPWAYS_CAP` = 510 node slipway entries. A decoded planet id is NUL-terminated.
+Decode fills one flat table, with the field names listed at the head of `game/game/save_state.lua`; `background_seed`, like `rnd_state`, is an unsigned 32-bit value (0 to 2^32 − 1), every `i32` its signed raw value. Each node's routes and slipway list live in shared pools, filled in node order (`routes`, `route_indices` for the route planet and slipway indices, `node_slipways`); a node or route holds a first index and a count into them. Those offsets never appear in the bytes: the encoder writes each slice inline in its node record. Pool caps, exceeded means invalid: `SAVE_STATE_ROUTES_CAP` = 8192 / 3 routes, `SAVE_STATE_ROUTE_INDICES_CAP` = 8192 indices, `SAVE_STATE_NODE_SLIPWAYS_CAP` = 510 node slipway entries. A decoded planet id is a Lua string. Every array of the table is 0-indexed.
 
 ## Validation
 
@@ -154,7 +156,7 @@ Decode fills one flat `save_state_t`; `background_seed` is the `uint32_t` right 
 7. a payload byte left unread;
 8. the field rules: difficulty outside 1–4; a tech ≥ 19 or a duplicate tech; a ticket ≥ 11; a recent_set outside 0/1, or a recent ≥ 11 whose recent_set is 1; has_probe outside 0/1; a node kind ≥ 9; a forbidden node state; an unknown flag bit; `PRODUCTION_HAS_RESOURCE` without `HAS_PRODUCTION`; `SYNTHESIZER_SPENT` on another kind; `HAS_STATE_TIME` not matching (`VANISHING` or kind ≠ planet); planet_type or description_type above 11; project above 42; a need has_resource outside 0/1; a need or production resource that is not a `resource_codes` value; a slipway end ≥ node count, or start equal to end; a route planet ≥ node count or route slipway ≥ slipway count; a node slipway entry ≥ slipway count, not having the node as an end, or twice in the node's list.
 
-Values that are not references (credits, positions, tiers, bonuses, route resources, timers) are not range-checked: they are game values, and the game's readers bound their own table lookups. On 0, the contents of the output struct are unspecified.
+Values that are not references (credits, positions, tiers, bonuses, route resources, timers) are not range-checked: they are game values, and the game's readers bound their own table lookups. On 0, the contents of the output table are unspecified.
 
 ## What capture reads
 

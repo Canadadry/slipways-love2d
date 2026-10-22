@@ -325,7 +325,7 @@ local function counts_text(counts)
   return string.format("%d %d %d %d %d", counts.bytes, counts.build_bytes, counts.primitives, counts.cluts, counts.patterns)
 end
 
--- Expected counts worked out by hand from src/p8/draw_cost.c.
+-- Expected counts worked out by hand from game/p8/draw_cost.lua.
 local function test_draw_meter_counts_the_c_costs_per_frame_and_peak()
   local graphics, mem = new_runtime()
   sprite_sheet.p8_sprite_sheet_load(mem)

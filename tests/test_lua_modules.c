@@ -27,7 +27,7 @@ static void write_file(const char *path, const char *text) {
     fclose(file);
 }
 
-/* Writes the lines as tools/table_reference.c does: a "= <module> <name> <bytes>"
+/* Writes the lines in the reference format, frozen from the C (deleted in plan 4): a "= <module> <name> <bytes>"
  * header before each run of lines of one table. */
 static void reset(const char *lines) {
     assert(system("rm -rf " ROOT " && mkdir -p " ROOT "/p8 " ROOT "/engine") == 0);
@@ -92,7 +92,7 @@ static void test_a_clean_tree_passes_with_a_summary(void) {
     write_file(ROOT "/main.lua", "love.load = nil\n");
     write_file(ROOT "/engine/zone.lua", "local palette = require('p8.palette')\nreturn { size = palette.COLORS }\n");
     assert(run_script("engine/zone.lua main.lua p8/palette.lua") == 0);
-    assert(out_has("lua-test-modules: 2 modules loaded, 2 names and 5 lines equal to C\n"));
+    assert(out_has("lua-test-modules: 2 modules loaded, 2 names and 5 lines equal to the reference\n"));
 }
 
 static void test_a_module_that_fails_to_load_or_requires_a_missing_one_fails(void) {
@@ -105,7 +105,7 @@ static void test_a_module_that_fails_to_load_or_requires_a_missing_one_fails(voi
     assert(out_has("load engine.zone: " ROOT "/engine/zone.lua:2: zone broke\n"));
     assert(out_has("load engine.vec: " ROOT "/engine/vec.lua:1: module 'p8.fixed' not found"));
     assert(out_has("load engine.geom: " ROOT "/engine/geom.lua:2: attempt to index global 'love'"));
-    assert(out_has("lua-test-modules: 3 modules fail to load, 0 of 2 names differ from C\n"));
+    assert(out_has("lua-test-modules: 3 modules fail to load, 0 of 2 names differ from the reference\n"));
 }
 
 static void test_a_differing_value_names_module_table_entry_and_both_values(void) {
@@ -115,8 +115,8 @@ static void test_a_differing_value_names_module_table_entry_and_both_values(void
                                        "M.RGB = { [0] = { red = 0, green = 1 }, { red = 254, green = 7 } }\n"
                                        "return M\n");
     assert(run_script("p8/palette.lua") == 1);
-    assert(out_has("p8.palette RGB[1].red: C 255, Lua 254\n"));
-    assert(out_has("lua-test-modules: 0 modules fail to load, 1 of 2 names differ from C\n"));
+    assert(out_has("p8.palette RGB[1].red: reference 255, Lua 254\n"));
+    assert(out_has("lua-test-modules: 0 modules fail to load, 1 of 2 names differ from the reference\n"));
 }
 
 static void test_a_table_absent_from_its_module_is_missing_in_lua(void) {
@@ -135,7 +135,7 @@ static void test_an_entry_only_in_lua_is_extra_and_one_only_in_c_is_missing(void
                                        "return M\n");
     assert(run_script("p8/palette.lua") == 1);
     assert(out_has("p8.palette RGB[0].blue: extra in Lua, Lua 3\n"));
-    assert(out_has("p8.palette RGB[1].green: missing in Lua, C 7\n"));
+    assert(out_has("p8.palette RGB[1].green: missing in Lua, reference 7\n"));
 }
 
 static void test_at_most_five_differences_are_printed_per_table(void) {
@@ -143,7 +143,7 @@ static void test_at_most_five_differences_are_printed_per_table(void) {
           "p8.palette RGB[4] 1\np8.palette RGB[5] 1\np8.palette RGB[6] 1\n");
     write_file(ROOT "/p8/palette.lua", "return { RGB = { [0] = 0, 0, 0, 0, 0, 0, 0 } }\n");
     assert(run_script("p8/palette.lua") == 1);
-    assert(out_has("p8.palette RGB[0]: C 1, Lua 0\n"));
+    assert(out_has("p8.palette RGB[0]: reference 1, Lua 0\n"));
     assert(!out_has("RGB[5]"));
     assert(out_has("p8.palette RGB: 2 more differences\n"));
 }
@@ -163,8 +163,8 @@ static void test_a_function_field_compares_as_function_and_a_registered_table_by
                                    "M.BACKENDS = { [0] = { cls = M.SOFTWARE.cls, size = 2 }, { cls = 1 } }\n"
                                    "return M\n");
     assert(run_script("p8/gfx.lua") == 1);
-    assert(out_has("p8.gfx BACKENDS[0]: missing in Lua, C &SOFTWARE\n"));
-    assert(out_has("p8.gfx BACKENDS[1].cls: C function, Lua 1\n"));
+    assert(out_has("p8.gfx BACKENDS[0]: missing in Lua, reference &SOFTWARE\n"));
+    assert(out_has("p8.gfx BACKENDS[1].cls: reference function, Lua 1\n"));
     assert(out_has("p8.gfx BACKENDS[0].size: extra in Lua, Lua 2\n"));
 }
 
@@ -182,7 +182,7 @@ static void test_strings_and_keys_are_quoted_and_a_boolean_never_equals_c(void) 
     assert(run_script("p8/text.lua") == 1);
     assert(!out_has("NAMES"));
     assert(!out_has("SIZEOF"));
-    assert(out_has("p8.text FLAG: C 1, Lua true\n"));
+    assert(out_has("p8.text FLAG: reference 1, Lua true\n"));
 }
 
 static const char *DEFERRED_REFERENCE = "p8.palette COLORS 2\n"
@@ -195,7 +195,7 @@ static void test_a_deferred_module_requiring_a_module_not_yet_written_is_skipped
     write_file(ROOT "/engine/vec.lua", "local probe = require('game.probe')\nreturn { UNIT = 1 }\n");
     assert(run_script_with("--defer engine.vec", "p8/palette.lua engine/vec.lua") == 0);
     assert(out_has("lua-test-modules: 1 modules loaded, 1 deferred: engine.vec (2 names skipped), 1 names and 1 lines "
-                   "equal to C\n"));
+                   "equal to the reference\n"));
 }
 
 static void test_a_deferred_module_already_required_by_a_failed_deferred_one_is_skipped_too(void) {

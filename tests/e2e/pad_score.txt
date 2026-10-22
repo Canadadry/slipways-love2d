@@ -11,12 +11,18 @@ f0-14 are pad_probe's frames (Down, X on "reasonable"), so the galaxy is
 pad_probe's. HUD buttons are read at one fill pixel each: tech (1, 1),
 score (64, 1), year skip (152, 1); colour 12 is a lit button, 13 the
 others, and colour 1 at all three while a structure icon's tooltip
-covers the HUD. "Backdrop" is the live modal_backdrop count of `make
-state` on the file cut after that frame: the score panel during play is
-that backdrop plus a message box. The tech panel is its header row
-(y11-20, colour 5) in the capture. In aim mode the colour-7 crosshair
-marks the centre (x78-82 on y=60, y58-62 on x=80, the centre pixel
-undrawn).
+covers the HUD. "Backdrop" is the live modal_backdrop count of the
+state at that frame: the score panel during play is that backdrop plus
+a message box. The tech panel is its header row (y11-20, colour 5) in
+the capture. In aim mode the colour-7 crosshair marks the centre
+(x78-82 on y=60, y58-62 on x=80, the centre pixel undrawn).
+
+The state at fN is `tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=97; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_score.json > tmp/debug/pad_score_f$k.json
+    make state EVENTS=tmp/debug/pad_score_f$k.json
 
 Until plan 12 step 10, L1 went one tab back round the ring: f18 was L1
 from `map` to `score`, and f49 L1 from `score` to `tech`, handing over
@@ -78,7 +84,7 @@ Colour 12 by frame: tech f22-26, f47-51, f68-72 and f79-83; score
 f27-38, f52-57 and f84-89; the year skip never; nothing elsewhere after
 f12.
 
-`make state` at f97: clock year 3401 month 1, credits 100, research 0,
+The state at f97: clock year 3401 month 1, credits 100, research 0,
 income 0, camera world 176 196, planets 90, colonies 0, slipways 0,
 structures 0, techs 0; every planet unknown. The same lines as
 pad_title's at f31: looking at the score and the tech panel, and the
@@ -91,10 +97,3 @@ is no part of a chord.
 Covers no keyboard_* scenario: no keyboard replay opens the score
 panel during play (keyboard_game_end's final score panel is step
 3.4's).
-
-Cost: cold `make e2e` (tmp/frames removed), 8 interleaved runs each,
-median about 1165 ms without the three replays of step 3.1 (range
-1017-1187) and 1207 ms with them (range 1105-1337), overlapping; a
-warm `make e2e` stays about 0.5 s. They added 186 frames (65 + 60 + 61);
-plan 12 step 10 brought this file from 61 to 77 frames, and step 11 to
-96.

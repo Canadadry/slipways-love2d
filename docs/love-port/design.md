@@ -1,8 +1,9 @@
 # LÖVE port
 
-What plans 0 to 5 build: a Lua port of the C game for LÖVE 11.5, checked by
-the same 20 e2e replays as the C game, with the same `.json.sha256`. This file
-holds the decisions those plans share. Each plan holds its own steps.
+What plans 0 to 5 build: a Lua port of Slipways for LÖVE 11.5, checked by
+the 20 e2e replays of `tests/e2e/` against the `.json.sha256` the C game set
+before plan 4 deleted it. This file holds the decisions those plans share.
+Each plan holds its own steps.
 
 ## Goal and scope
 
@@ -11,7 +12,8 @@ holds the decisions those plans share. Each plan holds its own steps.
   later through the love2d studio app, which runs `.love` files: nothing in
   these plans targets iOS.
 - The 20 replays of `tests/e2e/` must produce **the same sha256** as the C
-  game, unchanged. The C game is the reference until plan 4 deletes it.
+  game did, unchanged: those hashes, set by the C game (now deleted), are the
+  reference.
 - Audio stays out of scope.
 
 ## The fake LÖVE (`tools/fake_love/`)
@@ -41,8 +43,8 @@ For one replay it:
    (the first created), turns each opaque pixel's RGB into its palette
    number 0–15, packs two pixels per byte (even x in the low nibble), row by
    row, and appends the 9 600 bytes to the capture (see Capture). The
-   capture format is the C replay's: its sha256 is compared with the
-   replay's `.json.sha256`;
+   capture format is the one the `.json.sha256` were set with: its sha256
+   is compared with the replay's `.json.sha256`;
 6. after the last frame, once the capture is closed, calls the game's
    `debug_state()` and writes the text it returns next to the capture,
    compared with the replay's `.end-state`.
@@ -77,10 +79,9 @@ fake follows these rules, and every step that adds one measures it.
    listed in the Makefile's `FAKE_LOVE_CHECKS`, a direct prerequisite of
    `test`. No recipe loops over programs, and no check orders itself after
    the unit tests: `-j` runs them on the cores the unit tests leave idle.
-   `test` lists its longest prerequisites first (`float-guard`, about 4 s
-   on one core, then `float-grep` and the slowest unit tests): `-j` starts
-   prerequisites in list order, and `float-guard` queued behind the checks
-   would set the wall time alone.
+   `-j` starts prerequisites in list order, so a long check goes early in
+   `test`'s list: queued behind the others, it would set the wall time
+   alone.
 2. **Cheap by construction.** One process per check, no interpreter but the
    embedded LuaJIT, no external tool (no Python, no ImageMagick, no shell
    pipeline over PNGs); comparisons are done in C. A capture check's recipe
@@ -88,9 +89,8 @@ fake follows these rules, and every step that adds one measures it.
    `.lua` or `.png` is found when the Makefile is read, and its target
    fails naming the missing half. Budget: 100 ms of wall time per check
    on the container. A check over budget is split before its step closes.
-3. **Out of `make e2e`.** No fake check is a prerequisite of `e2e`;
-   `make love-e2e` is its own target, outside `make test` and `make e2e`
-   (see `make love-e2e`).
+3. **Out of `make e2e`.** No check of `make test` is a prerequisite of
+   `e2e`; `make e2e` runs the fake on the replays itself (see `make e2e`).
 4. **Measured, with one protocol, against two baselines.**
    - Baselines: the step's "before" commit, and the plan-wide reference,
      commit `8dff812`, the merge of pull request #1: the last commit before
@@ -116,68 +116,70 @@ fake follows these rules, and every step that adds one measures it.
    target outside `make test-all`, and this file then says that `make test`
    no longer runs every capture.
 
-### `make love-e2e`
+### `make e2e`
 
-`make love-e2e` runs `tmp/fake_love <game dir> <replay> <capture>` on every
-replay of `tests/e2e/`, one make job per replay, every replay rerun on every
-invocation (make does not see a Lua edit). The game directory is
-`LOVE_E2E_GAME`, default `game`; a `%` in it becomes the replay's file name
-(`pad_title.json`), so a verification can give each replay its own stub.
-The replay's `initial_save`, `bindings` and `attract_after` reach the game
-as the fake gives them; no state path is passed, so `debug_state` is not
-needed.
+`make e2e` runs `tmp/fake_love <game dir> <replay> <capture> <state>` on
+every replay of `tests/e2e/`, one make job per replay, the largest replay
+file (the most frames) first, every replay rerun on every invocation (make
+does not see a Lua edit). It builds `tmp/fake_love` when missing. The game
+directory is `LOVE_E2E_GAME`, default `game`; a `%` in it becomes the
+replay's file name (`pad_title.json`), so a verification can give each
+replay its own stub. The replay's `initial_save`, `bindings` and
+`attract_after` reach the game as the fake gives them; the game must define
+`debug_state`.
 
 Per replay, under `tmp/love-e2e/tests/e2e/`: `<name>.json.bin` (the
-capture) and `<name>.json.sha256` when the fake exits 0, `<name>.json.error`
-otherwise (`fake_love exited <status>` or `killed by signal <n>`, then the
-fake's stderr); the three are removed before each run. Each replay is
+capture), `<name>.json.sha256` and `<name>.json.state` (the game's
+`debug_state()`) when the fake exits 0, `<name>.json.error` otherwise
+(`fake_love exited <status>` or `killed by signal <n>`, then the fake's
+stderr); all four are removed before each run. These runs are shared:
+`make e2e end-state` runs each replay once.
+
+`tools/e2e_limits.sh` checks the replay limits, then each replay is
 reported on one line:
 
 - **matches**: the capture's sha256 equals the replay's `.json.sha256`;
-- **DIVERGENT**: it does not (`tools/frames_check.sh --no-baseline-hints`):
-  a bug in the Lua game or the fake, never a reason to change the
-  `.json.sha256`;
+- **DIVERGENT**: it does not, with the expected and actual hash and, if the
+  divergence is intended, `make e2e-baseline`;
 - **FAILED**: the fake stopped before the last frame, with its message
   indented below.
 
-All replays are run and reported before the count line
-`love-e2e: <m> match, <d> diverge, <f> failed, of <n> replays in tests/e2e`;
-the exit status is 0 only when every replay matches. The target takes
-`tmp/make.lock` like `test`, `e2e` and `test-all`, reads nothing from
-`src/` nor `tmp/frames/`, does not check end states, has no timeout, and
-is not run by `make test`, `make e2e`, `make test-all` or CI.
+Both checks always run; the report ends with the count line
+`e2e: <m> match, <d> diverge, <f> failed, of <n> replays in tests/e2e`.
+The exit status is 0 only when the limits hold and every replay matches.
+`make e2e-baseline` copies each replay's Lua hash to its `.json.sha256`
+and writes nothing for a replay the fake failed on, failing the target.
+Both take `tmp/make.lock` and have no timeout. `make e2e` is part of
+`make test-all` and CI, and runs under 9 seconds (median 5.9 s over 6 cold
+runs on 4 cores, measured once the C was deleted).
 
-### `make love-e2e-state`
+### `make end-state`
 
-`make love-e2e-state` runs `tmp/fake_love <game dir> <replay> <capture>
-<state>` on every replay of `tests/e2e/`, in runs of its own (not shared
-with `make love-e2e`), one make job per replay, every replay rerun on every
-invocation. `LOVE_E2E_GAME` and its `%` substitution work as for
-`make love-e2e`; the game must define `debug_state`.
-
-Per replay, under `tmp/love-e2e-state/tests/e2e/`: `<name>.json.bin`,
-`<name>.json.sha256` and `<name>.json.state` (the game's `debug_state()`)
-when the fake exits 0, `<name>.json.error` otherwise; all four are removed
-before each run. The Lua end state is checked against the replay's
-committed `<name>.json.end-state` by `tools/end_state.sh check`, with the
-normalization of the C `make end-state`; the target never writes an
-`.end-state`. Each replay is reported:
+`make end-state` checks the Lua end states of `make e2e`'s runs against
+each replay's committed `<name>.json.end-state` with
+`tools/end_state.sh check`, with the normalization the committed end
+states were written with; it never writes an `.end-state`. Each replay is reported:
 
 - **matches**: the normalized state equals the reference;
 - **differs**: it does not, with the `-` reference and `+` Lua lines;
 - **FAILED**: the fake stopped before the last frame (a missing
   `debug_state` included), with its message indented below.
 
-All replays are run and reported before the count line
-`love-e2e-state: <m> match, <d> differ, <f> failed, of <n> replays in tests/e2e`;
-the exit status is 0 only when every replay matches. The target takes
-`tmp/make.lock`, has no timeout, and is not run by `make test`, `make e2e`,
-`make test-all` or CI.
+All replays are reported before the count line
+`end-state: <m> match, <d> differ, <f> failed, of <n> replays in tests/e2e`;
+the exit status is 0 only when every replay matches.
+`make end-state EVENTS=<events> [REFERENCE=<file>]` runs the fake once on
+that file under `tmp/end-state/` and checks its state against `REFERENCE`,
+default `<events>.end-state`: the only way to check a `worst-case/` game.
+`make end-state-baseline` writes each missing `.end-state` of the 20
+replays from the Lua state, never overwrites one, and fails naming a
+replay the fake failed on. All take `tmp/make.lock`, have no timeout, and
+are outside `make test-all` and CI.
 
 ### Pad buttons
 
-The replays hold button numbers 1–12. The fixed table, from the PSX mapping
-of `docs/psx-game.md`:
+The replays hold button numbers 1–12. The fixed table, inherited from the
+PSX game's pad mapping:
 
 | number | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -205,8 +207,10 @@ a frame.
 
 **Fake disk and arguments.** The replay members the fake reads are
 `input`, `frames`, `initial_save`, `bindings` and `attract_after`, each at
-most once and as strict as the C replay; `start` is refused, other members
-are ignored. A refusal exits 1 before `love.load` and leaves no output.
+most once: `initial_save` a non-empty string of an even number of hex
+digits, `bindings` the name of a `.cfg` file next to the replay,
+`attract_after` a positive integer; `start` is refused, other members are
+ignored. A refusal exits 1 before `love.load` and leaves no output.
 `love.filesystem` is nil in `conf.lua` and holds exactly `read`, `write`
 and `getInfo` from `main.lua` on. In-memory files lie over the game
 directory, visible read-only, and shadow its files of the same name; the
@@ -447,7 +451,7 @@ included), or `"<name>" is not a PNG the fake decodes as LÖVE 11.5 does:
 <reason>`. A translucent alpha loads and `getPixel` reads it, but
 `newImage` refuses it. **The rule for the game: load each asset once, in
 `love.load`, by its bare name in the game directory; keep the assets 8-bit
-RGB or RGBA (`make asset-export` writes RGB); make no Image from an
+RGB or RGBA (both assets are RGB); make no Image from an
 ImageData holding a translucent alpha.** Capture: `imagedata_files`.
 
 **Images.** `love.graphics` holds exactly `clear`, `draw`, `newCanvas`,
@@ -680,16 +684,17 @@ what the player sees:
 - **Colours:** a 16-entry table holding the RGB values of the Capture
   table, passed exactly to `setColor` (byte/255).
 - **Circles and lines:** drawn by the game itself, pixel by pixel (`points`)
-  or in spans (`rectangle`), with the C game's algorithms.
+  or in spans (`rectangle`), with the algorithms of the C game the Lua was
+  copied from.
 - **Fill patterns** (PICO-8 `fillp`): the game builds them as images and draws
   those. The pattern is aligned to the **world** coordinates, the ones before
-  the camera, as the C aligns it, not to the screen or the shape: each span
+  the camera, as the C game aligned it, not to the screen or the shape: each span
   draws the quad of a screen-sized pattern image (one per pattern, colour
   byte and transparent flag, built once and kept) that starts at the world
   phase of its first pixel. A patterned disk is drawn span by span from that
   image, like a plain one, rather than built once per radius.
 - **See-through colours and colour swaps** (PICO-8 `palt` and the 16 palette
-  blocks of `hud.c`): the game builds a recoloured copy of the sprite sheet per
+  blocks of `hud.lua`): the game builds a recoloured copy of the sprite sheet per
   combination it uses, filling each 8×8 cell the first time a draw reaches
   it, and keeps it. Flat shapes
   apply the swap by choosing the colour before drawing.
@@ -728,8 +733,13 @@ compared with `byte / 255` and `setPixel` of palette bytes.** Capture:
 
 ### The asset PNGs
 
-`make asset-export` writes `game/sprites.png` and `game/font.png` from the C
-data; both are committed, and `make test` fails when either is stale.
+`game/sprites.png` and `game/font.png` are committed sources, edited
+directly; no tool writes them. `make test` checks that both decode in the
+fake, opaque, at their sizes (`test_fake_love_png_file`), and the replays
+check every pixel the game draws from them.
+`game/p8/sprite_sheet_packed.lua` holds the same sprite sheet for the
+PICO-8 runtime, and nothing checks that the two agree: an edit to the
+sheet changes both.
 
 - **Format:** 8-bit RGB, no alpha, non-interlaced; stored (uncompressed)
   deflate blocks.
@@ -749,36 +759,44 @@ data; both are committed, and `make test` fails when either is stale.
 
 ## Numbers and randomness
 
-The C game computes with PICO-8 16.16 fixed-point numbers (`src/p8/fixed.c`)
-and its own random generator. The Lua game uses the same format and the same
-generator through a Lua library built on LuaJIT's `bit` library, bit-exact.
-Its tests (`tests/lua/`, run with LuaJIT) compare it with the C while the C
-exists, then with saved reference values: `make test` checks the edge values
-and a sample (`lua-test-fixed`), `make lua-sweep-fixed` millions of values,
-outside `make test-all`.
+The game computes with PICO-8 16.16 fixed-point numbers and its own random
+generator, both in `game/p8/fixed.lua`, built on LuaJIT's `bit` library and
+bit-exact with the C library it was copied from. `make test` runs
+`lua-test-fixed`, which checks the edge values and a sample against
+`tests/lua/fixed_reference.txt`, frozen from the C library before plan 4
+deleted it.
 
 ## Layout of the fork
 
-- `game/`: the Lua game (`conf.lua`, `main.lua`, `sprites.png`, `font.png`);
-  `make love` zips it into `slipways.love`.
-- `tools/fake_love/`: the fake LÖVE's C source; built as `tmp/fake_love`.
+- `game/`: the Lua game (`conf.lua`, `main.lua`, `sprites.png`, `font.png`,
+  and the modules of `p8/`, `engine/`, `game/`, `devtools/` and `love/`);
+  `make love` zips it into `tmp/slipways.love`.
+- `tools/fake_love/`: the fake LÖVE's C source; built as `tmp/fake_love`
+  and `tmp/love_capture_check`.
 - `tools/love_capture/`: the capture programs, their PNGs and the fixtures
   they read (`files/`).
-- `tests/e2e/`: the 20 replays, unchanged, plus `order.txt`, measured with
-  Apple clang 16 and its llvm-cov gcov (`--coverage -O0`); GCC's gcov
-  counts lines differently, so `make e2e-order-check` holds on that
-  toolchain only.
-- `tests/lua/`: the maths library tests.
-- `src/`: the C game, the reference, until plan 4.
+- `tools/`: the scripts behind the targets (`love_e2e_run.sh`,
+  `end_state.sh`, `e2e_limits.sh`, `lua_guard.lua`, `love_install.sh`, …).
+- `tests/`: the C tests of the fake and the tools (`test_<name>.c`, listed
+  in the Makefile's `UNIT_TESTS`), with their fixtures in `tests/fixtures/`.
+- `tests/lua/`: the Lua tests of the fixed-point library, the runtime, the
+  module tables and the capture reader, with their frozen references.
+- `tests/lua/game/`: the regression tests of `game/` modules
+  (`test_<module>.lua`), each run by `make test`.
+- `tests/e2e/`: the 20 replays, their hashes, end states and notes.
+- `worst-case/`: long games checked one at a time with `make end-state
+  EVENTS=`.
 
-## Reading the Lua against the C
+## Conventions inherited from the C
 
-`game/p8/`, `game/engine/`, `game/game/` and `game/devtools/` are a faithful
-copy of `src/`: each C file has the Lua file of the same name under the same
-directory (`src/game/planet.c` → `game/game/planet.lua`), with the same
-functions in the same order, the same names, computations and data tables.
-These rules say how a C construct reads in Lua, so any Lua function can be
-put next to its C original. `game/love/` has no C original.
+`game/p8/`, `game/engine/`, `game/game/` and `game/devtools/` began as a
+faithful copy of the C game: each C file became the Lua file of the same
+name under the same directory, with the same functions in the same order,
+the same names, computations and data tables. The C is deleted; its last
+commit shows any original, e.g. `git show 60e62c1:src/game/planet.c` for
+`game/game/planet.lua`. The Lua still follows the rules below, which say
+how a C construct reads in Lua, until plan 5 replaces them. `game/love/`
+has no C original.
 
 **Naming.** Exported functions are `function M.<c name>(` at line start,
 `static` ones `local function <c name>(`; a module's file-level tables are
@@ -870,10 +888,10 @@ per entry, in order (`P8_IMAGE_SLOTS(SLOT)`). `fatal.p8_fatal(msg)` raises
 `error(msg, 0)`; `snprintf` messages are `string.format` with the C text.
 
 **Modules and loading.** One module per C pair, required by its path under
-`game/` (`require("p8.gfx")`), returning `M`, headed by a comment naming its
-C files in order (`-- Copy of src/game/planet.h then src/game/planet.c.`);
-a function declared in a ported header but defined elsewhere is named in that
-comment and called from its defining module, never re-exported. No globals,
+`game/` (`require("p8.gfx")`), returning `M`, headed by a comment naming the
+C files it was copied from, in order; a function declared in a ported
+header but defined elsewhere is named in that comment and called from its
+defining module, never re-exported. No globals,
 LuaJIT `bit` only, no FFI. Statics are module-level `local`s initialised as
 the C does; a forward-declared `static` is a `local name` filled later by
 `name = function`, never `local function name`, and a table entry naming
@@ -892,33 +910,33 @@ built from its value) is required at load in one direction per pair only:
 goes through a local constructor, defined before the tables that call it at
 load, that fills each missing field with its C zero and rejects a field the
 struct lacks (`map_tables.map_tables_check_fields`); a positional C
-initializer gets a positional constructor. A pointer in a table is the
-table pointed to. Generated data is written by the tool that owns it
-(`make sin-table`, `make asset-export`, `make bindings-lua`,
-`make demo-lua`), headed `-- Generated by ...`, and a stale copy fails
-`make test`. Every `sizeof` a module uses is an entry of `M.SIZEOF`, keyed by
-the C type as written (`SIZEOF["void *"]`, `SIZEOF.arena_t`) or by
-`type.field` for a field (`SIZEOF["p8_vram_t.draw_palette"]`), read through
-`local SIZEOF = M.SIZEOF`, never a bare number. `make test` runs two checks
-over the whole tree: `lua-guard` (every file compiles, no undeclared
-global, only this file's `love.` names) and `lua-test-modules`, which
-requires every module under plain LuaJIT and compares every ported table,
-constant and `SIZEOF` entry with the C, from one unit
-`tools/table_reference/<dir>_<file>.c` per C source listed in the Makefile's
-`TABLE_REFERENCE_SOURCES`. A module listed in `LUA_DEFERRED_MODULES` (passed
-as `--defer`, now empty) is skipped with its tables only when it fails on a
-module not yet in `game/`, and fails the check once it loads; the check
-clears the sentinels a failed `require` leaves in `package.loaded`, so each
-failing module reports its own missing module. `make checklist` (outside
-`make test`) maps every C function and table to its Lua copy or lists it as
-not ported.
+initializer gets a positional constructor. A pointer in a table is the table
+pointed to. The data modules once generated from the C (`p8.quarter_wave`,
+`p8.sprite_sheet_packed`, `game.demo_data`, `game.bindings_default`) are
+now the source, edited by hand; their `-- Generated by` headers still name
+the deleted generators, and nothing checks `game.bindings_default` against
+`bindings.default.cfg`. Every
+`sizeof` a module uses is an entry of `M.SIZEOF`, keyed by the C type as
+written (`SIZEOF["void *"]`, `SIZEOF.arena_t`) or by `type.field` for a
+field (`SIZEOF["p8_vram_t.draw_palette"]`), read through `local SIZEOF =
+M.SIZEOF`, never a bare number. `make test` runs two checks over the whole
+tree: `lua-guard` (every file compiles, no undeclared global, only this
+file's `love.` names) and `lua-test-modules`, which requires every module
+under plain LuaJIT and compares every ported table, constant and `SIZEOF`
+entry with `tests/lua/table_reference.txt`, a reference frozen from the C
+before plan 4 deleted it; the once-generated data modules have no entry
+there and are only loaded. A module listed in `LUA_DEFERRED_MODULES` (passed as `--defer`,
+now empty) is skipped with its tables only when it fails on a module not yet
+in `game/`, and fails the check once it loads; the check clears the
+sentinels a failed `require` leaves in `package.loaded`, so each failing
+module reports its own missing module.
 
 ## Rules for the fork
 
-- The e2e replays are the source of truth; no C unit test is ported to Lua.
-- `make e2e` may become slower than the C one; the rule becomes "under N
-  seconds", N set by plan 4 from a measurement. The replays run in parallel,
-  LuaJIT with its JIT on.
+- The e2e replays are the source of truth; no C unit test was ported to
+  Lua.
+- `make e2e` runs under 9 seconds (the rule of `CLAUDE.md`). The replays
+  run in parallel, longest first, LuaJIT with its JIT on.
 
 ## Open questions
 

@@ -20,7 +20,12 @@ score (64, 1), year skip (152, 1); colour 12 is a lit button, 13 the
 others. In aim mode the colour-7 crosshair marks the centre (x78-82 on
 y=60, y58-62 on x=80, the centre pixel undrawn), as on f27-49 and
 f61-73. Readings come from the capture's framebuffer at each frame, and
-the economy from `make state` of the file cut after that frame.
+the economy from the state at the frame: `tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=501; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_research.json > tmp/debug/pad_research_f$k.json
+    make state EVENTS=tmp/debug/pad_research_f$k.json
 
 - f0-26: the title, its X on "reasonable" held f24-26: f24-25 are the
   loading screen, f26 generates the galaxy. Its X is a lone X press, which leaves the cheat
@@ -54,7 +59,7 @@ the economy from `make state` of the file cut after that frame.
 - f61: back on the map: nothing lit, the crosshair at the centre.
   f61-73: idle, aim mode.
 
-`make state` at f73: clock year 3401 month 1, credits 200, research 95,
+The state at f73: clock year 3401 month 1, credits 200, research 95,
 income 0, `techs space folding`, camera world 176 196, planets 90,
 colonies 0, slipways 0, structures 0, techs 1; every planet unknown.
 
@@ -69,9 +74,6 @@ X taps at the start centre are refused in this galaxy too, so
 no pan was needed.
 
 Covers keyboard_research.
-
-Cost: the three replays of step 3.1 add 186 frames; cold `make e2e`,
-measured before and after them, in pad_score.txt.
 
 Trade, f74-491 (remove-mouse-mode PRD, chunk 7; appended here to share
 the title and the cheat instead of separate pad_slipgate,
@@ -166,12 +168,12 @@ inputs of the old file but f31 (plan 12 step 7).
     on p23 (139 36).
   No tap presses the mouse, ends a year or writes a record.
 
-`make state` at f501: year 3403 month 1, credits 122, research 39,
+The state at f501: year 3403 month 1, credits 122, research 39,
 income 23, techs + geneseeds, slipgates, trade league, starbirth; camera
 141 193; p78 colonized f, p23 colonized o, p47 colonized protostar, s1
 colonized trading_hub, structure s2 slipgate links 3; slipways s1 p23,
-s2 s1, p78 s2, p47 s2; planets 91, colonies 4. Peaks: bytes_row 712
-(tech_trade_league_hub's 600), burst 1.
+s2 s1, p78 s2, p47 s2; planets 91, colonies 4. Peaks: bytes_row 720
+(712 with the C, against tech_trade_league_hub's 600), burst 1.
 
 Replaces tech_slipgates_relay (a mine's ore relayed by a slipgate to a
 forgeworld, "content" panel), slipgate_outgoing_first (the slipgate's

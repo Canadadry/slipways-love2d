@@ -14,13 +14,11 @@ frame of the old file is kept, 19 frames earlier up to the year, and at
 its old frame after it, but for 8 idle frames dropped at f108 (every
 frame after them 8 earlier).
 
-The record is cut, never typed, from this file at 4382824 replayed to
-f35 (no wormhole lives there, so the record is written):
-
-    make replay EVENTS=<4382824's pad_tech_costs.json cut to f0-35> SAVE_HEX=tmp/tech_costs.hex
-
-which prints `save: clock year 3407 month 1`, `save: resources credits
-100`, `save: count nodes 90`; the hex is the header's initial_save. The
+The record was cut, never typed, from this file at 4382824 replayed to
+f35 (no wormhole lives there, so the record is written), with the C
+game's save dump, since removed. The dump read `save: clock year 3407
+month 1`, `save: resources credits 100`, `save: count nodes 90`; its
+hex is the header's initial_save. The
 cheat comes after the cut (cheat activations 1).
 
 The resumed record knows no object, so the game starts in aim mode,
@@ -35,8 +33,13 @@ at f10, X on "reasonable" at f16, 4 frames later than pad_title's): the
 title draws one game-stream number per frame. Near the start it has
 pad_probe's planets at the same places (other ids), and its first
 reveal rolls are earth-like, forgeworld, empty, xeno, empty, ocean,
-mineral, as this file needs. Readings come from `make state` of the
-file cut after the frame and from the capture.
+mineral, as this file needs. Readings come from the capture and from
+the state at the frame: `tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=151; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_tech_costs.json > tmp/debug/pad_tech_costs_f$k.json
+    make state EVENTS=tmp/debug/pad_tech_costs_f$k.json
 
 - f10: Up onto "resume", f12: X: the record's game, year 3407, research
   6. The title's X is a lone X, which leaves the cheat matcher at 0.
@@ -75,7 +78,7 @@ file cut after the frame and from the capture.
   pixel-identical to f104, row 3 but for 3 pixels of row 2's tag
   border (x143-145, y91).
 
-`make state` at f151: year 3407 month 2, credits 200, research 85,
+The state at f151: year 3407 month 2, credits 200, research 85,
 techs nanomaterials, space folding, xenofoods; camera 144 216, p31
 known e, p47 known f, planets 89, colonies 0, slipways 0.
 
@@ -163,7 +166,7 @@ network travel only used to get somewhere is replaced by jumps.
   travelled along it to s2, the camera centred there (127 234): network
   travel is gone with its mechanic.)
 
-`make state` at f557: year 3410 month 1, credits 136, research 90,
+The state at f557: year 3410 month 1, credits 136, research 90,
 income 17; camera 101 242; p54 colonized m, p31 colonized e, p1
 colonized x, p37 colonized o, s1 and s2 colonized structure; slipways
 p54 p31, p54 p1, p54 p37, s1 p54, s2 p31, s2 p54; planets 90, colonies

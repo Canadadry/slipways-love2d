@@ -1,16 +1,16 @@
 # Project notes
 
-## The port
+## The game
 
-- One C game, the reference for the LÖVE port described in `docs/love-port/design.md`, until plan 4 deletes it. The C code is the reference: the game is covered by the e2e replays, and the cart's decompiled source is in the history of `slipways-psx` only: `git show 536ddd4:pico8/lua.lua` there. Game objects are flat C structs: a shared core (`entity_t`), one `static const` archetype per kind, and components held by pointer.
+- A Lua game in `game/`, played by LÖVE 11.5 and, headless, by the fake LÖVE (`tools/fake_love/`, C). The 20 replays of `tests/e2e/` and their hashes, set by the C game before plan 4 deleted it, are the reference. The C is in history only: `git show 60e62c1:src/<path>`. The cart's decompiled source is in the history of `slipways-psx` only: `git show 536ddd4:pico8/lua.lua` there. Game objects are flat Lua tables: a shared header (the fields of `entity_t` in `game/engine/entity_class.lua`), one class table per kind, optional parts flagged by bits in `has` rather than by a nil field, and links to other entities held as ids. The design is `docs/love-port/design.md`.
 - Audio (`sfx`, `music`) is **out of scope**, not postponed.
-- **The e2e replays are the source of truth, not the unit tests.** A change that improves the port and keeps every `*.sha256` in `tests/e2e/` unchanged may break a unit test that froze the old behavior: update that test.
+- **The e2e replays are the source of truth, not the unit tests.** A change that improves the game and keeps every `*.sha256` in `tests/e2e/` unchanged may break a unit test that froze the old behavior: update that test.
 
 ## Layout and naming
 
-- `src/` has six directories: `p8/` is the emulated PICO-8 runtime (symbols prefixed `p8_`, file names unprefixed); `engine/` is the object and memory layer, with no planets or slipways (`entity_t` and the classes in `entity_class.h`, registries, lists, zones, output queue); `game/` is the game; `platform/` is the PC fatal-error handler; `devtools/` is headless verification (dump, replay, capture, state); `cmd/` holds one file per binary. Includes are written relative to `src/` (`#include "game/planet.h"`, `-Isrc` only).
-- `tests/` is flat, one `test_<module>.c` per module, with the replays in `tests/e2e/`; `tools/` holds the check scripts and guards.
-- Names are full English words: no prefix for the game, `p8_` for the runtime only. An exported function is named `module_verb[_object]`. One- or two-letter names are only for a local or parameter whose scope fits in 40 lines.
+- `game/` has `main.lua` and `conf.lua` (LÖVE's entry points) and five directories: `p8/` is the emulated PICO-8 runtime (symbols prefixed `p8_`, file names unprefixed); `engine/` is the object and memory layer, with no planets or slipways (entities, classes, registries, lists, zones, allocator); `game/` is the game; `love/` draws through LÖVE (backend, screen, sprite sheet, text); `devtools/` is the state dump. A module is required by its path under `game/` (`require("game.planet")`).
+- `tests/` holds the C tests of the fake and the tools (`tests/test_<name>.c`, listed in `UNIT_TESTS`), the Lua library tests and their frozen references (`tests/lua/`), the game regression tests (`tests/lua/game/test_<module>.lua`), the fixtures (`tests/fixtures/`) and the replays (`tests/e2e/`). `tools/` holds the fake LÖVE, the real-LÖVE capture programs (`tools/love_capture/`) and the check scripts.
+- Names are full English words: no prefix for the game, `p8_` for the runtime only. An exported function is named `module_verb[_object]` (`M.planet_init_instance`). One- or two-letter names are only for a local or parameter whose scope fits in 40 lines.
 
 ## Language
 
@@ -19,17 +19,15 @@ Everything written in the repository is in English: code, comments, docs, e2e no
 ## What we don't do
 
 - **Never merge a pull request**, in any way (GitHub tool, `gh`, auto-merge). Merging is the user's job, always; denied in `.claude/settings.json`.
-- **Never make `make test` or `make e2e` slower**, under any circumstances: the loop must stay fast. A slow check goes in a separate target, outside `make test-all`.
+- **Never make `make test` slower**, under any circumstances, **and never let `make e2e` run longer than 9 seconds**: the loop must stay fast. A slow check goes in a separate target, outside `make test-all`.
 - **Never open a window or a virtual screen.** No window, no X server: an agent has neither eyes nor a mouse and would see nothing of what it opens. Verification is headless — N frames driven by a scripted `events.json`, then a text dump of the framebuffer (`make replay`). Single exception: Xvfb with Mesa software rendering, only inside `make love-capture`, which runs the capture programs in real LÖVE 11.5, rewrites their PNGs and stops; agents and CI may run it; it is never part of `make test` or `make e2e`.
 
 ## Build
 
-- `make test` is the fast loop (unit tests and static checks, ~5 s). `make e2e` replays the e2e files of `tests/e2e/` from the title screen (~1 s). `make test-all` runs both. `make help` lists the targets: each public target carries a one-line `## ` description of at most 20 words.
+- `make test` is the fast loop (unit tests and static checks, ~1 s). `make e2e` replays the e2e files of `tests/e2e/` from the title screen with the Lua game in `tmp/fake_love` (`LOVE_E2E_GAME`, default `game`) and checks each capture against its `.json.sha256` (~7 s on 4 cores). `make test-all` runs both. `make help` lists the targets: each public target carries a one-line `## ` description of at most 20 words.
 - `tools/love_install.sh` installs LÖVE 11.5, Xvfb, Mesa and LuaJIT; the SessionStart hook and CI run it.
-- `make love-e2e` runs `tmp/fake_love` with the Lua game (`LOVE_E2E_GAME`, default `game`) on every replay of `tests/e2e/`; it is outside `make test`, `make e2e`, `make test-all` and CI.
-- `make love-e2e-state` runs the same replays with a state path and checks each Lua end state against its `.end-state`; it is outside `make test`, `make e2e`, `make test-all` and CI.
-- `make lua-sweep-fixed` compares `game/p8/fixed.lua` with the C library on millions of values (~3 s); it is outside `make test`, `make e2e`, `make test-all` and CI.
-- `test`, `e2e`, `test-all`, `love-e2e`, `love-e2e-state` and `lua-sweep-fixed` hold `tmp/make.lock` through `flock` (macOS: `brew install flock`): a second one fails at once.
+- `make end-state` checks the Lua end states of the same runs against each `.end-state`; `make e2e end-state` runs each replay once. It is outside `make test-all` and CI.
+- `test`, `e2e`, `test-all`, `end-state`, `e2e-baseline` and `end-state-baseline` hold `tmp/make.lock` through `flock` (macOS: `brew install flock`): a second one fails at once.
 
 ## Docs
 
@@ -37,6 +35,6 @@ Everything written in the repository is in English: code, comments, docs, e2e no
 
 ## Comments
 
-A comment stays only if it carries one of two things: a trap someone would reintroduce (an `assert` with a message, otherwise 40 words at most), or a C contract the name doesn't state (who frees the memory, what the function returns when the field is missing). `TODO` is allowed. In a `Makefile`, only help for reading a command stays. Everything else goes in the commit message.
+A comment stays only if it carries one of two things: a trap someone would reintroduce (an `assert` with a message, otherwise 40 words at most), or a contract the name doesn't state (what the function returns when the field is missing). `TODO` is allowed. In a `Makefile`, only help for reading a command stays. Everything else goes in the commit message.
 
 To rework a file written before these rules: skill `rework-comments`.

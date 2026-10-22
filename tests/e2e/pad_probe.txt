@@ -9,7 +9,13 @@ In aim mode the cursor is the screen centre (80, 60), marked by the
 colour-7 crosshair (x78-82 on y=60, y58-62 on x=80, the centre pixel
 undrawn), and the D-pad pans the camera (1 px a frame for the first 10
 frames of a held direction, 2 px up to 40). Readings below come from the
-framebuffer dump and `make state` of the file cut after that frame.
+framebuffer (the capture) and the state at the frame:
+`tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=78; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_probe.json > tmp/debug/pad_probe_f$k.json
+    make state EVENTS=tmp/debug/pad_probe_f$k.json
 
 - f0-9: idle while the title rows slide in. f10: Down. After f11:
   reasonable (y64-72, x=108) is the only row in colour 12.
@@ -44,7 +50,7 @@ framebuffer dump and `make state` of the file cut after that frame.
   idle. After f14 the game's random stream moves only on these two
   frames: the probe's particles draw from the visual stream.
 
-`make state` at f78: clock year 3401 month 2, credits 97, income 0,
+The state at f78: clock year 3401 month 2, credits 97, income 0,
 planets 90, colonies 0, slipways 0, structures 0, techs 0. Known:
 p25 type f, p47 type r; every other planet unknown.
 

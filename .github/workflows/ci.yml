@@ -14,10 +14,6 @@ jobs:
         run: sh tools/love_install.sh
       - name: make test-all
         run: make test-all
-      - name: make sanitize-net
-        run: make sanitize-net
-      - name: make full-game
-        run: make full-game
 
   love-capture:
     runs-on: ubuntu-24.04

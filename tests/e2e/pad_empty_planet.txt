@@ -12,8 +12,13 @@ its fold moved 14 px further right: Up+Right 4, Right 14 (f31-48),
 camera (202, 186), centre world (282, 246), X held f50-65. The galaxy is
 pad_probe's and the fold reaches a third planet, p71: reveal rolls come
 from the game stream in reveal order, and the third one is `empty`
-(state vanishing). Readings come from `make state` of the file cut
-after the frame and from the capture.
+(state vanishing). Readings come from the capture and from the state
+at the frame: `tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=149; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_empty_planet.json > tmp/debug/pad_empty_planet_f$k.json
+    make state EVENTS=tmp/debug/pad_empty_planet_f$k.json
 
 - f71: p25 (type f), f75: p47 (type r), f81: p71 (empty, vanishing)
   known; $97, month 2.
@@ -30,7 +35,7 @@ after the frame and from the capture.
 - f144: X: s2 built at world (310, 237), p71's spot: $97 -> $82, month
   2 -> 4, income -1; a "-15$" label rises from it.
 
-`make state` at f149: year 3401 month 4, credits 82, income -1, camera
+The state at f149: year 3401 month 4, credits 82, income -1, camera
 230 177, s2 colonized structure, p25 known type f, p47 known type r,
 planets 90, colonies 1.
 

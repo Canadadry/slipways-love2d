@@ -11,17 +11,14 @@ became a Select hold 22 frames longer than the ring's: the record's
 clock, money and nodes are the same, 36 hex digits of its timed state
 differ.
 
-The fixture is cut, never typed, from pad_research replayed to its last
-frame (f499), whose last record is the save of its last action (the
-year to 3403, ended by a Select hold; no wormhole lives at the end, the
-record is written; the Select taps after it write no record):
-
-    make replay EVENTS=tests/e2e/pad_research.json SAVE_HEX=tmp/research.hex
-    sed -i "/^  \"input\": \"pad\",\$/a\\  \"initial_save\": \"$(cat tmp/research.hex)\"," tests/e2e/pad_resume_at_start.json
-
-The second command runs on the frame list alone (`"input": "pad"`, then
-`"frames"`: 48 `pad` frames, idle but Up at f10 and cross at f12) and
-inserts the header line between the two. The first prints:
+The fixture was cut, never typed, from pad_research replayed to its
+last frame, whose last record is the save of its last action
+(the year to 3403, ended by a Select hold; no wormhole lives at the
+end, the record is written; the Select taps after it write no record).
+The record was written to a file by the C game's save dump, since
+removed, and its hex inserted as the `initial_save` header line between
+`"input": "pad"` and `"frames"` (48 `pad` frames, idle but Up at f10
+and cross at f12). The dump read:
 
     save: bytes 4186
     save: version 1
@@ -45,17 +42,15 @@ challenging y75-83, tough y86-94), the crosshair at (78, 60) and
   on the camera of the record (176 209).
 - f13-47: idle in aim mode on the resumed map.
 
-Check 1 (the fixture decodes):
+Check 1 (the fixture decodes), made with the same C save dump on this
+file: the same seven `save:` lines (`decodes 1`), and the record left
+on disk equal to the fixture byte for byte: resuming wrote nothing.
 
-    make replay EVENTS=tests/e2e/pad_resume_at_start.json SAVE_HEX=<file2>
-
-prints the same seven `save:` lines (`decodes 1`), and `<file2>` equals
-the fixture byte for byte: resuming wrote nothing.
-
-Check 2 (the frame-0 replay shows the saved game), `make state` at f47:
+Check 2 (the frame-0 replay shows the saved game), the state at f47
+(the file's end, `make state EVENTS=tests/e2e/pad_resume_at_start.json`):
 clock year 3403 month 1, difficulty reasonable, credits 122, count
-nodes 92, the four `save:` lines above. Also: research 39, income 23,
-techs space folding, geneseeds, slipgates, trade league, starbirth;
+nodes 92, as the four last `save:` lines above. Also: research 39,
+income 23, techs space folding, geneseeds, slipgates, trade league, starbirth;
 camera world 176 209; p78 colonized f, p23 colonized o, p47 colonized
 protostar, s1 colonized trading_hub, structure s2 slipgate links 3;
 slipways s1 p23, s2 s1, p78 s2, p47 s2; planets 91, colonies 4,
@@ -66,14 +61,14 @@ write no save.
 Regeneration: when the record format changes, this fixture stops
 decoding, "resume" disappears from the title, Up stays on forgiving and X
 starts a new game, so the hash changes (checked with the same frames
-and no initial_save). Rerun the two commands above
-(delete the old initial_save line first), checks 1 and 2, and
-rebaseline this one hash (docs/save-format.md).
+and no initial_save). The fixture must then be re-cut from
+pad_research's last record as above, checks 1 and 2 made again, and
+this one hash rebaselined (docs/save-format.md). No target writes a
+save to a file today, so re-cutting first needs one (a leftover for
+plan 5).
 
 Covers the startup seeding, the title's decode of a stored record, and
 the loader on a rich record (colonies, a slipgate relay, a trading hub,
 a protostar, slipways, five techs).
 
 No long-replay exception: 48 frames, within 180.
-
-Cost: the replay alone about 34 ms, on 4 cores.

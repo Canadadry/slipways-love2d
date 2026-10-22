@@ -1,67 +1,67 @@
 # Interface Design for Testability
 
-Good interfaces make testing natural. Names are illustrative.
+Good interfaces make testing natural. Functions marked real are in `game/`; the others are illustrative.
 
 1. **Accept dependencies, don't create them**
 
-   ```c
-   /* Testable */
-   void hud_draw(const hud_t *hud, const p8_graphics_t *gfx, p8_vram_t *mem);
+   ```lua
+   -- Testable (real signature): the caller hands the graphics state and the vram
+   function M.hud_draw_bar(gfx, mem, y1, y2, col)
 
-   /* Hard to test */
-   void hud_draw(const hud_t *hud);   /* draws into a global screen */
+   -- Hard to test: draws into a global screen
+   function M.hud_draw_bar(y1, y2, col)
    ```
 
 2. **Return results, don't produce side effects**
 
-   ```c
-   /* Testable */
-   int trade_route_income(const trade_route_t *route);
+   ```lua
+   -- Testable (real signature): returns the cost
+   function M.economy_formulas_route_base_cost(from_pos, to_pos)
 
-   /* Hard to test */
-   void trade_route_pay(const trade_route_t *route);  /* adds into global credits */
+   -- Hard to test: adds into the global credits
+   function M.economy_formulas_pay_route(from_pos, to_pos)
    ```
 
 3. **Small surface area**
-   - Fewer functions in the header = fewer tests needed
+   - Fewer functions in the module's returned table = fewer tests needed
    - Fewer parameters = simpler test setup
 
 4. **Make illegal states unrepresentable**
 
-   A field meaningful only in some cases says the type is wrong. Here, presence is a bit in `has`, never a NULL pointer (see `warn-review`'s pointer rules):
+   A field meaningful only in some cases says the data is wrong. Here, presence is a bit in `has`, never a `nil` field, and a link to another entity is its id, never its table (see `warn-review`'s reference rules):
 
-   ```c
-   /* Allows an impossible state: a target pointer that outlived its entity */
-   typedef struct { entity_t *target; } probe_t;
+   ```lua
+   -- Allows an impossible state: the end's table outlives the end's death
+   self.end_ = end_
 
-   /* A checked id and a presence bit */
-   typedef struct { uint16_t has; entity_id_t target; } probe_t;
+   -- A checked id (real code, slipway_connect): entity_get returns nil once end_ is dead
+   self.end_ = entity_id.entity_id_link(end_)
    ```
 
 5. **Keep functions pure; push state to the top**
 
    Core logic is pure: same input, same output, no I/O, no global. A thin top layer holds the state and calls into it.
 
-   ```c
-   /* Pure: trivial to test */
-   vec_t camera_clamp(vec_t wanted, box_t bounds);
+   ```lua
+   -- Pure (real code): trivial to test
+   function M.box_contains(box, p)
 
-   /* Stateful: orchestrates, stays at the top */
-   void camera_update(game_t *game) {
-       game->camera = camera_clamp(camera_follow(game), game->bounds);
-   }
+   -- Stateful: reads the entity and the mouse, stays at the top
+   function M.entity_geom_contains_cursor_inline(e, mouse)
+     -- ...
+     return geom.box_contains(e.hit_box, point)
+   end
    ```
 
 6. **Assert preconditions at the boundary**
 
    Every public function asserts what it requires, so invalid input fails at the call site, not three frames later.
 
-   ```c
-   void slipway_connect(game_t *game, entity_id_t from, entity_id_t to) {
-       assert(from != to && "a slipway joins two different planets");
-       assert(planet_by_id(game, from) != NULL && "from is dead");
-       /* ... */
-   }
+   ```lua
+   function M.slipway_connect(self, end_)
+     assert(self ~= nil and end_ ~= nil, "slipway_connect: a resumed slipway joins two saved nodes")
+     -- ...
+   end
    ```
 
    Assertions are not input validation for player data — they are contracts between modules. Key invariants inside a module ("no dead id in a live list") belong as assertions too, not just as tests.

@@ -2,15 +2,15 @@
 
 Replace only **system boundaries**:
 
-- Memory: the `allocator_t` a module receives (`tests/heap_allocator.h` backs it with `malloc`)
-- Input: a scripted events file loaded into `p8_input_t`, never a real mouse
-- Output: `p8_graphics_t` and `p8_vram_t`, read back as a framebuffer — never a window
+- Memory: the allocator table a `game/engine/` module receives (`{ alloc, grow, release }`); a test backs it with plain tables
+- Input: a scripted events file, never a real pad or mouse
+- Output: the draw backend of `game/p8/gfx.lua` — the LÖVE backend's frames read back as a fake-LÖVE capture (`tools/capture_read.lua`), the software backend's through the vram — never a window
 
 Don't replace:
 
 - Your own modules
 - Internal collaborators
-- Anything in `src/game/` or `src/engine/` a test can call for real
+- Any module of `game/` a test can call for real
 - Randomness: `p8_fixed_rnd` already starts from a fixed seed, so a run is reproducible as is
 
 ## Designing for Test Doubles
@@ -19,20 +19,34 @@ Don't replace:
 
 The module receives its allocator, its graphics or its input as a parameter instead of reaching for a global:
 
-```c
-/* Easy to test: the caller chooses the allocator (real signature) */
-void entity_list_init(entity_list_t *entity_list, const allocator_t *zone);
+```lua
+-- Easy to test: the caller chooses the allocator (real signature)
+function M.entity_list_init(entity_list, zone)
 
-/* Hard to test: hidden dependency on the game's zone */
-void entity_list_init(entity_list_t *entity_list);
+-- Hard to test: hidden dependency on the game's zone
+function M.entity_list_init(entity_list)
 ```
 
-The test then passes `&heap_allocator`; the game passes a zone allocator.
+The test then passes a table of its own; the game passes a zone allocator:
+
+```lua
+local function table_allocator()
+  return {
+    alloc = function(z, n) return {} end,
+    grow = function(z, p, old_n, new_n)
+      local q = {}
+      for k, v in pairs(p or {}) do q[k] = v end
+      return q
+    end,
+    release = function(z, p) end,
+  }
+end
+```
 
 **2. One narrow function per boundary operation**
 
-An `allocator_t` has `alloc`, `grow` and `release` — not one `do(op, ...)` entry point with a switch. Each double then implements one plain behavior:
+An allocator has `alloc`, `grow` and `release` — not one `do(op, ...)` entry point with a switch. Each double then implements one plain behavior:
 
 - No conditional logic in the test setup
 - Easy to see which operations a test exercises
-- A refusing double (`allocator_grow_refused`) tests the full-zone path in one line
+- A refusing double (`zone.grow = allocator.allocator_grow_refused`) tests the slot-zone path in one line

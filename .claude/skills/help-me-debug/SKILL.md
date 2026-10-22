@@ -35,7 +35,17 @@ Follow this loop, returning to it as many times as needed:
 
 ## Who runs the test
 
-You do, headless: nobody else is there. No window, no X server (`CLAUDE.md`): reproduce through a scripted `events.json`, a fixed frame count and a text dump. Throwaway programs and instrumented copies go in `tmp/`; never change `src/` or `tests/`.
+You do, headless: nobody else is there. No window, no X server (`CLAUDE.md`): reproduce through a scripted `events.json`, a fixed frame count and a text dump. Throwaway programs and instrumented copies go in `tmp/`; never change `game/`, `tests/` or `tools/`.
+
+The game under test is the Lua game in `game/`, played by the fake LÖVE. From the repository root:
+
+- **Run a replay**: `make fake-love`, `mkdir -p tmp/debug`, then `./tmp/fake_love game <events> tmp/debug/<name>.bin tmp/debug/<name>.state`. The capture holds every frame (9600 bytes each); the state file is the Lua state after the last frame. When the game errors, the fake exits non-zero with the Lua error and its traceback on stderr, and leaves no capture. `make e2e` leaves its own capture at `tmp/love-e2e/<events>.bin`.
+- **Read frame k** as text: `luajit tools/capture_read.lua frame <capture> <k>` — 120 lines of 160 hex digits, line y + 1 is row y, digit x + 1 is column x, one palette number per pixel. Never read the `.bin` bytes yourself: a byte packs two pixels, the left one in the low nibble.
+- **Compare two captures**: `luajit tools/capture_read.lua compare <capture a> <capture b>` gives the first frame where they differ and its count of differing pixels, or that one ends first. `diff` the two `frame` outputs of that frame to see where.
+- **The state at frame k**: cut the replay after frame k, `awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' <events> > tmp/debug/<name>_f<k>.json` (`k=` set first), and run the fake on the cut file: its state file is the state after frame k.
+- **The reference game**: the bug report names a reference commit (none named: `git rev-parse --verify -q '@{upstream}'`; with no upstream, the first of `git log -20 --format=%H HEAD -- game/` whose `game/`, run by the fake on this replay, gives a capture whose sha256 equals `<events>.sha256` (extract each with `git archive <commit> game` as below); none matches → no good reference, say so in your `UNPROVEN:`). `rm -rf tmp/reference && mkdir -p tmp/reference && git archive <commit> game | tar -x -C tmp/reference`, then `./tmp/fake_love tmp/reference/game <events> tmp/reference/<name>.bin tmp/reference/<name>.state`. First check that the `sha256sum` (macOS: `shasum -a 256`) of that capture equals `<events>.sha256`: if the run fails or the hash differs, the reference is not good: say so in your `UNPROVEN:`, a good reference being the missing observation, and never compare against it.
+- **Instrument**: `cp -R game tmp/debug/game`, add `io.stderr:write(...)` lines there, and run the fake on `tmp/debug/game` with the same command.
+- **What a frame should show**: the `.txt` next to each replay in `tests/e2e/` says what it does and at which frames. Its state readings ("the state at fN") are lines of the state after frame N: cut the replay after frame N as above, then `make state EVENTS=<the cut file>` writes that state to `tmp/state.txt`, the same lines as the fake's state file.
 
 Your environment likely differs from the reporter's (a real window, a real OS). A test that only their environment could run is not a proof you can get: name it as the missing observation, never presume its result.
 

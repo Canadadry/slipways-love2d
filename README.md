@@ -1,10 +1,10 @@
 # slipways-love
 
-*Slipways* (PICO-8 edition) ported to C, kept here as the reference for a port to LÖVE. The C game builds no playable binary: it runs headless, driven by recorded replays, and its output is what the LÖVE port must match. The plans are in `docs/love-port/`; start with `docs/love-port/design.md`.
+*Slipways* (PICO-8 edition) ported to Lua for LÖVE 11.5. The game is in `game/`. It is checked headless: a fake LÖVE written in C (`tools/fake_love/`) plays it on 20 recorded replays and compares each capture with a hash the original C port set. The design is in `docs/love-port/design.md`.
 
 ![The title screen with a game to resume](docs/img/title-resume.png) ![A planet's build menu](docs/img/build-menu.png) ![A slipway network mid-game](docs/img/network.png)
 
-## Checking the reference
+## Checking the game
 
 Everything runs headless, from the repository root:
 
@@ -12,13 +12,10 @@ Everything runs headless, from the repository root:
 make test                          # unit tests and static guards
 make e2e                           # replays tests/e2e/, checks each capture hash
 make test-all                      # both
-make replay EVENTS=<events.json>   # replays one file, dump in tmp/replay_dump.txt
-make state                         # last-frame state in tmp/state.txt
-make coverage                      # line coverage in tmp/coverage/lines.txt
-make e2e-order                     # ranks the replays by C lines executed in tests/e2e/order.txt
-make e2e-order-check               # re-measures that order, fails when it differs
-make asset-export                  # writes game/sprites.png and game/font.png from the C data
-make checklist                     # each C function and table with its Lua copy in tmp/checklist.txt
+make end-state                     # checks each replay's end state against its .end-state
+make replay EVENTS=<events.json>   # replays one file, dump in tmp/replay_dump.txt, capture in tmp/love-replay/
+make state EVENTS=<events.json>    # replays one file, last-frame state in tmp/state.txt
+make love-capture                  # reruns tools/love_capture/ in real LÖVE 11.5 under Xvfb, rewrites its PNGs
 make help                          # every target
 ```
 
@@ -28,7 +25,7 @@ make help                          # every target
 
 ## Controls
 
-The game reads 12 numbered buttons. `bindings.default.cfg` says what each button does in each mode, and explains every mode and action; replays and tests compile it. The pad table of `docs/love-port/design.md` maps the numbers to LÖVE gamepad buttons.
+The game reads 12 numbered buttons. Its default bindings are `game/game/bindings_default.lua`. A personal `bindings.cfg`, read by `love.filesystem`, replaces them; `bindings.default.cfg` documents that format with every mode and action. The pad table of `docs/love-port/design.md` maps the numbers to LÖVE gamepad buttons.
 
 ## To do
 

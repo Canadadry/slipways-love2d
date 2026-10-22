@@ -1,26 +1,46 @@
 # Good and Bad Tests
 
-Tests live in `tests/test_<module>.c`: `static void` test functions using `assert`, called from `main`. Real APIs below where they exist; other names are illustrative.
+Tests of the Lua game live in `tests/lua/game/test_<module>.lua`: local test functions using `check.expect`, handed by name to `check.run`, which runs them all and names each failure. Tests of the fake LÖVE and the tools live in `tests/test_<module>.c`: `static void` test functions using `assert`, called from `main`. Real APIs below where they exist; other names are illustrative.
 
 ## Good Tests
 
-**Integration-style**: test through the module's public header, not its internals.
+**Integration-style**: test through the module's public functions, not its internals.
+
+```lua
+-- GOOD: observable behavior, through the module's returned table
+local check = require("check")
+local economy_formulas = require("game.economy_formulas")
+local fixed = require("p8.fixed")
+
+local function test_set_updates_an_existing_resource_in_place()
+  local map = { count = 0, entries = {} }
+  economy_formulas.resource_map_set(map, fixed.p8_fixed_from_int(28), 3)
+  economy_formulas.resource_map_set(map, fixed.p8_fixed_from_int(28), 7)
+  local found, value = economy_formulas.resource_map_get(map, fixed.p8_fixed_from_int(28), -1)
+  check.expect(found, 1, "food found")
+  check.expect(value, 7, "food value after update")
+end
+
+check.run({
+  { "set updates an existing resource in place", test_set_updates_an_existing_resource_in_place },
+})
+```
+
+The same in C, for the fake's own code:
 
 ```c
 /* GOOD: observable behavior, through the public interface */
-static void test_add_component_wise(void) {
-    vec_t a = vec_make(fixed_test_double_from_double(1.0), fixed_test_double_from_double(2.0));
-    vec_t b = vec_make(fixed_test_double_from_double(3.5), fixed_test_double_from_double(-1.0));
-    vec_t result = vec_add(a, b);
-    assert(result.x == fixed_test_double_from_double(4.5));
-    assert(result.y == fixed_test_double_from_double(1.0));
+#include "../tools/fake_love/point.h"
+
+static void test_a_pixel_centre_lights_its_pixel(void) {
+    assert(point_find_pixel(0.5, 0, 160) == 0);
 }
 ```
 
 Characteristics:
 
 - Tests behavior callers care about
-- Includes only the public header
+- Requires only the module (C: includes only the public header)
 - Survives internal refactors
 - Name describes WHAT, not HOW
 - One logical assertion per test
@@ -31,18 +51,23 @@ For a path only a player reaches (a click, a rendered frame), drive it headless 
 
 **Implementation-detail tests**: coupled to internal structure.
 
+```lua
+-- BAD: digs a local helper out of the module through the debug library
+local _, fixed_max = debug.getupvalue(economy_formulas.economy_formulas_route_base_cost, 2)
+check.expect(fixed_max(1, 2), 2, "max")
+```
+
 ```c
 /* BAD: reaches into a static helper by including the .c */
-#include "game/trade.c"
-static void test_trade_uses_route_cache(void) {
-    route_cache_fill(&cache, planets, 3);
-    assert(cache.count == 3);
+#include "../tools/fake_love/pad.c"
+static void test_pad_uses_its_helper(void) {
+    assert(pad_helper(3) == 3);
 }
 ```
 
 Red flags:
 
-- Including a `.c` file, or a test-only header exposing statics
+- Including a `.c` file, or a test-only header exposing statics; in Lua, `debug.getupvalue` or a module field added only for the test
 - Asserting on call counts or call order
 - Test breaks when refactoring without behavior change
 - Test name describes HOW, not WHAT
@@ -55,31 +80,31 @@ Tests verify behavior from the outside. Assertions enforce contracts from the in
 
 When production code asserts, a failing test tells you not just _that_ something broke but _where_ the contract was violated:
 
-```c
-/* Without assertion: a bad index reads past the table, fails frames later */
-int planet_kind_price(int kind) {
-    return kind_prices[kind];
-}
+```lua
+-- Without assertion: a nil gfx fails deep inside p8_rectfill
+function M.hud_draw_bar(gfx, mem, y1, y2, col)
+  gfx_module.p8_rectfill(gfx, mem, 0, to_int(y1), vram.P8_SCREEN_WIDTH - 1, to_int(y2), col)
+end
 
-/* With assertion: fails at the violated contract */
-int planet_kind_price(int kind) {
-    assert(kind >= 0 && kind < PLANET_KIND_COUNT && "planet kind out of range");
-    return kind_prices[kind];
-}
+-- With assertion (real code): fails at the violated contract
+function M.hud_draw_bar(gfx, mem, y1, y2, col)
+  assert(gfx ~= nil, "hud_draw_bar: p8_rectfill dereferences the graphics state, so a NULL one is not a no-op")
+  -- ...
+end
 ```
 
 Rule of thumb: if a test setup must respect a constraint to call a function, that constraint is asserted inside the function.
 
-```c
-/* BAD: verifies by poking the registry's storage */
-static void test_spawn_adds_entity(void) {
-    entity_id_t id = planet_spawn(&game, at);
-    assert(game.registry.live.items[game.registry.live.count - 1] == id);
-}
+```lua
+-- BAD: verifies by poking the list's storage
+local function test_add_stores_the_entity_last()
+  entity_list.entity_list_add(list, e)
+  check.expect(list.items[list.count - 1], e, "last item")
+end
 
-/* GOOD: verifies through the interface */
-static void test_spawned_planet_is_found_by_id(void) {
-    entity_id_t id = planet_spawn(&game, at);
-    assert(planet_by_id(&game, id) != NULL);
-}
+-- GOOD: verifies through the interface
+local function test_an_added_entity_is_in_the_list()
+  entity_list.entity_list_add(list, e)
+  check.expect(entity_list.entity_list_has(list, e), 1, "e in the list")
+end
 ```

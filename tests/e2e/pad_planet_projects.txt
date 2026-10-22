@@ -14,13 +14,11 @@ and pad_colonise still play them. Every frame from the old f87 is kept,
 trip 46 frames earlier, but for 15 idle frames dropped (13 before s1's
 drop, one after each of two squares) to keep the step's e2e frame total.
 
-The record is cut, never typed, from this file at 4382824 replayed to
-f86 (no wormhole lives there, so the record is written):
-
-    make replay EVENTS=<4382824's pad_planet_projects.json cut to f0-86> SAVE_HEX=tmp/projects.hex
-
-which prints `save: clock year 3401 month 2`, `save: resources credits
-97`, `save: count nodes 90`; the hex is the header's initial_save. Its
+The record was cut, never typed, from this file at 4382824 replayed to
+f86 (no wormhole lives there, so the record is written), with the C
+game's save dump, since removed. The dump read `save: clock year 3401
+month 2`, `save: resources credits 97`, `save: count nodes 90`; its hex
+is the header's initial_save. Its
 camera is 200 169, p25 (type f) and p47 (type r) known. All three
 cheats come after the cut (cheat activations 3).
 
@@ -36,8 +34,13 @@ square on f86 and f129 leaves aim mode for jump mode on the planet under
 the centre; f102: square again once the f101 harvest killed the
 hovered p25.
 
-Readings come from `make state` of the file cut after the frame and
-from the capture.
+Readings come from the capture and from the state at the frame:
+`tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=227; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_planet_projects.json > tmp/debug/pad_planet_projects_f$k.json
+    make state EVENTS=tmp/debug/pad_planet_projects_f$k.json
 
 - f14-22: X five times on p25 (X taps on a planet open nothing in aim
   mode). f24-30: the cheat, four X + O chords one every two frames:
@@ -52,9 +55,10 @@ from the capture.
   nanotech, bots, goods and gadgets, mostly below the bottom edge: its
   colour 12 at y116-117 from f99): $200 -> $220, month 2 -> 4, burst
   1, particle 59 -> 199. f102: p25 is a ring of yellow particles. The
-  burst lives to f185; at f186 burst 0 and particles 2 -> 1
-  (test_live_slots' readings; one frame later after the harvest than
-  before the plan 12 step 9 cut).
+  burst lives to f185: the C game's live-slot test, since removed, read
+  burst 0 and particles 2 -> 1 at f186 (one frame later after the
+  harvest than before the plan 12 step 9 cut). The state at f186 still
+  counts burst 1 and particles 2; burst 0 and particles 1 from f187.
 - f103-127: Down+Left 10, Down 13, Down 1 (two taps), idle f128-130:
   p47 under the centre (80.24, 59.74). f129: square: jump mode on p47.
   f131-142: triangle on the hovered p47, Down x4, X
@@ -71,11 +75,11 @@ from the capture.
   planet_new_year returns before its toast. Until plan 12 step 9 this
   year was R1 R1, X on `end turn`.
 
-`make state` at f227: year 3402 month 1, credits 191, research 59,
+The state at f227: year 3402 month 1, credits 191, research 59,
 income -1, techs space folding, geneseeds, geoharvesting, replication;
 camera 190 132, p47 colonized type f, planets 89, colonies 1. Peaks:
-burst 1, bytes_burst 528, elements_particles 140, as
-tech_geoharvesting_burst.
+burst 1, bytes_burst 560, elements_particles 140; with the C, burst 1,
+bytes_burst 528, elements_particles 140, as tech_geoharvesting_burst.
 
 Replaces tech_geoharvesting_burst ("harvest" on a mineral planet: +$20,
 a burst that burns out), tech_replication_mechanize ("mechanize" turns
@@ -147,12 +151,13 @@ the one the old file took it from (rule 8).
 At f523 the infragate's slipway is two parallel colour-1 lines, 3 px
 apart, from s1 to p47; the ordinary slipways are single diagonal lines.
 
-`make state` at f523: year 3402 month 11, credits 140, research 49,
+The state at f523: year 3402 month 11, credits 140, research 49,
 income 6, techs + infraspace, autoassemblers, skill implants, void
 synthesis, ascension; camera 216 157; s2, s3 colonized synthesizer, s4
 colonized ascension, structure s1 infragate links 1; slipways s1 p47
 infragate, s3 p47 normal, p47 s2 normal; planets 92, colonies 4. Peaks:
-particles 4 (synthesizer_second_link's 3), zone frame 13840.
+particles 4 (synthesizer_second_link's 3), zone frame 11344 (13840
+with the C).
 
 Replaces tech_infraspace_infragate (an infragate and its slipway from a
 mine, then an ordinary slipway that ignores it), synthesizer_second_link

@@ -6,9 +6,18 @@ Every capture frame is unchanged.
 
 Each press lasts one frame and is followed by a release frame: a held
 direction moves the focus once. Row colours below are read in the
-framebuffer dump (make replay on the file cut after that frame), at
-x=108 of each row: forgiving y53-61, reasonable y64-72, challenging
-y75-83, tough y86-94.
+capture, or in `tmp/replay_dump.txt` after `make replay EVENTS=<this
+file cut after fN>`, at x=108 of each row: forgiving y53-61, reasonable
+y64-72, challenging y75-83, tough y86-94. The state at fN is
+`tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=17; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_title.json > tmp/debug/pad_title_f$k.json
+    make state EVENTS=tmp/debug/pad_title_f$k.json
+
+and the cut file given to `make replay` instead writes the frame's
+dump.
 
 - f0-9: idle while the rows slide in. After f9: forgiving in colour 12,
   the other three in 13.
@@ -24,15 +33,15 @@ y75-83, tough y86-94.
   y=60, y58-62 on x=80, the centre pixel undrawn). Pad mode draws no
   cursor sprite on any frame.
 
-`make state` at f31: clock year 3401 month 1, difficulty reasonable,
+The state at f31: clock year 3401 month 1, difficulty reasonable,
 credits 100, planets 90, colonies 0, slipways 0, structures 0, techs 0,
 nodes 90.
 
-The same file with X at f18 on each of the four rows gives `make state`
-lines that differ only in the difficulty line (planets included). The
-chosen difficulty also shows in the f17 dump above (reasonable is the
-only colour-12 row when X is pressed). test_pad_nav checks the started
-game's economy_score_difficulty().
+The same file with X at f18 on each of the four rows gives end states
+that differ only in the difficulty line (planets included). The chosen
+difficulty also shows in the f17 dump above (reasonable is the only
+colour-12 row when X is pressed). The C game's pad navigation test,
+since removed, checked the started game's economy_score_difficulty().
 
 Covers no keyboard_* scenario: keyboard_menus is covered by
 pad_pause_restart (step 3.3).

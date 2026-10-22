@@ -12,13 +12,19 @@ slipway, ended by a Select hold. 447 frames.
 A new game knows no object, so it starts in aim mode (plan 12 step 17):
 f15 is idle. pad_probe's f18-19 (square and O doing nothing in aim mode
 while nothing is known) are shared; with f295's circle at the root they
-are the three no-ops `make pad-metrics-check` counts as required.
+are the three no-ops the pad metrics check (C, since removed)
+counted as required.
 
 f0-70 are pad_probe's frames verbatim (title, starting probe, fold, p25
 and p47 turning known at f65 and f67), so the galaxy and pad_probe.txt's
 planet list apply; pad_probe's idle f71-78 are dropped. Readings below come
-from the framebuffer dump and `make state` of the file cut after that
-frame.
+from the framebuffer (the capture) and the state at the frame:
+`tmp/state.txt` after `make state EVENTS=<this
+file cut after fN>`, the file cut as help-me-debug cuts it:
+
+    k=176; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_colonise.json > tmp/debug/pad_colonise_f$k.json
+    make state EVENTS=tmp/debug/pad_colonise_f$k.json
 
 - f0-70: as pad_probe (f12-13 the loading screen). After f70: camera (188, 184), $97, month 2, p25
   (type f) and p47 (type r) known.
@@ -76,7 +82,7 @@ frame.
   network mode on the last planet, the camera centred on it: that return
   is gone with its mechanic.)
 
-`make state` at f176: clock year 3401 month 6, credits 89, income -1,
+The state at f176: clock year 3401 month 6, credits 89, income -1,
 camera world 190 197, planets 90, colonies 1, slipways 0, structures
 0, techs 0. p47 colonized type r, p25 known type f; every other planet
 unknown.
@@ -186,7 +192,7 @@ f371 (step 8).
   box. f444: the release, the cursor back on p25. Until plan 12 step 9
   this year was R1 R1 and X on `end turn` (the tab ring).
 
-`make state` at f446: year 3402 month 1, credits 79, research 1, income
+The state at f446: year 3402 month 1, credits 79, research 1, income
 3, camera 195 187, `slipway p25 p47 normal`, p25 colonized type f, p47
 colonized type r, planets 90, colonies 2, slipways 1.
 
