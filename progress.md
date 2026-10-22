@@ -1,0 +1,9 @@
+- [ ] Phase 1 — Cut the tests loose from the C
+  - [ ] Target inventory
+  - [ ] Step 1.1 — `make e2e` and `make end-state` on the fake LÖVE, N rule
+  - [ ] Step 1.2 — fix loop independent of the C
+  - [ ] Step 1.3 — every surviving check freed from `src/`
+- [ ] Phase 2 — Delete
+  - [ ] Step 2.4 — delete `src/` and the C-only tools
+- [ ] Phase 3 — Rules and docs
+  - [ ] Step 3.5 — docs and skills describe a Lua repository
