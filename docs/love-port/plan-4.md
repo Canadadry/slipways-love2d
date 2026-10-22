@@ -169,3 +169,22 @@ paired −0.66 % vs before, +3.01 % vs reference, kept on step 1.2's
 spreads 13.3 / 10.7 / 11.5 %; slowest new check `test_lua_fixed`, 71 ms.
 Left for step 3.5: `lua-test-modules` still prints "equal to C"; e2e
 notes and README cite `SAVE_HEX` and bare `make state`.
+
+### Step 2.4
+
+Deleted `src/` (250 files), the 135 C tests, their helpers and 19
+fixtures, `tests/e2e/order.txt`, the C-only tools (guards, checklist,
+coverage, e2e order, `frames_ref`, state peaks, `fixed_reference`,
+`table_reference`, `gen_quarter_wave`) and every Makefile rule and target
+that served them, step 1.3's `src/` switch and the orphaned state-peaks
+runs included: the Makefile went from 1551 to 493 lines, `make help`
+lists the 21 kept and ported targets, no inventory amendment. CI's `test`
+job runs `make test-all` only (`sanitize-net`, `full-game` gone); its run
+on the pushed branch is green. `bindings.default.cfg` and `demo/` kept
+for step 3.5 to decide. Every target green on an empty `tmp/` and on a
+`tmp/` left from before. `make e2e`: six cold runs, median 5.864 s (< 9 s).
+`make test` (rule 4, 11 rounds, 4 cores): plain medians 0.670 s current,
+5.493 s before (60e62c1), 5.381 s reference; paired −87.41 % / −87.53 %;
+spreads 19.0 / 13.9 / 13.6 %; no new check. No `.sha256` or `.end-state`
+changed. Left for step 3.5: "equal to C", comments naming the deleted
+generators, the "~3 s" `lua-sweep-fixed` line of `CLAUDE.md`.

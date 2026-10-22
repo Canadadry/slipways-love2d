@@ -16,8 +16,8 @@
     - [x] Chunk 4 — `make state` and `make replay` on the fake
     - [x] Chunk 5 — C-only group in `test` and `unit`
     - [x] Chunk 6 — dry run without `src/`
-- [ ] Phase 2 — Delete
-  - [ ] Step 2.4 — delete `src/` and the C-only tools
+- [x] Phase 2 — Delete
+  - [x] Step 2.4 — delete `src/` and the C-only tools
     - [x] Chunk 1 — delete the C and its Makefile side
     - [x] Chunk 2 — CI
     - [x] Chunk 3 — prove and record
