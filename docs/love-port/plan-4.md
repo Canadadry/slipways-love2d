@@ -143,3 +143,29 @@ reference (8dff812); paired +0.88 % vs before (pass), +4.38 % vs reference
 (fail); spreads 6.6 / 5.9 / 6.2 %; slowest new check 98 ms
 (`capture_read`'s test). `guideline` decided to keep both checks: the
 reference fail is inherited, 778c235 alone is +3.42 % over 8dff812.
+
+### Step 1.3
+
+`lua-test-fixed` reads `tests/lua/fixed_reference.txt` (5291 records:
+every section, edge values in each input position, the random streams in
+draw order, both double-product trap records); the generator writes text,
+`test_lua_fixed` covers the reader. `lua-test-modules` reads
+`tests/lua/table_reference.txt` (876 blocks); the four generated-data
+modules are only loaded, their Lua files being the source.
+`test_love_runtime` compares with frozen frames and meter counts per
+fixture, written from the C, and is a fake-side binary. `make state` and
+`make replay` run the fake (`EVENTS=` required; `SAVE_HEX`, `DIGEST`,
+`ATTRACT_STATE`, `REPLAY_STARTS` and the no-`EVENTS` peaks mode dropped,
+not a category change). `UNIT_TESTS` holds the 33 surviving tests; the
+other 134 and the `src/` guards sit in one `ifneq ($(wildcard src),)`
+group that step 2.4 deletes. Dry run (worktree, `src/` removed, `tmp/`
+empty): every kept and ported target, step 1.2's targets and every
+surviving CI command green, the baselines leave `tests/e2e/` untouched.
+`lua-sweep-fixed` now takes ~12 s (text parsing), still outside every
+gate until step 2.4 deletes it. Timing (rule 4, 22 rounds, 4 cores): plain
+medians 5.239 s current, 5.347 s before (518369e), 5.049 s reference;
+paired −0.66 % vs before, +3.01 % vs reference, kept on step 1.2's
+`guideline` decision (inherited: before is +4.89 % over the reference);
+spreads 13.3 / 10.7 / 11.5 %; slowest new check `test_lua_fixed`, 71 ms.
+Left for step 3.5: `lua-test-modules` still prints "equal to C"; e2e
+notes and README cite `SAVE_HEX` and bare `make state`.

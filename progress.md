@@ -1,4 +1,4 @@
-- [ ] Phase 1 — Cut the tests loose from the C
+- [x] Phase 1 — Cut the tests loose from the C
   - [x] Target inventory
   - [x] Step 1.1 — `make e2e` and `make end-state` on the fake LÖVE, N rule
     - [x] Chunk 1 — shared fake runs and `make e2e`
@@ -9,7 +9,7 @@
     - [x] Chunk 2 — capture reader
     - [x] Chunk 3 — skills on the fake LÖVE
     - [x] Chunk 4 — measure and prove
-  - [ ] Step 1.3 — every surviving check freed from `src/`
+  - [x] Step 1.3 — every surviving check freed from `src/`
     - [x] Chunk 1 — frozen fixed-point reference
     - [x] Chunk 2 — frozen table reference
     - [x] Chunk 3 — `test_love_runtime` without `src/`
