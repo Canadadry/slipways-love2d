@@ -1,5 +1,0 @@
-# Exception list of the allocation guard (tools/alloc_guard.sh, make
-# alloc-guard): one line `<source> <calls>` per file of the core that still
-# calls malloc, calloc, realloc or free, with the call count read from its
-# object. Strict equality. The list is empty: no file of the core allocates
-# through the libc, and a line added here would be a permanent exception.
