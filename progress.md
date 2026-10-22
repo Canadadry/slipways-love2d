@@ -1,0 +1,7 @@
+- [ ] Phase 1 — The state check
+  - [ ] Step 1.1 — make love-e2e-state
+- [ ] Phase 2 — The diff tool (only if a replay diverges)
+  - [ ] Step 2.2 — per-frame state dumps, C and Lua
+  - [ ] Step 2.3 — make e2e-diff
+- [ ] Phase 3 — The diverging replays
+  - [ ] Step 3.4 — one step per diverging replay
