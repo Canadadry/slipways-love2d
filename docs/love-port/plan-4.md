@@ -188,3 +188,25 @@ for step 3.5 to decide. Every target green on an empty `tmp/` and on a
 spreads 19.0 / 13.9 / 13.6 %; no new check. No `.sha256` or `.end-state`
 changed. Left for step 3.5: "equal to C", comments naming the deleted
 generators, the "~3 s" `lua-sweep-fixed` line of `CLAUDE.md`.
+
+### Step 3.5
+
+`CLAUDE.md`, the README, `.gitignore`, `design.md`, `save-format.md`,
+eleven skill files, the 20 e2e notes and `bindings.default.cfg` describe
+the Lua repository; `lua-test-modules` prints "equal to the reference";
+`demo/` deleted (its data is `game/game/demo_data.lua`). `warn-review`'s
+pointer rules became reference rules on `game/` (rule 11 dropped);
+`fix-bug` lost its sanitizer step. Re-running the e2e notes' readings on
+the fake found `pad_planet_projects`' burst ending at f187 instead of the
+C's f186 and three memory peaks that differ from the C (not covered by
+any `.end-state`); the notes state both. Search of tracked files outside
+`game/`: no current `src/`, `tmp/replay` or deleted target. Deliberate
+leftovers for plan 5: `fake-love-guard` and its test; two negative
+`e2e-ref` asserts; one `git show 60e62c1:src/...` history pointer each in
+`CLAUDE.md` and `design.md`; the `game/` headers naming the C or the
+deleted generators; nothing checks `bindings.default.cfg` against
+`bindings_default.lua`; no target writes a save to a file; rule 4's
+reference `8dff812` still has the C. `check-e2e` re-run in a throwaway
+worktree (break in `economy_score_set_difficulty`, `pad_probe`): reference
+found by the 20-commit walk, regression test red on the break, green on
+the revert, 13 ms; no skill instruction failed.
