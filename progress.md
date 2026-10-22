@@ -20,6 +20,6 @@
   - [ ] Step 2.4 — delete `src/` and the C-only tools
     - [x] Chunk 1 — delete the C and its Makefile side
     - [x] Chunk 2 — CI
-    - [ ] Chunk 3 — prove and record
+    - [x] Chunk 3 — prove and record
 - [ ] Phase 3 — Rules and docs
   - [ ] Step 3.5 — docs and skills describe a Lua repository
