@@ -119,3 +119,27 @@ here, since they write the references these targets read; `state` and
 gone; `e2e-ref` stays until step 2.4, but a divergence only names
 `make e2e-baseline`. N = 9 s: six cold runs on 4 cores, median 7.107 s,
 rounded up plus 1 s. Both targets: 20 match.
+
+### Step 1.2
+
+Lua regression home: `tests/lua/game/test_<module>.lua`, found by
+wildcard, one parallel `make test` target each (group `lua-test-game`),
+plain LuaJIT with `game/` on the path, helper `check.lua`, seeded with
+`economy_formulas`. `tools/capture_read.lua` prints a capture frame as
+text and finds the first differing frame (`lua-test-capture-read`).
+`check-e2e`, `fix-bug`, `help-me-debug` and `tdd` reproduce with
+`tmp/fake_love`, debug with `capture_read` and the state dump, judge
+against the `.sha256`/`.end-state` and a known-good `game/` from git; a C
+test in `UNIT_TESTS` only for a bug in the fake. `state` and `replay`
+were left to step 1.3. Proof: in a throwaway worktree, a one-line break of
+`economy_formulas_cost_scale` made 5 replays diverge with `make test`
+green; the loop reached a Lua regression test red on the break, green on
+the revert, 8 ms, green with `src/` and `tmp/` moved aside. Deviation: the
+skills' reference fallback (the commit that set the `.sha256`) has no
+`game/`; `guideline` decided to walk the last 20 commits touching `game/`
+for one whose capture matches. Timing (design.md rule 4, 22 rounds, 4
+cores): plain medians 5.853 s current, 5.775 s before (778c235), 5.578 s
+reference (8dff812); paired +0.88 % vs before (pass), +4.38 % vs reference
+(fail); spreads 6.6 / 5.9 / 6.2 %; slowest new check 98 ms
+(`capture_read`'s test). `guideline` decided to keep both checks: the
+reference fail is inherited, 778c235 alone is +3.42 % over 8dff812.

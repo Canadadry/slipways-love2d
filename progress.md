@@ -4,7 +4,7 @@
     - [x] Chunk 1 — shared fake runs and `make e2e`
     - [x] Chunk 2 — `make end-state` on the shared runs
     - [x] Chunk 3 — measure N and write the rule
-  - [ ] Step 1.2 — fix loop independent of the C
+  - [x] Step 1.2 — fix loop independent of the C
     - [x] Chunk 1 — Lua regression home
     - [x] Chunk 2 — capture reader
     - [x] Chunk 3 — skills on the fake LÖVE
