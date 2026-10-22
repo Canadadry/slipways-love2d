@@ -23,3 +23,9 @@
     - [x] Chunk 3 — prove and record
 - [ ] Phase 3 — Rules and docs
   - [ ] Step 3.5 — docs and skills describe a Lua repository
+    - [x] Chunk 1 — `lua-test-modules` wording and test comments
+    - [ ] Chunk 2 — `CLAUDE.md`, README, `.gitignore`, `demo/`
+    - [ ] Chunk 3 — `design.md` and `save-format.md`
+    - [ ] Chunk 4 — skills
+    - [ ] Chunk 5 — e2e notes
+    - [ ] Chunk 6 — search and dry run

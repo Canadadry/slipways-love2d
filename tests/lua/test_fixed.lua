@@ -1,4 +1,4 @@
--- Reference format (tools/fixed_reference.c): one "<name> <input>... = <output>..."
+-- Reference format (frozen from the C, deleted in plan 4): one "<name> <input>... = <output>..."
 -- line of hex words per record, then "end <record count>". Records run in file
 -- order: the random sections share one state.
 -- Usage, from the repository root: luajit tests/lua/test_fixed.lua <reference file | ->

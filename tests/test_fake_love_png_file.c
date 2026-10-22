@@ -352,7 +352,7 @@ static void assert_asset_decodes_opaque(const char *path, int width, int height)
     read_file(path, &png);
     decoded_t decoded = decode(&png);
     if (decoded.reason != NULL)
-        fprintf(stderr, "%s refused: %s; did make asset-export change the format?\n", path, decoded.reason);
+        fprintf(stderr, "%s refused: %s; did the committed PNG change format?\n", path, decoded.reason);
     assert(decoded.reason == NULL);
     assert(decoded.width == width && decoded.height == height);
     for (int i = 3; i < width * height * 4; i += 4)

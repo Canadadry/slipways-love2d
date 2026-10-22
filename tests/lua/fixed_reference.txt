@@ -1,4 +1,4 @@
-# written by tools/fixed_reference.c from src/p8/fixed.c
+# frozen from the C fixed-point library, deleted in plan 4
 P8_FIXED_SHIFT = 00000010
 P8_FIXED_DIV0_POS = 7fffffff
 P8_FIXED_DIV0_NEG = 80000001
