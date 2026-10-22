@@ -1,0 +1,24 @@
+-- Copy of src/game/image_slot.h, which has no .c: its enum as fields.
+local game_data = require("game.game_data")
+local image = require("p8.image")
+
+local M = {}
+
+-- Every p8 image slot the game uses; row slot k is IMAGE_SLOT_ROW_FIRST + k, text slot k
+-- IMAGE_SLOT_TEXT_FIRST + k, ring slot k holds ring colour k, button slots follow the same rule.
+M.IMAGE_SLOT_BACKGROUND = 0
+M.IMAGE_SLOT_ROW_FIRST = 1
+M.IMAGE_SLOT_ROW_COUNT = 32
+M.IMAGE_SLOT_TEXT_FIRST = M.IMAGE_SLOT_ROW_FIRST + M.IMAGE_SLOT_ROW_COUNT
+M.IMAGE_SLOT_TEXT_COUNT = 32
+M.IMAGE_SLOT_PLANET_DISC = M.IMAGE_SLOT_TEXT_FIRST + M.IMAGE_SLOT_TEXT_COUNT
+M.IMAGE_SLOT_PLANET_RING_FIRST = M.IMAGE_SLOT_PLANET_DISC + 1
+M.IMAGE_SLOT_BUTTON_ICON_FIRST = M.IMAGE_SLOT_PLANET_RING_FIRST + game_data.PLANET_RING_COLORS_COUNT
+M.IMAGE_SLOT_BUTTON_ICON_COUNT = 8
+M.IMAGE_SLOT_BUTTON_WIDE_FIRST = M.IMAGE_SLOT_BUTTON_ICON_FIRST + M.IMAGE_SLOT_BUTTON_ICON_COUNT
+M.IMAGE_SLOT_BUTTON_WIDE_COUNT = 10
+M.IMAGE_SLOT_COUNT = M.IMAGE_SLOT_BUTTON_WIDE_FIRST + M.IMAGE_SLOT_BUTTON_WIDE_COUNT
+
+assert(M.IMAGE_SLOT_COUNT == image.P8_IMAGE_SLOT_COUNT, "image_slot_count_matches_the_runtime")
+
+return M

@@ -43,6 +43,8 @@ void canvas_clear(canvas_store_t *store, const unsigned char rgba[4]);
  * store. Asserts rgba[3] is 0xFF. */
 void canvas_set_color(canvas_store_t *store, const unsigned char rgba[4]);
 
+void canvas_get_color(const canvas_store_t *store, unsigned char rgba[4]);
+
 /* Writes the current colour over pixel (x, y) of the target; with the
  * screen as target, nothing. Asserts (x, y) is on the canvas. */
 void canvas_plot(canvas_store_t *store, int x, int y);

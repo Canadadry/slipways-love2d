@@ -93,9 +93,11 @@ fake follows these rules, and every step that adds one measures it.
    (see `make love-e2e`).
 4. **Measured, with one protocol, against two baselines.**
    - Baselines: the step's "before" commit, and the plan-wide reference,
-     commit `2e7215c` (4 cores, plain median 7.70 s over 15 runs when
-     recorded). A median is never compared across machines: the reference
-     is re-measured beside the current commit every time.
+     commit `8dff812`, the merge of pull request #1: the last commit before
+     plan 2's own work, with its fake checks (4 cores, plain median 5.60 s
+     over 11 rounds when recorded). A median is never compared across
+     machines: the reference is re-measured beside the current commit every
+     time.
    - Protocol: each commit under comparison in its own git worktree under
      `tmp/`; one `make test` in each to warm the build; then 11 rounds, each
      timing one `make test` (wall time) per worktree back to back, rotating
@@ -428,9 +430,9 @@ copies its size and bytes at the call: a later `setPixel` on the ImageData
 leaves the Image as it was, as in LÖVE. `newQuad(x, y, w, h, sw, sh)` takes
 six integers: reference sides 1 to 1024, origin from 0, size from 1, the
 quad inside the reference size. `draw(image, quad, x, y)` is the only draw
-form: exactly an Image, a Quad of the image's own size, and two integers of
-magnitude below 2^20, also once translated (see Transforms). Texel (`qx + i`, `qy + j`) goes to pixel
-(`x + i`, `y + j`); pixels off the canvas are clipped silently, so a draw
+form onto a canvas: exactly an Image, a Quad of the image's own size, and
+two integers of magnitude below 2^20, also once translated (see
+Transforms). Texel (`qx + i`, `qy + j`) goes to pixel (`x + i`, `y + j`); pixels off the canvas are clipped silently, so a draw
 far off draws nothing. An alpha-`00` texel leaves the pixel's four bytes,
 transparent pixels included; an alpha-`FF` texel writes, per channel,
 `round(c × t / 255)` (c the current colour's byte, t the texel's: a fourth
@@ -440,8 +442,9 @@ the screen selected, a draw changes nothing the fake models. Images and
 Quads have no methods and are freed by the garbage collector. Every
 refusal is an error starting `love.graphics.newImage: `,
 `love.graphics.newQuad: ` or `love.graphics.draw: ` and changes nothing:
-another argument count (a trailing nil, rotation or scale too, and the
-quad-less `draw(image, x, y)`), a file name, a table or a Canvas where an
+another argument count (a trailing nil and the quad-less
+`draw(image, x, y)`; six arguments are taken as the present below, which
+refuses an Image), a file name, a table or a Canvas where an
 ImageData or Image belongs, a non-number (no string coercion), a
 non-finite or fractional value, a value out of range, a quad whose
 reference size differs from the image's (it would scale), and an
@@ -467,6 +470,25 @@ exactly that colour, any other tint gives non-palette bytes); pass
 integer positions, flooring fixed-point coordinates first; build each
 quad with integers, inside the image, on the image's own size.**
 Captures: `draw_quads`, `draw_tint`.
+
+**The present.** `draw(canvas, x, y, 0, s, s)` is the only other draw
+form: exactly six arguments, a Canvas, two integers of magnitude below
+2^20, a rotation equal to 0, and two equal integer scales from 1 to 16.
+It is accepted only while the screen is selected, the current colour is
+white `FFFFFFFF` and the current offset is 0 on both axes, and it changes
+nothing the fake models, as every screen draw. Every refusal is an error
+starting `love.graphics.draw: ` and changes nothing (the arguments are
+checked before the state): a canvas selected
+(real LÖVE refuses a canvas drawn onto itself, and the fake does not model
+scaled draws between canvases), a non-white colour (it tints the window),
+a non-zero offset (it shifts it), unequal, fractional or out-of-range
+scales (they blur or distort it), another argument count, a
+non-Canvas first argument, a non-number (no string coercion), a
+non-finite or fractional position and a rotation other than 0. **The rule
+for the game: present canvas 0 once per frame, last in `love.draw`, with
+the screen selected, after `setColor(1, 1, 1)`, outside any `push`, at
+`(0, 0)` and scale `SCREEN_SCALE`** (`screen.screen_present()`). Capture:
+`game_frame`.
 
 **Transforms.** `push()`, `pop()` and `translate(dx, dy)` are the only
 forms. The fake keeps a current offset, integer on each axis, and a stack
@@ -556,6 +578,7 @@ here, with its real-LÖVE capture.
   `points({x1, y1, …})`,
   `rectangle("fill", x, y, w, h)`, `newImage(imagedata)`,
   `newQuad(x, y, w, h, sw, sh)`, `draw(image, quad, x, y)`,
+  `draw(canvas, x, y, 0, s, s)` onto the screen only (see The present),
   `setDefaultFilter("nearest", "nearest")`,
   `push()`, `pop()`, `translate(dx, dy)` with integer offsets.
 - Images: `love.image.newImageData(w, h)`, `love.image.newImageData(name)`,
@@ -573,8 +596,11 @@ sets them, and for the four modules while `conf.lua` runs, they read `nil`.
 It is an ordinary Lua error, like every refusal of the fake. Both binaries,
 `tmp/fake_love` and `tmp/love_capture_check`, run under this guard.
 
-In real LÖVE the game draws its canvas scaled up to the window at the end of
-`love.draw()`; the fake reads the canvas and needs nothing more.
+The game shows its canvas in the window with `draw(canvas, 0, 0, 0,
+SCREEN_SCALE, SCREEN_SCALE)`: **present canvas 0 once per frame, last in
+`love.draw`, with the screen selected, after `setColor(1, 1, 1)`, outside
+any `push`, at `(0, 0)` and scale `SCREEN_SCALE`** (see The present). The
+fake reads the canvas, and the present changes nothing it models.
 
 The exact pixel conventions (where `points(x, y)` lands, how `rectangle`
 rounds) are those of real LÖVE 11.5, settled by the captures of
@@ -629,13 +655,16 @@ what the player sees:
 - **Circles and lines:** drawn by the game itself, pixel by pixel (`points`)
   or in spans (`rectangle`), with the C game's algorithms.
 - **Fill patterns** (PICO-8 `fillp`): the game builds them as images and draws
-  those. The pattern is aligned to the **screen**, not the shape: the drawn
-  image is offset accordingly. Rectangles and lines tile a 4×4 pattern image;
-  a patterned disk is built pixel by pixel into an image once per radius and
-  kept.
+  those. The pattern is aligned to the **world** coordinates, the ones before
+  the camera, as the C aligns it, not to the screen or the shape: each span
+  draws the quad of a screen-sized pattern image (one per pattern, colour
+  byte and transparent flag, built once and kept) that starts at the world
+  phase of its first pixel. A patterned disk is drawn span by span from that
+  image, like a plain one, rather than built once per radius.
 - **See-through colours and colour swaps** (PICO-8 `palt` and the 16 palette
   blocks of `hud.c`): the game builds a recoloured copy of the sprite sheet per
-  combination it uses, the first time it is needed, and keeps it. Flat shapes
+  combination it uses, filling each 8×8 cell the first time a draw reaches
+  it, and keeps it. Flat shapes
   apply the swap by choosing the colour before drawing.
 - **Text:** the game places each letter itself from `font.png`, as pieces of
   an image: either per-colour letter images, or one image whose lit cells
@@ -650,8 +679,9 @@ what the player sees:
 **In combination.** Real LÖVE 11.5 and the fake agree when these functions
 are mixed in a game frame: the `game_frame` capture (camera over a map,
 pattern rectangles, discs of spans, rings of points, sprites, outlined
-text in a nested `push`/`translate`, a HUD, another canvas, screen draws,
-a second frame over the first), and once, at step 3.15, 60 random scenes
+text in a nested `push`/`translate`, a HUD, another canvas, screen draws
+including the present `draw(canvas, 0, 0, 0, 4, 4)`, a second frame over
+the first), and once, at step 3.15, 60 random scenes
 of 400 calls each mixing palette and white colours, nested integer
 translations, point tables, rectangles partly off the canvas, quads of
 see-through images, canvas switches and screen draws (60 of 60 equal,
@@ -664,7 +694,7 @@ a canvas selected, draws like one built in `love.load`. **The rule for
 the game: set the colour before every primitive and `setColor(1, 1, 1)`
 before every image drawn in its own colours (a leftover palette colour
 tints the texels into colours outside the palette); undo every
-translation before leaving the canvas for the upscale, or wrap the frame
+translation before leaving the canvas for the present, or wrap the frame
 in `push`/`pop`; build see-through and recoloured copies with `getPixel`
 compared with `byte / 255` and `setPixel` of palette bytes.** Capture:
 `game_frame`.
@@ -695,8 +725,10 @@ data; both are committed, and `make test` fails when either is stale.
 The C game computes with PICO-8 16.16 fixed-point numbers (`src/p8/fixed.c`)
 and its own random generator. The Lua game uses the same format and the same
 generator through a Lua library built on LuaJIT's `bit` library, bit-exact.
-Its tests (`tests/lua/`, run with LuaJIT) compare it with the C over millions
-of values while the C exists, then with saved reference values.
+Its tests (`tests/lua/`, run with LuaJIT) compare it with the C while the C
+exists, then with saved reference values: `make test` checks the edge values
+and a sample (`lua-test-fixed`), `make lua-sweep-fixed` millions of values,
+outside `make test-all`.
 
 ## Layout of the fork
 
@@ -711,6 +743,148 @@ of values while the C exists, then with saved reference values.
   toolchain only.
 - `tests/lua/`: the maths library tests.
 - `src/`: the C game, the reference, until plan 4.
+
+## Reading the Lua against the C
+
+`game/p8/`, `game/engine/`, `game/game/` and `game/devtools/` are a faithful
+copy of `src/`: each C file has the Lua file of the same name under the same
+directory (`src/game/planet.c` → `game/game/planet.lua`), with the same
+functions in the same order, the same names, computations and data tables.
+These rules say how a C construct reads in Lua, so any Lua function can be
+put next to its C original. `game/love/` has no C original.
+
+**Naming.** Exported functions are `function M.<c name>(` at line start,
+`static` ones `local function <c name>(`; a module's file-level tables are
+`M.NAME = {` or `local NAME = {`, its header constants and enum values
+`M.<MACRO> = value`, computed as the C does; a `.c`-local macro is a module
+local. A C identifier that is a Lua keyword takes a trailing underscore
+(the slipway's `end_`). An entity's own field named like an entity header
+field takes one too: the planet's, economy's, wormhole's and button's own
+`has` bits are `has_`, the header keeps `has`. A module local that would
+clash with a C parameter or local takes the `_module` suffix
+(`local planet_module = require("game.planet")` in `save_load.lua`). A
+function the Lua adds is marked `-- Lua only` and, when another module
+needs it, exported after the C functions as `M.p8_<file>_<what>` in
+`game/p8/` (`p8_gfx_software_slot_pixels`) or with a C-style name
+elsewhere (`planet_keys_zero`). `game/love/` names follow
+`module_verb[_object]`.
+
+**Arrays and integers.** A C array keeps its C index, from 0
+(`{ [0] = 1, 0, 1, 2 }`), 2-D as `t[y][x]`; `#t` and `ipairs` are never used
+on one, and `memcpy`/`memcmp` are loops over the C length. A pointer into an
+array is an integer index, `NULL` is `nil`; a pointer difference into a
+table goes through a Lua-only reverse map built at load
+(`project_index_of` in `research.lua`). Lists handed to LÖVE are plain
+1-based. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
+`%` is `cint.mod` (the dividend's sign); `math.floor` and Lua `%` appear only
+where the C floors. `(unsigned char)x` is `bit.band(x, 0xFF)`; a `bit`
+result above 2^31 − 1 is brought back to unsigned where it is compared or
+printed. Fixed point goes through `game/p8/fixed.lua`. A `char` is its byte
+value, a `const char *` or `char[]` a Lua string, and a walk to `'\0'` a loop
+over `1 .. #s`. The Lua copies the 64-bit PC build without ASan:
+`SIZEOF["void *"]` is 8, `ZONE_BYTES_BY_WIDTH(b64, b32)` returns `b64` after
+asserting the C condition on `b32`, `BUMP_ZONE_HALVES` is 1,
+`POISON`/`UNPOISON` are dropped.
+
+**Structs and out-parameters.** A struct is a table with the C field names;
+a pointer to it is that table, and an init on `T *` fills the caller's table.
+A by-value struct (passed, returned, assigned, a constant such as
+`ENTITY_ID_NONE`) is a new table built by a constructor listing every field,
+copied at each use (`entity_id_none()`); a table received by value is never
+mutated. The copy is shallow as in C: pointer members are shared
+(`entity_id_list_copy` shares `items`), inline mutable sub-structs are
+copied by the caller. Entity ids are compared only through
+`entity_id_equal`. A re-init or `memset` of a table that another holder may
+point at zeroes its fields in place and keeps its identity:
+`pad_nav_init` keeps its sub-tables and bindings table,
+`input_step_init` zeroes `played` and `played_frame` in place,
+`economy_score_set_difficulty` clears and refills `g_difficulty`. A
+static struct, or inline array of structs, is a table (or 0-indexed array of
+tables) with every field at its C zero value (0, or `nil` for a pointer). A
+zero constructor other modules use is exported by the module owning the
+struct (`button_zero` in `ui_button`, `emitter_zero` in `particle`,
+`targeting_zero` in `targeting`); a module needing one its owner does not
+export keeps a local one. A struct reached by casting its first member
+(`arena_t`, `flip_zone_allocator_t`, `slot_group_handle_t`) is one table
+holding both structs' fields, the cast the identity. A C `int *` context is
+a `{ value = 0 }` table. A by-value `p8_graphics_t` is a local
+`graphics_copy` of its five fields. An out-parameter is an input argument
+whose new value comes back after the C return value, several in C order, a
+`void` function returning only them (`result, state =
+p8_fixed_rnd_from_state(state, x)`; `pad_panel_step` returns `at, x, y,
+mouse_buttons`).
+
+**Memory.** An allocation returns a new, empty table, the block; the caller
+writes into it what the C writes into the bytes, and zones never read a
+block. Byte counts, cell rounding, capacity tests and the `zone %s full`
+message are the C ones; address arithmetic stays as byte offsets nothing
+reads. `BUMP_ZONE_STORAGE` and `FLIP_ZONE_STORAGE` return a table standing
+for the cells; a slot zone adds the Lua-only fields `blocks` and
+`index_of`. A `memcpy` of unknown type is `copy_block` (`allocator.lua`,
+every key) or `copy_value` (`value_list.lua`, one level deep). A zone-built
+`char *` is a Lua string: the function performs the C allocation for
+length + 1 bytes and returns the string; `strcmp(a, b) == 0` is `a == b`. A
+C name compared by address is compared by value (`grab_arena_name`).
+
+**Truth values.** A C int predicate returns 1 or 0, never a Lua boolean;
+`if (x)` on an int is `if x ~= 0`, `!x` is `x == 0` as a test and
+`(x == 0) and 1 or 0` as a value, a comparison used as a value is
+`(c) and 1 or 0`, and a pointer test is `p ~= nil`. `c ? a : b` is
+`(c) and a or b` only when `a` is never `nil` or `false`; a ternary between
+two function pointers is an `if`/`else`.
+
+**Control flow and errors.** `assert(c && "msg")` is `assert(c, "msg")`, a
+compile-time check a load-time `assert`; `switch` is an `if` chain or a
+lookup table built once; `continue` is `goto continue`; a C `for` is a
+numeric `for` only when the body changes neither counter nor bound.
+Function pointers are Lua functions, a vtable a table with the C field
+names; an X-macro list is a module function calling its entry function once
+per entry, in order (`P8_IMAGE_SLOTS(SLOT)`). `fatal.p8_fatal(msg)` raises
+`error(msg, 0)`; `snprintf` messages are `string.format` with the C text.
+
+**Modules and loading.** One module per C pair, required by its path under
+`game/` (`require("p8.gfx")`), returning `M`, headed by a comment naming its
+C files in order (`-- Copy of src/game/planet.h then src/game/planet.c.`);
+a function declared in a ported header but defined elsewhere is named in that
+comment and called from its defining module, never re-exported. No globals,
+LuaJIT `bit` only, no FFI. Statics are module-level `local`s initialised as
+the C does; a forward-declared `static` is a `local name` filled later by
+`name = function`, never `local function name`, and a table entry naming
+one is stored right after its definition
+(`M.galaxy_menu_on_click_table[3]` in `menu.lua`). Modules of a C include
+cycle require each other at call time, inside the function that needs the
+partner, and read a partner's constants there, never cached at module level.
+A partner needed at load (a class holding its methods by identity, a table
+built from its value) is required at load in one direction per pair only:
+`planet` requires `planet_display` and `planet_trade` at load, they require
+`planet` at call time. `love.graphics` and `love.image` appear only in
+`game/love/`.
+
+**Data tables and checks.** Every table of a data file is a module field
+(LuaJIT allows 200 locals per function); a struct the C partly initializes
+goes through a local constructor, defined before the tables that call it at
+load, that fills each missing field with its C zero and rejects a field the
+struct lacks (`map_tables.map_tables_check_fields`); a positional C
+initializer gets a positional constructor. A pointer in a table is the
+table pointed to. Generated data is written by the tool that owns it
+(`make sin-table`, `make asset-export`, `make bindings-lua`,
+`make demo-lua`), headed `-- Generated by ...`, and a stale copy fails
+`make test`. Every `sizeof` a module uses is an entry of `M.SIZEOF`, keyed by
+the C type as written (`SIZEOF["void *"]`, `SIZEOF.arena_t`) or by
+`type.field` for a field (`SIZEOF["p8_vram_t.draw_palette"]`), read through
+`local SIZEOF = M.SIZEOF`, never a bare number. `make test` runs two checks
+over the whole tree: `lua-guard` (every file compiles, no undeclared
+global, only this file's `love.` names) and `lua-test-modules`, which
+requires every module under plain LuaJIT and compares every ported table,
+constant and `SIZEOF` entry with the C, from one unit
+`tools/table_reference/<dir>_<file>.c` per C source listed in the Makefile's
+`TABLE_REFERENCE_SOURCES`. A module listed in `LUA_DEFERRED_MODULES` (passed
+as `--defer`, now empty) is skipped with its tables only when it fails on a
+module not yet in `game/`, and fails the check once it loads; the check
+clears the sentinels a failed `require` leaves in `package.loaded`, so each
+failing module reports its own missing module. `make checklist` (outside
+`make test`) maps every C function and table to its Lua copy or lists it as
+not ported.
 
 ## Rules for the fork
 

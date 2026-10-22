@@ -22,6 +22,14 @@ image_rules_verdict_t image_rules_check_position(double position) {
     return point_accepts_coordinate(position) ? IMAGE_RULES_ACCEPTED : IMAGE_RULES_OUT_OF_RANGE;
 }
 
+image_rules_verdict_t image_rules_check_scale(double scale) {
+    image_rules_verdict_t verdict = check_integer(scale);
+    if (verdict != IMAGE_RULES_ACCEPTED) {
+        return verdict;
+    }
+    return scale >= 1 && scale <= IMAGE_RULES_SCALE_LIMIT ? IMAGE_RULES_ACCEPTED : IMAGE_RULES_OUT_OF_RANGE;
+}
+
 image_rules_verdict_t image_rules_check_quad(const double values[IMAGE_RULES_QUAD_VALUES], int *refused) {
     for (int index = 0; index < IMAGE_RULES_QUAD_VALUES; index++) {
         image_rules_verdict_t verdict = check_integer(values[index]);

@@ -3,6 +3,7 @@
 
 #define IMAGE_RULES_QUAD_VALUES 6
 #define IMAGE_RULES_NONE (-1)
+#define IMAGE_RULES_SCALE_LIMIT 16
 
 typedef enum image_rules_verdict {
     IMAGE_RULES_ACCEPTED,
@@ -15,6 +16,10 @@ typedef enum image_rules_verdict {
  * (2^20). A fraction is refused because LÖVE's default linear filter blends
  * texels from 1/512 of a pixel on. */
 image_rules_verdict_t image_rules_check_position(double position);
+
+/* A scale of the Canvas draw form: an integer from 1 to
+ * IMAGE_RULES_SCALE_LIMIT. */
+image_rules_verdict_t image_rules_check_scale(double scale);
 
 /* newQuad's values in argument order: x, y, width, height, reference width,
  * reference height. All integers; reference sides 1 ... IMAGE_DATA_MAX_SIDE;

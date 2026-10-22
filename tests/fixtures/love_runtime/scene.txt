@@ -1,0 +1,333 @@
+# One runtime call per line, played by tests/test_love_runtime.c through the
+# C runtime and by main.lua through game/p8/ and game/love/. `frame` ends a
+# frame; integers are decimal or 0x hex.
+cls
+frame
+# pset: corners, every colour, off-screen on each side, under a camera.
+pset 0 0 7
+pset 159 0 8
+pset 0 119 9
+pset 159 119 10
+pset 10 10 0
+pset 11 10 1
+pset 12 10 2
+pset 13 10 3
+pset 14 10 4
+pset 15 10 5
+pset 16 10 6
+pset 17 10 11
+pset 18 10 12
+pset 19 10 13
+pset 20 10 14
+pset 21 10 15
+pset -1 5 7
+pset 160 5 7
+pset 5 -1 7
+pset 5 120 7
+pset -2000000 5 7
+camera -20 30
+pset 0 0 12
+pset 140 -30 13
+pset -21 50 7
+pset 0 90 7
+frame
+# psets: runs of one colour, colour changes, off-screen points inside a run,
+# the camera of the previous frame carried over.
+psets 30 40 8 31 40 8 32 40 8 33 40 9 34 40 9 35 40 8
+psets 40 50 3 -100 50 3 41 50 3 300 50 3 42 50 3
+psets 1 1 7
+camera 0 0
+psets 0 0 14 159 119 15 158 119 15
+frame
+# rectfill without a pattern: corners in either order, one pixel, a line,
+# partly and wholly off screen, the whole screen and beyond, a colour byte
+# with a high nibble (masked to the low one), under a camera.
+rectfill -5 -5 200 200 1
+rectfill 10 10 20 15 8
+rectfill 40 30 30 20 9
+rectfill 50 50 50 50 7
+rectfill 60 5 90 5 11
+rectfill 150 110 170 130 12
+rectfill -10 60 3 70 13
+rectfill 200 10 220 20 14
+rectfill 10 -30 20 -1 14
+rectfill 100 60 120 80 0x5a
+camera 15 -10
+rectfill 0 0 10 10 2
+rectfill 160 100 180 140 3
+rectfill -5000 50 5000 52 4
+camera 0 0
+frame
+# line: one pixel, horizontal, vertical, both diagonals, steep and shallow
+# slopes in each direction, ends off screen on every side, wholly off screen,
+# under a camera.
+line 5 5 5 5 7
+line 10 2 40 2 8
+line 2 10 2 40 9
+line 10 10 30 30 10
+line 30 40 10 60 11
+line 50 5 57 40 12
+line 70 40 63 5 13
+line 60 50 100 57 14
+line 100 65 60 58 15
+line -20 80 40 90 6
+line 140 70 200 100 5
+line 120 -10 125 20 4
+line 80 100 90 140 3
+line -30 -30 -10 -5 7
+line 170 10 190 50 7
+camera -10 20
+line 0 0 20 10 8
+line 140 -20 160 0 9
+camera 0 0
+frame
+# lines: one colour over several segments in list order (a later segment
+# crossing an earlier one), a degenerate segment, segments partly and wholly
+# off screen, a single segment, under a camera.
+lines 12 10 10 60 50 10 50 60 10 35 35 35 35 -20 5 30 5 170 90 200 110
+lines 7 80 80 80 80
+camera 30 -15
+lines 2 100 0 140 40 140 40 100 0
+camera 0 0
+frame
+# rect: corners in either order, one pixel, one row, one column, edges partly
+# and wholly off screen, enclosing the whole screen, under a camera.
+rect 10 10 30 20 8
+rect 60 40 40 25 9
+rect 5 50 5 50 7
+rect 10 60 40 60 10
+rect 50 60 50 90 11
+rect -10 70 20 100 12
+rect 140 -5 170 30 13
+rect 100 100 200 200 14
+rect 200 10 220 20 7
+rect -1 -1 160 120 15
+rect -2 -2 161 121 15
+camera -40 25
+rect 0 0 30 20 6
+rect 90 -30 130 10 5
+camera 0 0
+frame
+# circ: radius 0, small and large radii, a negative radius (nothing), partly
+# off screen on each side, enclosing the screen, wholly off screen, under a
+# camera.
+circ 10 10 0 7
+circ 20 20 1 8
+circ 40 20 2 9
+circ 70 30 7 10
+circ 80 60 30 11
+circ 0 60 12 12
+circ 159 60 12 13
+circ 80 0 9 14
+circ 80 119 9 15
+circ 80 60 100 6
+circ 50 50 -1 7
+circ -40 -40 10 7
+camera 20 -20
+circ 40 40 15 5
+camera 0 0
+frame
+# circfill without a pattern: radius 0, small and large radii, a negative
+# radius (nothing), partly off screen on each side, enclosing the screen,
+# wholly off screen, a colour byte with a high nibble (masked to the low
+# one), under a camera.
+circfill 80 60 100 1
+circfill 10 10 0 7
+circfill 20 20 1 8
+circfill 40 20 2 9
+circfill 70 30 7 10
+circfill 80 70 25 11
+circfill 0 60 12 12
+circfill 159 60 12 13
+circfill 80 0 9 14
+circfill 80 119 9 15
+circfill 50 50 -1 7
+circfill -40 -40 10 7
+circfill 120 90 6 0xc3
+camera 20 -20
+circfill 40 40 15 5
+camera 0 0
+frame
+# rectfill with a pattern: the high nibble on set bits, the low one on clear
+# bits, the pattern aligned on the world coordinates under several camera
+# phases (negative ones included), corners in either order, clipped on every
+# side, one pixel; transparent bits leaving what is under them; the pattern
+# kept across calls until fillp_reset, then a plain fill again.
+rectfill -5 -5 200 200 1
+fillp 0x5a5a
+rectfill 2 3 41 22 0x8c
+rectfill 50 30 44 4 0x8c
+rectfill -7 -6 5 8 0x8c
+rectfill 150 110 175 130 0x8c
+rectfill 60 60 60 60 0x8c
+camera -1 2
+rectfill 70 10 101 29 0x8c
+camera 3 -5
+rectfill 110 10 141 29 0x8c
+camera -6 -7
+rectfill 0 40 33 59 0x8c
+camera 1001 -2003
+rectfill 1045 -1963 1078 -1944 0x8c
+camera 0 0
+fillp 0x8421
+rectfill 120 70 155 100 0x3b
+fillp_transparent 0x0f0f
+rectfill 2 70 50 105 0x2e
+camera 2 1
+rectfill 55 70 100 105 0x2e
+camera 0 0
+fillp_reset
+rectfill 104 104 112 112 0x67
+frame
+# circfill with a pattern: span by span on the world phase, radius 0 and
+# small radii, partly off screen, under several camera phases, transparent
+# bits over an earlier fill, the patterns of the previous frame reused.
+rectfill -5 -5 200 200 1
+fillp 0x5a5a
+circfill 20 20 15 0x8c
+circfill 50 10 0 0x8c
+circfill 60 10 1 0x8c
+circfill 75 12 3 0x8c
+circfill 0 60 14 0x8c
+circfill 159 100 18 0x8c
+camera -3 1
+circfill 100 30 17 0x8c
+camera 5 -6
+circfill 140 30 12 0x8c
+camera 0 0
+fillp 0x8421
+circfill 40 90 22 0x3b
+fillp_transparent 0x0f0f
+circfill 40 90 16 0x2e
+camera -7 -2
+circfill 90 80 20 0x2e
+camera 0 0
+fillp_reset
+circfill 120 70 4 0x67
+frame
+# spr through the start draw palette (colour 0 see-through): one cell,
+# several cells, boxes reaching past the right and bottom edges of the sheet
+# and from negative n (the off-sheet part is colour 0, so nothing), n of 256,
+# w or h of 0 or less (nothing), clipped on each side, under a camera.
+rectfill -5 -5 200 200 14
+spr 1 4 4 1 1
+spr 16 16 4 1 1
+spr 0 28 4 2 2
+spr 102 48 4 4 2
+spr 15 90 4 2 1
+spr 255 110 4 1 2
+spr -1 130 4 2 1
+spr -17 140 20 2 2
+spr 256 4 30 1 1
+spr 8 20 30 0 1
+spr 8 30 30 1 -1
+spr 5 -4 -3 1 1
+spr 6 155 115 1 1
+spr 7 300 50 1 1
+spr 7 50 -60 1 1
+camera -10 20
+spr 9 0 40 2 2
+camera 0 0
+frame
+# Colour swaps: colour 0 drawn, direct draw palette writes (a high nibble
+# masked off, the see-through bit set by hand), palt on another colour; the
+# off-sheet parts drawn in colour 0's entry. The map: cells set in and out
+# of range, a byte masked, cell 0 skipped, cells past the map, drawn partly
+# off screen and under a camera.
+rectfill -5 -5 200 200 14
+palt 0 0
+palette 0 0x25
+palette 3 8
+palette 7 0x8b
+palette 9 0x1c
+palt 13 1
+spr 1 4 4 1 1
+spr 0 28 4 2 2
+spr 102 48 4 4 2
+spr 15 90 4 2 1
+spr 255 110 4 1 2
+spr -1 130 4 2 1
+spr -17 140 20 2 2
+spr 256 4 30 1 1
+camera 6 -3
+spr 9 0 40 2 2
+spr 15 120 40 2 2
+camera 0 0
+mset 0 0 1
+mset 1 0 16
+mset 2 0 0
+mset 0 1 102
+mset 1 1 0x1ff
+mset 2 1 49
+mset -1 0 5
+mset 32 0 5
+mset 0 32 5
+mset 31 31 7
+map 0 0 40 60 3 2
+map 0 0 -4 100 3 2
+map 30 30 100 80 4 4
+map 0 0 -1000 90 200 1
+map 0 0 20 20 0 2
+camera 20 -10
+map 0 0 150 0 3 2
+camera 0 0
+frame
+# The map kept from the previous frame, through the start draw palette
+# restored, then the swapped draw palette again: both sheets reused.
+rectfill -5 -5 200 200 14
+palt 0 1
+palette 0 0x80
+palette 3 3
+palette 7 7
+palette 9 9
+palt 13 0
+map 0 0 10 10 3 2
+spr 0 60 10 2 2
+palt 0 0
+palette 0 0x25
+palette 3 8
+palette 7 0x8b
+palette 9 0x1c
+palt 13 1
+map 0 0 10 40 3 2
+spr 0 60 40 2 2
+frame
+# Every font code 32..127 (# \ and 127 escaped), lowercase as uppercase, v
+# as U, bytes outside 32..127 as cell 127, in several colours.
+cls
+rectfill 0 0 159 50 1
+print 2 2 7  !"\x23$%&'()*+,-./0123456789:;<=>?
+print 2 9 10 @ABCDEFGHIJKLMNOPQRSTUVWXYZ[\x5c]^_
+print 2 16 12 `abcdefghijklmnopqrstuvwxyz{|}~\x7f
+print 2 23 0 THE QUICK BROWN FOX: v V w W 0.5%
+print 2 30 15 \x01\x1f\x80\xa0\xff\x7f end
+print 2 37 8 a
+print 2 44 3 
+print_outlined 4 60 7 OUTLINED: score 1234
+print_outlined 4 70 11 lowercase v!
+print_outlined 100 60 0 zero
+frame
+# Text clipped at every screen edge, wholly off screen, under a camera, and
+# outlined text clipped.
+rectfill 0 0 159 119 5
+print -2 10 7 CLIPPED LEFT
+print -60 20 7 GONE LEFT AND BACK
+print 150 10 7 RIGHT
+print 158 30 9 W
+print 160 40 9 OFF
+print 40 -3 10 TOP EDGE
+print 40 -5 10 GONE
+print 40 117 10 BOTTOM EDGE
+print 40 120 10 GONE
+print -100 -100 7 FAR
+print_outlined -1 60 7 OUTLINE LEFT
+print_outlined 150 70 12 EDGE
+print_outlined 60 -4 14 TOP
+print_outlined 60 116 14 BOTTOM
+camera 10 -20
+print 10 0 6 CAMERA AT 10 -20
+print_outlined 5 30 7 CAMERA OUTLINE
+camera -150 0
+print 0 100 4 XY
+camera 0 0
+frame

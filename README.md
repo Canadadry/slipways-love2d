@@ -18,6 +18,7 @@ make coverage                      # line coverage in tmp/coverage/lines.txt
 make e2e-order                     # ranks the replays by C lines executed in tests/e2e/order.txt
 make e2e-order-check               # re-measures that order, fails when it differs
 make asset-export                  # writes game/sprites.png and game/font.png from the C data
+make checklist                     # each C function and table with its Lua copy in tmp/checklist.txt
 make help                          # every target
 ```
 

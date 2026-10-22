@@ -27,7 +27,8 @@ Everything written in the repository is in English: code, comments, docs, e2e no
 - `make test` is the fast loop (unit tests and static checks, ~5 s). `make e2e` replays the e2e files of `tests/e2e/` from the title screen (~1 s). `make test-all` runs both. `make help` lists the targets: each public target carries a one-line `## ` description of at most 20 words.
 - `tools/love_install.sh` installs LÖVE 11.5, Xvfb, Mesa and LuaJIT; the SessionStart hook and CI run it.
 - `make love-e2e` runs `tmp/fake_love` with the Lua game (`LOVE_E2E_GAME`, default `game`) on every replay of `tests/e2e/`; it is outside `make test`, `make e2e`, `make test-all` and CI.
-- `test`, `e2e`, `test-all` and `love-e2e` hold `tmp/make.lock` through `flock` (macOS: `brew install flock`): a second one fails at once.
+- `make lua-sweep-fixed` compares `game/p8/fixed.lua` with the C library on millions of values (~3 s); it is outside `make test`, `make e2e`, `make test-all` and CI.
+- `test`, `e2e`, `test-all`, `love-e2e` and `lua-sweep-fixed` hold `tmp/make.lock` through `flock` (macOS: `brew install flock`): a second one fails at once.
 
 ## Docs
 

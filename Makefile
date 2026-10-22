@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 # Reruns make under flock: one make of LOCKED_GOALS at a time over tmp/.
-LOCKED_GOALS := test e2e test-all love-e2e
+LOCKED_GOALS := test e2e test-all love-e2e lua-sweep-fixed
 
 ifneq ($(if $(MAKE_LOCK_HELD),,$(filter $(LOCKED_GOALS),$(MAKECMDGOALS))),)
 $(MAKECMDGOALS): make-lock ; @:
@@ -293,6 +293,11 @@ $(BINDINGS_CORE_UNIT): bindings.default.cfg $(TMP_DIR)/bindings_generate
 	@mkdir -p $(@D)
 	$(TMP_DIR)/bindings_generate --default $< $@
 
+bindings-lua: bindings.default.cfg $(TMP_DIR)/bindings_generate ## regenerates game/game/bindings_default.lua from bindings.default.cfg
+	$(TMP_DIR)/bindings_generate --lua $< game/game/bindings_default.lua
+
+.PHONY: bindings-lua
+
 $(TMP_DIR)/test_bindings: $(call objs,tests/test_bindings.c src/game/bindings.c $(BINDINGS_DEFAULT_UNIT) $(BINDINGS_CORE_UNIT)) bindings.default.cfg | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
@@ -463,6 +468,10 @@ test_love_e2e_objs := $(call objs,tests/test_love_e2e.c tests/fake_love_cli.c)
 $(TMP_DIR)/test_love_e2e: $(test_love_e2e_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) tools/love_e2e_run.sh tools/love_e2e_report.sh tools/frames_check.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
+test_love_runtime_objs := $(call objs,tests/test_love_runtime.c tests/fake_love_cli.c src/p8/gfx.c src/p8/gfx_software.c src/p8/image.c src/p8/vram.c src/p8/sprite_sheet.c src/p8/draw_cost.c src/p8/draw_meter.c)
+$(TMP_DIR)/test_love_runtime: $(test_love_runtime_objs) $(TMP_DIR)/fake_love $(wildcard game/p8/*.lua game/love/*.lua tests/fixtures/love_runtime*/*.lua tests/fixtures/love_runtime*/*.txt) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
 $(TMP_DIR)/test_frames_check: $(call objs,tests/test_frames_check.c) tools/frames_check.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
@@ -497,6 +506,15 @@ $(TMP_DIR)/test_random_guard: $(call objs,tests/test_random_guard.c) tools/rando
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_button_guard: $(call objs,tests/test_button_guard.c) tools/button_guard.sh | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+$(TMP_DIR)/test_checklist: $(call objs,tests/test_checklist.c) tools/checklist.lua | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+$(TMP_DIR)/test_lua_guard: $(call objs,tests/test_lua_guard.c) tools/lua_guard.lua | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+$(TMP_DIR)/test_lua_modules: $(call objs,tests/test_lua_modules.c) tests/lua/test_modules.lua | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 test_fake_love_guard_objs := $(call objs,tests/test_fake_love_guard.c)
@@ -733,6 +751,11 @@ $(DEMO_UNIT): demo/demo.json $(TMP_DIR)/demo_generate
 	@mkdir -p $(@D)
 	$(TMP_DIR)/demo_generate $< $@
 
+demo-lua: demo/demo.json $(TMP_DIR)/demo_generate ## regenerates game/game/demo_data.lua from demo/demo.json
+	$(TMP_DIR)/demo_generate --lua $< game/game/demo_data.lua
+
+.PHONY: demo-lua
+
 $(TMP_DIR)/test_demo_data: $(call objs,tests/test_demo_data.c src/devtools/replay_source.c src/devtools/pad_caption.c $(ENGINE_SRCS) $(BINDINGS_DEFAULT_UNIT)) demo/demo.json | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
 
@@ -768,7 +791,7 @@ $(TMP_DIR)/test_format: $(call objs,tests/test_format.c src/p8/format.c) | $(TMP
 $(TMP_DIR)/test_png_writer: $(call objs,tests/test_png_writer.c tests/png_reader.c src/devtools/png_writer.c) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-$(TMP_DIR)/test_asset_image: $(call objs,tests/test_asset_image.c tests/png_reader.c src/devtools/asset_image.c src/devtools/png_writer.c src/p8/palette.c src/p8/sprite_sheet.c src/p8/vram.c src/p8/gfx.c src/p8/gfx_software.c) game/sprites.png game/font.png | $(TMP_DIR)
+$(TMP_DIR)/test_asset_image: $(call objs,tests/test_asset_image.c tests/png_reader.c src/devtools/asset_image.c src/devtools/png_writer.c src/p8/palette.c src/p8/sprite_sheet.c src/p8/vram.c src/p8/gfx.c src/p8/gfx_software.c) game/sprites.png game/font.png game/p8/sprite_sheet_packed.lua | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_state: $(call objs,tests/test_state.c $(STATE_SRCS) $(ENGINE_SRCS)) $(TMP_DIR)/replay | $(TMP_DIR)
@@ -889,6 +912,8 @@ UNIT_TESTS := \
     test_random_guard \
     test_button_guard \
     test_fake_love_guard \
+    test_lua_guard \
+    test_lua_modules \
     test_float_link \
     test_constants_check \
     test_background_draw \
@@ -997,12 +1022,13 @@ UNIT_TESTS := \
     test_fake_love_frames \
     test_fake_love_function_list \
     test_fake_love_unlisted \
-    test_love_e2e
+    test_love_e2e \
+    test_love_runtime
 
 # One run per test, each its own target: that is what `-j` runs in parallel.
 UNIT_RUNS := $(addprefix unit-run-,$(UNIT_TESTS))
 
-UNIT_RUNS_SPECIAL := unit-run-test_zone unit-run-test_allocator unit-run-test_frame_zone unit-run-test_ui_zone unit-run-test_particle_zone unit-run-test_game_zone unit-run-test_exit_queue unit-run-test_toast unit-run-test_message_box unit-run-test_live_slots unit-run-test_trade
+UNIT_RUNS_SPECIAL := unit-run-test_zone unit-run-test_allocator unit-run-test_frame_zone unit-run-test_ui_zone unit-run-test_particle_zone unit-run-test_game_zone unit-run-test_exit_queue unit-run-test_toast unit-run-test_message_box unit-run-test_live_slots unit-run-test_trade unit-run-test_love_runtime
 
 unit: $(UNIT_RUNS) ## builds and runs the binaries of tests/
 
@@ -1011,6 +1037,13 @@ $(filter-out $(UNIT_RUNS_SPECIAL),$(UNIT_RUNS)): unit-run-%: $(TMP_DIR)/%
 
 unit-run-test_zone: $(TMP_DIR)/test_zone
 	ASAN_OPTIONS=detect_leaks=0 ./$<
+
+# Arguments: the fixture game directory, then the frame count of its scene.txt.
+unit-run-test_love_runtime: $(TMP_DIR)/test_love_runtime
+	./$< tests/fixtures/love_runtime 16
+
+unit-run-test_love_runtime_slots: $(TMP_DIR)/test_love_runtime
+	./$< tests/fixtures/love_runtime_slots 3
 
 unit-run-test_allocator: $(TMP_DIR)/test_allocator
 	ASAN_OPTIONS=detect_leaks=0 ./$<
@@ -1047,7 +1080,7 @@ unit-run-test_trade: $(TMP_DIR)/test_trade
 unit-run-test_frames_tool: | unit-run-test_headless_capture
 unit-run-test_replay_from_resume: | unit-run-test_frames_tool
 
-.PHONY: $(UNIT_RUNS)
+.PHONY: $(UNIT_RUNS) unit-run-test_love_runtime_slots
 
 # Fails before any compilation rather than replay a default file.
 ifneq ($(filter replay,$(MAKECMDGOALS)),)
@@ -1080,11 +1113,11 @@ $(addprefix love-capture-check-,$(filter-out $(LOVE_CAPTURE_PNGS),$(LOVE_CAPTURE
 
 # Each check that runs the fake is its own target, listed here, so that `-j`
 # runs it beside the unit tests instead of after them.
-FAKE_LOVE_CHECKS := $(LOVE_CAPTURE_CHECKS) unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick unit-run-test_fake_love_files unit-run-test_fake_love_graphics unit-run-test_fake_love_points unit-run-test_fake_love_rectangle unit-run-test_fake_love_set_color unit-run-test_fake_love_image unit-run-test_fake_love_image_draw unit-run-test_fake_love_capture unit-run-test_fake_love_frame_capture unit-run-test_fake_love_frames unit-run-test_fake_love_function_list unit-run-test_fake_love_unlisted unit-run-test_love_e2e
+FAKE_LOVE_CHECKS := $(LOVE_CAPTURE_CHECKS) unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick unit-run-test_fake_love_files unit-run-test_fake_love_graphics unit-run-test_fake_love_points unit-run-test_fake_love_rectangle unit-run-test_fake_love_set_color unit-run-test_fake_love_image unit-run-test_fake_love_image_draw unit-run-test_fake_love_capture unit-run-test_fake_love_frame_capture unit-run-test_fake_love_frames unit-run-test_fake_love_function_list unit-run-test_fake_love_unlisted unit-run-test_love_e2e unit-run-test_love_runtime unit-run-test_love_runtime_slots
 
 # Longest first: `-j` starts prerequisites in this order, and float-guard
 # alone (~4 s, serial) sets the wall time when it starts behind the checks.
-test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
+test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) lua-test-fixed lua-test-runtime lua-guard lua-test-modules pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
 
 test-all: test e2e ## test + e2e, the full suite
 
@@ -1353,16 +1386,74 @@ float-link: $(call objs,$(REPLAY_SRCS)) tools/float_link.sh ## links the replay 
 $(TMP_DIR)/gen_quarter_wave: tools/gen_quarter_wave.c | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $< -lm
 
-sin-table: $(TMP_DIR)/gen_quarter_wave ## regenerates src/p8/quarter_wave.h
+sin-table: $(TMP_DIR)/gen_quarter_wave ## regenerates src/p8/quarter_wave.h and its Lua copy game/p8/quarter_wave.lua
 	./$(TMP_DIR)/gen_quarter_wave > $(TMP_DIR)/quarter_wave.h
+	./$(TMP_DIR)/gen_quarter_wave --lua > $(TMP_DIR)/quarter_wave.lua
 	mv $(TMP_DIR)/quarter_wave.h src/p8/quarter_wave.h
+	mv $(TMP_DIR)/quarter_wave.lua game/p8/quarter_wave.lua
 
 .PHONY: sin-table
+
+FIXED_SWEEP_COUNT ?= 400000
+FIXED_SWEEP_SEED ?= 0x2545F491
+
+$(TMP_DIR)/fixed_reference: $(call objs,tools/fixed_reference.c src/p8/fixed.c) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(TMP_DIR)/fixed_reference.bin: $(TMP_DIR)/fixed_reference
+	./$(TMP_DIR)/fixed_reference $@.part
+	mv $@.part $@
+
+lua-test-fixed: tests/lua/test_fixed.lua $(wildcard game/p8/*.lua) $(TMP_DIR)/fixed_reference.bin ## compares game/p8/fixed.lua with the C fixed-point library on edge and sampled values
+	luajit tests/lua/test_fixed.lua $(TMP_DIR)/fixed_reference.bin
+
+lua-sweep-fixed: tests/lua/test_fixed.lua $(wildcard game/p8/*.lua) $(TMP_DIR)/fixed_reference ## compares game/p8/fixed.lua with the C library on millions of sampled values (slow)
+	./$(TMP_DIR)/fixed_reference --sweep $(FIXED_SWEEP_COUNT) $(FIXED_SWEEP_SEED) | luajit tests/lua/test_fixed.lua -
+
+lua-test-runtime: tests/lua/test_runtime.lua $(wildcard game/p8/*.lua) ## checks the Lua-only behaviour of game/p8/ modules
+	luajit tests/lua/test_runtime.lua
+
+.PHONY: lua-test-fixed lua-sweep-fixed lua-test-runtime
+
+# wildcard, not find: the guard stays a single process.
+LUA_GUARD_FILES := $(wildcard game/*.lua game/*/*.lua game/*/*/*.lua)
+
+lua-guard: tools/lua_guard.lua ## fails when a game/ Lua file does not compile, uses an undeclared global or an unlisted LÖVE name
+	@luajit tools/lua_guard.lua game $(LUA_GUARD_FILES)
+
+.PHONY: lua-guard
+
+# One unit of tools/table_reference/ per source holding compared tables: the
+# unit includes the source to reach its statics, so the source's own object
+# leaves the link. The unit list reaches table_reference.o as a -D flag, hence
+# its rebuild on a Makefile edit.
+TABLE_REFERENCE_SOURCES := src/p8/quarter_wave.h src/p8/sprite_sheet_packed.h src/p8/palette.c src/p8/draw_cost.c src/p8/draw_meter.c src/p8/gfx_software.c src/p8/image.c src/engine/zone.h src/engine/zone_sizes.h src/engine/allocator.h src/engine/slot_tally.h src/engine/pointer_list.h src/engine/geom.h src/engine/entity_id_type.h src/engine/entity_class.h src/engine/entity_id_list.h src/engine/entity_list.h src/engine/exit_queue.h src/game/map_tables.c src/game/game_data.c src/engine/entity_registry.c src/game/gen.h src/game/grab_arena.c src/game/targeting.h src/game/bindings.c src/game/image_slot.h src/game/button_image.c src/game/mouse.c src/game/main_economy.h src/game/economy_formulas.h src/game/trade.h src/game/research.c src/game/economy.c src/game/hud.c src/game/draw_functions.c src/game/layout.c src/game/ui_zone.c src/game/particle_zone.c src/game/particle.c src/game/scroll.c src/game/background.c src/game/ui_button.c src/game/ui.c src/game/message_box.c src/game/research_display.c src/game/probe.c src/game/slipway.c src/game/wormhole.c src/game/planet_display.h src/game/planet.c src/game/galaxy.h src/game/planet_family.c src/game/slipway_display.h src/game/planet_family_trade.c src/game/structure_icon.c src/game/help.c src/game/score_panel.c src/game/pad_direction.h src/game/pad_target.h src/game/pad_cycle.h src/game/cheat.h src/game/pad_jump.c src/game/pad_select.h src/game/pad_slipway.h src/game/pad_panel.h src/game/save_state.c src/game/save_load.c src/game/demo_data.h src/game/loading_screen.c src/game/demo_overlay.c src/game/attract.h src/game/menu.c src/game/pad_nav.h src/game/cart.c src/game/input_step.h src/devtools/state_format.c
+TABLE_REFERENCE_UNITS := $(foreach source,$(TABLE_REFERENCE_SOURCES),$(subst /,_,$(basename $(patsubst src/%,%,$(source)))))
+table_reference_objs := $(call objs,tools/table_reference.c $(patsubst %,tools/table_reference/%.c,$(TABLE_REFERENCE_UNITS)) $(filter-out $(TABLE_REFERENCE_SOURCES),$(ENGINE_SRCS)))
+
+$(call objs,tools/table_reference.c): override CFLAGS += -DTABLE_REFERENCE_UNITS='$(foreach unit,$(TABLE_REFERENCE_UNITS),X($(unit)))'
+$(call objs,tools/table_reference.c): Makefile
+
+$(TMP_DIR)/table_reference: $(table_reference_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
+$(TMP_DIR)/table_reference.txt: $(TMP_DIR)/table_reference
+	./$< $@.part
+	mv $@.part $@
+
+# Modules that may fail to load only on a module not yet in game/: their
+# tables are skipped, and the check fails once one of them loads.
+LUA_DEFERRED_MODULES :=
+
+lua-test-modules: tests/lua/test_modules.lua $(TMP_DIR)/table_reference.txt ## requires every game/ module under plain LuaJIT, compares its data tables and constants with the C ones
+	@luajit tests/lua/test_modules.lua $(addprefix --defer ,$(LUA_DEFERRED_MODULES)) game $(TMP_DIR)/table_reference.txt $(LUA_GUARD_FILES)
+
+.PHONY: lua-test-modules
 
 $(TMP_DIR)/asset_export: $(call objs,src/cmd/asset_export.c src/devtools/asset_image.c src/devtools/png_writer.c src/p8/palette.c src/p8/sprite_sheet.c src/p8/vram.c src/p8/gfx_software.c src/p8/gfx.c) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-asset-export: $(TMP_DIR)/asset_export ## writes game/sprites.png and game/font.png from the C sprite sheet and font
+asset-export: $(TMP_DIR)/asset_export ## writes game/sprites.png, game/font.png and game/p8/sprite_sheet_packed.lua from the C sprite sheet and font
 	mkdir -p game
 	./$(TMP_DIR)/asset_export game
 
@@ -1390,9 +1481,15 @@ love-check: $(TMP_DIR)/luajit_version ## checks that the installed LuaJIT is 2.1
 
 .PHONY: love-check
 
+checklist: $(BINDINGS_CORE_UNIT) $(DEMO_UNIT) love-check $(TMP_DIR)/test_checklist tools/checklist.txt $(TMP_DIR)/table_reference.txt ## tests the checklist script, lists each C function's Lua copy; STEP=<id> fails on missing or uncompared ones up to it
+	./$(TMP_DIR)/test_checklist
+	luajit tools/checklist.lua --listing $(TMP_DIR)/checklist.txt --reference $(TMP_DIR)/table_reference.txt$(if $(STEP), --step $(STEP))
+
+.PHONY: checklist
+
 # The dependency fragments written by the compiler, one per object. The
 # wildcard tolerates their absence: on a fresh clone, everything is compiled.
--include $(wildcard $(OBJ_DIR)/src/*/*.d $(OBJ_DIR)/tests/*.d $(OBJ_DIR)/tools/*/*.d $(OBJ_DIR)/tmp/bindings/*.d $(OBJ_DIR)/tmp/demo/*.d)
+-include $(wildcard $(OBJ_DIR)/src/*/*.d $(OBJ_DIR)/tests/*.d $(OBJ_DIR)/tools/*.d $(OBJ_DIR)/tools/*/*.d $(OBJ_DIR)/tmp/bindings/*.d $(OBJ_DIR)/tmp/demo/*.d)
 -include $(wildcard $(OBJ_ASAN_DIR)/src/*/*.d $(OBJ_ASAN_DIR)/tests/*.d $(OBJ_ASAN_DIR)/tmp/bindings/*.d $(OBJ_ASAN_DIR)/tmp/demo/*.d)
 -include $(wildcard $(OBJ_UBSAN_DIR)/src/*/*.d $(OBJ_UBSAN_DIR)/tests/*.d)
 -include $(wildcard $(OBJ_SANITIZE_DIR)/src/*/*.d $(OBJ_SANITIZE_DIR)/tests/*.d $(OBJ_SANITIZE_DIR)/tmp/bindings/*.d $(OBJ_SANITIZE_DIR)/tmp/demo/*.d)

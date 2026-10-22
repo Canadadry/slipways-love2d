@@ -31,6 +31,29 @@ static void test_a_position_is_an_integer_of_magnitude_below_two_to_the_twenty(v
     assert_position(-INFINITY, IMAGE_RULES_NOT_FINITE);
 }
 
+static void assert_scale(double scale, image_rules_verdict_t expected) {
+    image_rules_verdict_t got = image_rules_check_scale(scale);
+    if (got != expected) {
+        fprintf(stderr, "scale %.17g: expected %s, got %s\n", scale, VERDICT_NAMES[expected], VERDICT_NAMES[got]);
+    }
+    assert(got == expected);
+}
+
+static void test_a_scale_is_an_integer_from_one_to_sixteen(void) {
+    assert_scale(1, IMAGE_RULES_ACCEPTED);
+    assert_scale(4, IMAGE_RULES_ACCEPTED);
+    assert_scale(16, IMAGE_RULES_ACCEPTED);
+    assert_scale(0, IMAGE_RULES_OUT_OF_RANGE);
+    assert_scale(-0.0, IMAGE_RULES_OUT_OF_RANGE);
+    assert_scale(-4, IMAGE_RULES_OUT_OF_RANGE);
+    assert_scale(17, IMAGE_RULES_OUT_OF_RANGE);
+    assert_scale(1e300, IMAGE_RULES_OUT_OF_RANGE);
+    assert_scale(2.5, IMAGE_RULES_NOT_INTEGER);
+    assert_scale(4 + 1.0 / 1024, IMAGE_RULES_NOT_INTEGER);
+    assert_scale(NAN, IMAGE_RULES_NOT_FINITE);
+    assert_scale(INFINITY, IMAGE_RULES_NOT_FINITE);
+}
+
 static void assert_quad(double x, double y, double width, double height, double reference_width,
                         double reference_height, image_rules_verdict_t expected, int expected_index) {
     const double values[IMAGE_RULES_QUAD_VALUES] = {x, y, width, height, reference_width, reference_height};
@@ -100,6 +123,7 @@ static void test_the_first_translucent_pixel_is_found_or_none(void) {
 
 int main(void) {
     test_a_position_is_an_integer_of_magnitude_below_two_to_the_twenty();
+    test_a_scale_is_an_integer_from_one_to_sixteen();
     test_a_quad_is_a_whole_number_of_texels_inside_its_reference_size();
     test_a_quad_refuses_empty_negative_and_outsized_values();
     test_a_quad_refuses_fractions_and_non_finite_values_first();

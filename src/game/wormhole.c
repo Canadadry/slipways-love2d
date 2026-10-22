@@ -22,7 +22,7 @@ static wormhole_too_far_target_t g_wormhole_too_far_target_wrapper = {
 };
 
 static int wormhole_is_anchor(const entity_t *p) {
-    return p != NULL && entity_has(p, ENTITY_HAS_FOLD_ANCHOR) && p->fold_anchor != 0;
+    return p != NULL && !p->is_dead && entity_has(p, ENTITY_HAS_FOLD_ANCHOR) && p->fold_anchor != 0;
 }
 
 static int wormhole_anchor_count(void) {

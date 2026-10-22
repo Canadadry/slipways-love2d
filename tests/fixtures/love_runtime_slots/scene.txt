@@ -1,0 +1,100 @@
+# Image slots, played by tests/fixtures/love_runtime/main.lua (symlinked):
+# split from that scene to keep each check well under its 100 ms budget.
+# Image slots. Every primitive inside a build, through the start draw
+# palette with colour 3 swapped and colour 0 opaque for spr, a camera set
+# before the build (restored after it), drawn under that camera.
+cls
+palt 0 1
+palette 0 0x80
+palette 3 11
+palette 7 7
+palette 9 9
+palt 13 0
+camera 7 -3
+build 1 48 8
+rectfill 0 0 47 7 1
+pset 1 1 7
+pset 48 1 7
+psets 3 1 8 4 2 9 60 2 9
+line 0 7 47 0 10
+lines 12 5 0 9 7 40 0 47 7
+rect 10 1 16 6 14
+circ 24 4 3 15
+circfill 33 4 2 11
+fillp 0x5a5a
+rectfill 38 1 46 6 0x2c
+fillp_transparent 0xa5a5
+circfill 42 4 3 0x08
+fillp_reset
+end
+build 65 16 16
+spr 1 0 0 1 1
+spr 102 8 4 1 1
+palt 0 0
+spr -1 4 8 1 1
+palt 0 1
+end
+build 70 16 11
+print 0 0 7 AB
+print 9 3 3 v
+print_outlined 1 5 8 Z
+end
+build 78 112 11
+mset 0 0 1
+mset 1 0 16
+map 0 0 0 0 3 1
+print_outlined 30 2 9 MAP TEXT
+print 100 3 12 CUT\x7f
+end
+image 1 10 10
+image 65 70 10
+image 70 100 10
+image 78 10 30
+camera 0 0
+image 1 0 50
+image 65 60 50
+image 70 90 50
+image 78 0 70
+frame
+# A build of four windows (250x200 in 160x120 windows), its shapes crossing
+# the window edges at x 160 and y 120, drawn clipped on every side.
+cls
+build 0 250 200
+line 0 0 249 199 7
+line 249 0 0 199 8
+rectfill 150 110 175 130 12
+circ 160 120 30 10
+circfill 200 150 12 9
+rect 0 0 249 199 14
+print 140 118 7 ACROSS
+print_outlined 200 190 11 FAR
+pset 249 199 15
+pset 250 100 15
+end
+image 0 -120 -100
+camera -60 -40
+image 0 0 0
+camera 0 0
+frame
+# Slot 1 kept from two frames back, clipped on each side and wholly off
+# screen under a camera; slot 65 rebuilt smaller, slot 70 rebuilt empty.
+rectfill 0 0 159 119 5
+camera 5 -5
+image 1 -20 -6
+image 1 140 110
+image 1 -50 50
+image 1 165 50
+image 1 50 -14
+image 1 50 125
+image 1 -43 30
+build 65 8 8
+circfill 3 3 3 14
+end
+image 65 60 40
+build 70 0 5
+pset 0 0 7
+end
+image 70 80 40
+image 0 100 60
+camera 0 0
+frame
