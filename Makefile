@@ -861,6 +861,41 @@ $(TMP_DIR)/test_layout_nil_item_draws_nothing: $(call objs,tests/test_layout_nil
 
 # The longest first: under `-j`, make starts it first.
 UNIT_TESTS := \
+    test_frames_check \
+    test_e2e_limits \
+    test_end_state \
+    test_fake_love_guard \
+    test_lua_guard \
+    test_lua_modules \
+    test_lua_fixed \
+    test_fake_love_replay \
+    test_fake_love_pad \
+    test_fake_love_canvas \
+    test_fake_love_image_data \
+    test_fake_love_image_rules \
+    test_fake_love_point \
+    test_fake_love_transform \
+    test_fake_love_disk \
+    test_fake_love_png_file \
+    test_fake_love \
+    test_fake_love_failures \
+    test_fake_love_joystick \
+    test_fake_love_files \
+    test_fake_love_graphics \
+    test_fake_love_points \
+    test_fake_love_rectangle \
+    test_fake_love_set_color \
+    test_fake_love_image \
+    test_fake_love_image_draw \
+    test_fake_love_capture \
+    test_fake_love_frame_capture \
+    test_fake_love_frames \
+    test_fake_love_function_list \
+    test_fake_love_unlisted \
+    test_love_e2e \
+    test_love_runtime
+
+C_UNIT_TESTS := \
     test_vram \
     test_sprite_sheet \
     test_gfx \
@@ -899,25 +934,18 @@ UNIT_TESTS := \
     test_palette \
     test_hud \
     test_frames_tool \
-    test_frames_check \
     test_format \
     test_vram_digest \
     test_png_writer \
     test_asset_image \
-    test_e2e_limits \
     test_e2e_order \
     test_state_peaks \
-    test_end_state \
     test_float_guard \
     test_alloc_guard \
     test_pointer_guard \
     test_float_grep \
     test_random_guard \
     test_button_guard \
-    test_fake_love_guard \
-    test_lua_guard \
-    test_lua_modules \
-    test_lua_fixed \
     test_float_link \
     test_constants_check \
     test_background_draw \
@@ -1001,42 +1029,25 @@ UNIT_TESTS := \
     test_demo_source \
     test_demo_data \
     test_attract \
-    test_demo_overlay \
-    test_fake_love_replay \
-    test_fake_love_pad \
-    test_fake_love_canvas \
-    test_fake_love_image_data \
-    test_fake_love_image_rules \
-    test_fake_love_point \
-    test_fake_love_transform \
-    test_fake_love_disk \
-    test_fake_love_png_file \
-    test_fake_love \
-    test_fake_love_failures \
-    test_fake_love_joystick \
-    test_fake_love_files \
-    test_fake_love_graphics \
-    test_fake_love_points \
-    test_fake_love_rectangle \
-    test_fake_love_set_color \
-    test_fake_love_image \
-    test_fake_love_image_draw \
-    test_fake_love_capture \
-    test_fake_love_frame_capture \
-    test_fake_love_frames \
-    test_fake_love_function_list \
-    test_fake_love_unlisted \
-    test_love_e2e \
-    test_love_runtime
+    test_demo_overlay
 
 # One run per test, each its own target: that is what `-j` runs in parallel.
 UNIT_RUNS := $(addprefix unit-run-,$(UNIT_TESTS))
+C_UNIT_RUNS := $(addprefix unit-run-,$(C_UNIT_TESTS))
+
+# What only serves the C: prerequisites of `test` and `unit` while src/
+# exists, so that `make test-all` without src/ runs exactly what survives it.
+ifneq ($(wildcard src),)
+    C_ONLY_UNIT := $(C_UNIT_RUNS)
+    C_ONLY_TEST_FIRST := float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check
+    C_ONLY_TEST_LAST := pointer-guard random-guard button-guard data-guard p8-guard
+endif
 
 UNIT_RUNS_SPECIAL := unit-run-test_zone unit-run-test_allocator unit-run-test_frame_zone unit-run-test_ui_zone unit-run-test_particle_zone unit-run-test_game_zone unit-run-test_exit_queue unit-run-test_toast unit-run-test_message_box unit-run-test_live_slots unit-run-test_trade unit-run-test_love_runtime
 
-unit: $(UNIT_RUNS) ## builds and runs the binaries of tests/
+unit: $(C_ONLY_UNIT) $(UNIT_RUNS) ## builds and runs the binaries of tests/
 
-$(filter-out $(UNIT_RUNS_SPECIAL),$(UNIT_RUNS)): unit-run-%: $(TMP_DIR)/%
+$(filter-out $(UNIT_RUNS_SPECIAL),$(C_UNIT_RUNS) $(UNIT_RUNS)): unit-run-%: $(TMP_DIR)/%
 	./$<
 
 unit-run-test_zone: $(TMP_DIR)/test_zone
@@ -1084,7 +1095,7 @@ unit-run-test_trade: $(TMP_DIR)/test_trade
 unit-run-test_frames_tool: | unit-run-test_headless_capture
 unit-run-test_replay_from_resume: | unit-run-test_frames_tool
 
-.PHONY: $(UNIT_RUNS) unit-run-test_love_runtime_slots
+.PHONY: $(C_UNIT_RUNS) $(UNIT_RUNS) unit-run-test_love_runtime_slots
 
 # One target per name of tools/love_capture/, from its .lua and .png alike,
 # so that a lone half fails instead of being skipped. The halves are sorted
@@ -1114,7 +1125,7 @@ LUA_GAME_TEST_RUNS := $(patsubst tests/lua/game/%.lua,lua-run-%,$(LUA_GAME_TESTS
 
 # Longest first: `-j` starts prerequisites in this order, and float-guard
 # alone (~4 s, serial) sets the wall time when it starts behind the checks.
-test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) lua-test-fixed lua-test-runtime lua-guard lua-test-modules $(LUA_GAME_TEST_RUNS) lua-test-capture-read pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
+test: $(C_ONLY_TEST_FIRST) unit $(FAKE_LOVE_CHECKS) lua-test-fixed lua-test-runtime lua-guard lua-test-modules $(LUA_GAME_TEST_RUNS) lua-test-capture-read $(C_ONLY_TEST_LAST) fake-love-guard ## fast loop: unit tests and static guards (~5 s)
 
 test-all: test e2e ## test + e2e, the full suite
 
