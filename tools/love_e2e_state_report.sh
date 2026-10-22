@@ -7,7 +7,7 @@
 set -u
 
 if [ $(($# % 4)) -ne 0 ]; then
-    echo "love-e2e-state: usage: love_e2e_state_report.sh [<replay> <state> <reference .end-state> <error file>]..." >&2
+    echo "end-state: usage: love_e2e_state_report.sh [<replay> <state> <reference .end-state> <error file>]..." >&2
     exit 2
 fi
 
@@ -25,8 +25,8 @@ while [ $# -ge 4 ]; do
     if [ -f "$4" ]; then
         failures=$((failures + 1))
         {
-            echo "love-e2e-state: FAILED $1 -- the fake stopped before the last frame."
-            sed 's/^/love-e2e-state:   /' "$4"
+            echo "end-state: FAILED $1 -- the fake stopped before the last frame."
+            sed 's/^/end-state:   /' "$4"
         } >&2
     else
         checked="$checked $1 $2 $3"
@@ -49,5 +49,5 @@ differing=$(awk -v names="$names" '
 ' "$work/output")
 matches=$((replays - failures - differing))
 
-echo "love-e2e-state: $matches match, $differing differ, $failures failed, of $replays replays in tests/e2e"
+echo "end-state: $matches match, $differing differ, $failures failed, of $replays replays in tests/e2e"
 [ $matches -eq $replays ]

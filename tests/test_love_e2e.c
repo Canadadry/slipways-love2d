@@ -217,7 +217,7 @@ static void prepare_state_report_files(void) {
 static void test_the_state_report_passes_when_every_replay_matches(void) {
     prepare_state_report_files();
     assert(run(STATE_REPORT STATE_MATCHING) == 0);
-    assert_log_holds("love-e2e-state: 1 match, 0 differ, 0 failed, of 1 replays in tests/e2e\n");
+    assert_log_holds("end-state: 1 match, 0 differ, 0 failed, of 1 replays in tests/e2e\n");
 }
 
 static void test_a_wrong_reference_is_reported_differing_with_its_lines(void) {
@@ -227,29 +227,29 @@ static void test_a_wrong_reference_is_reported_differing_with_its_lines(void) {
                      "+clock year 3401 month 1\n"
                      "-clock year 3402 month 1\n");
     assert_log_lacks("match.json differs");
-    assert_log_holds("love-e2e-state: 1 match, 1 differ, 0 failed, of 2 replays in tests/e2e\n");
+    assert_log_holds("end-state: 1 match, 1 differ, 0 failed, of 2 replays in tests/e2e\n");
 }
 
 static void test_a_stopped_replay_is_reported_failed_with_the_fake_message(void) {
     prepare_state_report_files();
     assert(run(STATE_REPORT STATE_MATCHING STATE_DIFFERING STATE_STOPPED) != 0);
-    assert_log_holds("love-e2e-state: FAILED stop.json -- the fake stopped before the last frame.\n"
-                     "love-e2e-state:   fake_love exited 1\n"
-                     "love-e2e-state:   fake_love: frame f2: boom\n");
+    assert_log_holds("end-state: FAILED stop.json -- the fake stopped before the last frame.\n"
+                     "end-state:   fake_love exited 1\n"
+                     "end-state:   fake_love: frame f2: boom\n");
     assert_log_lacks("end-state: stop.json");
-    assert_log_holds("love-e2e-state: 1 match, 1 differ, 1 failed, of 3 replays in tests/e2e\n");
+    assert_log_holds("end-state: 1 match, 1 differ, 1 failed, of 3 replays in tests/e2e\n");
 }
 
 static void test_a_failure_alone_fails_the_state_report(void) {
     prepare_state_report_files();
     assert(run(STATE_REPORT STATE_MATCHING STATE_STOPPED) != 0);
-    assert_log_holds("love-e2e-state: 1 match, 0 differ, 1 failed, of 2 replays in tests/e2e\n");
+    assert_log_holds("end-state: 1 match, 0 differ, 1 failed, of 2 replays in tests/e2e\n");
 }
 
 static void test_only_failed_replays_still_print_the_count_line(void) {
     prepare_state_report_files();
     assert(run(STATE_REPORT STATE_STOPPED) != 0);
-    assert_log_holds("love-e2e-state: 0 match, 0 differ, 1 failed, of 1 replays in tests/e2e\n");
+    assert_log_holds("end-state: 0 match, 0 differ, 1 failed, of 1 replays in tests/e2e\n");
 }
 
 static void test_a_replay_with_several_reasons_counts_once(void) {
@@ -258,15 +258,15 @@ static void test_a_replay_with_several_reasons_counts_once(void) {
     assert(run(STATE_REPORT STATE_MATCHING STATE_DIFFERING) != 0);
     assert_log_holds("end-state: differ.json unknown line: bogus 1\n");
     assert_log_holds("end-state: differ.json unknown line: weird 2\n");
-    assert_log_holds("love-e2e-state: 1 match, 1 differ, 0 failed, of 2 replays in tests/e2e\n");
+    assert_log_holds("end-state: 1 match, 1 differ, 0 failed, of 2 replays in tests/e2e\n");
 }
 
 static void test_a_bad_argument_count_is_a_state_report_usage_error(void) {
     prepare_state_report_files();
     int status = run(STATE_REPORT STATE_MATCHING " extra.json");
     assert(WIFEXITED(status) && WEXITSTATUS(status) == 2);
-    assert_log_holds("love-e2e-state: usage:");
-    assert_log_lacks("love-e2e-state: 1 match");
+    assert_log_holds("end-state: usage:");
+    assert_log_lacks("end-state: 1 match");
 }
 
 int main(void) {

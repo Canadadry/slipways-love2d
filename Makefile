@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 # Reruns make under flock: one make of LOCKED_GOALS at a time over tmp/.
-LOCKED_GOALS := test e2e test-all love-e2e love-e2e-state lua-sweep-fixed
+LOCKED_GOALS := test e2e test-all end-state e2e-baseline end-state-baseline lua-sweep-fixed
 
 ifneq ($(if $(MAKE_LOCK_HELD),,$(filter $(LOCKED_GOALS),$(MAKECMDGOALS))),)
 $(MAKECMDGOALS): make-lock ; @:
@@ -1207,10 +1207,7 @@ $(LOVE_ARCHIVE): $(shell find game -type f) | $(TMP_DIR)
 
 love: $(LOVE_ARCHIVE) ## zips game/ into tmp/slipways.love, playable with LÖVE 11.5 and a gamepad
 
-love-e2e-state: $(LOVE_E2E_LONGEST_FIRST) tools/love_e2e_state_report.sh tools/end_state.sh ## runs tmp/fake_love on every tests/e2e/ replay and checks each Lua end state against its .end-state
-	@sh tools/love_e2e_state_report.sh $(foreach e,$(E2E_EVENTS),$(e) $(LOVE_E2E_DIR)/$(e).state $(e).end-state $(LOVE_E2E_DIR)/$(e).error)
-
-.PHONY: love love-e2e-state FORCE
+.PHONY: love FORCE
 
 # offsetof, void *self, a field read by name, a spec or defaults table: the
 # model the composition migration removed, which a port of the cart brings
@@ -1308,21 +1305,28 @@ state: $(STATE_RUNS) tools/state_peaks.sh
 endif
 
 END_STATE_DIR := $(TMP_DIR)/end-state
-end_state_triples = $(foreach e,$(1),$(e) $(call state_file,$(e)) $(e).end-state)
+END_STATE_RUN := $(END_STATE_DIR)/$(notdir $(EVENTS))
 
 ifneq ($(strip $(EVENTS)),)
-end-state: $(TMP_DIR)/replay tools/end_state.sh ## [EVENTS=<events> [REFERENCE=<file>]]: compares last-frame states with the committed .end-state files
+end-state: $(TMP_DIR)/fake_love tools/love_e2e_run.sh tools/end_state.sh ## [EVENTS=<events> [REFERENCE=<file>]]: compares the Lua game's end states in tmp/fake_love with the committed .end-state files
 	@mkdir -p $(END_STATE_DIR)
-	@rm -f $(END_STATE_DIR)/state.txt
-	@STATE=$(END_STATE_DIR)/state.txt ./$(TMP_DIR)/replay $(EVENTS) /dev/null $(END_STATE_DIR)/dump.txt > $(END_STATE_DIR)/log.txt 2>&1 || true
-	@sh tools/end_state.sh check $(EVENTS) $(END_STATE_DIR)/state.txt $(or $(REFERENCE),$(EVENTS).end-state)
+	@sh tools/love_e2e_run.sh "$(SHA256_CMD)" ./$(TMP_DIR)/fake_love $(subst %,$(notdir $(EVENTS)),$(LOVE_E2E_GAME)) $(EVENTS) $(END_STATE_RUN).bin $(END_STATE_RUN).sha256 $(END_STATE_RUN).error $(END_STATE_RUN).state
+	@if [ -f $(END_STATE_RUN).error ]; then \
+		echo "end-state: FAILED $(EVENTS) -- the fake stopped before the last frame." >&2; \
+		sed 's/^/end-state:   /' $(END_STATE_RUN).error >&2; \
+		exit 1; \
+	fi; \
+	sh tools/end_state.sh check $(EVENTS) $(END_STATE_RUN).state $(or $(REFERENCE),$(EVENTS).end-state)
 else
-end-state: $(STATE_RUNS) tools/end_state.sh
-	@sh tools/end_state.sh check $(call end_state_triples,$(STATE_EVENTS))
+end-state: $(LOVE_E2E_LONGEST_FIRST) tools/love_e2e_state_report.sh tools/end_state.sh
+	@sh tools/love_e2e_state_report.sh $(foreach e,$(E2E_EVENTS),$(e) $(LOVE_E2E_DIR)/$(e).state $(e).end-state $(LOVE_E2E_DIR)/$(e).error)
 endif
 
-end-state-baseline: $(STATE_RUNS) tools/end_state.sh ## writes each missing .end-state, never overwrites one
-	@sh tools/end_state.sh baseline $(call end_state_triples,$(STATE_EVENTS))
+end-state-baseline: $(LOVE_E2E_LONGEST_FIRST) tools/end_state.sh ## writes each missing .end-state of tests/e2e/ from the Lua game, never overwrites one
+	@status=0; triples=; \
+	$(foreach e,$(E2E_EVENTS),if [ -f $(LOVE_E2E_DIR)/$(e).error ]; then echo "end-state-baseline: FAILED $(e), no reference written" >&2; status=1; else triples="$$triples $(e) $(LOVE_E2E_DIR)/$(e).state $(e).end-state"; fi;) \
+	[ -z "$$triples" ] || sh tools/end_state.sh baseline $$triples || status=1; \
+	exit $$status
 
 .PHONY: end-state end-state-baseline
 
