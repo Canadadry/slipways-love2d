@@ -5,6 +5,10 @@
     - [x] Chunk 2 — `make end-state` on the shared runs
     - [x] Chunk 3 — measure N and write the rule
   - [ ] Step 1.2 — fix loop independent of the C
+    - [x] Chunk 1 — Lua regression home
+    - [ ] Chunk 2 — capture reader
+    - [ ] Chunk 3 — skills on the fake LÖVE
+    - [ ] Chunk 4 — measure and prove
   - [ ] Step 1.3 — every surviving check freed from `src/`
 - [ ] Phase 2 — Delete
   - [ ] Step 2.4 — delete `src/` and the C-only tools

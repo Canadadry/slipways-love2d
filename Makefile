@@ -1115,9 +1115,12 @@ $(addprefix love-capture-check-,$(filter-out $(LOVE_CAPTURE_PNGS),$(LOVE_CAPTURE
 # runs it beside the unit tests instead of after them.
 FAKE_LOVE_CHECKS := $(LOVE_CAPTURE_CHECKS) unit-run-test_fake_love unit-run-test_fake_love_failures unit-run-test_fake_love_joystick unit-run-test_fake_love_files unit-run-test_fake_love_graphics unit-run-test_fake_love_points unit-run-test_fake_love_rectangle unit-run-test_fake_love_set_color unit-run-test_fake_love_image unit-run-test_fake_love_image_draw unit-run-test_fake_love_capture unit-run-test_fake_love_frame_capture unit-run-test_fake_love_frames unit-run-test_fake_love_function_list unit-run-test_fake_love_unlisted unit-run-test_love_e2e unit-run-test_love_runtime unit-run-test_love_runtime_slots
 
+LUA_GAME_TESTS := $(wildcard tests/lua/game/test_*.lua)
+LUA_GAME_TEST_RUNS := $(patsubst tests/lua/game/%.lua,lua-run-%,$(LUA_GAME_TESTS))
+
 # Longest first: `-j` starts prerequisites in this order, and float-guard
 # alone (~4 s, serial) sets the wall time when it starts behind the checks.
-test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) lua-test-fixed lua-test-runtime lua-guard lua-test-modules pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
+test: float-guard float-grep unit-run-test_constants_check unit-run-test_pad_nav alloc-guard constants-check unit $(FAKE_LOVE_CHECKS) lua-test-fixed lua-test-runtime lua-guard lua-test-modules $(LUA_GAME_TEST_RUNS) pointer-guard random-guard button-guard data-guard p8-guard fake-love-guard ## fast loop: unit tests and static guards (~5 s)
 
 test-all: test e2e ## test + e2e, the full suite
 
@@ -1439,6 +1442,13 @@ lua-guard: tools/lua_guard.lua ## fails when a game/ Lua file does not compile, 
 	@luajit tools/lua_guard.lua game $(LUA_GUARD_FILES)
 
 .PHONY: lua-guard
+
+$(LUA_GAME_TEST_RUNS): lua-run-%: tests/lua/game/%.lua tests/lua/game/check.lua $(LUA_GUARD_FILES)
+	LUA_PATH='game/?.lua;tests/lua/game/?.lua' LUA_CPATH= luajit $<
+
+lua-test-game: $(LUA_GAME_TEST_RUNS) ## runs the Lua regression tests of game/ modules under plain LuaJIT, one process per file
+
+.PHONY: lua-test-game $(LUA_GAME_TEST_RUNS)
 
 # One unit of tools/table_reference/ per source holding compared tables: the
 # unit includes the source to reach its statics, so the source's own object
