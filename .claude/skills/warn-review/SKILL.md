@@ -29,28 +29,27 @@ Checklist (each is an outside-in hint that something is off):
 9. The largest or most complex file has little to no direct test coverage, relying only on broader end-to-end checks - the code most likely to hide bugs is the code least protected against them.
 10. A systematic audit/sweep's completeness claim (e.g. "N sites, all handled") with no mechanism (test, CI check, or process step) to catch new code later recreating the exact pattern it swept for - the confidence is frozen at audit time while the codebase keeps moving.
 
-## Project ground rules: pointers
+## Project ground rules: references
 
-Check these too, on every run, in `src/`. Unlike the checklist above they are rules, not smells: flag every violation, still as a bare warning.
+Check these too, on every run, in `game/`. Unlike the checklist above they are rules, not smells: flag every violation, still as a bare warning.
 
 Why they exist, and the only two goals they serve:
 
-- **Safety**: a link to something that died must fail loudly (NULL, an `assert`), never read freed memory silently, and must not depend on someone remembering to clear it.
-- **Readability**: one name per piece of data, and a field whose meaning the type says, not a paragraph of comment about what NULL means or who writes through it.
+- **Safety**: a link to something that died must fail loudly (`nil`, an `assert`), never reach a stale table silently, and must not depend on someone remembering to clear it.
+- **Readability**: one name per piece of data, and a field whose meaning the code says, not a paragraph of comment about what `nil` means or who writes through it.
 
 The rules are the means, not the goal. If code breaks one in a case nobody anticipated and the result is clearly safer or clearer than following the rule, don't flag it as a violation: report it as `file[:line]: breaks rule N on purpose`, so the user can check the reasoning. Following a rule in a way that defeats safety or readability is the violation.
 
-Allowed pointers: `self` and large structs as parameters (borrowed for the call only), `const` pointers to static never-freed data (archetypes, tables, strings), function pointers, runtime handles (`allocator_t`, `p8_graphics_t`, `p8_vram_t`), and the engine registry's internal lists. Anything else is a violation:
+Allowed table references: `self` and other tables as parameters (borrowed for the call only), an entity's own components (tables no one else holds), static data never changed after load (archetypes, data tables, strings), functions, runtime handles (the allocator table a module receives, the graphics backend, the vram), and the engine registry's internal lists. Anything else is a violation. Rule 11 (`const` pointer fields) has no Lua meaning and is dropped; the numbers of the others are kept so that warnings stay comparable across runs:
 
-11. A non-`const` pointer field in a game struct.
-12. A struct field pointing at another field of the same struct (`x = &self->x_own`): the component is a value.
-13. Presence or absence encoded by a NULL pointer instead of a bit in the struct's `uint16_t has`.
-14. A link to another entity held as a pointer (`entity_t *`, `planet_t *`…), alone or in a list, instead of an `entity_id_t`.
+12. A field holding another field of the same table (`self.x = self.x_own`): the component is a value.
+13. Presence or absence encoded by a `nil` field instead of a bit in the table's `has`.
+14. A link to another entity held as the entity's table, alone or in a list, instead of its id.
 15. A dead entity's id left in a list instead of removed at its death, or a list walk that tolerates a dead id instead of asserting.
-16. A `vec_t`, `box_t` or `p8_fixed_t` passed by pointer.
-17. A function keeping an address it received as a parameter beyond the call.
-18. A game concept (`targeting`, `emitter`, or any new one) named in `src/engine/`.
-19. A raised count or new line in `tools/pointer_guard_exceptions.txt`, a regenerated e2e `*.sha256`, or a relaxed `assert` in a change that removes pointers.
+16. A by-value table (a `vec`, a `box`) changed by a function that receives it.
+17. A function keeping a table it received as a parameter beyond the call.
+18. A game concept (`targeting`, `emitter`, or any new one) named in `game/engine/`.
+19. A regenerated e2e `*.sha256` or `*.end-state`, or a relaxed `assert`, in a change that removes references.
 
 ## Output format
 

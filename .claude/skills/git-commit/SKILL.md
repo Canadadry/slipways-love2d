@@ -34,7 +34,7 @@ Only the files of this unit of work; leave the rest unstaged.
 Present the proposal to whoever holds the gate:
 
 ```
-Files: src/game/planet.c, tests/test_planet.c
+Files: game/game/planet.lua, tests/lua/game/test_planet.lua
 Message: fix: keep planet links alive after a slipway is removed
 ```
 

@@ -15,7 +15,7 @@ A worked example from start to finish (a C port of a PICO-8 cart, 18,544 → 2,9
 
 **The scope is every source and test file**, unless the invocation names files. Whether a file needs work is decided by reading it against the bar below, **never by a ratio**, and never by a belief that a directory "was already reworked".
 
-What happened: a catch-up pass measured 13% comments over `src/`, concluded the repository was clean, and reworked only the six densest files. `engine/` and `game/` were never opened — and `allocator.h` alone held a comment on every declaration, none of which met the bar. A low global ratio says comments are *short*, not that they *should exist*. **A ratio is a progress measure, not a scoping tool.**
+What happened: a catch-up pass on the C port measured 13% comments over its source tree, concluded the repository was clean, and reworked only the six densest files. `engine/` and `game/` were never opened — and `allocator.h` alone held a comment on every declaration, none of which met the bar. A low global ratio says comments are *short*, not that they *should exist*. **A ratio is a progress measure, not a scoping tool.**
 
 Two modes remain, and they differ only in phase 1:
 
@@ -38,8 +38,8 @@ Without a test suite: add no asserts at all, and destination 2 shrinks to its pr
 Record the starting ratio; it is the progress measure for every wave:
 
 ```sh
-# adapt to the language; here C/C++ comments vs lines of code
-cloc --by-file src/ | tail -5
+# Lua (the game, the tests) and C (the fake LÖVE) comments vs lines of code
+cloc --by-file game/ tools/ tests/ | tail -5
 ```
 
 **Give this command to the agents; it is the definition.** "Comment line" has at least three meanings (a line that is entirely comment, a line containing one, `cloc`'s own definition): without a canonical command, each agent writes its own counter and the figures are comparable neither with each other nor with yours. It is the only measure the method presents as objective; letting it depend on each agent's tooling empties it of meaning.
@@ -50,17 +50,17 @@ cloc --by-file src/ | tail -5
 
 By kind of file:
 
-- **Headers carry no comments.** The signature and the names are the documentation. Two exceptions, nothing else: a `TODO`, and a file format that something outside the repository must read. A contract that matters ("NULL aborts", "returns 0 on a missing field") is either enforced by an assert in the body, or is not worth a sentence. Checked mechanically: [header_residue.sh](header_residue.sh) must print nothing.
-- **Bodies (`.c`)** keep only traps, at the exact line, **one sentence** — or the assert that replaces it.
+- **C headers (`.h`, the fake LÖVE's) carry no comments.** The signature and the names are the documentation. Two exceptions, nothing else: a `TODO`, and a file format that something outside the repository must read. A contract that matters ("NULL aborts", "returns 0 on a missing field") is either enforced by an assert in the body, or is not worth a sentence. Checked mechanically: [header_residue.sh](header_residue.sh) must print nothing.
+- **Bodies (`.c`, and every `.lua` file: a Lua module has no header, so the block at its top is body)** keep only traps, at the exact line, **one sentence** — or the assert that replaces it.
 - **Tests** keep the reason for a literal value (a pixel, a range, a frame index). Everything else goes.
 
-The reference failure for this rule is under-deletion, not over-deletion: a pass that kept every "contract" in `allocator.h` — "Handle on an already initialised zone, which must outlive it", "The block may be NULL", "Uninitialised memory; p8_fatal when the zone is full" — because each was true, short, and fitted the old destination 4. The user's verdict: none of them was useful. The calibrated result kept zero lines in the header and two one-line traps in the body.
+The reference failure for this rule is under-deletion, not over-deletion: a pass on the C port kept every "contract" in `allocator.h` — "Handle on an already initialised zone, which must outlive it", "The block may be NULL", "Uninitialised memory; p8_fatal when the zone is full" — because each was true, short, and fitted the old destination 4. The user's verdict: none of them was useful. The calibrated result kept zero lines in the header and two one-line traps in the body.
 
 Every comment that survives goes to **one** of these destinations:
 
 1. **The meaning of a name** → a glossary file, one line per symbol. The code does not repeat it.
-2. **A trap a future reader would reintroduce** → `assert(cond && "short message")` at the exact site if it can be checked at runtime, **otherwise one sentence in the body**, at the line it protects.
-3. **A file format or a protocol that something outside the repository must be able to read** → it may stay in full in the header that writes it; it has nowhere else to live. A format read only by the repository's own code or tests is not one: the tests pin it. Pass the header to `header_residue.sh` with `-x`, and justify it in the report.
+2. **A trap a future reader would reintroduce** → `assert(cond, "short message")` in Lua, `assert(cond && "short message")` in C, at the exact site if it can be checked at runtime, **otherwise one sentence in the body**, at the line it protects.
+3. **A file format or a protocol that something outside the repository must be able to read** → it may stay in full in the header or the Lua module that writes it; it has nowhere else to live. A format read only by the repository's own code or tests is not one: the tests pin it. Pass a C header to `header_residue.sh` with `-x`, and justify it in the report.
 
 Everything else goes into the **commit message**. Git keeps it, and nobody pays for it in tokens on every read of the file. `TODO` is still allowed: it admits that a case is not handled.
 
@@ -84,7 +84,7 @@ Hence the rule, to put in every brief: **a string meant for a human is checked l
 
 In a one-off catch-up, this is where you start.
 
-One agent, one module, and **the header and the body together** (`.h` + `.c`, interface + implementation): the trap is often described in the header while the assert that replaces it must live in the body. An agent that sees only one of the two files loses half of the transformation.
+One agent, one module. In C, **the header and the body together** (`.h` + `.c`, interface + implementation): the trap is often described in the header while the assert that replaces it must live in the body. An agent that sees only one of the two files loses half of the transformation. In Lua, a module is one `.lua` file.
 
 The brief to copy: [agent-brief.md](agent-brief.md). The report to require: [report-template.md](report-template.md).
 
@@ -113,8 +113,16 @@ Later waves refused five asserts for this reason, and one of those refusals prod
 
 ## The orchestrator's role
 
-0. **The mechanical check works everywhere, including where compilation fails.** `gcc -fpreprocessed -dD -E -P` does not resolve `#include`s: it only strips comments. A file that does not compile here — non-vendored dependency, missing header — can therefore still be checked, byte for byte. Never tell an agent to "review the diff by hand" for those files: you would take away its only proof. A second, free safety net: the number of lines of code must be identical before and after.
-1. **Compile each module in isolation** as soon as its agent hands back (`make src/obj/module.o` or the equivalent). That catches the missing `#include <assert.h>` and nested comments.
+0. **The mechanical check works everywhere, including where compilation fails.** In C, `gcc -fpreprocessed -dD -E -P` does not resolve `#include`s: it only strips comments. A file that does not compile here — non-vendored dependency, missing header — can therefore still be checked, byte for byte. In Lua, `luajit -b -s` compiles the file to bytecode stripped of its debug information, line numbers included, so a change that only removes comments leaves those bytes identical. Never tell an agent to "review the diff by hand": you would take away its only proof. A second, free safety net: the number of lines of code must be identical before and after.
+   ```sh
+   # C: comment-stripped source, last commit vs working tree
+   git show HEAD:tools/fake_love/pad.c | gcc -fpreprocessed -dD -E -P -x c - > tmp/before.i
+   gcc -fpreprocessed -dD -E -P tools/fake_love/pad.c > tmp/after.i && cmp tmp/before.i tmp/after.i
+   # Lua: stripped bytecode, last commit vs working tree
+   git show HEAD:game/engine/vec.lua | luajit -b -s - tmp/before.out
+   luajit -b -s game/engine/vec.lua tmp/after.out && cmp tmp/before.out tmp/after.out
+   ```
+1. **Compile each module in isolation** as soon as its agent hands back: `make tmp/obj/tools/fake_love/<module>.o` for the fake's C, which catches the missing `#include <assert.h>` and nested comments; `make lua-guard` for `game/`, which catches a syntax error and an undeclared global. A Lua file outside `game/` is compiled by the `luajit -b -s` of step 0.
 2. **Run the full suite only on a stabilized tree** — every agent of the wave has handed back. A build on a half-rewritten tree tells you nothing, and this is precisely what made it possible to attribute the assert failure correctly.
 3. **Commit module by module**, with the narration in the message: the before/after ratio, the asserts added and how each was proven, the stale claims taken apart, the glossary corrections.
 4. **Merge each reported bare assert with its orphaned comment** (the comment becomes the message, then goes), in a `refactor:` commit of its own, after the module's subtractive commit.
@@ -122,13 +130,13 @@ Later waves refused five asserts for this reason, and one of those refusals prod
 6. **Recommend line-range replacement**, which refuses if the range contains anything other than comment, over exact-string replacement copied from a read. The former cannot touch code and fails loudly; the latter gets a newline wrong and pastes approximate text.
 7. **Record the ratio at every wave.** It is the useful progress measure, and the only one that does not depend on judgment.
 8. **The gate, per module, before its commit** — all mechanical, all must pass:
-   - comment-stripped output byte-identical before/after (step 0), lines of code identical;
-   - `header_residue.sh` prints nothing for the module's headers (`-x` only for an external format, named in the commit message);
-   - the module compiles with the repository's warnings as errors: the byte check is blind to a `/*` inside a comment (`tools/*.sh` in prose), which `-Werror=comment` rejects;
+   - comment-stripped output (C) or stripped bytecode (Lua) byte-identical before/after (step 0), lines of code identical;
+   - `header_residue.sh` prints nothing for the module's C headers (`-x` only for an external format, named in the commit message);
+   - a C module compiles with the repository's warnings as errors: the byte check is blind to a `/*` inside a comment (`tools/*.sh` in prose), which `-Werror=comment` rejects; a Lua module of `game/` passes `make lua-guard`;
    - the test suite green on the stabilized tree.
    Stage only the files of agents that have handed back (`git add <their files>`, never a directory): a directory sweeps in a wave still being edited.
    A failing gate sends the module back to its agent with the output; it is never waved through.
-9. **Scripted deletion is allowed, only behind the gate.** A regex that strips comments is fast and right for headers, where everything goes; it is also how a trailing `/* ... */` takes the newline after it and glues two declarations together. Measured on this repository: the byte check caught it on the first try. Never script without step 0.
+9. **Scripted deletion is allowed, only behind the gate.** A regex that strips comments is fast and right for headers, where everything goes; it is also how a trailing `/* ... */` takes the newline after it and glues two declarations together. Measured on the C port: the byte check caught it on the first try. Never script without step 0.
 
 ## Running unattended (plan-pilot)
 

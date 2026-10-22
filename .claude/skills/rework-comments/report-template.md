@@ -16,10 +16,13 @@ the only real failure.
 ```
 <module>.h   <N> → <n> comment lines   (<X> lines of code)
 <module>.c   <N> → <n>                 (<X>)
+  or
+<module>.lua <N> → <n> comment lines   (<X> lines of code)
 
-check: preprocessor diff before/after <identical | difference, which one>
+check: preprocessor diff (C) or stripped bytecode diff (Lua) before/after
+         <identical | difference, which one>
        lines of code <identical | difference>
-       header_residue.sh <empty | -x <header> claimed as an external format>
+       header_residue.sh (C) <empty | -x <header> claimed as an external format>
 ```
 
 The check goes here, next to the ratio: it is the first thing the orchestrator
@@ -28,7 +31,7 @@ must read, and the only proof that the cleanup broke nothing.
 ## 2. What I kept, and under which destination
 
 One line per comment kept, with its destination (2 = trap,
-3 = external format). A header should appear here only for a `TODO` or an
+3 = external format). A C header should appear here only for a `TODO` or an
 external format. Every line must answer: what bug would a reader
 reintroduce without it, and why no assert or test catches it.
 
@@ -45,7 +48,7 @@ don't see how that could happen" is not a proof method.
 
 ```
 site      : <file:line>
-condition : assert(<cond> && "<message>")
+condition : assert(<cond>, "<message>")   (C: assert(<cond> && "<message>"))
 replaces  : <the comment that stated the trap>
 proof     : <enumeration / measurement / local> — <the detail that establishes it>
 ```

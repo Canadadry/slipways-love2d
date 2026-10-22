@@ -36,7 +36,7 @@ Put these in each sub-agent prompt — a fresh agent knows none of them:
 - **Reproduction is headless**: the Lua game in `tmp/fake_love` on a scripted `events.json`, a fixed frame count, the capture read as text with `tools/capture_read.lua`, the Lua state dumped to a file.
 - **Only the orchestrator touches git.** Sub-agents never commit, stage, stash, branch or push.
 - **The suite is `make test`** — prefer the Makefile target over invoking a runner directly.
-- **The replays and the Lua tree are the yardstick.** A bug is judged against the replays' committed `.sha256` and `.end-state`, the e2e `.txt` notes, and the Lua tree's own conventions, cited from a real site in `game/`. `src/` is not a reference. The cart's decompiled source is in the history of `slipways-psx` only (`git show 536ddd4:pico8/lua.lua` there): consult it to understand an intent, never as the yardstick a fix must match.
+- **The replays and the Lua tree are the yardstick.** A bug is judged against the replays' committed `.sha256` and `.end-state`, the e2e `.txt` notes, and the Lua tree's own conventions, cited from a real site in `game/`. The cart's decompiled source is in the history of `slipways-psx` only (`git show 536ddd4:pico8/lua.lua` there): consult it to understand an intent, never as the yardstick a fix must match.
 - Throwaway repro programs and instrumented copies of `game/` go in `tmp/`, never in `game/`, `tests/` or `tools/`.
 
 ## Pipeline
@@ -77,8 +77,7 @@ Spawn a third fresh, memoryless agent. It is not handed the implementer's reason
 
 1. **Prove the new test actually detects the bug**: run it against the pre-fix `game/` and show it failing, then passing against the tree. The pre-fix `game/` is `HEAD`'s: `rm -rf tmp/prefix && mkdir -p tmp/prefix && git archive HEAD game | tar -x -C tmp/prefix`, then `LUA_PATH='tmp/prefix/game/?.lua;tests/lua/game/?.lua' LUA_CPATH= luajit tests/lua/game/test_<module>.lua` must fail and `make lua-run-test_<module>` pass. For a C test of the fake, extract all of `HEAD` instead (`git archive HEAD | tar -x -C tmp/prefix`), lay the tree's `tests/` and `Makefile` over it (`cp -R tests Makefile tmp/prefix/`), and `make -C tmp/prefix unit-run-test_<name>` must fail. A test that passes both ways proves nothing — this repo already caught two such tests exactly this way.
 2. Run `make test` in full.
-3. Only when the proven cause is in the fake's C code (`tools/fake_love/`) and is a memory bug (use-after-free, NULL deref, overflow): run the sanitizer build, 0 ASan/UBSan errors.
-4. Read the diff: it must touch only what the proven cause justifies, and nothing else.
+3. Read the diff: it must touch only what the proven cause justifies, and nothing else.
 
 Reporting contract: `VERIFIED:` plus the evidence for each point, or `FAILED:` plus what broke.
 
@@ -90,7 +89,7 @@ Invoke the `git-commit` skill **yourself, in place** — never in a sub-agent. I
 
 The commit message is where the finding is recorded — no journal file, no prose in the code. Write it in English, strictly factual, from the stage-1 bug document and the stage-3 evidence:
 
-- the symptom as reported, and what surfaced it (human playtest, scripted replay, sanitizer);
+- the symptom as reported, and what surfaced it (human playtest, scripted replay);
 - **the hypothesis that was disproved**, when there was one — as valuable as the cause itself, since it's what spares the next reader the same detour;
 - the proven cause, with file/function references;
 - the fix retained, and what was deliberately *not* changed.

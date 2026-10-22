@@ -44,7 +44,7 @@ Handle it alone; the others wait for the next `make e2e`, since a fix often repa
 Invoke the `fix-bug` skill in place. Its argument is a bug report you write, containing:
 
 - **Symptom**, verbatim: the `make e2e` output for this failure, nothing paraphrased.
-- **Reproduction**, on the Lua game, no `src/` needed:
+- **Reproduction**, on the Lua game:
   - `make fake-love`, then `./tmp/fake_love game <events> tmp/debug/<name>.bin tmp/debug/<name>.state` (`mkdir -p tmp/debug` first): the capture and the Lua state after the last frame. A failed replay exits non-zero with the error on stderr; a divergent one exits 0, and the capture's `sha256sum` (macOS: `shasum -a 256`) differs from `<events>.sha256`. `make e2e` already left its capture at `tmp/love-e2e/<events>.bin`.
   - Alternative: `make end-state EVENTS=<events>` writes the capture and state to `tmp/end-state/<name>.json.bin` and `.state` and checks the end state against `<events>.end-state`.
   - The reference commit, a known-good `game/` for this replay: written into the report as a hash: `git rev-parse --verify -q '@{upstream}'`; with no upstream, the first of `git log -20 --format=%H HEAD -- game/` whose `game/`, run by the fake on this replay, gives a capture whose sha256 equals `<events>.sha256` (extract and run each as `help-me-debug`'s "The reference game" says); none matches → no good reference, say so in the report. Every `.sha256` predates the Lua game, so the commit that last set it is never a reference.
