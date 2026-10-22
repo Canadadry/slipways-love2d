@@ -28,4 +28,4 @@
     - [x] Chunk 3 — `design.md` and `save-format.md`
     - [x] Chunk 4 — skills
     - [x] Chunk 5 — e2e notes
-    - [ ] Chunk 6 — search and dry run
+    - [x] Chunk 6 — search and dry run
