@@ -517,6 +517,9 @@ $(TMP_DIR)/test_lua_guard: $(call objs,tests/test_lua_guard.c) tools/lua_guard.l
 $(TMP_DIR)/test_lua_modules: $(call objs,tests/test_lua_modules.c) tests/lua/test_modules.lua | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
+$(TMP_DIR)/test_lua_fixed: $(call objs,tests/test_lua_fixed.c) tests/lua/test_fixed.lua | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+
 test_fake_love_guard_objs := $(call objs,tests/test_fake_love_guard.c)
 $(TMP_DIR)/test_fake_love_guard: $(test_fake_love_guard_objs) tools/fake_love_guard.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
@@ -914,6 +917,7 @@ UNIT_TESTS := \
     test_fake_love_guard \
     test_lua_guard \
     test_lua_modules \
+    test_lua_fixed \
     test_float_link \
     test_constants_check \
     test_background_draw \
@@ -1420,12 +1424,8 @@ FIXED_SWEEP_SEED ?= 0x2545F491
 $(TMP_DIR)/fixed_reference: $(call objs,tools/fixed_reference.c src/p8/fixed.c) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $^
 
-$(TMP_DIR)/fixed_reference.bin: $(TMP_DIR)/fixed_reference
-	./$(TMP_DIR)/fixed_reference $@.part
-	mv $@.part $@
-
-lua-test-fixed: tests/lua/test_fixed.lua $(wildcard game/p8/*.lua) $(TMP_DIR)/fixed_reference.bin ## compares game/p8/fixed.lua with the C fixed-point library on edge and sampled values
-	luajit tests/lua/test_fixed.lua $(TMP_DIR)/fixed_reference.bin
+lua-test-fixed: tests/lua/test_fixed.lua $(wildcard game/p8/*.lua) tests/lua/fixed_reference.txt ## compares game/p8/fixed.lua with the frozen fixed-point reference on edge and sampled values
+	luajit tests/lua/test_fixed.lua tests/lua/fixed_reference.txt
 
 lua-sweep-fixed: tests/lua/test_fixed.lua $(wildcard game/p8/*.lua) $(TMP_DIR)/fixed_reference ## compares game/p8/fixed.lua with the C library on millions of sampled values (slow)
 	./$(TMP_DIR)/fixed_reference --sweep $(FIXED_SWEEP_COUNT) $(FIXED_SWEEP_SEED) | luajit tests/lua/test_fixed.lua -

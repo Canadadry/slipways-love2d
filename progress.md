@@ -10,6 +10,12 @@
     - [x] Chunk 3 — skills on the fake LÖVE
     - [x] Chunk 4 — measure and prove
   - [ ] Step 1.3 — every surviving check freed from `src/`
+    - [x] Chunk 1 — frozen fixed-point reference
+    - [ ] Chunk 2 — frozen table reference
+    - [ ] Chunk 3 — `test_love_runtime` without `src/`
+    - [ ] Chunk 4 — `make state` and `make replay` on the fake
+    - [ ] Chunk 5 — C-only group in `test` and `unit`
+    - [ ] Chunk 6 — dry run without `src/`
 - [ ] Phase 2 — Delete
   - [ ] Step 2.4 — delete `src/` and the C-only tools
 - [ ] Phase 3 — Rules and docs

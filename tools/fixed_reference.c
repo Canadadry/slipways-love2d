@@ -1,10 +1,8 @@
-/* Host tool: writes the inputs and C results of src/p8/fixed.c, the oracle
- * of tests/lua/test_fixed.lua: the make test set to argv[1], or with
- * --sweep <count> <seed> the same edge values and <count> drawn records per
- * section to standard output. Layout, every number a
- * little-endian uint32: "P8FIXREF", version; per section: name length, name,
- * input count, output count, record count, records; then 0 and the total
- * record count. */
+/* Host tool: writes the inputs and C results of src/p8/fixed.c in the text
+ * format tests/lua/test_fixed.lua reads. <output file>: every edge grid and
+ * 3000 drawn records per section; --frozen <output file>: the reduced set
+ * committed as tests/lua/fixed_reference.txt; --sweep <count> <seed>: the
+ * full edge grids and <count> drawn records per section to standard output. */
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,8 +10,8 @@
 
 #include "p8/fixed.h"
 
-#define FORMAT_VERSION 1u
-#define TEST_SAMPLE_PER_SECTION 3000u
+#define FULL_SAMPLE_PER_SECTION 3000u
+#define FROZEN_SAMPLE_PER_SECTION 50u
 
 typedef struct {
     FILE *file;
@@ -25,15 +23,6 @@ typedef struct {
     uint32_t inputs;
     uint32_t outputs;
 } writer_t;
-
-static void write_u32(writer_t *w, uint32_t v) {
-    unsigned char bytes[4] = {(unsigned char)v, (unsigned char)(v >> 8), (unsigned char)(v >> 16),
-                              (unsigned char)(v >> 24)};
-    if (fwrite(bytes, 1, 4, w->file) != 4) {
-        fprintf(stderr, "fixed_reference: write failed\n");
-        exit(1);
-    }
-}
 
 static void section_begin(writer_t *w, const char *name, uint32_t inputs, uint32_t outputs) {
     w->name = name;
@@ -57,21 +46,18 @@ static void section_push(writer_t *w, uint32_t v) {
 static void section_end(writer_t *w) {
     uint32_t width = w->inputs + w->outputs;
     uint32_t records = w->section_values / width;
-    uint32_t length = 0;
+    uint32_t r;
     uint32_t i;
-    while (w->name[length]) {
-        length++;
-    }
-    write_u32(w, length);
-    if (fwrite(w->name, 1, length, w->file) != length) {
-        fprintf(stderr, "fixed_reference: write failed\n");
-        exit(1);
-    }
-    write_u32(w, w->inputs);
-    write_u32(w, w->outputs);
-    write_u32(w, records);
-    for (i = 0; i < w->section_values; i++) {
-        write_u32(w, w->section[i]);
+    for (r = 0; r < records; r++) {
+        const uint32_t *record = w->section + r * width;
+        fputs(w->name, w->file);
+        for (i = 0; i < width; i++) {
+            fprintf(w->file, i == w->inputs ? " = %08x" : " %08x", (unsigned)record[i]);
+        }
+        if (w->inputs == width) {
+            fputs(" =", w->file);
+        }
+        fputc('\n', w->file);
     }
     w->total_records += records;
 }
@@ -86,7 +72,31 @@ static const int32_t edge_values[] = {
 #define EDGE_COUNT ((int)(sizeof edge_values / sizeof edge_values[0]))
 
 static uint32_t sample_state = 0x9E3779B9u;
-static uint32_t sample_count = TEST_SAMPLE_PER_SECTION;
+static uint32_t sample_count = FULL_SAMPLE_PER_SECTION;
+static int frozen;
+
+/* The frozen set's binary grid: the remaining edge values are only paired
+ * with CORE_PARTNERS. */
+static const int32_t core_values[] = {
+    0, 1, -1, 0x8000, -0x8000, 0x10000, -0x10000, 0x18000, 0x00B504F3, 0x7FFF0000, 0x7FFFFFFF, -0x7FFFFFFF, INT32_MIN,
+};
+#define CORE_COUNT ((int)(sizeof core_values / sizeof core_values[0]))
+static const int32_t core_partners[] = {0, 0x10000, -1, INT32_MIN};
+#define PARTNER_COUNT ((int)(sizeof core_partners / sizeof core_partners[0]))
+static const int32_t mid_values[] = {0, 1, -1, 0x10000, 0x7FFFFFFF, INT32_MIN};
+#define MID_COUNT ((int)(sizeof mid_values / sizeof mid_values[0]))
+static const int32_t frozen_shifts[] = {-1, 0, 1, 16, 31, 32};
+#define FROZEN_SHIFT_COUNT ((int)(sizeof frozen_shifts / sizeof frozen_shifts[0]))
+
+static int is_core(int32_t v) {
+    int i;
+    for (i = 0; i < CORE_COUNT; i++) {
+        if (core_values[i] == v) {
+            return 1;
+        }
+    }
+    return 0;
+}
 
 static uint32_t sample_next(void) {
     sample_state ^= sample_state << 13;
@@ -190,23 +200,40 @@ static void write_literal(writer_t *w) {
     section_end(w);
 }
 
+static void push_binary(writer_t *w, binary_fn fn, int32_t a, int32_t b) {
+    section_push(w, (uint32_t)a);
+    section_push(w, (uint32_t)b);
+    section_push(w, (uint32_t)fn(a, b));
+}
+
 static void write_binary(writer_t *w, const char *name, binary_fn fn) {
     int i;
     int j;
     section_begin(w, name, 2, 1);
-    for (i = 0; i < EDGE_COUNT; i++) {
-        for (j = 0; j < EDGE_COUNT; j++) {
-            section_push(w, (uint32_t)edge_values[i]);
-            section_push(w, (uint32_t)edge_values[j]);
-            section_push(w, (uint32_t)fn(edge_values[i], edge_values[j]));
+    if (frozen) {
+        for (i = 0; i < CORE_COUNT; i++) {
+            for (j = 0; j < CORE_COUNT; j++) {
+                push_binary(w, fn, core_values[i], core_values[j]);
+            }
+        }
+        for (i = 0; i < EDGE_COUNT; i++) {
+            if (!is_core(edge_values[i])) {
+                for (j = 0; j < PARTNER_COUNT; j++) {
+                    push_binary(w, fn, edge_values[i], core_partners[j]);
+                    push_binary(w, fn, core_partners[j], edge_values[i]);
+                }
+            }
+        }
+    } else {
+        for (i = 0; i < EDGE_COUNT; i++) {
+            for (j = 0; j < EDGE_COUNT; j++) {
+                push_binary(w, fn, edge_values[i], edge_values[j]);
+            }
         }
     }
     for (i = 0; (uint32_t)i < sample_count; i++) {
         int32_t a = sample_value();
-        int32_t b = sample_value();
-        section_push(w, (uint32_t)a);
-        section_push(w, (uint32_t)b);
-        section_push(w, (uint32_t)fn(a, b));
+        push_binary(w, fn, a, sample_value());
     }
     section_end(w);
 }
@@ -221,9 +248,22 @@ static void write_shift(writer_t *w) {
     int i;
     int j;
     section_begin(w, "p8_fixed_shl", 2, 1);
-    for (i = 0; i < EDGE_COUNT; i++) {
-        for (j = 0; j < EDGE_SHIFT_COUNT; j++) {
-            push_shift(w, edge_values[i], edge_shifts[j]);
+    if (frozen) {
+        for (i = 0; i < CORE_COUNT; i++) {
+            for (j = 0; j < EDGE_SHIFT_COUNT; j++) {
+                push_shift(w, core_values[i], edge_shifts[j]);
+            }
+        }
+        for (i = 0; i < EDGE_COUNT; i++) {
+            for (j = 0; j < FROZEN_SHIFT_COUNT; j++) {
+                push_shift(w, edge_values[i], frozen_shifts[j]);
+            }
+        }
+    } else {
+        for (i = 0; i < EDGE_COUNT; i++) {
+            for (j = 0; j < EDGE_SHIFT_COUNT; j++) {
+                push_shift(w, edge_values[i], edge_shifts[j]);
+            }
         }
     }
     for (i = 0; (uint32_t)i < sample_count; i++) {
@@ -239,8 +279,8 @@ static const int32_t edge_roots[] = {
 };
 #define EDGE_ROOT_COUNT ((int)(sizeof edge_roots / sizeof edge_roots[0]))
 
-/* Every 16-bit angle once, each under drawn high bits: only the low 16 bits
- * may select the table entry. */
+/* Every 16-bit angle once (the frozen set: drawn angles), each under drawn
+ * high bits: only the low 16 bits may select the table entry. */
 static void write_angle(writer_t *w, const char *name, unary_fn fn) {
     int i;
     uint32_t angle;
@@ -248,8 +288,14 @@ static void write_angle(writer_t *w, const char *name, unary_fn fn) {
     for (i = 0; i < EDGE_COUNT; i++) {
         push_unary(w, fn, edge_values[i]);
     }
-    for (angle = 0; angle <= 0xFFFFu; angle++) {
-        push_unary(w, fn, (int32_t)((sample_next() & 0xFFFF0000u) | angle));
+    if (frozen) {
+        for (i = 0; (uint32_t)i < sample_count; i++) {
+            push_unary(w, fn, (int32_t)sample_next());
+        }
+    } else {
+        for (angle = 0; angle <= 0xFFFFu; angle++) {
+            push_unary(w, fn, (int32_t)((sample_next() & 0xFFFF0000u) | angle));
+        }
     }
     section_end(w);
 }
@@ -265,13 +311,20 @@ static void write_ternary(writer_t *w, const char *name, ternary_fn fn) {
     int i;
     int j;
     int k;
+    const int32_t *values = frozen ? mid_values : edge_values;
+    int count = frozen ? MID_COUNT : EDGE_COUNT;
     section_begin(w, name, 3, 1);
-    for (i = 0; i < EDGE_COUNT; i++) {
-        for (j = 0; j < EDGE_COUNT; j++) {
-            for (k = 0; k < EDGE_COUNT; k++) {
-                push_ternary(w, fn, edge_values[i], edge_values[j], edge_values[k]);
+    for (i = 0; i < count; i++) {
+        for (j = 0; j < count; j++) {
+            for (k = 0; k < count; k++) {
+                push_ternary(w, fn, values[i], values[j], values[k]);
             }
         }
+    }
+    for (i = 0; frozen && i < EDGE_COUNT; i++) {
+        push_ternary(w, fn, edge_values[i], 0, 0x10000);
+        push_ternary(w, fn, 0, edge_values[i], 0x10000);
+        push_ternary(w, fn, 0, 0x10000, edge_values[i]);
     }
     for (i = 0; (uint32_t)i < sample_count; i++) {
         int32_t a = sample_value();
@@ -394,25 +447,26 @@ int main(int argc, char **argv) {
     const char *output = "standard output";
     if (argc == 2) {
         output = argv[1];
-        w.file = fopen(output, "wb");
+        w.file = fopen(output, "w");
+    } else if (argc == 3 && strcmp(argv[1], "--frozen") == 0) {
+        frozen = 1;
+        sample_count = FROZEN_SAMPLE_PER_SECTION;
+        output = argv[2];
+        w.file = fopen(output, "w");
     } else if (argc == 4 && strcmp(argv[1], "--sweep") == 0) {
         sample_count = parse_u32(argv[2], 1);
         /* xorshift stays at 0 forever from a zero state. */
         sample_state = parse_u32(argv[3], 1);
         w.file = stdout;
     } else {
-        fprintf(stderr, "usage: fixed_reference <output file> | --sweep <count> <seed>\n");
+        fprintf(stderr, "usage: fixed_reference <output file> | --frozen <output file> | --sweep <count> <seed>\n");
         return 2;
     }
     if (!w.file) {
         perror(output);
         return 1;
     }
-    if (fwrite("P8FIXREF", 1, 8, w.file) != 8) {
-        fprintf(stderr, "fixed_reference: write failed\n");
-        return 1;
-    }
-    write_u32(&w, FORMAT_VERSION);
+    fputs("# written by tools/fixed_reference.c from src/p8/fixed.c\n", w.file);
     write_constant(&w, "P8_FIXED_SHIFT", P8_FIXED_SHIFT);
     write_constant(&w, "P8_FIXED_DIV0_POS", P8_FIXED_DIV0_POS);
     write_constant(&w, "P8_FIXED_DIV0_NEG", P8_FIXED_DIV0_NEG);
@@ -441,10 +495,9 @@ int main(int argc, char **argv) {
     write_set_rnd_streams(&w);
     write_rnd_default_stream(&w);
     write_rnd_from_state_chains(&w);
-    write_u32(&w, 0);
-    write_u32(&w, w.total_records);
+    fprintf(w.file, "end %u\n", (unsigned)w.total_records);
     free(w.section);
-    if (fclose(w.file) != 0) {
+    if (ferror(w.file) || fclose(w.file) != 0) {
         perror(output);
         return 1;
     }
