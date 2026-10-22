@@ -1475,8 +1475,8 @@ $(TMP_DIR)/table_reference.txt: $(TMP_DIR)/table_reference
 # tables are skipped, and the check fails once one of them loads.
 LUA_DEFERRED_MODULES :=
 
-lua-test-modules: tests/lua/test_modules.lua $(TMP_DIR)/table_reference.txt ## requires every game/ module under plain LuaJIT, compares its data tables and constants with the C ones
-	@luajit tests/lua/test_modules.lua $(addprefix --defer ,$(LUA_DEFERRED_MODULES)) game $(TMP_DIR)/table_reference.txt $(LUA_GUARD_FILES)
+lua-test-modules: tests/lua/test_modules.lua tests/lua/table_reference.txt ## requires every game/ module under plain LuaJIT, compares its data tables and constants with the frozen reference
+	@luajit tests/lua/test_modules.lua $(addprefix --defer ,$(LUA_DEFERRED_MODULES)) game tests/lua/table_reference.txt $(LUA_GUARD_FILES)
 
 .PHONY: lua-test-modules
 

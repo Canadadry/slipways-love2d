@@ -11,7 +11,7 @@
     - [x] Chunk 4 — measure and prove
   - [ ] Step 1.3 — every surviving check freed from `src/`
     - [x] Chunk 1 — frozen fixed-point reference
-    - [ ] Chunk 2 — frozen table reference
+    - [x] Chunk 2 — frozen table reference
     - [ ] Chunk 3 — `test_love_runtime` without `src/`
     - [ ] Chunk 4 — `make state` and `make replay` on the fake
     - [ ] Chunk 5 — C-only group in `test` and `unit`

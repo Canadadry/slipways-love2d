@@ -1,5 +1,5 @@
 -- Requires every module of the game directory, then compares its data tables
--- and constants with the C rendering written by tools/table_reference.c.
+-- and constants with a reference in the format tools/table_reference.c writes.
 -- Usage, from the repository root:
 --   luajit tests/lua/test_modules.lua [--defer <module>]... <game dir> <reference file> <file.lua>...
 -- The reference holds one block per table: "= <module> <name> <bytes>", then
