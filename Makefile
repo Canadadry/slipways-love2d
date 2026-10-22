@@ -1185,7 +1185,7 @@ $(LOVE_E2E_HASHES): $(LOVE_E2E_DIR)/%.sha256: % $(TMP_DIR)/fake_love tools/love_
 	@mkdir -p $(@D)
 	@sh tools/love_e2e_run.sh "$(SHA256_CMD)" ./$(TMP_DIR)/fake_love $(subst %,$(notdir $*),$(LOVE_E2E_GAME)) $* $(@:.sha256=.bin) $@ $(@:.sha256=.error) $(@:.sha256=.state)
 
-e2e: $(LOVE_E2E_LONGEST_FIRST) tools/e2e_limits.sh $(E2E_EXCEPTIONS) tools/love_e2e_report.sh tools/frames_check.sh ## runs tmp/fake_love with the Lua game on tests/e2e/ and checks each capture against its .json.sha256
+e2e: $(LOVE_E2E_LONGEST_FIRST) tools/e2e_limits.sh $(E2E_EXCEPTIONS) tools/love_e2e_report.sh tools/frames_check.sh ## runs the Lua game in tmp/fake_love on tests/e2e/, checks each capture against its .json.sha256 (~7 s)
 	@status=0; \
 	sh tools/e2e_limits.sh $(E2E_EXCEPTIONS) $(E2E_EVENTS) || status=1; \
 	sh tools/love_e2e_report.sh $(foreach e,$(E2E_EVENTS),$(e) $(call frames_reference,$(e)) $(LOVE_E2E_DIR)/$(e).sha256 $(LOVE_E2E_DIR)/$(e).error) || status=1; \

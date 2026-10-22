@@ -19,17 +19,16 @@ Everything written in the repository is in English: code, comments, docs, e2e no
 ## What we don't do
 
 - **Never merge a pull request**, in any way (GitHub tool, `gh`, auto-merge). Merging is the user's job, always; denied in `.claude/settings.json`.
-- **Never make `make test` or `make e2e` slower**, under any circumstances: the loop must stay fast. A slow check goes in a separate target, outside `make test-all`.
+- **Never make `make test` slower**, under any circumstances, **and never let `make e2e` run longer than 9 seconds**: the loop must stay fast. A slow check goes in a separate target, outside `make test-all`.
 - **Never open a window or a virtual screen.** No window, no X server: an agent has neither eyes nor a mouse and would see nothing of what it opens. Verification is headless — N frames driven by a scripted `events.json`, then a text dump of the framebuffer (`make replay`). Single exception: Xvfb with Mesa software rendering, only inside `make love-capture`, which runs the capture programs in real LÖVE 11.5, rewrites their PNGs and stops; agents and CI may run it; it is never part of `make test` or `make e2e`.
 
 ## Build
 
-- `make test` is the fast loop (unit tests and static checks, ~5 s). `make e2e` replays the e2e files of `tests/e2e/` from the title screen (~1 s). `make test-all` runs both. `make help` lists the targets: each public target carries a one-line `## ` description of at most 20 words.
+- `make test` is the fast loop (unit tests and static checks, ~5 s). `make e2e` replays the e2e files of `tests/e2e/` from the title screen with the Lua game in `tmp/fake_love` (`LOVE_E2E_GAME`, default `game`) and checks each capture against its `.json.sha256` (~7 s on 4 cores). `make test-all` runs both. `make help` lists the targets: each public target carries a one-line `## ` description of at most 20 words.
 - `tools/love_install.sh` installs LÖVE 11.5, Xvfb, Mesa and LuaJIT; the SessionStart hook and CI run it.
-- `make love-e2e` runs `tmp/fake_love` with the Lua game (`LOVE_E2E_GAME`, default `game`) on every replay of `tests/e2e/`; it is outside `make test`, `make e2e`, `make test-all` and CI.
-- `make love-e2e-state` runs the same replays with a state path and checks each Lua end state against its `.end-state`; it is outside `make test`, `make e2e`, `make test-all` and CI.
+- `make end-state` checks the Lua end states of the same runs against each `.end-state`; `make e2e end-state` runs each replay once. It is outside `make test-all` and CI.
 - `make lua-sweep-fixed` compares `game/p8/fixed.lua` with the C library on millions of values (~3 s); it is outside `make test`, `make e2e`, `make test-all` and CI.
-- `test`, `e2e`, `test-all`, `love-e2e`, `love-e2e-state` and `lua-sweep-fixed` hold `tmp/make.lock` through `flock` (macOS: `brew install flock`): a second one fails at once.
+- `test`, `e2e`, `test-all`, `end-state`, `e2e-baseline`, `end-state-baseline` and `lua-sweep-fixed` hold `tmp/make.lock` through `flock` (macOS: `brew install flock`): a second one fails at once.
 
 ## Docs
 

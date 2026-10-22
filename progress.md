@@ -3,7 +3,7 @@
   - [ ] Step 1.1 — `make e2e` and `make end-state` on the fake LÖVE, N rule
     - [x] Chunk 1 — shared fake runs and `make e2e`
     - [x] Chunk 2 — `make end-state` on the shared runs
-    - [ ] Chunk 3 — measure N and write the rule
+    - [x] Chunk 3 — measure N and write the rule
   - [ ] Step 1.2 — fix loop independent of the C
   - [ ] Step 1.3 — every surviving check freed from `src/`
 - [ ] Phase 2 — Delete

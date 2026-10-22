@@ -88,9 +88,8 @@ fake follows these rules, and every step that adds one measures it.
    `.lua` or `.png` is found when the Makefile is read, and its target
    fails naming the missing half. Budget: 100 ms of wall time per check
    on the container. A check over budget is split before its step closes.
-3. **Out of `make e2e`.** No fake check is a prerequisite of `e2e`;
-   `make love-e2e` is its own target, outside `make test` and `make e2e`
-   (see `make love-e2e`).
+3. **Out of `make e2e`.** No check of `make test` is a prerequisite of
+   `e2e`; `make e2e` runs the fake on the replays itself (see `make e2e`).
 4. **Measured, with one protocol, against two baselines.**
    - Baselines: the step's "before" commit, and the plan-wide reference,
      commit `8dff812`, the merge of pull request #1: the last commit before
@@ -116,63 +115,65 @@ fake follows these rules, and every step that adds one measures it.
    target outside `make test-all`, and this file then says that `make test`
    no longer runs every capture.
 
-### `make love-e2e`
+### `make e2e`
 
-`make love-e2e` runs `tmp/fake_love <game dir> <replay> <capture>` on every
-replay of `tests/e2e/`, one make job per replay, every replay rerun on every
-invocation (make does not see a Lua edit). The game directory is
-`LOVE_E2E_GAME`, default `game`; a `%` in it becomes the replay's file name
-(`pad_title.json`), so a verification can give each replay its own stub.
-The replay's `initial_save`, `bindings` and `attract_after` reach the game
-as the fake gives them; no state path is passed, so `debug_state` is not
-needed.
+`make e2e` runs `tmp/fake_love <game dir> <replay> <capture> <state>` on
+every replay of `tests/e2e/`, one make job per replay, the largest replay
+file (the most frames) first, every replay rerun on every invocation (make
+does not see a Lua edit). It builds `tmp/fake_love` when missing. The game
+directory is `LOVE_E2E_GAME`, default `game`; a `%` in it becomes the
+replay's file name (`pad_title.json`), so a verification can give each
+replay its own stub. The replay's `initial_save`, `bindings` and
+`attract_after` reach the game as the fake gives them; the game must define
+`debug_state`.
 
 Per replay, under `tmp/love-e2e/tests/e2e/`: `<name>.json.bin` (the
-capture) and `<name>.json.sha256` when the fake exits 0, `<name>.json.error`
-otherwise (`fake_love exited <status>` or `killed by signal <n>`, then the
-fake's stderr); the three are removed before each run. Each replay is
+capture), `<name>.json.sha256` and `<name>.json.state` (the game's
+`debug_state()`) when the fake exits 0, `<name>.json.error` otherwise
+(`fake_love exited <status>` or `killed by signal <n>`, then the fake's
+stderr); all four are removed before each run. These runs are shared:
+`make e2e end-state` runs each replay once.
+
+`tools/e2e_limits.sh` checks the replay limits, then each replay is
 reported on one line:
 
 - **matches**: the capture's sha256 equals the replay's `.json.sha256`;
-- **DIVERGENT**: it does not (`tools/frames_check.sh --no-baseline-hints`):
-  a bug in the Lua game or the fake, never a reason to change the
-  `.json.sha256`;
+- **DIVERGENT**: it does not, with the expected and actual hash and, if the
+  divergence is intended, `make e2e-baseline`;
 - **FAILED**: the fake stopped before the last frame, with its message
   indented below.
 
-All replays are run and reported before the count line
-`love-e2e: <m> match, <d> diverge, <f> failed, of <n> replays in tests/e2e`;
-the exit status is 0 only when every replay matches. The target takes
-`tmp/make.lock` like `test`, `e2e` and `test-all`, reads nothing from
-`src/` nor `tmp/frames/`, does not check end states, has no timeout, and
-is not run by `make test`, `make e2e`, `make test-all` or CI.
+Both checks always run; the report ends with the count line
+`e2e: <m> match, <d> diverge, <f> failed, of <n> replays in tests/e2e`.
+The exit status is 0 only when the limits hold and every replay matches.
+`make e2e-baseline` copies each replay's Lua hash to its `.json.sha256`
+and writes nothing for a replay the fake failed on, failing the target.
+Both take `tmp/make.lock`, read nothing from `src/` nor `tmp/frames/`, and
+have no timeout. `make e2e` is part of `make test-all` and CI, and runs
+under 9 seconds (median 7.1 s over 6 cold runs on 4 cores).
 
-### `make love-e2e-state`
+### `make end-state`
 
-`make love-e2e-state` runs `tmp/fake_love <game dir> <replay> <capture>
-<state>` on every replay of `tests/e2e/`, in runs of its own (not shared
-with `make love-e2e`), one make job per replay, every replay rerun on every
-invocation. `LOVE_E2E_GAME` and its `%` substitution work as for
-`make love-e2e`; the game must define `debug_state`.
-
-Per replay, under `tmp/love-e2e-state/tests/e2e/`: `<name>.json.bin`,
-`<name>.json.sha256` and `<name>.json.state` (the game's `debug_state()`)
-when the fake exits 0, `<name>.json.error` otherwise; all four are removed
-before each run. The Lua end state is checked against the replay's
-committed `<name>.json.end-state` by `tools/end_state.sh check`, with the
-normalization of the C `make end-state`; the target never writes an
-`.end-state`. Each replay is reported:
+`make end-state` checks the Lua end states of `make e2e`'s runs against
+each replay's committed `<name>.json.end-state` with
+`tools/end_state.sh check`, with the normalization the C end states used;
+it never writes an `.end-state`. Each replay is reported:
 
 - **matches**: the normalized state equals the reference;
 - **differs**: it does not, with the `-` reference and `+` Lua lines;
 - **FAILED**: the fake stopped before the last frame (a missing
   `debug_state` included), with its message indented below.
 
-All replays are run and reported before the count line
-`love-e2e-state: <m> match, <d> differ, <f> failed, of <n> replays in tests/e2e`;
-the exit status is 0 only when every replay matches. The target takes
-`tmp/make.lock`, has no timeout, and is not run by `make test`, `make e2e`,
-`make test-all` or CI.
+All replays are reported before the count line
+`end-state: <m> match, <d> differ, <f> failed, of <n> replays in tests/e2e`;
+the exit status is 0 only when every replay matches.
+`make end-state EVENTS=<events> [REFERENCE=<file>]` runs the fake once on
+that file under `tmp/end-state/` and checks its state against `REFERENCE`,
+default `<events>.end-state`: the only way to check a `worst-case/` game.
+`make end-state-baseline` writes each missing `.end-state` of the 20
+replays from the Lua state, never overwrites one, and fails naming a
+replay the fake failed on. All take `tmp/make.lock`, have no timeout, and
+are outside `make test-all` and CI.
 
 ### Pad buttons
 
@@ -916,9 +917,8 @@ not ported.
 ## Rules for the fork
 
 - The e2e replays are the source of truth; no C unit test is ported to Lua.
-- `make e2e` may become slower than the C one; the rule becomes "under N
-  seconds", N set by plan 4 from a measurement. The replays run in parallel,
-  LuaJIT with its JIT on.
+- `make e2e` runs under 9 seconds (the rule of `CLAUDE.md`). The replays
+  run in parallel, longest first, LuaJIT with its JIT on.
 
 ## Open questions
 
