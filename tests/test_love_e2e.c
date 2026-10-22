@@ -29,7 +29,7 @@
 #endif
 
 #define RUN "sh tools/love_e2e_run.sh '" SHA256_CMD "' tmp/fake_love "
-#define OUTPUTS " " CAPTURE " " HASH " " ERROR
+#define OUTPUTS " " CAPTURE " " HASH " " ERROR " " STATE
 
 static const char *const WORK_FILES[] = {
     CAPTURE, HASH, ERROR, STATE, LOG, EXPECTED, EXPECTED_HASH,
@@ -98,7 +98,7 @@ static char *expected_fixed_hash(void) {
 }
 
 /* Stale outputs stand before every run: none may survive it. */
-static void test_a_finished_run_leaves_its_capture_and_hash_only(void) {
+static void test_a_finished_run_leaves_its_capture_hash_and_state(void) {
     reset();
     write_stale_outputs();
     assert(run(RUN FIXTURES "e2e_fixed " FIXTURES "three_frames.json" OUTPUTS) == 0);
@@ -108,32 +108,14 @@ static void test_a_finished_run_leaves_its_capture_and_hash_only(void) {
     char *expected = expected_fixed_hash();
     fake_love_cli_assert_text(HASH, expected);
     free(expected);
-    assert(!fake_love_cli_file_exists(ERROR) && "an older failure must not look current");
-}
-
-static void test_seven_arguments_write_no_state(void) {
-    reset();
-    assert(run(RUN FIXTURES "minimal " FIXTURES "three_frames.json" OUTPUTS) == 0);
-    assert(fake_love_cli_file_exists(HASH));
-    assert(!fake_love_cli_file_exists(STATE) && "make love-e2e must not need debug_state");
-}
-
-static void test_a_finished_run_with_a_state_path_leaves_the_state(void) {
-    reset();
-    write_stale_outputs();
-    assert(run(RUN FIXTURES "minimal " FIXTURES "three_frames.json" OUTPUTS " " STATE) == 0);
-    fake_love_cli_assert_text(STATE, "updates 3\n");
-    long size = -1;
-    free(fake_love_cli_read_file(CAPTURE, &size));
-    assert(size == FRAMES * FRAME_SIZE);
-    assert(fake_love_cli_file_exists(HASH));
+    fake_love_cli_assert_text(STATE, "draws 3\n");
     assert(!fake_love_cli_file_exists(ERROR) && "an older failure must not look current");
 }
 
 static void test_a_game_without_debug_state_leaves_the_error_only(void) {
     reset();
     write_stale_outputs();
-    assert(run(RUN FIXTURES "e2e_fixed " FIXTURES "three_frames.json" OUTPUTS " " STATE) == 0);
+    assert(run(RUN FIXTURES "no_debug_state " FIXTURES "three_frames.json" OUTPUTS) == 0);
     char *error = fake_love_cli_read_file(ERROR, NULL);
     assert(error != NULL && "the error file must be written");
     assert(strstr(error, "debug_state") != NULL && "the fake's message names the missing function");
@@ -145,9 +127,18 @@ static void test_a_game_without_debug_state_leaves_the_error_only(void) {
 
 static void test_a_wrong_argument_count_is_a_usage_error(void) {
     reset();
-    int status = run(RUN FIXTURES "minimal " FIXTURES "three_frames.json" OUTPUTS " " STATE " extra");
+    int status = run(RUN FIXTURES "minimal " FIXTURES "three_frames.json" OUTPUTS " extra");
     assert(WIFEXITED(status) && WEXITSTATUS(status) == 2);
-    assert_log_holds("[<state>]");
+    assert_log_holds("love_e2e_run: usage:");
+    assert(!fake_love_cli_file_exists(HASH));
+}
+
+static void test_a_run_without_a_state_path_is_a_usage_error(void) {
+    reset();
+    int status = run(RUN FIXTURES "minimal " FIXTURES "three_frames.json " CAPTURE " " HASH " " ERROR);
+    assert(WIFEXITED(status) && WEXITSTATUS(status) == 2);
+    assert_log_holds("love_e2e_run: usage:");
+    assert(!fake_love_cli_file_exists(HASH));
 }
 
 static void test_a_stopped_run_leaves_the_fake_message_only(void) {
@@ -162,6 +153,7 @@ static void test_a_stopped_run_leaves_the_fake_message_only(void) {
     free(error);
     assert(!fake_love_cli_file_exists(CAPTURE) && "an older capture must not look current");
     assert(!fake_love_cli_file_exists(HASH) && "an older hash must not look current");
+    assert(!fake_love_cli_file_exists(STATE) && "an older state must not look current");
 }
 
 #define HASH_A "aaaa000000000000000000000000000000000000000000000000000000000001\n"
@@ -184,27 +176,27 @@ static void prepare_report_files(void) {
 static void test_the_report_names_each_outcome_and_counts_them(void) {
     prepare_report_files();
     assert(run(REPORT MATCHING DIVERGING STOPPED) != 0);
-    assert_log_holds("love-e2e: FAILED stop.json -- the fake stopped before the last frame.\n"
-                     "love-e2e:   fake_love exited 1\n"
-                     "love-e2e:   fake_love: frame f2: boom\n");
+    assert_log_holds("e2e: FAILED stop.json -- the fake stopped before the last frame.\n"
+                     "e2e:   fake_love exited 1\n"
+                     "e2e:   fake_love: frame f2: boom\n");
     assert_log_holds("frames: match.json: matches (");
     assert_log_holds("frames: DIVERGENT diverge.json");
     assert_log_lacks("stop.json: ");
+    assert_log_holds("if the divergence is intended: make e2e-baseline\n");
     assert_log_lacks("make e2e-ref");
-    assert_log_lacks("make e2e-baseline");
-    assert_log_holds("love-e2e: 1 match, 1 diverge, 1 failed, of 3 replays in tests/e2e\n");
+    assert_log_holds("\ne2e: 1 match, 1 diverge, 1 failed, of 3 replays in tests/e2e\n");
 }
 
 static void test_the_report_passes_when_every_replay_matches(void) {
     prepare_report_files();
     assert(run(REPORT MATCHING MATCHING) == 0);
-    assert_log_holds("love-e2e: 2 match, 0 diverge, 0 failed, of 2 replays in tests/e2e\n");
+    assert_log_holds("e2e: 2 match, 0 diverge, 0 failed, of 2 replays in tests/e2e\n");
 }
 
 static void test_a_failure_alone_fails_the_report(void) {
     prepare_report_files();
     assert(run(REPORT MATCHING STOPPED) != 0);
-    assert_log_holds("love-e2e: 1 match, 0 diverge, 1 failed, of 2 replays in tests/e2e\n");
+    assert_log_holds("e2e: 1 match, 0 diverge, 1 failed, of 2 replays in tests/e2e\n");
 }
 
 #define STATE_REPORT "sh tools/love_e2e_state_report.sh"
@@ -279,12 +271,11 @@ static void test_a_bad_argument_count_is_a_state_report_usage_error(void) {
 
 int main(void) {
     assert(system("rm -rf " DIR " && mkdir -p " DIR) == 0);
-    test_a_finished_run_leaves_its_capture_and_hash_only();
+    test_a_finished_run_leaves_its_capture_hash_and_state();
     test_a_stopped_run_leaves_the_fake_message_only();
-    test_seven_arguments_write_no_state();
-    test_a_finished_run_with_a_state_path_leaves_the_state();
     test_a_game_without_debug_state_leaves_the_error_only();
     test_a_wrong_argument_count_is_a_usage_error();
+    test_a_run_without_a_state_path_is_a_usage_error();
     test_the_report_names_each_outcome_and_counts_them();
     test_the_report_passes_when_every_replay_matches();
     test_a_failure_alone_fails_the_report();

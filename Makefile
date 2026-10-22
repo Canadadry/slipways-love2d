@@ -1169,16 +1169,6 @@ frames_hash = @mkdir -p $(@D); h=$$($(SHA256_CMD) $<) && echo "$${h%% *}" > $@
 $(FRAMES_DIR)/%.sha256: $(FRAMES_DIR)/%.bin
 	$(frames_hash)
 
-e2e: $(foreach e,$(E2E_EVENTS),$(call frames_current,$(e))) tools/e2e_limits.sh tools/frames_check.sh $(E2E_EXCEPTIONS) ## replays tests/e2e/ and checks each capture against its .json.sha256 (~1 s)
-	@status=0; \
-	sh tools/e2e_limits.sh $(E2E_EXCEPTIONS) $(E2E_EVENTS) || status=1; \
-	sh tools/frames_check.sh $(foreach e,$(E2E_EVENTS),$(e) $(call frames_reference,$(e)) $(call frames_current,$(e))) || status=1; \
-	echo "e2e: $(words $(E2E_EVENTS)) e2e in $(E2E_DIR)"; \
-	exit $$status
-
-e2e-baseline: $(foreach e,$(E2E_EVENTS),$(call frames_current,$(e))) ## sets or resets the .json.sha256 of tests/e2e/ from the current code
-	@$(foreach e,$(E2E_EVENTS),cp $(call frames_current,$(e)) $(call frames_reference,$(e)) && echo "e2e: reference set in $(call frames_reference,$(e))" && ) true
-
 e2e-ref: $(foreach e,$(E2E_EVENTS),$(if $(wildcard $(call frames_reference,$(e))),$(call frames_current,$(e)))) $(FRAMES_TOOL) tools/frames_ref.sh ## for each diverging e2e, replays the commit that set its reference and gives the first diverging frame
 	@sh tools/frames_ref.sh ./$(FRAMES_TOOL) $(FRAMES_DIR) $(TMP_DIR)/frames-ref $(foreach e,$(E2E_EVENTS),$(e) $(call frames_reference,$(e)) $(call frames_current,$(e)) $(call frames_capture,$(e)))
 
@@ -1187,13 +1177,24 @@ e2e-ref: $(foreach e,$(E2E_EVENTS),$(if $(wildcard $(call frames_reference,$(e))
 LOVE_E2E_GAME ?= game
 LOVE_E2E_DIR := $(TMP_DIR)/love-e2e
 LOVE_E2E_HASHES := $(foreach e,$(E2E_EVENTS),$(LOVE_E2E_DIR)/$(e).sha256)
+# Largest file first, which follows the frame count: `-j` starts the longest
+# replays first.
+LOVE_E2E_LONGEST_FIRST := $(foreach e,$(if $(E2E_EVENTS),$(shell ls -S $(E2E_EVENTS))),$(LOVE_E2E_DIR)/$(e).sha256)
 
 $(LOVE_E2E_HASHES): $(LOVE_E2E_DIR)/%.sha256: % $(TMP_DIR)/fake_love tools/love_e2e_run.sh FORCE
 	@mkdir -p $(@D)
-	@sh tools/love_e2e_run.sh "$(SHA256_CMD)" ./$(TMP_DIR)/fake_love $(subst %,$(notdir $*),$(LOVE_E2E_GAME)) $* $(@:.sha256=.bin) $@ $(@:.sha256=.error)
+	@sh tools/love_e2e_run.sh "$(SHA256_CMD)" ./$(TMP_DIR)/fake_love $(subst %,$(notdir $*),$(LOVE_E2E_GAME)) $* $(@:.sha256=.bin) $@ $(@:.sha256=.error) $(@:.sha256=.state)
 
-love-e2e: $(LOVE_E2E_HASHES) tools/love_e2e_report.sh tools/frames_check.sh ## runs tmp/fake_love on every tests/e2e/ replay in parallel and checks each capture's sha256 (LOVE_E2E_GAME=game)
-	@sh tools/love_e2e_report.sh $(foreach e,$(E2E_EVENTS),$(e) $(call frames_reference,$(e)) $(LOVE_E2E_DIR)/$(e).sha256 $(LOVE_E2E_DIR)/$(e).error)
+e2e: $(LOVE_E2E_LONGEST_FIRST) tools/e2e_limits.sh $(E2E_EXCEPTIONS) tools/love_e2e_report.sh tools/frames_check.sh ## runs tmp/fake_love with the Lua game on tests/e2e/ and checks each capture against its .json.sha256
+	@status=0; \
+	sh tools/e2e_limits.sh $(E2E_EXCEPTIONS) $(E2E_EVENTS) || status=1; \
+	sh tools/love_e2e_report.sh $(foreach e,$(E2E_EVENTS),$(e) $(call frames_reference,$(e)) $(LOVE_E2E_DIR)/$(e).sha256 $(LOVE_E2E_DIR)/$(e).error) || status=1; \
+	exit $$status
+
+e2e-baseline: $(LOVE_E2E_LONGEST_FIRST) ## sets or resets the .json.sha256 of tests/e2e/ from the Lua game in tmp/fake_love
+	@status=0; \
+	$(foreach e,$(E2E_EVENTS),if [ -f $(LOVE_E2E_DIR)/$(e).error ]; then echo "e2e-baseline: FAILED $(e), no reference written" >&2; status=1; else cp $(LOVE_E2E_DIR)/$(e).sha256 $(call frames_reference,$(e)) && echo "e2e: reference set in $(call frames_reference,$(e))" || status=1; fi;) \
+	exit $$status
 
 FORCE:
 
@@ -1206,17 +1207,10 @@ $(LOVE_ARCHIVE): $(shell find game -type f) | $(TMP_DIR)
 
 love: $(LOVE_ARCHIVE) ## zips game/ into tmp/slipways.love, playable with LÖVE 11.5 and a gamepad
 
-LOVE_E2E_STATE_DIR := $(TMP_DIR)/love-e2e-state
-LOVE_E2E_STATES := $(foreach e,$(E2E_EVENTS),$(LOVE_E2E_STATE_DIR)/$(e).state)
+love-e2e-state: $(LOVE_E2E_LONGEST_FIRST) tools/love_e2e_state_report.sh tools/end_state.sh ## runs tmp/fake_love on every tests/e2e/ replay and checks each Lua end state against its .end-state
+	@sh tools/love_e2e_state_report.sh $(foreach e,$(E2E_EVENTS),$(e) $(LOVE_E2E_DIR)/$(e).state $(e).end-state $(LOVE_E2E_DIR)/$(e).error)
 
-$(LOVE_E2E_STATES): $(LOVE_E2E_STATE_DIR)/%.state: % $(TMP_DIR)/fake_love tools/love_e2e_run.sh FORCE
-	@mkdir -p $(@D)
-	@sh tools/love_e2e_run.sh "$(SHA256_CMD)" ./$(TMP_DIR)/fake_love $(subst %,$(notdir $*),$(LOVE_E2E_GAME)) $* $(@:.state=.bin) $(@:.state=.sha256) $(@:.state=.error) $@
-
-love-e2e-state: $(LOVE_E2E_STATES) tools/love_e2e_state_report.sh tools/end_state.sh ## runs tmp/fake_love on every tests/e2e/ replay and checks each Lua end state against its .end-state
-	@sh tools/love_e2e_state_report.sh $(foreach e,$(E2E_EVENTS),$(e) $(LOVE_E2E_STATE_DIR)/$(e).state $(e).end-state $(LOVE_E2E_STATE_DIR)/$(e).error)
-
-.PHONY: love love-e2e love-e2e-state FORCE
+.PHONY: love love-e2e-state FORCE
 
 # offsetof, void *self, a field read by name, a spec or defaults table: the
 # model the composition migration removed, which a port of the cart brings

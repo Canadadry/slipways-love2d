@@ -48,10 +48,6 @@ static int run_check(void) {
     return system(SCRIPT ARGS " > " LOG " 2>&1");
 }
 
-static int run_check_without_baseline_hints(void) {
-    return system(SCRIPT " --no-baseline-hints" ARGS " > " LOG " 2>&1");
-}
-
 static void reset(void) {
     assert(system("rm -rf " DIR " && mkdir -p " DIR) == 0);
     write_hash(A_CUR, HASH_A);
@@ -83,9 +79,9 @@ static void test_every_divergent_replay_is_named_with_both_hashes(void) {
     assert(strstr(log, HASH_X) != NULL);
     assert(strstr(log, HASH_A) != NULL);
     assert(strstr(log, HASH_B) != NULL);
-    assert(strstr(log, "make e2e-ref") != NULL);
     assert(strstr(log, "make e2e-baseline") != NULL);
-    assert(strstr(log, "fix the Lua game") == NULL);
+    assert(strstr(log, "make e2e-ref") == NULL);
+    assert(strstr(log, "C game") == NULL);
     free(log);
 }
 
@@ -128,59 +124,12 @@ static void test_missing_current_hash_fails(void) {
     free(log);
 }
 
-#define LUA_HINT "frames:   the .json.sha256 is the C game's reference: " \
-                 "fix the Lua game or the fake, never the reference\n"
-
-static void test_without_baseline_hints_a_divergence_points_at_the_lua_game(void) {
-    reset();
-    write_hash(A_REF, HASH_A);
-    write_hash(B_REF, HASH_X);
-    assert(run_check_without_baseline_hints() != 0);
-    char *log = read_log();
-    assert(strstr(log, A_EVENTS ": matches") != NULL);
-    assert(strstr(log, "DIVERGENT " B_EVENTS) != NULL);
-    assert(strstr(log, HASH_X) != NULL);
-    assert(strstr(log, HASH_B) != NULL);
-    assert(strstr(log, LUA_HINT) != NULL);
-    assert(strstr(log, "make e2e-ref") == NULL);
-    assert(strstr(log, "make e2e-baseline") == NULL);
-    free(log);
-}
-
-static void test_without_baseline_hints_a_missing_reference_is_still_reported(void) {
-    reset();
-    write_hash(B_REF, HASH_B);
-    assert(system("rm -f " A_CUR) == 0);
-    assert(run_check_without_baseline_hints() == 0);
-    char *log = read_log();
-    assert(strstr(log, A_REF) != NULL);
-    assert(strstr(log, "not compared") != NULL);
-    assert(strstr(log, "make e2e-baseline") == NULL);
-    assert(strstr(log, B_EVENTS ": matches") != NULL);
-    free(log);
-}
-
-static void test_without_baseline_hints_a_missing_current_hash_still_fails(void) {
-    reset();
-    write_hash(A_REF, HASH_A);
-    write_hash(B_REF, HASH_B);
-    assert(system("rm -f " A_CUR) == 0);
-    assert(run_check_without_baseline_hints() != 0);
-    char *log = read_log();
-    assert(strstr(log, A_CUR) != NULL);
-    assert(strstr(log, B_EVENTS ": matches") != NULL);
-    free(log);
-}
-
 int main(void) {
     test_matching_references_pass_and_are_announced();
     test_every_divergent_replay_is_named_with_both_hashes();
     test_only_the_divergent_replay_is_named();
     test_missing_reference_is_not_compared_and_says_how_to_set_it();
     test_missing_current_hash_fails();
-    test_without_baseline_hints_a_divergence_points_at_the_lua_game();
-    test_without_baseline_hints_a_missing_reference_is_still_reported();
-    test_without_baseline_hints_a_missing_current_hash_still_fails();
     assert(system("rm -rf " DIR) == 0);
     printf("test_frames_check: all tests passed\n");
     return 0;
