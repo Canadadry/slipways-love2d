@@ -15,7 +15,7 @@
     - [x] Chunk 3 — `test_love_runtime` without `src/`
     - [x] Chunk 4 — `make state` and `make replay` on the fake
     - [x] Chunk 5 — C-only group in `test` and `unit`
-    - [ ] Chunk 6 — dry run without `src/`
+    - [x] Chunk 6 — dry run without `src/`
 - [ ] Phase 2 — Delete
   - [ ] Step 2.4 — delete `src/` and the C-only tools
 - [ ] Phase 3 — Rules and docs
