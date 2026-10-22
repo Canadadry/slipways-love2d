@@ -2,15 +2,15 @@
 
 Replace only **system boundaries**:
 
-- Memory: the `allocator_t` a module receives (`tests/heap_allocator.h` backs it with `malloc`)
-- Input: a scripted events file loaded into `p8_input_t`, never a real mouse
-- Output: `p8_graphics_t` and `p8_vram_t`, read back as a framebuffer — never a window
+- Memory: the `allocator_t` a C module receives (`tests/heap_allocator.h` backs it with `malloc`)
+- Input: a scripted events file, never a real pad or mouse
+- Output: the graphics state and the vram of `game/p8/`, read back as a framebuffer — never a window
 
 Don't replace:
 
 - Your own modules
 - Internal collaborators
-- Anything in `src/game/` or `src/engine/` a test can call for real
+- Any module of `game/` a test can call for real
 - Randomness: `p8_fixed_rnd` already starts from a fixed seed, so a run is reproducible as is
 
 ## Designing for Test Doubles

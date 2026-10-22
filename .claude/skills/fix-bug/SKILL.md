@@ -33,11 +33,11 @@ Stage 2 never starts on a plausible cause. The gate after stage 1 is the whole p
 
 Put these in each sub-agent prompt — a fresh agent knows none of them:
 
-- **Reproduction is headless**: fixed frame count, scripted `events.json`, framebuffer dumped as text.
+- **Reproduction is headless**: the Lua game in `tmp/fake_love` on a scripted `events.json`, a fixed frame count, the capture read as text with `tools/capture_read.lua`, the Lua state dumped to a file.
 - **Only the orchestrator touches git.** Sub-agents never commit, stage, stash, branch or push.
 - **The suite is `make test`** — prefer the Makefile target over invoking a runner directly.
-- **The C is the reference.** A bug is judged against the established behaviour of the C, as covered by the tests and the e2e replays, and against the port's own conventions, cited from a real site in the tree. The cart's decompiled source is in the history of `slipways-psx` only (`git show 536ddd4:pico8/lua.lua` there): consult it to understand an intent, never as the yardstick a fix must match.
-- Throwaway repro programs go in `tmp/`, never in `src/` or `tests/`.
+- **The replays and the Lua tree are the yardstick.** A bug is judged against the replays' committed `.sha256` and `.end-state`, the e2e `.txt` notes, and the Lua tree's own conventions, cited from a real site in `game/`. `src/` is not a reference. The cart's decompiled source is in the history of `slipways-psx` only (`git show 536ddd4:pico8/lua.lua` there): consult it to understand an intent, never as the yardstick a fix must match.
+- Throwaway repro programs and instrumented copies of `game/` go in `tmp/`, never in `game/`, `tests/` or `tools/`.
 
 ## Pipeline
 
@@ -45,7 +45,7 @@ Put these in each sub-agent prompt — a fresh agent knows none of them:
 
 Spawn a fresh, memoryless agent running the `help-me-debug` skill. Hand it the bug report **verbatim** — never your paraphrase, and never your own early theory. A summary is exactly where an unproven hypothesis quietly becomes a premise.
 
-Its mandate: understand and prove, **change nothing** under `src/` or `tests/`. It may build, run, instrument throwaway copies in `tmp/`, and read anything.
+Its mandate: understand and prove, **change nothing** under `game/`, `tests/` or `tools/`. It may build, run, instrument throwaway copies in `tmp/`, and read anything.
 
 Reporting contract:
 - `PROVEN:` followed by the bug document from `help-me-debug`'s own template (Summary / Reproduction / Established cause / Scope / Inputs for prioritization / Unverified leads).
@@ -75,9 +75,9 @@ Reporting contract: `DONE:` plus what the test asserts, which files and lines ch
 
 Spawn a third fresh, memoryless agent. It is not handed the implementer's reasoning as truth; it re-establishes the facts itself:
 
-1. **Prove the new test actually detects the bug**: rebuild a throwaway copy of the pre-fix code under `tmp/` (or revert the fix in a scratch copy) and show the new test failing against it, then passing against the tree. A test that passes both ways proves nothing — this repo already caught two such tests exactly this way.
+1. **Prove the new test actually detects the bug**: run it against the pre-fix `game/` and show it failing, then passing against the tree. The pre-fix `game/` is `HEAD`'s: `rm -rf tmp/prefix && mkdir -p tmp/prefix && git archive HEAD game | tar -x -C tmp/prefix`, then `LUA_PATH='tmp/prefix/game/?.lua;tests/lua/game/?.lua' LUA_CPATH= luajit tests/lua/game/test_<module>.lua` must fail and `make lua-run-test_<module>` pass. For a C test of the fake, extract all of `HEAD` instead (`git archive HEAD | tar -x -C tmp/prefix`), lay the tree's `tests/` and `Makefile` over it (`cp -R tests Makefile tmp/prefix/`), and `make -C tmp/prefix unit-run-test_<name>` must fail. A test that passes both ways proves nothing — this repo already caught two such tests exactly this way.
 2. Run `make test` in full.
-3. Run the sanitizer build if the bug was a memory bug (use-after-free, NULL deref, overflow): 0 ASan/UBSan errors.
+3. Only when the proven cause is in the fake's C code (`tools/fake_love/`) and is a memory bug (use-after-free, NULL deref, overflow): run the sanitizer build, 0 ASan/UBSan errors.
 4. Read the diff: it must touch only what the proven cause justifies, and nothing else.
 
 Reporting contract: `VERIFIED:` plus the evidence for each point, or `FAILED:` plus what broke.

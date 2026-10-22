@@ -57,7 +57,11 @@ A blocking question the inputs can't settle → end with `QUESTION:`; your calle
 
 ## Where tests live
 
-One `tests/test_<module>.c` per module, registered in the Makefile's `UNIT_TESTS`, run by `make test`. A test drives the module's public interface through the real path — "integration-style" below means that, not a new e2e. Never add a replay to `tests/e2e/`.
+Code of the Lua game in `game/`: one `tests/lua/game/test_<module>.lua` per module, named after the module's file (a name shared by two `game/` directories takes the directory as prefix: `test_engine_<module>.lua`). Plain LuaJIT, `game/` as the module path, the `expect` and runner of `tests/lua/game/check.lua`; a new file is found by wildcard and runs in `make test` as `lua-run-test_<module>`, with no Makefile registration.
+
+C code — the fake LÖVE in `tools/fake_love/`, the C tools — keeps one `tests/test_<module>.c` per module, registered in the Makefile's `UNIT_TESTS`, run by `make test`.
+
+Either way, a test drives the module's public interface through the real path — "integration-style" below means that, not a new e2e. Never add a replay to `tests/e2e/`, never run the fake on one from a test.
 
 ### 2. Tracer Bullet
 
@@ -70,7 +74,7 @@ GREEN: Write minimal code to pass → test passes
 
 This is your tracer bullet - proves the path works end-to-end.
 
-**Running tests**: `make test`, never a test binary run alone as the final check.
+**Running tests**: `make test`, never a test file or binary run alone as the final check. While iterating, `make lua-run-test_<module>` runs one Lua file.
 
 ### 3. Incremental Loop
 

@@ -1,10 +1,32 @@
 # Good and Bad Tests
 
-Tests live in `tests/test_<module>.c`: `static void` test functions using `assert`, called from `main`. Real APIs below where they exist; other names are illustrative.
+Tests of the Lua game live in `tests/lua/game/test_<module>.lua`: local test functions using `check.expect`, handed by name to `check.run`, which runs them all and names each failure. Tests of the fake LÖVE and the tools live in `tests/test_<module>.c`: `static void` test functions using `assert`, called from `main`. Real APIs below where they exist; other names are illustrative.
 
 ## Good Tests
 
-**Integration-style**: test through the module's public header, not its internals.
+**Integration-style**: test through the module's public functions, not its internals.
+
+```lua
+-- GOOD: observable behavior, through the module's returned table
+local check = require("check")
+local economy_formulas = require("game.economy_formulas")
+local fixed = require("p8.fixed")
+
+local function test_set_updates_an_existing_resource_in_place()
+  local map = { count = 0, entries = {} }
+  economy_formulas.resource_map_set(map, fixed.p8_fixed_from_int(28), 3)
+  economy_formulas.resource_map_set(map, fixed.p8_fixed_from_int(28), 7)
+  local found, value = economy_formulas.resource_map_get(map, fixed.p8_fixed_from_int(28), -1)
+  check.expect(found, 1, "food found")
+  check.expect(value, 7, "food value after update")
+end
+
+check.run({
+  { "set updates an existing resource in place", test_set_updates_an_existing_resource_in_place },
+})
+```
+
+The same in C, for the fake's own code:
 
 ```c
 /* GOOD: observable behavior, through the public interface */
@@ -20,7 +42,7 @@ static void test_add_component_wise(void) {
 Characteristics:
 
 - Tests behavior callers care about
-- Includes only the public header
+- Requires only the module (C: includes only the public header)
 - Survives internal refactors
 - Name describes WHAT, not HOW
 - One logical assertion per test
@@ -30,6 +52,12 @@ For a path only a player reaches (a click, a rendered frame), drive it headless 
 ## Bad Tests
 
 **Implementation-detail tests**: coupled to internal structure.
+
+```lua
+-- BAD: digs a local helper out of the module through the debug library
+local _, fixed_max = debug.getupvalue(economy_formulas.economy_formulas_route_base_cost, 2)
+check.expect(fixed_max(1, 2), 2, "max")
+```
 
 ```c
 /* BAD: reaches into a static helper by including the .c */
@@ -42,7 +70,7 @@ static void test_trade_uses_route_cache(void) {
 
 Red flags:
 
-- Including a `.c` file, or a test-only header exposing statics
+- Including a `.c` file, or a test-only header exposing statics; in Lua, `debug.getupvalue` or a module field added only for the test
 - Asserting on call counts or call order
 - Test breaks when refactoring without behavior change
 - Test name describes HOW, not WHAT
