@@ -22,17 +22,11 @@ local game_data = require("game.game_data")
 local hud = require("game.hud")
 local layout = require("game.layout")
 local map_tables = require("game.map_tables")
-local research = require("game.research")
 local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")
 local vram = require("p8.vram")
 
 local M = {}
-
-local function research_project_id_none()
-  local none = research.RESEARCH_PROJECT_ID_NONE
-  return { index = none.index, epoch = none.epoch }
-end
 
 local function c_strlen(s)
   return (string.find(s, "\0", 1, true) or #s + 1) - 1
@@ -105,7 +99,7 @@ local function button_create(keys)
   self.name = nil
   self.technology = nil
   self.project_planet = nil
-  self.project = research_project_id_none()
+  self.project = nil
   self.archetype = game_data.button_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
   if keys ~= nil then
@@ -125,7 +119,7 @@ local function button_create(keys)
     self.type_bias = keys.type_bias
     self.technology = keys.technology
     self.project_planet = keys.project_planet
-    self.project = { index = keys.project.index, epoch = keys.project.epoch }
+    self.project = keys.project
     self.project_cost = keys.project_cost
   end
   M.button_construct(self, keys)
@@ -467,7 +461,7 @@ function M.button_keys_zero(keys)
   keys.name = nil
   keys.technology = nil
   keys.project_planet = nil
-  keys.project = research_project_id_none()
+  keys.project = nil
   return keys
 end
 
@@ -485,7 +479,7 @@ function M.button_zero()
   b.name = nil
   b.technology = nil
   b.project_planet = nil
-  b.project = research_project_id_none()
+  b.project = nil
   return b
 end
 

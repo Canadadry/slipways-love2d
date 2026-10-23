@@ -123,7 +123,7 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.fold_anchor = 0
   self.shake = self.archetype.shake
   self.slipways = {}
-  self.project = { index = research.RESEARCH_PROJECT_ID_NONE.index, epoch = research.RESEARCH_PROJECT_ID_NONE.epoch }
+  self.project = nil
   self.description = nil
   self.planet_type = nil
   self.layout_row = nil

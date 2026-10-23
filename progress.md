@@ -30,7 +30,7 @@
   - [ ] Step 3.5 — design.md conventions replaced
 - [ ] Added after the phase 1 review
   - [x] Decisions reopened with the user
-  - [ ] Step 2.2 — research project ids as plain numbers
+  - [x] Step 2.2 — research project ids as plain numbers
   - [ ] Step 2.3 — capacity limits that are not a game rule removed
 - [x] Step 2.1 chunks
   - [x] Chunk 1 — display rows

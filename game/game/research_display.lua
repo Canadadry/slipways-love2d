@@ -1,7 +1,7 @@
 -- Copy of src/game/research_display.h then src/game/research_display.c.
 --
 -- Shapes, with the C field names:
---   available_projects_kept_t: { items, count }, items 0-indexed new research_project_id_t tables.
+--   available_projects_kept_t: { items, count }, items 0-indexed research project ids (numbers).
 --   research_project_tooltip_t: the table holding { outer, outer_item, inner,
 --     inner_items }, data_row_t and data_item_t tables of map_tables, inner_items 0-indexed of 3;
 --     each `items` field is the table it points to.

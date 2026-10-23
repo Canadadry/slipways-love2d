@@ -840,7 +840,9 @@ members are shared, inline mutable
 sub-structs are copied by the caller. An entity id is a number handed out by
 `entity_id_take`, never reused, resolved by `entity_get` through the current
 table, which drops an entity when the exit queue flushes it; `nil` is "no
-link"; ids are compared with `==`. A re-init or `memset` of a table that another holder may
+link"; ids are compared with `==`. A research project id follows the same
+convention from `research`'s own counter and table, and goes stale when
+`research_expire_project_ids` runs. A re-init or `memset` of a table that another holder may
 point at zeroes its fields in place and keeps its identity:
 `pad_nav_init` keeps its sub-tables and bindings table,
 `input_step_init` zeroes `played` and `played_frame` in place,

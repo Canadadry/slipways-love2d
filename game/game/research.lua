@@ -6,13 +6,12 @@
 --     planet_codes, base_cost, production_key, inputs, output, upgrade_tech, byproduct,
 --     required_tech, icon_sprite, class_name, next_type }, inputs an array of need_t;
 --     base_cost, output, upgrade_tech, byproduct and icon_sprite nil when absent.
---   research_project_id_t: { index, epoch }, both 16-bit, a new table at every creation.
+--   research_project_id_t: a number never reused, nil for none, stale once research_expire_project_ids runs.
 --   research_project_keys_t: { record, required_tech }.
 -- g_project_table holds PROJECT_RECORDS_COUNT tables created once at load: a project is always
 -- the same table, which project_create zeroes in place, as the C reuses the bytes.
 -- research_project_cost and research_project_production read the main economy through
 -- tech_gate: they cannot run before game.probe exists.
-local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local game_data = require("game.game_data")
 local map_tables = require("game.map_tables")
@@ -25,13 +24,6 @@ local M = {}
 
 local PROJECT_RECORDS_COUNT = map_tables.PROJECT_RECORDS_COUNT
 
-local RESEARCH_PROJECT_ID_NONE = { index = 0, epoch = 0 }
-M.RESEARCH_PROJECT_ID_NONE = RESEARCH_PROJECT_ID_NONE
-
-local function research_project_id_none()
-  return { index = RESEARCH_PROJECT_ID_NONE.index, epoch = RESEARCH_PROJECT_ID_NONE.epoch }
-end
-
 local g_research_project_up = 0
 
 -- Built in place: a project's layout_row items point into the project itself.
@@ -40,7 +32,9 @@ for i = 0, PROJECT_RECORDS_COUNT - 1 do
   g_project_table[i] = { inputs = {} }
 end
 local g_project_table_count = 0
-local g_project_epoch = 1
+local g_project_id_counter = 0
+local g_project_by_id = {}
+local g_project_id_by_project = {}
 
 -- Lua only: project - g_project_table, the C index of each table.
 local project_index_of = {}
@@ -62,10 +56,17 @@ local g_projects_by_name_count = 0
 local g_projects_up = 0
 local g_required_tech = nil
 
+local function project_id_issue(project)
+  g_project_id_counter = g_project_id_counter + 1
+  g_project_by_id[g_project_id_counter] = project
+  g_project_id_by_project[project] = g_project_id_counter
+end
+
 function M.research_expire_project_ids()
-  g_project_epoch = bit.band(g_project_epoch + 1, 0xFFFF)
-  if g_project_epoch == 0 then
-    g_project_epoch = 1
+  g_project_by_id = {}
+  g_project_id_by_project = {}
+  for i = 0, g_project_table_count - 1 do
+    project_id_issue(g_project_table[i])
   end
 end
 
@@ -77,22 +78,22 @@ local function forget_projects()
 end
 
 function M.research_project_get(id)
-  if id.epoch ~= g_project_epoch or id.index >= g_project_table_count then
+  if id == nil then
     return nil
   end
-  return g_project_table[id.index]
+  return g_project_by_id[id]
 end
 
 function M.research_project_id_of(project)
-  local index
+  local id
 
   if project == nil then
-    return research_project_id_none()
+    return nil
   end
-  index = project_index_of[project]
-  assert(index ~= nil and index < g_project_table_count and project == g_project_table[index],
+  id = g_project_id_by_project[project]
+  assert(id ~= nil,
     "research_project_id_of: a project lives in the project table, made since the projects were last forgotten")
-  return { index = bit.band(index, 0xFFFF), epoch = g_project_epoch }
+  return id
 end
 
 local function projects_register(index)
@@ -229,6 +230,7 @@ local function project_create(keys)
   index = g_project_table_count
   g_project_table_count = g_project_table_count + 1
   self = g_project_table[index]
+  project_id_issue(self)
   project_zero(self)
   entity_class.entity_init_header(self, M.research_project_class_def)
   self.name = nil
@@ -337,7 +339,7 @@ function M.research_build_projects()
       g_required_tech = e.header
     else
       local keys = { record = e, required_tech = g_required_tech }
-      g_projects[g_projects_count] = M.research_project_id_of(M.research_project_new(keys)).index
+      g_projects[g_projects_count] = project_index_of[M.research_project_new(keys)]
       g_projects_count = g_projects_count + 1
     end
   end

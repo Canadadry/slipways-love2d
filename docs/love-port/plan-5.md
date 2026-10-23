@@ -275,3 +275,15 @@ bits), `has_refresh` (a class method). `main_economy.lua` now holds only a
 shapes comment and is required by nothing. warn-review rule 13 and the tdd
 skill were inverted to match. `make e2e` 20/20 in 4.9 s, `make end-state`
 20/20, `make test` 0.65 s.
+
+### Step 2.2
+
+One unit. A research project id is a number from `research`'s own counter,
+never reset and never reused, resolved through two module-local maps (id →
+project, project → id); `research_expire_project_ids` gives every current
+project a fresh number, so an id kept past it resolves to `nil` as before.
+`RESEARCH_PROJECT_ID_NONE`, both `research_project_id_none()` helpers, the
+16-bit epoch and its masks are gone; "no project" is `nil`. A shadow-epoch
+instrument over one `make e2e` compared old and new lookups: 552 live,
+11839 `nil`, 0 stale, never different. Seen: `grep -rn epoch game/` finds
+nothing. `make e2e` 20/20 in 5.0 s, `make end-state` 20/20.
