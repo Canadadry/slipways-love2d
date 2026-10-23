@@ -14,14 +14,12 @@
 -- identity (probe.c compares a class's drag with targeting_track_method), so this module does not
 -- load until game.probe exists. game.scroll and game.particle are required at call time.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
-local grab_arena = require("game.grab_arena")
 local planet = require("game.planet")
 local planet_display = require("game.planet_display")
 local planet_trade = require("game.planet_trade")
@@ -31,11 +29,6 @@ local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")
 
 local M = {}
-
-M.SIZEOF = {
-  planet_t = 464,
-}
-local SIZEOF = M.SIZEOF
 
 -- burst_keys_t keys = {0}.
 local function burst_keys_zero()
@@ -82,7 +75,7 @@ function M.structure_init_instance(self, cls, archetype)
 end
 
 local function structure_create(keys)
-  local self = allocator.allocator_alloc(grab_arena.grab_arena_construction_zone(), SIZEOF.planet_t)
+  local self = {}
 
   assert(g_family_up ~= 0, "planet_family_init() must run first")
   M.structure_init_instance(self, M.structure_class_def, game_data.structure_archetype)
@@ -147,7 +140,7 @@ M.trading_hub_class_def = {
 }
 
 local function trading_hub_create(keys)
-  local self = allocator.allocator_alloc(grab_arena.grab_arena_construction_zone(), SIZEOF.planet_t)
+  local self = {}
 
   assert(g_family_up ~= 0, "planet_family_init() must run first")
   M.structure_init_instance(self, M.trading_hub_class_def, game_data.trading_hub_archetype)
@@ -184,7 +177,7 @@ M.processor_class_def = {
 }
 
 local function processor_create(keys)
-  local self = allocator.allocator_alloc(grab_arena.grab_arena_construction_zone(), SIZEOF.planet_t)
+  local self = {}
 
   assert(g_family_up ~= 0, "planet_family_init() must run first")
   M.structure_init_instance(self, M.processor_class_def, game_data.processor_archetype)
@@ -216,7 +209,6 @@ function M.ascension_release_method(self)
 
   planet_display.planet_release_row(self)
   particle.emitter_release_particles(particle.emitter_of(self))
-  planet.planet_grab_arena_released(self)
 end
 
 M.ascension_class_def = {
@@ -259,7 +251,7 @@ function M.ascension_init_instance(self, cls, archetype)
 end
 
 local function ascension_create(keys)
-  local self = allocator.allocator_alloc(grab_arena.grab_arena_construction_zone(), SIZEOF.planet_t)
+  local self = {}
 
   assert(g_family_up ~= 0, "planet_family_init() must run first")
   M.ascension_init_instance(self, M.ascension_class_def, game_data.ascension_archetype)
@@ -312,7 +304,7 @@ M.protostar_class_def = {
 }
 
 local function protostar_create(keys)
-  local self = allocator.allocator_alloc(grab_arena.grab_arena_construction_zone(), SIZEOF.planet_t)
+  local self = {}
 
   assert(g_family_up ~= 0, "planet_family_init() must run first")
   M.ascension_init_instance(self, M.protostar_class_def, game_data.protostar_archetype)

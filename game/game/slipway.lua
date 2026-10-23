@@ -20,7 +20,6 @@
 -- game.planet, game.probe and game.ui are required at call time, inside the functions that need
 -- them.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -33,10 +32,8 @@ local frame_zone = require("engine.frame_zone")
 local geom = require("engine.geom")
 local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
-local zone = require("engine.zone")
 local economy_formulas = require("game.economy_formulas")
 local game_data = require("game.game_data")
-local grab_arena = require("game.grab_arena")
 local slipway_display = require("game.slipway_display")
 local targeting_module = require("game.targeting")
 local tech_gate = require("game.tech_gate")
@@ -44,18 +41,9 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
-M.SIZEOF = {
-  slipway_t = 960,
-  ["void *"] = 8,
-}
-local SIZEOF = M.SIZEOF
-
 M.SLIPWAY_SERVED_PLANETS_CAP = 90
 
 M.SLIPWAY_TRANSIT_DOTS_RESERVE = 24
-
-M.SLIPWAY_CONSTRUCTION_BYTES = zone.ZONE_BYTES(SIZEOF.slipway_t)
-  + zone.ZONE_BYTES(M.SLIPWAY_TRANSIT_DOTS_RESERVE * SIZEOF["void *"])
 
 local function entity_id_none()
   local none = entity_id_type.ENTITY_ID_NONE
@@ -175,8 +163,7 @@ function M.slipway_construct(self)
     return
   end
 
-  pointer_list.pointer_list_init_reserve(self.transit_dots, grab_arena.grab_arena_construction_zone(),
-    M.SLIPWAY_TRANSIT_DOTS_RESERVE)
+  pointer_list.pointer_list_init_reserve(self.transit_dots, nil, M.SLIPWAY_TRANSIT_DOTS_RESERVE)
   self.served_planets.count = 0
 end
 
@@ -411,11 +398,7 @@ local function slipway_draw_overlay_method(self, screen_pos)
 end
 
 local function slipway_release_method(self)
-  local jc = self
-  local zone_ = jc.transit_dots.zone
-
-  jc.transit_dots.count = 0
-  grab_arena.grab_arena_give_back_if_placing(zone_, jc.state)
+  self.transit_dots.count = 0
 end
 
 local function slipway_is_endpoint_class(cls)
@@ -438,8 +421,7 @@ M.slipway_class_def = {
 local function slipway_create(keys)
   local self
 
-  grab_arena.grab_arena_open(M.SLIPWAY_CONSTRUCTION_BYTES)
-  self = allocator.allocator_alloc(grab_arena.grab_arena_construction_zone(), SIZEOF.slipway_t)
+  self = {}
 
   entity.entity_init_instance(self, M.slipway_class_def, game_data.slipway_archetype.state,
     game_data.slipway_archetype.state_time)
@@ -472,7 +454,6 @@ local function slipway_create(keys)
     self.start = keys.start
   end
   M.slipway_construct(self)
-  grab_arena.grab_arena_close()
   entity.entity_construct(self)
   return self
 end

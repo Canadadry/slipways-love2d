@@ -7,7 +7,7 @@ local M = {}
 
 local frame_cells = zone.BUMP_ZONE_STORAGE(zone_sizes.FRAME_ZONE_BYTES)
 
-local frame = { name = nil, storage = nil, capacity = 0, used = 0, half = 0, never_reset = 0 }
+local frame = { name = nil, storage = nil, capacity = 0, used = 0, half = 0 }
 -- Static: an entity_list_t or pointer_list_t keeps a pointer to its zone.
 local frame_handle = {}
 local frame_ready = 0

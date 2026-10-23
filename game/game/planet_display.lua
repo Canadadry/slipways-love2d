@@ -192,7 +192,6 @@ end
 
 function M.planet_release_method(self)
   M.planet_release_row(self)
-  require("game.planet").planet_grab_arena_released(self)
 end
 
 -- planet_inspection_panel_ctx_t: { received_needs }.

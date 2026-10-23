@@ -22,7 +22,6 @@
 -- methods fill planet_class_def; neither requires this module at load. game.message_box and
 -- game.particle are required at call time.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local collect = require("engine.collect")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -34,10 +33,8 @@ local entity_registry = require("engine.entity_registry")
 local frame_zone = require("engine.frame_zone")
 local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
-local zone = require("engine.zone")
 local game_data = require("game.game_data")
 local gen = require("game.gen")
-local grab_arena = require("game.grab_arena")
 local map_tables = require("game.map_tables")
 local planet_display = require("game.planet_display")
 local planet_trade = require("game.planet_trade")
@@ -46,13 +43,6 @@ local targeting = require("game.targeting")
 local fixed = require("p8.fixed")
 
 local M = {}
-
-M.SIZEOF = {
-  planet_t = 464,
-  need_t = 48,
-  ["void *"] = 8,
-}
-local SIZEOF = M.SIZEOF
 
 -- "s" plus the widest structure counter ("-32768"), plus the terminator.
 M.PLANET_ID_SIZE = 8
@@ -194,7 +184,7 @@ function M.planet_init_instance(self, instance_class, archetype)
 end
 
 local function planet_create(keys)
-  local self = allocator.allocator_alloc(grab_arena.grab_arena_construction_zone(), SIZEOF.planet_t)
+  local self = {}
 
   M.planet_init_instance(self, M.planet_class_def, game_data.planet_archetype)
   M.planet_copy_keys(self, keys)
@@ -315,12 +305,8 @@ function M.planet_new(keys)
   return planet_create(keys)
 end
 
-function M.planet_grab_arena_released(self)
-  grab_arena.grab_arena_give_back_if_placing(self.slipways.zone, self.state)
-end
-
 function M.planet_construct(self)
-  M.planet_construct_in(self, grab_arena.grab_arena_construction_zone())
+  M.planet_construct_in(self, nil)
 end
 
 function M.planet_construct_in(self, zone_)
@@ -353,21 +339,7 @@ local function planet_project_need_count(project)
   return n
 end
 
-local function planet_project_bytes(project)
-  local n = planet_project_need_count(project)
-
-  return zone.ZONE_BYTES(n * SIZEOF["void *"]) + n * zone.ZONE_BYTES(SIZEOF.need_t)
-end
-
-function M.planet_kind_construction_bytes(kind)
-  local archetype = kind.record.archetype
-  local target = research.research_projects_at(fixed.p8_fixed_flr_int(archetype.project_index))
-
-  return zone.ZONE_BYTES(SIZEOF.planet_t) + ((target ~= nil) and planet_project_bytes(target) or 0)
-end
-
 function M.planet_install_project(self, research_project_instance)
-  local construction_zone = grab_arena.grab_arena_construction_zone()
   local jy = {}
   local n
 
@@ -380,16 +352,16 @@ function M.planet_install_project(self, research_project_instance)
   self.project = research.research_project_id_of(research_project_instance)
   self.description = nil
 
-  pointer_list.pointer_list_init(jy, construction_zone)
+  pointer_list.pointer_list_init(jy, nil)
   if n > 0 then
-    pointer_list.pointer_list_init_reserve(jy, construction_zone, n)
+    pointer_list.pointer_list_init_reserve(jy, nil, n)
   end
   if n > 0 then
     for i = 0, research_project_instance.inputs.count - 1 do
       local input = research_project_instance.inputs.items[i]
 
       if input ~= nil then
-        local copy = allocator.allocator_alloc(construction_zone, SIZEOF.need_t)
+        local copy = {}
         need_copy_into(copy, input)
         pointer_list.pointer_list_add(jy, copy)
       end

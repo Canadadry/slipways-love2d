@@ -57,16 +57,6 @@ function M.bump_zone_init(zone, name, storage, capacity)
   zone.capacity = capacity
   zone.used = 0
   zone.half = 0
-  zone.never_reset = 0
-end
-
-function M.bump_zone_init_single(zone, name, storage, capacity)
-  zone.name = name
-  zone.storage = storage
-  zone.capacity = capacity
-  zone.used = 0
-  zone.half = 0
-  zone.never_reset = 1
 end
 
 function M.bump_zone_alloc(zone, size)
@@ -80,8 +70,6 @@ function M.bump_zone_alloc(zone, size)
 end
 
 function M.bump_zone_reset(zone)
-  assert(zone.never_reset == 0,
-    "reset of a single-half zone: an arena is never reset, it is released")
   zone.half = cint.mod(zone.half + 1, M.BUMP_ZONE_HALVES)
   zone.used = 0
 end

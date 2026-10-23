@@ -18,7 +18,6 @@ local economy_module = require("game.economy")
 local economy_score = require("game.economy_score")
 local galaxy = require("game.galaxy")
 local game_data = require("game.game_data")
-local grab_arena = require("game.grab_arena")
 local help = require("game.help")
 local hud = require("game.hud")
 local layout = require("game.layout")
@@ -69,7 +68,6 @@ local function quit_game_zone()
   M.cart_flush_exit_queue()
   game_zone.game_zone_reset()
   entity_registry.entity_registry_forget_registries()
-  grab_arena.grab_arena_forget_free()
 end
 
 -- Do not list the inits data_init() and score_panel_init() run themselves: they would run twice.
@@ -125,14 +123,9 @@ function M.cart_load()
   score_panel.score_panel_set_init(M.cart_init_method)
 end
 
-local function forget_game_zone()
-  grab_arena.grab_arena_forget_free()
-end
-
 function M.cart_flush_exit_queue()
   exit_queue.exit_queue_flush()
   if game_zone.game_zone_pending() ~= 0 then
-    forget_game_zone()
     game_zone.game_zone_release()
   end
 end

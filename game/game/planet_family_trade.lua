@@ -13,7 +13,6 @@
 -- game.probe are required at load, since their methods fill the class tables by identity.
 -- game.slipway, game.particle and game.trade are required at call time.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
@@ -22,7 +21,6 @@ local entity_id_type = require("engine.entity_id_type")
 local frame_zone = require("engine.frame_zone")
 local pointer_list = require("engine.pointer_list")
 local game_data = require("game.game_data")
-local grab_arena = require("game.grab_arena")
 local planet = require("game.planet")
 local planet_display = require("game.planet_display")
 local planet_family = require("game.planet_family")
@@ -31,11 +29,6 @@ local probe = require("game.probe")
 local fixed = require("p8.fixed")
 
 local M = {}
-
-M.SIZEOF = {
-  planet_t = 464,
-}
-local SIZEOF = M.SIZEOF
 
 local function entity_id_none()
   local none = entity_id_type.ENTITY_ID_NONE
@@ -235,7 +228,7 @@ local function slipgate_init_instance(self, cls, archetype)
 end
 
 local function slipgate_create(keys)
-  local self = allocator.allocator_alloc(grab_arena.grab_arena_construction_zone(), SIZEOF.planet_t)
+  local self = {}
 
   assert(g_family_trade_up ~= 0, "planet_family_trade_init() must run first")
   slipgate_init_instance(self, M.slipgate_class_def, game_data.slipgate_archetype)
@@ -268,7 +261,7 @@ M.infraspace_gate_class_def = {
 }
 
 local function infraspace_gate_create(keys)
-  local self = allocator.allocator_alloc(grab_arena.grab_arena_construction_zone(), SIZEOF.planet_t)
+  local self = {}
 
   assert(g_family_trade_up ~= 0, "planet_family_trade_init() must run first")
   slipgate_init_instance(self, M.infraspace_gate_class_def, game_data.infraspace_gate_archetype)
@@ -370,7 +363,7 @@ M.synthesizer_class_def = {
 }
 
 local function synthesizer_create(keys)
-  local self = allocator.allocator_alloc(grab_arena.grab_arena_construction_zone(), SIZEOF.planet_t)
+  local self = {}
 
   assert(g_family_trade_up ~= 0, "planet_family_trade_init() must run first")
   planet_family.ascension_init_instance(self, M.synthesizer_class_def, game_data.synthesizer_archetype)

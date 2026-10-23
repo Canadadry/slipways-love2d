@@ -4,8 +4,8 @@
 -- Shapes, with the C field names:
 --   probe_keys_t: { state_time, has_angle_slices, angle_slices, has_base_radius, base_radius,
 --     has_speed_factor, speed_factor }.
---   probe_t: one table holding the entity header and { archetype, grab_arena, emitter,
---     targeting }; targeting a targeting_t (game.targeting), emitter an emitter_t.
+--   probe_t: one table holding the entity header and { archetype, emitter, targeting };
+--     targeting a targeting_t (game.targeting), emitter an emitter_t.
 --   targeting_track_ctx_t: { self_map_pos }.
 --
 -- Include cycle: game.particle is required at load, since emitter_update_method fills
@@ -13,7 +13,6 @@
 -- game.slipway, game.ui and game.wormhole are required at call time, inside the functions that need
 -- them. planet_family and wormhole hold this module's methods by identity, so it requires neither.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -25,9 +24,7 @@ local entity_registry = require("engine.entity_registry")
 local frame_zone = require("engine.frame_zone")
 local geom = require("engine.geom")
 local vec = require("engine.vec")
-local zone = require("engine.zone")
 local game_data = require("game.game_data")
-local grab_arena = require("game.grab_arena")
 local hud = require("game.hud")
 local particle_module = require("game.particle")
 local targeting_module = require("game.targeting")
@@ -37,11 +34,6 @@ local gfx_module = require("p8.gfx")
 local str = require("p8.str")
 
 local M = {}
-
-M.SIZEOF = {
-  probe_t = 200,
-}
-local SIZEOF = M.SIZEOF
 
 local function entity_id_none()
   local none = entity_id_type.ENTITY_ID_NONE
@@ -457,12 +449,7 @@ function M.probe_spawn_particle(self)
 end
 
 function M.probe_release_method(self)
-  local g_ = self
-
   particle_module.emitter_release_particles(particle_module.emitter_of(self))
-  if g_.grab_arena ~= nil and self.state ~= entity_class.ENTITY_STATE_SETTLED then
-    grab_arena.grab_arena_give_back(g_.grab_arena)
-  end
 end
 
 M.probe_class_def = {
@@ -496,7 +483,6 @@ function M.probe_init_instance(self, cls, archetype)
   self.targeting.archetype = self.archetype.targeting
   M.targeting_set_target(self.targeting, nil)
   self.is_dead = 0
-  self.grab_arena = nil
   self.targeting.cost = self.archetype.targeting.cost
   self.targeting.has_cost = self.archetype.targeting.has_cost
   self.emitter.speed_factor = self.archetype.emitter.speed_factor
@@ -513,11 +499,8 @@ local function probe_create(keys)
   local self
 
   assert(g_probe_up ~= 0, "probe_init() must run first")
-  grab_arena.grab_arena_open(zone.ZONE_BYTES(SIZEOF.probe_t))
-  self = allocator.allocator_alloc(grab_arena.grab_arena_construction_zone(), SIZEOF.probe_t)
+  self = {}
   M.probe_init_instance(self, M.probe_class_def, game_data.probe_archetype)
-  self.grab_arena = grab_arena.grab_arena_construction_zone()
-  grab_arena.grab_arena_close()
   if keys ~= nil then
     self.state_time = keys.state_time
     if keys.has_angle_slices ~= 0 then

@@ -1,21 +1,9 @@
 -- Copy of src/engine/allocator.h then src/engine/allocator.c.
--- An allocator_t is { alloc, grow, release, bump }. A struct whose first
--- member is the handle (flip_zone_allocator_t, arena_t, and the block an arena
--- lives in) is one table holding the fields of both: the cast is the
--- identity, and an arena's bump is both its inline zone and the handle's
--- pointer to it.
-local cint = require("p8.cint")
+-- An allocator_t is { alloc, grow, release, bump }. A flip_zone_allocator_t,
+-- whose first member is the handle, is one table holding the fields of both.
 local zone_module = require("engine.zone")
 
 local M = {}
-
-M.SIZEOF = {
-  arena_t = 96,
-  zone_cell_t = 8,
-}
-local SIZEOF = M.SIZEOF
-
-M.ARENA_HEAD_BYTES = zone_module.ZONE_BYTES(SIZEOF.arena_t)
 
 -- Lua only: the memcpy of a whole block of unknown type, every key copied.
 local function copy_block(q, p)
@@ -102,73 +90,6 @@ function M.allocator_release(z, p)
     return
   end
   z.release(z, p)
-end
-
-local ARENA_HEAD_CELLS = cint.div(M.ARENA_HEAD_BYTES, SIZEOF.zone_cell_t)
-
--- An arena is the table the "is this an arena" asserts recognise by its from.
-function M.arena_take(from, name, size)
-  local cells = cint.div(size, SIZEOF.zone_cell_t)
-  assert(cells > ARENA_HEAD_CELLS, "arena smaller than its header")
-  local block = M.allocator_alloc(from, size)
-  local arena = block
-  arena.bump = {}
-  zone_module.bump_zone_init_single(arena.bump, name, {}, (cells - ARENA_HEAD_CELLS) * SIZEOF.zone_cell_t)
-  store_handle(arena, M.allocator_from_bump_zone(arena.bump))
-  arena.from = from
-  return arena
-end
-
-function M.arena_size_for(n)
-  return ARENA_HEAD_CELLS * SIZEOF.zone_cell_t + zone_module.ZONE_BYTES(n)
-end
-
-function M.arena_size(arena)
-  local a = arena
-  assert(arena ~= nil and a.from ~= nil, "size of a handle that is not an arena")
-  return ARENA_HEAD_CELLS * SIZEOF.zone_cell_t + a.bump.capacity
-end
-
-local function arena_spill_alloc(z, n)
-  local a = z
-  if zone_module.ZONE_BYTES(n) <= a.bump.capacity - a.bump.used then
-    return zone_module.bump_zone_alloc(a.bump, n)
-  end
-  return M.allocator_alloc(a.from, n)
-end
-
-local function arena_spill_grow(z, p, old_n, new_n)
-  local q = arena_spill_alloc(z, new_n)
-  if old_n > 0 then
-    copy_block(q, p)
-  end
-  return q
-end
-
-function M.arena_spill(arena)
-  local a = arena
-  assert(arena ~= nil and a.from ~= nil, "spill of a handle that is not an arena")
-  a.alloc = arena_spill_alloc
-  a.grow = arena_spill_grow
-end
-
-function M.arena_used(arena)
-  local a = arena
-  assert(arena ~= nil and a.from ~= nil, "usage of a handle that is not an arena")
-  return ARENA_HEAD_CELLS * SIZEOF.zone_cell_t + a.bump.used
-end
-
-function M.arena_flush(arena)
-  local a = arena
-  assert(arena ~= nil and a.from ~= nil, "flush of a handle that is not an arena")
-  zone_module.bump_zone_init_single(a.bump, a.bump.name, a.bump.storage, a.bump.capacity)
-  store_handle(a, M.allocator_from_bump_zone(a.bump))
-end
-
-function M.arena_release(arena)
-  local a = arena
-  assert(arena ~= nil and a.from ~= nil, "release of a handle that is not an arena")
-  M.allocator_release(a.from, a)
 end
 
 return M

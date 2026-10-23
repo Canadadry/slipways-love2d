@@ -16,7 +16,6 @@ local economy_tiers = require("game.economy_tiers")
 local galaxy = require("game.galaxy")
 local game_data = require("game.game_data")
 local gen = require("game.gen")
-local grab_arena = require("game.grab_arena")
 local map_tables = require("game.map_tables")
 local planet_module = require("game.planet")
 local planet_family = require("game.planet_family")
@@ -67,16 +66,15 @@ function M.save_load_background_seed(state)
 end
 
 local function load_needs(planet, node)
-  local zone = grab_arena.grab_arena_construction_zone()
   local needs = {}
 
   if has(node, save_state.SAVE_NODE_HAS_NEEDS) == 0 then
     planet.has_ = bit.band(bit.band(planet.has_, bit.bnot(planet_module.PLANET_HAS_NEEDS)), 0xFFFF)
     return
   end
-  pointer_list.pointer_list_init(needs, zone)
+  pointer_list.pointer_list_init(needs, nil)
   if node.need_count > 0 then
-    pointer_list.pointer_list_init_reserve(needs, zone, node.need_count)
+    pointer_list.pointer_list_init_reserve(needs, nil, node.need_count)
   end
   for i = 0, node.need_count - 1 do
     local resource = { kind = trade.RESOURCE_NIL, number = 0 }
@@ -84,7 +82,7 @@ local function load_needs(planet, node)
       resource.kind = trade.RESOURCE_FIXED
       resource.number = node.needs[i].resource
     end
-    pointer_list.pointer_list_add(needs, research.need_new(zone, resource))
+    pointer_list.pointer_list_add(needs, research.need_new(nil, resource))
   end
   planet.needs = needs
   planet.has_ = bit.bor(planet.has_, planet_module.PLANET_HAS_NEEDS)

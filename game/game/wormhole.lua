@@ -13,7 +13,6 @@
 -- wormhole_draw_method and targeting_tooltip_method fill wormhole_class_def; both must reach this
 -- module at call time only. game.planet is required at call time, inside the function that needs it.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
@@ -23,9 +22,7 @@ local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
-local zone = require("engine.zone")
 local game_data = require("game.game_data")
-local grab_arena = require("game.grab_arena")
 local probe = require("game.probe")
 local targeting_module = require("game.targeting")
 local tech_gate = require("game.tech_gate")
@@ -33,12 +30,6 @@ local wormhole_display = require("game.wormhole_display")
 local fixed = require("p8.fixed")
 
 local M = {}
-
-M.SIZEOF = {
-  wormhole_t = 152,
-  entity_id_t = 4,
-}
-local SIZEOF = M.SIZEOF
 
 M.WORMHOLE_HAS_TOO_FAR_TARGET = bit.lshift(1, 0)
 
@@ -94,7 +85,7 @@ function M.wormhole_construct(self)
 
   n = wormhole_anchor_count()
   ox = self.anchors
-  entity_id_list.entity_id_list_init_reserve(ox, grab_arena.grab_arena_construction_zone(), n)
+  entity_id_list.entity_id_list_init_reserve(ox, nil, n)
   it = entity_list.entity_list_all(entity_registry.live_entities())
   while true do
     more, p = entity_list.entity_list_iter_next(it, p)
@@ -251,17 +242,12 @@ function M.wormhole_reveal_radius(self, t)
   return fixed.p8_fixed_mul(min_val, oi)
 end
 
-local function wormhole_release_method(self)
-  grab_arena.grab_arena_give_back(self.anchors.zone)
-end
-
 M.wormhole_class_def = {
   draw = wormhole_display.wormhole_draw_method,
   draw_overlay = probe.targeting_tooltip_method,
   -- Not targeting_track_method: wormhole_drag adds the nearest-anchor search and the too-far target.
   drag = wormhole_drag_method,
   drop = wormhole_drop_method,
-  release = wormhole_release_method,
   states = {
     [entity_class.ENTITY_STATE_PLACING] = wormhole_update_placing_method,
     [entity_class.ENTITY_STATE_UNFOLDING] = wormhole_update_unfolding_method,
@@ -274,9 +260,7 @@ M.wormhole_class_def = {
 local function wormhole_create()
   local self
 
-  grab_arena.grab_arena_open(zone.ZONE_BYTES(SIZEOF.wormhole_t)
-    + zone.ZONE_BYTES(wormhole_anchor_count() * SIZEOF.entity_id_t))
-  self = allocator.allocator_alloc(grab_arena.grab_arena_construction_zone(), SIZEOF.wormhole_t)
+  self = {}
 
   entity.entity_init_instance(self, M.wormhole_class_def, game_data.wormhole_archetype.state,
     game_data.wormhole_archetype.state_time)
@@ -295,7 +279,6 @@ local function wormhole_create()
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.is_dead = 0
   M.wormhole_construct(self)
-  grab_arena.grab_arena_close()
   entity.entity_construct(self)
   return self
 end

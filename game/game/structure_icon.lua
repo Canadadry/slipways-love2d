@@ -20,7 +20,6 @@ local frame_zone = require("engine.frame_zone")
 local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
-local grab_arena = require("game.grab_arena")
 local targeting = require("game.targeting")
 local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")
@@ -158,9 +157,7 @@ function M.structure_icon_left_press(self)
 
   id_num_str = str.p8_tostr_fixed(frame_zone.frame_zone(), new_id)
   planet.planet_keys_set_id(keys, str.p8_concat2(frame_zone.frame_zone(), "s", id_num_str))
-  grab_arena.grab_arena_open(planet.planet_kind_construction_bytes(entity_kind))
   held = entity_kind.new_entity(keys)
-  grab_arena.grab_arena_close()
   out.held = entity_id.entity_id_link(held)
   out.stop = (held ~= nil) and 1 or 0
   return out

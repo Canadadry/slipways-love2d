@@ -13,7 +13,7 @@ local game_zone_storage = { name = nil, storage = nil, capacity = 0, bottom = 0,
 -- Static: an entity_list_t or pointer_list_t keeps a pointer to its zone.
 local game_zone_handle = {}
 local game_zone_allocator = nil
-local load_zone_storage = { name = nil, storage = nil, capacity = 0, used = 0, half = 0, never_reset = 0 }
+local load_zone_storage = { name = nil, storage = nil, capacity = 0, used = 0, half = 0 }
 local load_zone_handle = {}
 local load_zone_max_used = 0
 
