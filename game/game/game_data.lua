@@ -23,8 +23,8 @@ M.SCORE_ROWS_COUNT = 12
 M.PLANET_MOOD_ROWS_COUNT = 4
 M.PLANET_RING_COLORS_COUNT = 4
 
-local HALF_WIDTH = cint.div(vram.P8_SCREEN_WIDTH, 2)
-local HALF_HEIGHT = cint.div(vram.P8_SCREEN_HEIGHT, 2)
+local HALF_WIDTH = cint.div(vram.SCREEN_WIDTH, 2)
+local HALF_HEIGHT = cint.div(vram.SCREEN_HEIGHT, 2)
 
 local check_fields = map_tables.map_tables_check_fields
 local data_item = map_tables.map_tables_make_data_item
@@ -94,10 +94,10 @@ M.galaxy_menu_4_layout_row_items = { data_item({ row = M.galaxy_menu_4_layout_ro
 M.galaxy_menu_4_layout_row = data_row({ count = 1, items = M.galaxy_menu_4_layout_row_items })
 
 M.galaxy_menu_table = {
-  { pos_x = vram.P8_SCREEN_WIDTH - 10, pos_y = 0, layout_row = M.galaxy_menu_1_layout_row },
+  { pos_x = vram.SCREEN_WIDTH - 10, pos_y = 0, layout_row = M.galaxy_menu_1_layout_row },
   { pos_x = 0, pos_y = 0, layout_row = M.galaxy_menu_2_layout_row },
   { pos_x = HALF_WIDTH - 17, pos_y = 0, layout_row = M.galaxy_menu_3_layout_row },
-  { pos_x = 0, pos_y = vram.P8_SCREEN_HEIGHT - 11, layout_row = M.galaxy_menu_4_layout_row },
+  { pos_x = 0, pos_y = vram.SCREEN_HEIGHT - 11, layout_row = M.galaxy_menu_4_layout_row },
 }
 
 M.pause_menu_1_layout_row_items = { data_item({ number = 31 }), data_item({ text = "restart     " }) }
@@ -120,7 +120,7 @@ M.resume_layout_row_items = { data_item({ number = 31 }), data_item({ text = "re
 M.resume_layout_row = data_row({ count = 2, items = M.resume_layout_row_items })
 
 M.pause_menu_tail = {
-  fixed_pos_x = 0, fixed_pos_y = vram.P8_SCREEN_HEIGHT - 21, row_step_x = 0, row_step_y = -11, back_color = 14,
+  fixed_pos_x = 0, fixed_pos_y = vram.SCREEN_HEIGHT - 21, row_step_x = 0, row_step_y = -11, back_color = 14,
 }
 
 M.difficulty_options_1_layout_row_items = { data_item({ number = 49 }), data_item({ text = "forgiving   " }) }
@@ -371,8 +371,8 @@ M.score_panel_countdown_rows_items = {
 }
 M.score_panel_countdown_rows_row = data_row({ count = 5, items = M.score_panel_countdown_rows_items })
 M.score_panel_frame_rows_1_items = {
-  data_item({ number = vram.P8_SCREEN_HEIGHT - 2 }),
-  data_item({ number = vram.P8_SCREEN_HEIGHT - 1 }),
+  data_item({ number = vram.SCREEN_HEIGHT - 2 }),
+  data_item({ number = vram.SCREEN_HEIGHT - 1 }),
   data_item({ number = 1 }),
 }
 M.score_panel_frame_rows_1 = data_row({
@@ -388,7 +388,7 @@ M.score_panel_frame_rows_2 = data_row({
 })
 M.score_panel_frame_rows_3_items = {
   data_item({ number = 8 }),
-  data_item({ number = vram.P8_SCREEN_HEIGHT - 10 }),
+  data_item({ number = vram.SCREEN_HEIGHT - 10 }),
   data_item({ number = 34 }),
 }
 M.score_panel_frame_rows_3 = data_row({
@@ -403,9 +403,9 @@ M.score_panel_frame_rows_4 = data_row({
   count = 3, items = M.score_panel_frame_rows_4_items, draw_function = map_tables.DRAW_FUNCTION_DRAW_HELP_FRAME,
 })
 M.score_panel_frame_rows_5_items = {
-  data_item({ number = vram.P8_SCREEN_WIDTH - 47 }),
+  data_item({ number = vram.SCREEN_WIDTH - 47 }),
   data_item({ number = -3 }),
-  data_item({ number = vram.P8_SCREEN_WIDTH - 11 }),
+  data_item({ number = vram.SCREEN_WIDTH - 11 }),
 }
 M.score_panel_frame_rows_5 = data_row({
   count = 3, items = M.score_panel_frame_rows_5_items, draw_function = map_tables.DRAW_FUNCTION_DRAW_HELP_FRAME,
@@ -444,7 +444,7 @@ M.score_panel_year_banner_row = data_row({ count = 2, items = M.score_panel_year
 M.score_panel_readouts_1_items = {
   data_item({ is_false = true }),
   data_item({ number = 13 }),
-  data_item({ number = vram.P8_SCREEN_HEIGHT - 7 }),
+  data_item({ number = vram.SCREEN_HEIGHT - 7 }),
   data_item({ number = 9 }),
 }
 M.score_panel_readouts_1 = data_row({
@@ -453,7 +453,7 @@ M.score_panel_readouts_1 = data_row({
 M.score_panel_readouts_2_items = {
   data_item({ is_false = true }),
   data_item({ number = 37 }),
-  data_item({ number = vram.P8_SCREEN_HEIGHT - 7 }),
+  data_item({ number = vram.SCREEN_HEIGHT - 7 }),
   data_item({ number = 2 }),
 }
 M.score_panel_readouts_2 = data_row({
@@ -488,7 +488,7 @@ M.score_panel_readouts_5 = data_row({
 })
 M.score_panel_readouts_6_items = {
   data_item({ is_false = true }),
-  data_item({ number = vram.P8_SCREEN_WIDTH - 43 }),
+  data_item({ number = vram.SCREEN_WIDTH - 43 }),
   data_item({ number = 2 }),
   data_item({ number = 13 }),
 }
@@ -497,7 +497,7 @@ M.score_panel_readouts_6 = data_row({
 })
 M.score_panel_readouts_7_items = {
   data_item({ is_false = true }),
-  data_item({ number = vram.P8_SCREEN_WIDTH - 29 }),
+  data_item({ number = vram.SCREEN_WIDTH - 29 }),
   data_item({ number = 2 }),
   data_item({ number = 13 }),
 }
@@ -519,7 +519,7 @@ M.wormhole_too_far_target_status_text = "-too far-"
 local NORMAL = entity_class.ENTITY_STATE_NORMAL
 local PLACING = entity_class.ENTITY_STATE_PLACING
 local SETTLED = entity_class.ENTITY_STATE_SETTLED
-local FIXED_INT = fixed.P8_FIXED_INT
+local FIXED_INT = fixed.INT
 
 local function vec(x, y)
   return { x = x, y = y }
@@ -628,7 +628,7 @@ M.ui_archetype = {
   state = NORMAL,
   state_time = 0x0,
   layer = 0xf0000,
-  panel_box = box(0xa0000, 0xa0000, FIXED_INT(vram.P8_SCREEN_WIDTH - 10), FIXED_INT(vram.P8_SCREEN_HEIGHT - 10)),
+  panel_box = box(0xa0000, 0xa0000, FIXED_INT(vram.SCREEN_WIDTH - 10), FIXED_INT(vram.SCREEN_HEIGHT - 10)),
 }
 
 M.button_archetype = { state = NORMAL, state_time = 0x0, layer = 0xb0000 }
@@ -657,7 +657,7 @@ M.structure_icon_archetype = {
   hit_box = box(0x0, 0x0, 0x90000, 0x80000),
   layer = 0xc0000,
   pos = vec(0x3e70000, 0x3e70000),
-  rest_cursor = vec(FIXED_INT(vram.P8_SCREEN_WIDTH - 10), FIXED_INT(vram.P8_SCREEN_HEIGHT - 8)),
+  rest_cursor = vec(FIXED_INT(vram.SCREEN_WIDTH - 10), FIXED_INT(vram.SCREEN_HEIGHT - 8)),
 }
 
 M.score_panel_archetype = {
@@ -1140,7 +1140,7 @@ end
 
 function M.int_seq_has_fixed(seq, v)
   for i = 1, seq.count do
-    if fixed.p8_fixed_from_int(seq.items[i]) == v then
+    if fixed.from_int(seq.items[i]) == v then
       return true
     end
   end
@@ -1160,11 +1160,11 @@ function M.planet_types_lookup(px)
 end
 
 function M.game_data_route_cost_factor()
-  return fixed.p8_fixed_from_int(6)
+  return fixed.from_int(6)
 end
 
 function M.game_data_route_length_factor()
-  return fixed.P8_FIXED_LIT(0x00001902, 0.0977)
+  return fixed.LIT(0x00001902, 0.0977)
 end
 
 return M

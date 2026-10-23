@@ -1169,7 +1169,7 @@ function M.save_state_capture(out)
   ids.slipway_count = 0
   out.difficulty = difficulty_index()
   capture_economy(out.economy)
-  out.rnd_state = fixed.p8_fixed_rnd_state()
+  out.rnd_state = fixed.rnd_state()
   out.background_seed = background.seed
   capture_type_picker(out.type_picker)
   out.vanish_walk.step = vanish_walk.step

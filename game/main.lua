@@ -35,7 +35,7 @@ local function read_bindings()
   local parsed = {}
   local error_report = {}
   if not bindings.bindings_parse("bindings.cfg", text, parsed, error_report) then
-    fatal.p8_fatal(error_report.text)
+    fatal.raise(error_report.text)
   end
   return parsed
 end
@@ -48,13 +48,13 @@ local function read_attract_after(args)
     if args[i] == ATTRACT_AFTER_FLAG then
       local value = args[i + 1]
       if frames ~= nil then
-        fatal.p8_fatal(string.format("%s given twice (second value %s)", ATTRACT_AFTER_FLAG, tostring(value)))
+        fatal.raise(string.format("%s given twice (second value %s)", ATTRACT_AFTER_FLAG, tostring(value)))
       end
       if value == nil then
-        fatal.p8_fatal(string.format("%s needs a value", ATTRACT_AFTER_FLAG))
+        fatal.raise(string.format("%s needs a value", ATTRACT_AFTER_FLAG))
       end
       if not value:match("^[1-9]%d*$") or tonumber(value) > ATTRACT_AFTER_MAX then
-        fatal.p8_fatal(string.format("%s: %s is not a decimal from 1 to %d", ATTRACT_AFTER_FLAG, tostring(value),
+        fatal.raise(string.format("%s: %s is not a decimal from 1 to %d", ATTRACT_AFTER_FLAG, tostring(value),
           ATTRACT_AFTER_MAX))
       end
       frames = tonumber(value)
@@ -82,15 +82,15 @@ end
 
 function love.load(args)
   screen.screen_init()
-  vram.p8_vram_init(mem)
-  gfx_module.p8_gfx_init(gfx)
-  sprite_sheet.p8_sprite_sheet_load(mem)
-  gfx_module.p8_draw_backend_set(backend.backend_get())
+  vram.init(mem)
+  gfx_module.init(gfx)
+  sprite_sheet.load(mem)
+  gfx_module.draw_backend_set(backend.backend_get())
   dispatch_context.dispatch_context_set_gfx(gfx)
   dispatch_context.dispatch_context_set_mem(mem)
   local zero_frame = { mouse_x = 0, mouse_y = 0, mouse_buttons = 0, pad_buttons = 0 }
   dispatch_context.dispatch_context_set_input({ frames = { zero_frame }, frame_count = 1, current_frame = 1 })
-  draw_meter.p8_draw_meter_install()
+  draw_meter.install()
   cart.cart_load()
   cart.cart_init()
   input_step.input_step_init(step, read_bindings())
@@ -109,7 +109,7 @@ function love.draw()
   screen.screen_frame_begin()
   cart.cart_draw()
   screen.screen_frame_end()
-  draw_meter.p8_draw_meter_frame_end()
+  draw_meter.frame_end()
   screen.screen_present()
 end
 

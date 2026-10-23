@@ -5,16 +5,16 @@ local vram = require("p8.vram")
 local M = {}
 
 -- One SLOT(width, height) call per slot, in slot order. Each side at most 256.
-function M.P8_IMAGE_SLOTS(SLOT)
+function M.SLOTS(SLOT)
   SLOT(256, 256)
-  M.P8_IMAGE_SMALL_SLOTS_8(SLOT)
-  M.P8_IMAGE_SMALL_SLOTS_8(SLOT)
-  M.P8_IMAGE_SMALL_SLOTS_8(SLOT)
-  M.P8_IMAGE_SMALL_SLOTS_8(SLOT)
-  M.P8_IMAGE_WIDE_SLOTS_8(SLOT)
-  M.P8_IMAGE_WIDE_SLOTS_8(SLOT)
-  M.P8_IMAGE_WIDE_SLOTS_8(SLOT)
-  M.P8_IMAGE_WIDE_SLOTS_8(SLOT)
+  M.SMALL_SLOTS_8(SLOT)
+  M.SMALL_SLOTS_8(SLOT)
+  M.SMALL_SLOTS_8(SLOT)
+  M.SMALL_SLOTS_8(SLOT)
+  M.WIDE_SLOTS_8(SLOT)
+  M.WIDE_SLOTS_8(SLOT)
+  M.WIDE_SLOTS_8(SLOT)
+  M.WIDE_SLOTS_8(SLOT)
   for _ = 1, 5 do
     SLOT(16, 16)
   end
@@ -26,53 +26,53 @@ function M.P8_IMAGE_SLOTS(SLOT)
   end
 end
 
-function M.P8_IMAGE_SMALL_SLOTS_8(SLOT)
+function M.SMALL_SLOTS_8(SLOT)
   for _ = 1, 8 do
     SLOT(48, 8)
   end
 end
 
-function M.P8_IMAGE_WIDE_SLOTS_8(SLOT)
+function M.WIDE_SLOTS_8(SLOT)
   for _ = 1, 8 do
     SLOT(128, 8)
   end
 end
 
-M.P8_IMAGE_SLOT_COUNT = 0
-M.P8_IMAGE_PIXELS = 0
-M.P8_IMAGE_SLOTS(function(width, height)
-  M.P8_IMAGE_SLOT_COUNT = M.P8_IMAGE_SLOT_COUNT + 1
-  M.P8_IMAGE_PIXELS = M.P8_IMAGE_PIXELS + width * height
+M.SLOT_COUNT = 0
+M.PIXELS = 0
+M.SLOTS(function(width, height)
+  M.SLOT_COUNT = M.SLOT_COUNT + 1
+  M.PIXELS = M.PIXELS + width * height
 end)
 
-M.P8_IMAGE_WINDOW_WIDTH = vram.P8_SCREEN_WIDTH
-M.P8_IMAGE_WINDOW_HEIGHT = vram.P8_SCREEN_HEIGHT
+M.WINDOW_WIDTH = vram.SCREEN_WIDTH
+M.WINDOW_HEIGHT = vram.SCREEN_HEIGHT
 
 local SLOT_SIZES = {}
 local slot_sizes_defined = 0
-M.P8_IMAGE_SLOTS(function(width, height)
+M.SLOTS(function(width, height)
   SLOT_SIZES[slot_sizes_defined] = { width = width, height = height }
   slot_sizes_defined = slot_sizes_defined + 1
 end)
 M.SLOT_SIZES = SLOT_SIZES
 
 local built = {}
-for slot = 0, M.P8_IMAGE_SLOT_COUNT - 1 do
+for slot = 0, M.SLOT_COUNT - 1 do
   built[slot] = false
 end
 local building_slot = -1
 local guarded = nil
 
 local function slot_fatal(slot, what)
-  fatal.p8_fatal(string.format("image slot %d: %s", slot, what))
+  fatal.raise(string.format("image slot %d: %s", slot, what))
 end
 
 local function check_slot(slot)
-  if slot < 0 or slot >= M.P8_IMAGE_SLOT_COUNT then slot_fatal(slot, "no such slot") end
+  if slot < 0 or slot >= M.SLOT_COUNT then slot_fatal(slot, "no such slot") end
 end
 
 -- Returns a new { width, height } table.
-function M.p8_image_size(slot)
+function M.size(slot)
   check_slot(slot)
   return { width = SLOT_SIZES[slot].width, height = SLOT_SIZES[slot].height }
 end
@@ -141,7 +141,7 @@ local function guard_psets(gfx, mem, points, count)
   guarded.psets(gfx, mem, points, count)
 end
 
--- Stands in front of the backend during a build, which p8_cls cannot otherwise see.
+-- Stands in front of the backend during a build, which gfx.cls cannot otherwise see.
 local GUARD = {
   cls = guard_cls, pset = guard_pset, line = guard_line, rect = guard_rect, rectfill = guard_rectfill,
   circ = guard_circ, circfill = guard_circfill, spr = guard_spr, print = guard_print,
@@ -153,12 +153,12 @@ local GUARD = {
 M.GUARD = GUARD
 
 -- Clears the slot, then calls draw(gfx, mem, context) once per window of at
--- most P8_IMAGE_WINDOW_WIDTH x P8_IMAGE_WINDOW_HEIGHT covering w x h,
+-- most image.WINDOW_WIDTH x image.WINDOW_HEIGHT covering w x h,
 -- row-major, with gfx's camera at the window's origin: image pixel (x, y) is
 -- world (x, y). Restores the camera. draw must be deterministic and touch no
--- game state nor visual_random. A p8_fatal on a size over capacity, a cls, a
--- nested build or a p8_image_draw during the build.
-function M.p8_image_build(gfx, mem, slot, w, h, draw, context)
+-- game state nor visual_random. A fatal.raise on a size over capacity, a cls, a
+-- nested build or an image.draw during the build.
+function M.build(gfx, mem, slot, w, h, draw, context)
   check_slot(slot)
   if building_slot >= 0 then slot_fatal(slot, "build inside a build") end
   local capacity = { width = SLOT_SIZES[slot].width, height = SLOT_SIZES[slot].height }
@@ -168,31 +168,31 @@ function M.p8_image_build(gfx, mem, slot, w, h, draw, context)
   end
   local camera_x = gfx.camera_x
   local camera_y = gfx.camera_y
-  guarded = gfx_module.p8_draw_backend_set(GUARD)
+  guarded = gfx_module.draw_backend_set(GUARD)
   building_slot = slot
   guarded.image_begin(slot, w, h)
-  for y = 0, h - 1, M.P8_IMAGE_WINDOW_HEIGHT do
-    for x = 0, w - 1, M.P8_IMAGE_WINDOW_WIDTH do
+  for y = 0, h - 1, M.WINDOW_HEIGHT do
+    for x = 0, w - 1, M.WINDOW_WIDTH do
       guarded.image_window(slot, x, y)
-      gfx_module.p8_camera(gfx, x, y)
+      gfx_module.camera(gfx, x, y)
       draw(gfx, mem, context)
     end
   end
   guarded.image_end(slot)
   building_slot = -1
-  gfx_module.p8_draw_backend_set(guarded)
+  gfx_module.draw_backend_set(guarded)
   built[slot] = true
-  gfx_module.p8_camera(gfx, camera_x, camera_y)
+  gfx_module.camera(gfx, camera_x, camera_y)
 end
 
 -- The slot's last build, top-left at world (x, y) under the camera, clipped
--- to the screen; pixels the build never wrote are transparent. A p8_fatal on
+-- to the screen; pixels the build never wrote are transparent. A fatal.raise on
 -- a slot never built.
-function M.p8_image_draw(gfx, mem, slot, x, y)
+function M.draw(gfx, mem, slot, x, y)
   check_slot(slot)
   if building_slot >= 0 then slot_fatal(slot, "draw during a build") end
   if not built[slot] then slot_fatal(slot, "drawn before any build") end
-  gfx_module.p8_draw_backend_get().image_draw(gfx, mem, slot, x, y)
+  gfx_module.draw_backend_get().image_draw(gfx, mem, slot, x, y)
 end
 
 return M

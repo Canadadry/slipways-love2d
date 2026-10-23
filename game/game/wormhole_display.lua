@@ -20,8 +20,8 @@ function M.wormhole_draw(graphics, memory, self, screen_pos)
     return
   end
 
-  screen_x = fixed.p8_fixed_flr_int(screen_pos.x)
-  screen_y = fixed.p8_fixed_flr_int(screen_pos.y)
+  screen_x = fixed.flr_int(screen_pos.x)
+  screen_y = fixed.flr_int(screen_pos.y)
 
   if self.state == entity_class.ENTITY_STATE_PLACING then
     local anchor = entity_id.entity_get(self.anchor)
@@ -29,7 +29,7 @@ function M.wormhole_draw(graphics, memory, self, screen_pos)
     if probe.targeting_target(self.targeting) == nil then
       local oi = self.radius
       if graphics ~= nil and memory ~= nil then
-        gfx_module.p8_circ(graphics, memory, screen_x, screen_y, fixed.p8_fixed_flr_int(oi), 1)
+        gfx_module.circ(graphics, memory, screen_x, screen_y, fixed.flr_int(oi), 1)
       end
     end
 
@@ -38,10 +38,10 @@ function M.wormhole_draw(graphics, memory, self, screen_pos)
     if graphics ~= nil and memory ~= nil then
       if anchor ~= nil then
         local cp = entity_class.entity_pos(anchor)
-        gfx_module.p8_line(graphics, memory, fixed.p8_fixed_flr_int(cp.x), fixed.p8_fixed_flr_int(cp.y), screen_x,
+        gfx_module.line(graphics, memory, fixed.flr_int(cp.x), fixed.flr_int(cp.y), screen_x,
           screen_y, 1)
       end
-      gfx_module.p8_spr_default(graphics, memory, 7, screen_x - 4, screen_y - 4)
+      gfx_module.spr_default(graphics, memory, 7, screen_x - 4, screen_y - 4)
     end
   else
     local t = self.state_time
@@ -49,20 +49,20 @@ function M.wormhole_draw(graphics, memory, self, screen_pos)
     local has_color_ramp = self.archetype.color_ramp ~= nil
 
     for dt = 0, 8, 2 do
-      if t > fixed.p8_fixed_from_int(dt) then
-        local sr = wormhole.wormhole_reveal_radius(self, fixed.p8_fixed_sub(t, fixed.p8_fixed_from_int(dt)))
+      if t > fixed.from_int(dt) then
+        local sr = wormhole.wormhole_reveal_radius(self, fixed.sub(t, fixed.from_int(dt)))
         local color = 0
 
         if has_color_ramp then
-          local ratio = fixed.p8_fixed_mul(fixed.p8_fixed_div(sr, oi), fixed.p8_fixed_from_int(8))
-          local idx = fixed.p8_fixed_flr_int(fixed.p8_fixed_flr(ratio))
+          local ratio = fixed.mul(fixed.div(sr, oi), fixed.from_int(8))
+          local idx = fixed.flr_int(fixed.flr(ratio))
           local _
 
           _, color = game_data.int_seq_at(self.archetype.color_ramp.items, self.archetype.color_ramp.count, idx, color)
         end
 
         if graphics ~= nil and memory ~= nil then
-          gfx_module.p8_circ(graphics, memory, screen_x, screen_y, fixed.p8_fixed_flr_int(sr), color)
+          gfx_module.circ(graphics, memory, screen_x, screen_y, fixed.flr_int(sr), color)
         end
       end
     end

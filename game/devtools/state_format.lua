@@ -60,16 +60,16 @@ local function add_position(line, e, camera)
   local ra = ra_of(e)
   local rest_y = ra.y
   if planet_family.planet_family_bobs(e) then
-    rest_y = fixed.p8_fixed_sub(ra.y, planet.planet_bob_total(e.state_time))
+    rest_y = fixed.sub(ra.y, planet.planet_bob_total(e.state_time))
   end
   line_add(line, " world ")
   add_fixed(line, ra.x)
   line_add(line, " ")
   add_fixed(line, rest_y)
   line_add(line, " screen ")
-  add_fixed(line, fixed.p8_fixed_sub(ra.x, camera.x))
+  add_fixed(line, fixed.sub(ra.x, camera.x))
   line_add(line, " ")
-  add_fixed(line, fixed.p8_fixed_sub(ra.y, camera.y))
+  add_fixed(line, fixed.sub(ra.y, camera.y))
   line_add(line, " visible %d", entity_geom.entity_geom_is_on_screen(e) and 1 or 0)
 end
 

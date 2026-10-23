@@ -12,8 +12,8 @@ local PADDING = 1
 local LINE_GAP = 1
 local TOP_HUD_HEIGHT = 11
 local BOTTOM_HUD_HEIGHT = 11
-local BAND_BOTTOM = vram.P8_SCREEN_HEIGHT - BOTTOM_HUD_HEIGHT - 1
-local BAND_HEIGHT = 2 * PADDING + 2 * gfx_module.P8_FONT_GLYPH_HEIGHT + LINE_GAP
+local BAND_BOTTOM = vram.SCREEN_HEIGHT - BOTTOM_HUD_HEIGHT - 1
+local BAND_HEIGHT = 2 * PADDING + 2 * gfx_module.FONT_GLYPH_HEIGHT + LINE_GAP
 local BAND_TOP = BAND_BOTTOM - BAND_HEIGHT + 1
 
 M.TAG_TEXT = "demo"
@@ -29,33 +29,33 @@ function M.demo_overlay_find_caption(captions, count, frame)
 end
 
 local function text_width(length)
-  return length * gfx_module.P8_FONT_CELL_WIDTH - 1
+  return length * gfx_module.FONT_CELL_WIDTH - 1
 end
 
 local function print_centred(gfx, mem, line, y)
-  local x = cint.div(vram.P8_SCREEN_WIDTH - text_width(#line), 2)
-  gfx_module.p8_print(gfx, mem, line, x, y, TEXT_COLOR)
+  local x = cint.div(vram.SCREEN_WIDTH - text_width(#line), 2)
+  gfx_module.print(gfx, mem, line, x, y, TEXT_COLOR)
 end
 
 local function draw_tag(gfx, mem)
-  local right = vram.P8_SCREEN_WIDTH - 1
+  local right = vram.SCREEN_WIDTH - 1
   local left = right - text_width(#M.TAG_TEXT) - 2 * PADDING + 1
-  local bottom = TOP_HUD_HEIGHT + gfx_module.P8_FONT_GLYPH_HEIGHT + 2 * PADDING - 1
-  gfx_module.p8_rectfill(gfx, mem, left, TOP_HUD_HEIGHT, right, bottom, TAG_FILL)
-  gfx_module.p8_print(gfx, mem, M.TAG_TEXT, left + PADDING, TOP_HUD_HEIGHT + PADDING, TEXT_COLOR)
+  local bottom = TOP_HUD_HEIGHT + gfx_module.FONT_GLYPH_HEIGHT + 2 * PADDING - 1
+  gfx_module.rectfill(gfx, mem, left, TOP_HUD_HEIGHT, right, bottom, TAG_FILL)
+  gfx_module.print(gfx, mem, M.TAG_TEXT, left + PADDING, TOP_HUD_HEIGHT + PADDING, TEXT_COLOR)
 end
 
 local function draw_caption(gfx, mem, text)
-  gfx_module.p8_rectfill(gfx, mem, 0, BAND_TOP, vram.P8_SCREEN_WIDTH - 1, BAND_BOTTOM, BAND_FILL)
+  gfx_module.rectfill(gfx, mem, 0, BAND_TOP, vram.SCREEN_WIDTH - 1, BAND_BOTTOM, BAND_FILL)
   local newline = string.find(text, "\n", 1, true)
   if newline == nil then
-    print_centred(gfx, mem, text, BAND_TOP + cint.div(BAND_HEIGHT - gfx_module.P8_FONT_GLYPH_HEIGHT, 2))
+    print_centred(gfx, mem, text, BAND_TOP + cint.div(BAND_HEIGHT - gfx_module.FONT_GLYPH_HEIGHT, 2))
     return
   end
   local first = string.sub(text, 1, newline - 1)
   local second = string.sub(text, newline + 1)
   print_centred(gfx, mem, first, BAND_TOP + PADDING)
-  print_centred(gfx, mem, second, BAND_TOP + PADDING + gfx_module.P8_FONT_GLYPH_HEIGHT + LINE_GAP)
+  print_centred(gfx, mem, second, BAND_TOP + PADDING + gfx_module.FONT_GLYPH_HEIGHT + LINE_GAP)
 end
 
 local function graphics_copy(gfx)
@@ -73,8 +73,8 @@ function M.demo_overlay_draw(gfx, mem, frame)
     return
   end
   local own = graphics_copy(gfx)
-  gfx_module.p8_camera_reset(own)
-  gfx_module.p8_fillp_reset(own)
+  gfx_module.camera_reset(own)
+  gfx_module.fillp_reset(own)
   draw_tag(own, mem)
   local caption = M.demo_overlay_find_caption(demo_data.demo_data_captions, demo_data.demo_data_caption_count, frame)
   if caption ~= nil then

@@ -14,9 +14,9 @@ local fixed = require("p8.fixed")
 
 local function test_set_updates_an_existing_resource_in_place()
   local map = { count = 0, entries = {} }
-  economy_formulas.resource_map_set(map, fixed.p8_fixed_from_int(28), 3)
-  economy_formulas.resource_map_set(map, fixed.p8_fixed_from_int(28), 7)
-  local found, value = economy_formulas.resource_map_get(map, fixed.p8_fixed_from_int(28), -1)
+  economy_formulas.resource_map_set(map, fixed.from_int(28), 3)
+  economy_formulas.resource_map_set(map, fixed.from_int(28), 7)
+  local found, value = economy_formulas.resource_map_get(map, fixed.from_int(28), -1)
   check.expect(found, 1, "food found")
   check.expect(value, 7, "food value after update")
 end
@@ -81,14 +81,14 @@ Tests verify behavior from the outside. Assertions enforce contracts from the in
 When production code asserts, a failing test tells you not just _that_ something broke but _where_ the contract was violated:
 
 ```lua
--- Without assertion: a nil gfx fails deep inside p8_rectfill
+-- Without assertion: a nil gfx fails deep inside gfx.rectfill
 function M.hud_draw_bar(gfx, mem, y1, y2, col)
-  gfx_module.p8_rectfill(gfx, mem, 0, to_int(y1), vram.P8_SCREEN_WIDTH - 1, to_int(y2), col)
+  gfx_module.rectfill(gfx, mem, 0, to_int(y1), vram.SCREEN_WIDTH - 1, to_int(y2), col)
 end
 
 -- With assertion (real code): fails at the violated contract
 function M.hud_draw_bar(gfx, mem, y1, y2, col)
-  assert(gfx ~= nil, "hud_draw_bar: p8_rectfill dereferences the graphics state, so a NULL one is not a no-op")
+  assert(gfx ~= nil, "hud_draw_bar: gfx.rectfill dereferences the graphics state, so a NULL one is not a no-op")
   -- ...
 end
 ```

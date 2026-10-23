@@ -10,7 +10,7 @@ Don't replace:
 - Your own modules
 - Internal collaborators
 - Any module of `game/` a test can call for real
-- Randomness: `p8_fixed_rnd` already starts from a fixed seed, so a run is reproducible as is
+- Randomness: `fixed.rnd` already starts from a fixed seed, so a run is reproducible as is
 
 ## Designing for Test Doubles
 
@@ -20,10 +20,10 @@ The module receives its graphics state and its memory as parameters instead of r
 
 ```lua
 -- Easy to test: the caller chooses the state (real signature)
-function M.p8_pset(gfx, mem, x, y, col)
+function M.pset(gfx, mem, x, y, col)
 
 -- Hard to test: hidden dependency on the game's screen
-function M.p8_pset(x, y, col)
+function M.pset(x, y, col)
 ```
 
 The test then builds tables of its own, and installs a recording backend where the game installs the LÖVE one:
@@ -31,8 +31,8 @@ The test then builds tables of its own, and installs a recording backend where t
 ```lua
 local function new_runtime()
   local graphics, mem = {}, {}
-  gfx.p8_gfx_init(graphics)
-  vram.p8_vram_init(mem)
+  gfx.init(graphics)
+  vram.init(mem)
   return graphics, mem
 end
 

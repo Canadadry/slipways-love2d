@@ -64,7 +64,7 @@ function M.score_panel_new_year(year)
     return
   end
 
-  countdown_index = 3426 - fixed.p8_fixed_flr_int(year)
+  countdown_index = 3426 - fixed.flr_int(year)
   if countdown_index >= 1 and countdown_index <= countdown_rows.count then
     local item = countdown_rows.items[countdown_index]
 
@@ -72,7 +72,7 @@ function M.score_panel_new_year(year)
     message = item.row
   end
 
-  year_str = str.p8_tostr_fixed(year)
+  year_str = str.tostr_fixed(year)
   year_banner.year = "year " .. year_str
 
   data_item_assign(year_banner.second_items[1], data_item({ text = year_banner.year }))
@@ -127,19 +127,19 @@ end
 
 local function score_panel_final_score_text(s, i)
   if i == 1 then
-    return str.p8_tostr_fixed(s.development)
+    return str.tostr_fixed(s.development)
   elseif i == 2 then
-    return str.p8_tostr_fixed(s.population)
+    return str.tostr_fixed(s.population)
   elseif i == 3 then
-    return str.p8_tostr_fixed(s.technology)
+    return str.tostr_fixed(s.technology)
   elseif i == 4 then
     return economy_score.economy_score_percent_text(s.happiness)
   elseif i == 5 then
-    return str.p8_tostr_fixed(s.total)
+    return str.tostr_fixed(s.total)
   elseif i == 6 then
-    return str.p8_tostr_fixed(s.tier)
+    return str.tostr_fixed(s.tier)
   end
-  return str.p8_concat2("", "")
+  return str.concat2("", "")
 end
 
 local function score_panel_update_add_row(box, entry, context)
@@ -175,14 +175,14 @@ local function score_panel_update_add_row(box, entry, context)
     if dk ~= nil and dk.name ~= nil then
       px = dk.name
     end
-    piece1 = str.p8_concat2(end_status_str, " (")
-    piece2 = str.p8_concat2(piece1, px)
-    values[1] = data_item({ text = str.p8_concat2(piece2, ")") })
+    piece1 = str.concat2(end_status_str, " (")
+    piece2 = str.concat2(piece1, px)
+    values[1] = data_item({ text = str.concat2(piece2, ")") })
   end
 
   if score_i == 6 then
     for index = 1, 5 do
-      local icon = (index <= fixed.p8_fixed_flr_int(context.final_score.tier)) and 56 or 57
+      local icon = (index <= fixed.flr_int(context.final_score.tier)) and 56 or 57
       values[index] = data_item({ number = icon })
     end
   end
@@ -193,12 +193,12 @@ local function score_panel_update_add_row(box, entry, context)
     end
   end
   if entry.row.color ~= nil then
-    keys.color = fixed.p8_fixed_from_int(entry.row.color)
+    keys.color = fixed.from_int(entry.row.color)
   end
-  keys.score = fixed.p8_fixed_from_int(score_i)
+  keys.score = fixed.from_int(score_i)
   message_box.message_box_add_layout_row(box, keys,
-    entry.pos_x and vec.vec_make(fixed.p8_fixed_from_int(entry.pos_x), fixed.p8_fixed_from_int(entry.pos_y)),
-    fixed.P8_FIXED_LIT(0x00008000, 0.5))
+    entry.pos_x and vec.vec_make(fixed.from_int(entry.pos_x), fixed.from_int(entry.pos_y)),
+    fixed.LIT(0x00008000, 0.5))
 end
 
 -- The function-local statics of score_panel_update: one row, the same object at every call.
@@ -214,21 +214,21 @@ function M.score_panel_update(self)
     local toggle_keys = ui_button.button_keys_zero({})
     local made1
     local made2
-    local first_line_pos = vec.vec_make(fixed.p8_fixed_from_int(cint.div(vram.P8_SCREEN_WIDTH, 2) - 13),
-      fixed.p8_fixed_from_int(cint.div(vram.P8_SCREEN_HEIGHT, 2) + 36))
-    local second_line_pos = vec.vec_make(fixed.p8_fixed_from_int(cint.div(vram.P8_SCREEN_WIDTH, 2) - 25),
-      fixed.p8_fixed_from_int(cint.div(vram.P8_SCREEN_HEIGHT, 2) + 36))
+    local first_line_pos = vec.vec_make(fixed.from_int(cint.div(vram.SCREEN_WIDTH, 2) - 13),
+      fixed.from_int(cint.div(vram.SCREEN_HEIGHT, 2) + 36))
+    local second_line_pos = vec.vec_make(fixed.from_int(cint.div(vram.SCREEN_WIDTH, 2) - 25),
+      fixed.from_int(cint.div(vram.SCREEN_HEIGHT, 2) + 36))
 
     ui_button.modal_backdrop_new(nil)
 
     layout.layout_row_keys_append(restart_keys.layout_row_keys, layout.layout_row_cell_string(" again? "))
-    restart_keys.layer = fixed.p8_fixed_from_int(15)
+    restart_keys.layer = fixed.from_int(15)
     restart_keys.pos = first_line_pos
     restart_keys.on_click = score_panel.score_panel_init_field_value()
     made1 = ui_button.button_new(restart_keys)
 
     layout.layout_row_keys_append(toggle_keys.layout_row_keys, layout.layout_row_cell_row(back))
-    toggle_keys.layer = fixed.p8_fixed_from_int(15)
+    toggle_keys.layer = fixed.from_int(15)
     toggle_keys.pos = second_line_pos
     toggle_keys.on_click = score_panel_toggle_button_on_click_method
     made2 = ui_button.button_new(toggle_keys)
@@ -236,7 +236,7 @@ function M.score_panel_update(self)
     if self ~= nil then
       self.is_shown = true
       self.curtain = 0
-      entity_registry.entity_registry_set_layer(self, fixed.p8_fixed_from_int(13))
+      entity_registry.entity_registry_set_layer(self, fixed.from_int(13))
     end
   end
 
@@ -257,7 +257,7 @@ function M.score_panel_update(self)
       local made
       local i = 1
 
-      keys.duration_scale = fixed.p8_fixed_from_int(3)
+      keys.duration_scale = fixed.from_int(3)
       keys.keep_open = score_panel_update_keep_open_method
       made = message_box.message_box_new(keys)
       while is_ready and i <= game_data.SCORE_ROWS_COUNT do

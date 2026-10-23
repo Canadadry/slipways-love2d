@@ -8,7 +8,7 @@ local text_image = require("game.text_image")
 local M = {}
 
 local function to_int(x)
-  return fixed.p8_fixed_flr_int(x)
+  return fixed.flr_int(x)
 end
 
 M.palette_blocks = {
@@ -32,7 +32,7 @@ M.palette_blocks = {
 local palette_blocks = M.palette_blocks
 
 function M.hud_select_palette_block(mem, no)
-  local block = fixed.p8_fixed_flr_int(no)
+  local block = fixed.flr_int(no)
   assert(block >= 0 and block < 16,
     "hud_select_palette_block: only blocks 0..15 exist; the cart would read past its table")
   for i = 0, 15 do
@@ -41,7 +41,7 @@ function M.hud_select_palette_block(mem, no)
 end
 
 function M.hud_select_palette_block_default(mem)
-  M.hud_select_palette_block(mem, fixed.p8_fixed_from_int(0))
+  M.hud_select_palette_block(mem, fixed.from_int(0))
 end
 
 function M.hud_palette_block_default_in_force(mem)
@@ -54,11 +54,11 @@ function M.hud_palette_block_default_in_force(mem)
 end
 
 function M.hud_draw_bar(gfx, mem, y1, y2, col)
-  assert(gfx ~= nil, "hud_draw_bar: p8_rectfill dereferences the graphics state, so a NULL one is not a no-op")
+  assert(gfx ~= nil, "hud_draw_bar: gfx.rectfill dereferences the graphics state, so a NULL one is not a no-op")
   if gfx ~= nil then
     gfx.pen_color = col
   end
-  gfx_module.p8_rectfill(gfx, mem, 0, to_int(y1), vram.P8_SCREEN_WIDTH - 1, to_int(y2), col)
+  gfx_module.rectfill(gfx, mem, 0, to_int(y1), vram.SCREEN_WIDTH - 1, to_int(y2), col)
 end
 
 function M.hud_draw_bar_y1(gfx, mem, y1, col)
@@ -75,21 +75,21 @@ function M.hud_draw_help_frame(gfx, mem, x1, y1, x2)
   local top_pixel = to_int(y1)
   local galaxy_menu_button2 = to_int(x2)
 
-  gfx_module.p8_rect(gfx, mem, galaxy_menu_button1, top_pixel, galaxy_menu_button2 + 1, top_pixel + 12, 0)
-  gfx_module.p8_rectfill(gfx, mem, galaxy_menu_button1 + 1, top_pixel + 1, galaxy_menu_button2, top_pixel + 11, 5)
-  gfx_module.p8_spr(gfx, mem, 70, galaxy_menu_button1, top_pixel, 1, 2)
-  gfx_module.p8_spr(gfx, mem, 71, galaxy_menu_button2 - 2, top_pixel, 1, 2)
+  gfx_module.rect(gfx, mem, galaxy_menu_button1, top_pixel, galaxy_menu_button2 + 1, top_pixel + 12, 0)
+  gfx_module.rectfill(gfx, mem, galaxy_menu_button1 + 1, top_pixel + 1, galaxy_menu_button2, top_pixel + 11, 5)
+  gfx_module.spr(gfx, mem, 70, galaxy_menu_button1, top_pixel, 1, 2)
+  gfx_module.spr(gfx, mem, 71, galaxy_menu_button2 - 2, top_pixel, 1, 2)
 end
 
 -- A NUL byte ends the text.
 local function aligned_x(t, x, a)
   local strlen = (string.find(t, "\0", 1, true) or #t + 1) - 1
-  return to_int(x) - to_int(fixed.p8_fixed_mul(fixed.p8_fixed_mul(a, fixed.p8_fixed_from_int(4)),
-    fixed.p8_fixed_from_int(strlen)))
+  return to_int(x) - to_int(fixed.mul(fixed.mul(a, fixed.from_int(4)),
+    fixed.from_int(strlen)))
 end
 
 function M.hud_print_outlined(gfx, mem, t, x, y, c, a)
-  gfx_module.p8_print_outlined(gfx, mem, t, aligned_x(t, x, a), to_int(y), bit.band(c, 0x0F))
+  gfx_module.print_outlined(gfx, mem, t, aligned_x(t, x, a), to_int(y), bit.band(c, 0x0F))
 end
 
 -- hud_print_outlined's contract (same pixels, same draw palette after), through
@@ -99,7 +99,7 @@ function M.hud_print_outlined_text_image(gfx, mem, t, x, y, c, a)
 end
 
 function M.hud_print_outlined_default(gfx, mem, t, x, y, c)
-  M.hud_print_outlined(gfx, mem, t, x, y, c, fixed.p8_fixed_from_int(0))
+  M.hud_print_outlined(gfx, mem, t, x, y, c, fixed.from_int(0))
 end
 
 return M

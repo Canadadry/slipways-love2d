@@ -144,12 +144,12 @@ function M.score_panel_refresh()
   local probe = require("game.probe")
   local economy = probe.main_economy_typed()
   local economy_placeholder = probe.main_economy_placeholder()
-  local main_economy_income = (economy ~= nil) and economy.income or fixed.p8_fixed_from_int(0)
-  local main_economy_credits = fixed.p8_fixed_from_int(0)
+  local main_economy_income = (economy ~= nil) and economy.income or fixed.from_int(0)
+  local main_economy_credits = fixed.from_int(0)
   local main_economy_research_points = data_item({ is_nil = true })
   local main_economy_happiness = (economy ~= nil and economy.happiness ~= nil) and economy.happiness
-    or fixed.p8_fixed_from_int(0)
-  local main_economy_year_ticks = (economy ~= nil) and economy.year_ticks or fixed.p8_fixed_from_int(0)
+    or fixed.from_int(0)
+  local main_economy_year_ticks = (economy ~= nil) and economy.year_ticks or fixed.from_int(0)
   local main_economy_year
   local main_economy_production = nil
   local readouts_state
@@ -183,8 +183,8 @@ function M.score_panel_refresh()
 
   text, income_color = economy_formulas.economy_formulas_format_signed(main_economy_income, 0, nil, income_color)
 
-  credits_str = str.p8_tostr_fixed(main_economy_credits)
-  readouts[1] = data_item({ text = str.p8_concat2(credits_str, "$") })
+  credits_str = str.tostr_fixed(main_economy_credits)
+  readouts[1] = data_item({ text = str.concat2(credits_str, "$") })
 
   readouts[2] = data_item({ text = text })
 
@@ -193,22 +193,22 @@ function M.score_panel_refresh()
   do
     local found
     local resource_index
-    local production_val = fixed.p8_fixed_from_int(0)
+    local production_val = fixed.from_int(0)
     found, resource_index = map_tables.resource_code_lookup("k", resource_index)
     if found then
       found, production_val = economy_formulas.resource_map_get(main_economy_production,
-        fixed.p8_fixed_from_int(resource_index), production_val)
+        fixed.from_int(resource_index), production_val)
     end
     production_text =
-      str.p8_tostr_fixed(fixed.p8_fixed_add(production_val, fixed.p8_fixed_from_int(1)))
-    readouts[4] = data_item({ text = str.p8_concat2("+", production_text) })
+      str.tostr_fixed(fixed.add(production_val, fixed.from_int(1)))
+    readouts[4] = data_item({ text = str.concat2("+", production_text) })
   end
 
-  happiness_str = str.p8_tostr_fixed(main_economy_happiness)
-  readouts[5] = data_item({ text = str.p8_concat2(happiness_str, "%") })
+  happiness_str = str.tostr_fixed(main_economy_happiness)
+  readouts[5] = data_item({ text = str.concat2(happiness_str, "%") })
 
   do
-    local lo = fixed.p8_fixed_flr_int(main_economy_year_ticks)
+    local lo = fixed.flr_int(main_economy_year_ticks)
     if lo >= 1 and lo <= game_data.PERIOD_NAMES_COUNT then
       readouts[6] = data_item({ text = game_data.period_names_table[lo] })
     else
@@ -255,15 +255,15 @@ function M.score_panel_draw(gfx, mem, self)
   draw_functions.draw_functions_draw_rows_default(gfx, mem, combined, n)
 
   if self ~= nil and self.curtain ~= nil then
-    local gz = fixed.p8_fixed_add(self.curtain, fixed.P8_FIXED_LIT(0x00003333, 0.2))
-    local capped = fixed_min(gz, fixed.P8_FIXED_LIT(0x00033333, 3.2))
-    local h = fixed.p8_fixed_mul(capped, capped)
+    local gz = fixed.add(self.curtain, fixed.LIT(0x00003333, 0.2))
+    local capped = fixed_min(gz, fixed.LIT(0x00033333, 3.2))
+    local h = fixed.mul(capped, capped)
 
     self.curtain = gz
-    hud.hud_draw_bar(gfx, mem, fixed.p8_fixed_from_int(0), h, 0)
+    hud.hud_draw_bar(gfx, mem, fixed.from_int(0), h, 0)
     -- No colour on purpose: the bottom bar inherits the pen colour the line above leaves.
-    hud.hud_draw_bar_default(gfx, mem, fixed.p8_fixed_sub(fixed.p8_fixed_from_int(vram.P8_SCREEN_HEIGHT - 1), h),
-      fixed.p8_fixed_from_int(vram.P8_SCREEN_HEIGHT - 1))
+    hud.hud_draw_bar_default(gfx, mem, fixed.sub(fixed.from_int(vram.SCREEN_HEIGHT - 1), h),
+      fixed.from_int(vram.SCREEN_HEIGHT - 1))
   end
 end
 

@@ -30,7 +30,7 @@ local function mouse_create()
   entity.entity_init_instance(self, M.mouse_class_def, game_data.mouse_archetype.state,
     game_data.mouse_archetype.state_time)
   self.archetype = game_data.mouse_archetype
-  entity_class.entity_set_pos(self, vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0)))
+  entity_class.entity_set_pos(self, vec.vec_make(fixed.from_int(0), fixed.from_int(0)))
   entity.entity_construct(self)
   return self
 end
@@ -72,11 +72,11 @@ function M.mouse_update(input, self)
     return
   end
 
-  local mouse = input_module.p8_input_read_mouse(input)
-  entity_class.entity_set_pos(self, vec.vec_make(fixed.p8_fixed_from_int(mouse.x), fixed.p8_fixed_from_int(mouse.y)))
+  local mouse = input_module.read_mouse(input)
+  entity_class.entity_set_pos(self, vec.vec_make(fixed.from_int(mouse.x), fixed.from_int(mouse.y)))
 
   if g_mouse_up then
-    mouse_button.mouse_button_update(g_left_button, bit_module.band(mouse.buttons, input_module.P8_MOUSE_LEFT) ~= 0)
+    mouse_button.mouse_button_update(g_left_button, bit_module.band(mouse.buttons, input_module.MOUSE_LEFT) ~= 0)
   end
 end
 

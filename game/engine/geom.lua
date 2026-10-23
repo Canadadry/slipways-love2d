@@ -15,13 +15,13 @@ function M.box_contains(box, p)
 end
 
 function M.geom_side_of_line(a, b, c)
-  local kl = fixed.p8_fixed_sub(
-    fixed.p8_fixed_mul(fixed.p8_fixed_sub(b.y, a.y), fixed.p8_fixed_sub(c.x, b.x)),
-    fixed.p8_fixed_mul(fixed.p8_fixed_sub(b.x, a.x), fixed.p8_fixed_sub(c.y, b.y)))
+  local kl = fixed.sub(
+    fixed.mul(fixed.sub(b.y, a.y), fixed.sub(c.x, b.x)),
+    fixed.mul(fixed.sub(b.x, a.x), fixed.sub(c.y, b.y)))
   if kl == 0 then
     return M.SIDE_ON_LINE
   end
-  return (fixed.p8_fixed_sgn(kl) > 0) and M.SIDE_POSITIVE or M.SIDE_NEGATIVE
+  return (fixed.sgn(kl) > 0) and M.SIDE_POSITIVE or M.SIDE_NEGATIVE
 end
 
 function M.geom_segments_cross(p1, p2, q1, q2)
@@ -51,9 +51,9 @@ function M.geom_near_segment(a, b, c, fh)
     return false
   end
   local d = vec.vec_sub(b, a)
-  local l = fixed.p8_fixed_div(vec.vec_dot(d, vec.vec_sub(c, a)), vec.vec_length_squared(d))
-  local lo = fixed.P8_FIXED_LIT(0x0000028f, 0.01)
-  local hi = fixed.P8_FIXED_LIT(0x0000fd70, 0.99)
+  local l = fixed.div(vec.vec_dot(d, vec.vec_sub(c, a)), vec.vec_length_squared(d))
+  local lo = fixed.LIT(0x0000028f, 0.01)
+  local hi = fixed.LIT(0x0000fd70, 0.99)
   local projected = vec.vec_sub(vec.vec_add(a, vec.vec_mul(d, l)), c)
   local distance_squared = vec.vec_length_squared(projected)
   return l > lo and l < hi and distance_squared < fh

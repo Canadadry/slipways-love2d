@@ -18,12 +18,12 @@ M.BACKGROUND_GRID_EDGE = 262
 
 local DRAW_PALETTE_LENGTH = 16
 
-local BACKGROUND_IMAGE_SIDE = vram.P8_MAP_WIDTH * gfx_module.P8_SPRITE_SIZE
+local BACKGROUND_IMAGE_SIDE = vram.MAP_WIDTH * gfx_module.SPRITE_SIZE
 
 local g_background_up = false
 
 local function background_to_int(x)
-  return fixed.p8_fixed_flr_int(x)
+  return fixed.flr_int(x)
 end
 
 local function background_draw_method(self, screen_pos)
@@ -52,7 +52,7 @@ local function background_create()
   self.archetype = game_data.background_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
   self.is_hovered = false
-  self.seed = fixed.p8_fixed_rnd_state()
+  self.seed = fixed.rnd_state()
   M.background_construct(dispatch_context.dispatch_context_mem(), self)
   entity.entity_construct(self)
   return self
@@ -95,7 +95,7 @@ end
 function M.background_construct(memory, self)
   local row_values = {}
   local row_values_set = {}
-  local value = fixed.p8_fixed_from_int(0)
+  local value = fixed.from_int(0)
   local walk
   local pl
 
@@ -113,26 +113,26 @@ function M.background_construct(memory, self)
     row_values_set[x] = false
   end
 
-  walk = gen.random_walk_new(fixed.P8_FIXED_LIT(0x00001999, 0.1), fixed.p8_fixed_from_int(0))
+  walk = gen.random_walk_new(fixed.LIT(0x00001999, 0.1), fixed.from_int(0))
 
   for y = 0, 31 do
     for x = 0, 31 do
-      local prev = row_values_set[x] and row_values[x] or fixed.p8_fixed_from_int(1)
-      local step = fixed.p8_fixed_sub(fixed.p8_fixed_mul(gen.random_walk_next(walk), fixed.p8_fixed_from_int(8)),
-        fixed.p8_fixed_from_int(4))
+      local prev = row_values_set[x] and row_values[x] or fixed.from_int(1)
+      local step = fixed.sub(fixed.mul(gen.random_walk_next(walk), fixed.from_int(8)),
+        fixed.from_int(4))
       local roll
       local tile
 
-      value = fixed.p8_fixed_add(step, fixed.p8_fixed_mul(fixed.p8_fixed_add(value, prev),
-        fixed.P8_FIXED_LIT(0x00008000, 0.5)))
+      value = fixed.add(step, fixed.mul(fixed.add(value, prev),
+        fixed.LIT(0x00008000, 0.5)))
       row_values[x] = value
       row_values_set[x] = true
 
-      roll = fixed.p8_fixed_rnd_default()
-      if roll < fixed.P8_FIXED_LIT(0x00000106, 0.004) then
-        tile = 122 + background_to_int(fixed.p8_fixed_rnd(fixed.p8_fixed_from_int(5)))
+      roll = fixed.rnd_default()
+      if roll < fixed.LIT(0x00000106, 0.004) then
+        tile = 122 + background_to_int(fixed.rnd(fixed.from_int(5)))
       else
-        local idx_f = fixed.p8_fixed_flr(fixed.p8_fixed_add(value, fixed.p8_fixed_rnd(fixed.p8_fixed_from_int(4))))
+        local idx_f = fixed.flr(fixed.add(value, fixed.rnd(fixed.from_int(4))))
         local idx = background_to_int(idx_f)
         local _
 
@@ -140,7 +140,7 @@ function M.background_construct(memory, self)
         _, tile = game_data.int_seq_at(pl.items, pl.count, idx, tile)
       end
 
-      gfx_module.p8_mset(memory, x, y, tile)
+      gfx_module.mset(memory, x, y, tile)
     end
   end
 end
@@ -151,7 +151,7 @@ for i = 0, DRAW_PALETTE_LENGTH - 1 do
 end
 
 local function background_draw_map(gfx, mem, context)
-  gfx_module.p8_map(gfx, mem, 0, 0, 0, 0, vram.P8_MAP_WIDTH, vram.P8_MAP_HEIGHT)
+  gfx_module.map(gfx, mem, 0, 0, 0, 0, vram.MAP_WIDTH, vram.MAP_HEIGHT)
 end
 
 local function draw_palette_differs(key, mem)
@@ -167,7 +167,7 @@ local function background_draw_map_image(gfx, mem)
   local key = g_background_image_key
 
   if not key.built or key.mem ~= mem or key.map_version ~= mem.map_version or draw_palette_differs(key, mem) then
-    image.p8_image_build(gfx, mem, image_slot.IMAGE_SLOT_BACKGROUND, BACKGROUND_IMAGE_SIDE, BACKGROUND_IMAGE_SIDE,
+    image.build(gfx, mem, image_slot.IMAGE_SLOT_BACKGROUND, BACKGROUND_IMAGE_SIDE, BACKGROUND_IMAGE_SIDE,
       background_draw_map, nil)
     key.built = true
     key.mem = mem
@@ -176,7 +176,7 @@ local function background_draw_map_image(gfx, mem)
       key.draw_palette[i] = mem.draw_palette[i]
     end
   end
-  image.p8_image_draw(gfx, mem, image_slot.IMAGE_SLOT_BACKGROUND, 0, 0)
+  image.draw(gfx, mem, image_slot.IMAGE_SLOT_BACKGROUND, 0, 0)
 end
 
 function M.background_draw(gfx, mem, self)
@@ -185,13 +185,13 @@ function M.background_draw(gfx, mem, self)
   end
 
   background_draw_map_image(gfx, mem)
-  gfx_module.p8_fillp(gfx, 0xA5A5)
+  gfx_module.fillp(gfx, 0xA5A5)
   for xy = 3, M.BACKGROUND_GRID_EDGE, 32 do
-    gfx_module.p8_rectfill(gfx, mem, xy, 0, xy, M.BACKGROUND_GRID_EDGE, 1)
-    gfx_module.p8_rectfill(gfx, mem, 0, xy, M.BACKGROUND_GRID_EDGE, xy, 1)
+    gfx_module.rectfill(gfx, mem, xy, 0, xy, M.BACKGROUND_GRID_EDGE, 1)
+    gfx_module.rectfill(gfx, mem, 0, xy, M.BACKGROUND_GRID_EDGE, xy, 1)
   end
-  gfx_module.p8_fillp_reset(gfx)
-  gfx_module.p8_rect(gfx, mem, 0, 0, M.BACKGROUND_GRID_EDGE, M.BACKGROUND_GRID_EDGE, 5)
+  gfx_module.fillp_reset(gfx)
+  gfx_module.rect(gfx, mem, 0, 0, M.BACKGROUND_GRID_EDGE, M.BACKGROUND_GRID_EDGE, 5)
 end
 
 function M.background_left_press(self)

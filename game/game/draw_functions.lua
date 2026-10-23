@@ -33,15 +33,15 @@ end
 local function number(e, i)
   local item = draw_functions_arg(e, i)
   if not is_number(e, i) then
-    return fixed.p8_fixed_from_int(0)
+    return fixed.from_int(0)
   end
-  return item.is_fixed and item.fixed or fixed.p8_fixed_from_int(item.number)
+  return item.is_fixed and item.fixed or fixed.from_int(item.number)
 end
 
 local function draw_bar_entry(e)
   local y1 = number(e, 1)
   local col
-  col = fixed.p8_fixed_flr_int(number(e, 3))
+  col = fixed.flr_int(number(e, 3))
   if is_number(e, 2) then
     hud.hud_draw_bar(g_draw_functions_gfx, g_draw_functions_mem, y1, number(e, 2), col)
   else
@@ -58,7 +58,7 @@ local function print_outlined_with(e, print)
   local a1 = draw_functions_arg(e, 1)
   local owned = nil
   if is_number(e, 1) then
-    owned = str.p8_tostr_fixed(number(e, 1))
+    owned = str.tostr_fixed(number(e, 1))
   end
   local t
   if a1 ~= nil and a1.text ~= nil then
@@ -70,8 +70,8 @@ local function print_outlined_with(e, print)
   end
   local x = number(e, 2)
   local y = number(e, 3)
-  local c = fixed.p8_fixed_flr_int(number(e, 4))
-  local a = is_number(e, 5) and number(e, 5) or fixed.p8_fixed_from_int(0)
+  local c = fixed.flr_int(number(e, 4))
+  local a = is_number(e, 5) and number(e, 5) or fixed.from_int(0)
   print(g_draw_functions_gfx, g_draw_functions_mem, t, x, y, c, a)
 end
 
@@ -88,15 +88,15 @@ local function draw_help_frame_entry(e)
 end
 
 local function spr_entry(e)
-  local n = fixed.p8_fixed_flr_int(number(e, 1))
-  local x = fixed.p8_fixed_flr_int(number(e, 2))
-  local y = fixed.p8_fixed_flr_int(number(e, 3))
+  local n = fixed.flr_int(number(e, 1))
+  local x = fixed.flr_int(number(e, 2))
+  local y = fixed.flr_int(number(e, 3))
   if is_number(e, 4) and is_number(e, 5) then
-    local w = fixed.p8_fixed_flr_int(number(e, 4))
-    local h = fixed.p8_fixed_flr_int(number(e, 5))
-    gfx_module.p8_spr(g_draw_functions_gfx, g_draw_functions_mem, n, x, y, w, h)
+    local w = fixed.flr_int(number(e, 4))
+    local h = fixed.flr_int(number(e, 5))
+    gfx_module.spr(g_draw_functions_gfx, g_draw_functions_mem, n, x, y, w, h)
   else
-    gfx_module.p8_spr_default(g_draw_functions_gfx, g_draw_functions_mem, n, x, y)
+    gfx_module.spr_default(g_draw_functions_gfx, g_draw_functions_mem, n, x, y)
   end
 end
 

@@ -9,11 +9,11 @@ local screen = require("love.screen")
 
 local M = {}
 
-local CELLS_PER_ROW = cint.div(vram.P8_SPRITE_SHEET_WIDTH, gfx_module.P8_SPRITE_SIZE)
+local CELLS_PER_ROW = cint.div(vram.SPRITE_SHEET_WIDTH, gfx_module.SPRITE_SIZE)
 
 local index_of_rgb = {}
-for c = 0, palette.P8_PALETTE_COLORS - 1 do
-  local rgb = palette.P8_PALETTE_RGB[c]
+for c = 0, palette.COLORS - 1 do
+  local rgb = palette.RGB[c]
   index_of_rgb[rgb.red * 65536 + rgb.green * 256 + rgb.blue] = c
 end
 
@@ -26,12 +26,12 @@ local sheets = {}
 
 local function read_cell(cell)
   local data = screen.screen_sprites_data()
-  local x0 = cint.mod(cell, CELLS_PER_ROW) * gfx_module.P8_SPRITE_SIZE
-  local y0 = cint.div(cell, CELLS_PER_ROW) * gfx_module.P8_SPRITE_SIZE
+  local x0 = cint.mod(cell, CELLS_PER_ROW) * gfx_module.SPRITE_SIZE
+  local y0 = cint.div(cell, CELLS_PER_ROW) * gfx_module.SPRITE_SIZE
   local indices = {}
-  for dy = 0, gfx_module.P8_SPRITE_SIZE - 1 do
+  for dy = 0, gfx_module.SPRITE_SIZE - 1 do
     local row = {}
-    for dx = 0, gfx_module.P8_SPRITE_SIZE - 1 do
+    for dx = 0, gfx_module.SPRITE_SIZE - 1 do
       local red, green, blue, alpha = data:getPixel(x0 + dx, y0 + dy)
       local key = math.floor(red * 255 + 0.5) * 65536 + math.floor(green * 255 + 0.5) * 256 + math.floor(blue * 255 + 0.5)
       local c = index_of_rgb[key]
@@ -52,13 +52,13 @@ local function fill_cell(sheet, draw_palette, cell)
     indices = read_cell(cell)
     cell_indices[cell] = indices
   end
-  local x0 = cint.mod(cell, CELLS_PER_ROW) * gfx_module.P8_SPRITE_SIZE
-  local y0 = cint.div(cell, CELLS_PER_ROW) * gfx_module.P8_SPRITE_SIZE
-  for dy = 0, gfx_module.P8_SPRITE_SIZE - 1 do
+  local x0 = cint.mod(cell, CELLS_PER_ROW) * gfx_module.SPRITE_SIZE
+  local y0 = cint.div(cell, CELLS_PER_ROW) * gfx_module.SPRITE_SIZE
+  for dy = 0, gfx_module.SPRITE_SIZE - 1 do
     local row = indices[dy]
-    for dx = 0, gfx_module.P8_SPRITE_SIZE - 1 do
+    for dx = 0, gfx_module.SPRITE_SIZE - 1 do
       local entry = draw_palette[row[dx]]
-      if bit.band(entry, vram.P8_DRAW_PALETTE_TRANSPARENT_BIT) == 0 then
+      if bit.band(entry, vram.DRAW_PALETTE_TRANSPARENT_BIT) == 0 then
         local color = screen.SCREEN_COLORS[bit.band(entry, 0x0F)]
         sheet.data:setPixel(x0 + dx, y0 + dy, color.red, color.green, color.blue)
       end
@@ -74,22 +74,22 @@ end
 -- is filled the first time a draw reaches it under that draw palette, then
 -- kept for the run: never draw into the image, and never keep it across calls.
 function M.sheet_image(mem, x0, y0, x1, y1)
-  assert(x0 >= 0 and y0 >= 0 and x1 < vram.P8_SPRITE_SHEET_WIDTH and y1 < vram.P8_SPRITE_SHEET_HEIGHT
+  assert(x0 >= 0 and y0 >= 0 and x1 < vram.SPRITE_SHEET_WIDTH and y1 < vram.SPRITE_SHEET_HEIGHT
     and x0 <= x1 and y0 <= y1, "sheet_image: the region must lie on the sprite sheet")
   local bytes = {}
-  for c = 0, palette.P8_PALETTE_COLORS - 1 do
+  for c = 0, palette.COLORS - 1 do
     bytes[c + 1] = mem.draw_palette[c]
   end
   local key = string.char(unpack(bytes))
   local sheet = sheets[key]
   if sheet == nil then
     sheet = {
-      data = love.image.newImageData(vram.P8_SPRITE_SHEET_WIDTH, vram.P8_SPRITE_SHEET_HEIGHT), filled = {}, image = nil,
+      data = love.image.newImageData(vram.SPRITE_SHEET_WIDTH, vram.SPRITE_SHEET_HEIGHT), filled = {}, image = nil,
     }
     sheets[key] = sheet
   end
-  for cy = cint.div(y0, gfx_module.P8_SPRITE_SIZE), cint.div(y1, gfx_module.P8_SPRITE_SIZE) do
-    for cx = cint.div(x0, gfx_module.P8_SPRITE_SIZE), cint.div(x1, gfx_module.P8_SPRITE_SIZE) do
+  for cy = cint.div(y0, gfx_module.SPRITE_SIZE), cint.div(y1, gfx_module.SPRITE_SIZE) do
+    for cx = cint.div(x0, gfx_module.SPRITE_SIZE), cint.div(x1, gfx_module.SPRITE_SIZE) do
       local cell = cy * CELLS_PER_ROW + cx
       if not sheet.filled[cell] then
         fill_cell(sheet, mem.draw_palette, cell)

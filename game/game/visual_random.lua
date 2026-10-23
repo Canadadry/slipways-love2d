@@ -12,13 +12,13 @@ local visual_state = VISUAL_RANDOM_BOOT_SEED
 
 function M.visual_random_draw(x)
   local result
-  result, visual_state = fixed.p8_fixed_rnd_from_state(visual_state, x)
+  result, visual_state = fixed.rnd_from_state(visual_state, x)
   return result
 end
 
 function M.visual_random_draw_one()
   local result
-  result, visual_state = fixed.p8_fixed_rnd_from_state(visual_state, fixed.P8_FIXED_INT(1))
+  result, visual_state = fixed.rnd_from_state(visual_state, fixed.INT(1))
   return result
 end
 

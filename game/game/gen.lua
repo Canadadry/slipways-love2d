@@ -12,12 +12,12 @@ function M.random_walk_new(n_, b)
 end
 
 function M.random_walk_next(state)
-  local one_minus_abs_b = fixed.p8_fixed_sub(fixed.p8_fixed_from_int(1), fixed.p8_fixed_abs(state.bias))
+  local one_minus_abs_b = fixed.sub(fixed.from_int(1), fixed.abs(state.bias))
   local b_pos = (state.bias > 0) and state.bias or 0
-  local v = fixed.p8_fixed_add(fixed.p8_fixed_rnd(one_minus_abs_b), b_pos)
-  local half = fixed.P8_FIXED_LIT(0x00008000, 0.5)
+  local v = fixed.add(fixed.rnd(one_minus_abs_b), b_pos)
+  local half = fixed.LIT(0x00008000, 0.5)
 
-  state.bias = fixed.p8_fixed_add(state.bias, fixed.p8_fixed_mul(fixed.p8_fixed_sub(half, v), state.step))
+  state.bias = fixed.add(state.bias, fixed.mul(fixed.sub(half, v), state.step))
   return v
 end
 
@@ -44,7 +44,7 @@ local function weighted_picker_fill(state)
   state.tickets_count = 0
   for i = 1, game_data.PLANET_TYPES_COUNT do
     local entity = game_data.planet_types_table[i]
-    local count = fixed.p8_fixed_flr_int(fixed.p8_fixed_mul(entity.weight, state.multiplier))
+    local count = fixed.flr_int(fixed.mul(entity.weight, state.multiplier))
 
     for _ = 1, count do
       assert(state.tickets_count < M.WEIGHTED_PICKER_TICKETS_CAP, "weighted_picker_fill: the save format holds 0 to "
@@ -104,10 +104,10 @@ function M.weighted_picker_next(state)
 
   while true do
     local r_val = state.random(state.random_ctx)
-    local len_fixed = fixed.p8_fixed_from_int(state.tickets_count)
+    local len_fixed = fixed.from_int(state.tickets_count)
     local idx_fixed =
-      fixed.p8_fixed_flr(fixed.p8_fixed_add(fixed.p8_fixed_mul(r_val, len_fixed), fixed.p8_fixed_from_int(1)))
-    local idx = fixed.p8_fixed_flr_int(idx_fixed)
+      fixed.flr(fixed.add(fixed.mul(r_val, len_fixed), fixed.from_int(1)))
+    local idx = fixed.flr_int(idx_fixed)
 
     e = state.tickets[idx]
     if not weighted_picker_recent_contains(state, e) then

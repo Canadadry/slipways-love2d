@@ -78,12 +78,12 @@ function M.button_image_draw(graphics, mem, key, x, y, w, h, draw, context)
   if not built then
     slot.key = { words = { key.words[1], key.words[2], key.words[3], key.words[4] } }
     slot.used = true
-    image.p8_image_build(graphics, mem, image_slot.IMAGE_SLOT_BUTTON_ICON_FIRST + i - 1, w, h, draw, context)
+    image.build(graphics, mem, image_slot.IMAGE_SLOT_BUTTON_ICON_FIRST + i - 1, w, h, draw, context)
   end
   g_stamp = g_stamp + 1
   slot.stamp = g_stamp
   slot.frame = g_frame
-  image.p8_image_draw(graphics, mem, image_slot.IMAGE_SLOT_BUTTON_ICON_FIRST + i - 1, x, y)
+  image.draw(graphics, mem, image_slot.IMAGE_SLOT_BUTTON_ICON_FIRST + i - 1, x, y)
   return true
 end
 

@@ -19,16 +19,16 @@ end
 
 -- Returns a new { along, perpendicular } table on each call.
 local function offset_in(direction, from, to)
-  local dx = fixed.p8_fixed_sub(to.x, from.x)
-  local dy = fixed.p8_fixed_sub(to.y, from.y)
+  local dx = fixed.sub(to.x, from.x)
+  local dy = fixed.sub(to.y, from.y)
   if direction == pad_direction.PAD_DIRECTION_RIGHT then
-    return { along = dx, perpendicular = fixed.p8_fixed_abs(dy) }
+    return { along = dx, perpendicular = fixed.abs(dy) }
   elseif direction == pad_direction.PAD_DIRECTION_LEFT then
-    return { along = -dx, perpendicular = fixed.p8_fixed_abs(dy) }
+    return { along = -dx, perpendicular = fixed.abs(dy) }
   elseif direction == pad_direction.PAD_DIRECTION_DOWN then
-    return { along = dy, perpendicular = fixed.p8_fixed_abs(dx) }
+    return { along = dy, perpendicular = fixed.abs(dx) }
   end
-  return { along = -dy, perpendicular = fixed.p8_fixed_abs(dx) }
+  return { along = -dy, perpendicular = fixed.abs(dx) }
 end
 
 function M.pad_target_pick(origin, direction, candidates)
@@ -55,7 +55,7 @@ function M.pad_target_pick(origin, direction, candidates)
       if offset.along <= 0 or offset.perpendicular > offset.along then
         goto continue
       end
-      local score = fixed.p8_fixed_add(offset.along, offset.perpendicular * M.PAD_TARGET_PERPENDICULAR_WEIGHT)
+      local score = fixed.add(offset.along, offset.perpendicular * M.PAD_TARGET_PERPENDICULAR_WEIGHT)
       if best == nil or score < best_score or
           (score == best_score and offset.perpendicular < best_offset.perpendicular) then
         best = e

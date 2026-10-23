@@ -40,7 +40,7 @@ local function emitter_host_layer_pos(self)
 end
 
 local function particle_to_int(x)
-  return fixed.p8_fixed_flr_int(x)
+  return fixed.flr_int(x)
 end
 
 -- A particle: { pos, velocity, acceleration, life }, acceleration nil when it has none.
@@ -106,7 +106,7 @@ function M.emitter_spawn(self, n)
       assert(spawned ~= nil, "an emitter's particles are particles")
       qy[#qy + 1] = spawned
     end
-    n = fixed.p8_fixed_sub(n, fixed.p8_fixed_from_int(1))
+    n = fixed.sub(n, fixed.from_int(1))
   end
 end
 
@@ -130,7 +130,7 @@ function M.emitter_update(graphics, memory, self)
   assert(emitter ~= nil, "emitter_update: a class that carries no particle emitter is no receiver -- stop")
 
   layer, screen_pos = emitter_host_layer_pos(self)
-  if layer < fixed.p8_fixed_from_int(10) and not entity_geom.entity_geom_is_on_screen(self) then
+  if layer < fixed.from_int(10) and not entity_geom.entity_geom_is_on_screen(self) then
     return
   end
 
@@ -157,18 +157,18 @@ function M.emitter_update(graphics, memory, self)
 
         particle.pos = vec.vec_add(particle.pos, pv)
 
-        velocity_x = fixed.p8_fixed_add(fixed.p8_fixed_mul(matrix_xx, pv.x), fixed.p8_fixed_mul(matrix_xy, pv.y))
+        velocity_x = fixed.add(fixed.mul(matrix_xx, pv.x), fixed.mul(matrix_xy, pv.y))
         -- Reads the x just written, not pv.x: "fixing" it moves every particle whose matrix_yx is not 0.
         particle.velocity = vec.vec_make(velocity_x,
-          fixed.p8_fixed_add(fixed.p8_fixed_mul(matrix_yx, velocity_x), fixed.p8_fixed_mul(matrix_yy, pv.y)))
+          fixed.add(fixed.mul(matrix_yx, velocity_x), fixed.mul(matrix_yy, pv.y)))
 
         if particle.acceleration ~= nil then
           particle.velocity = vec.vec_add(particle.velocity, particle.acceleration)
         end
 
-        particle.life = fixed.p8_fixed_sub(particle.life, fixed.P8_FIXED_LIT(0x000023d7, 0.14))
+        particle.life = fixed.sub(particle.life, fixed.LIT(0x000023d7, 0.14))
 
-        if particle.life <= fixed.p8_fixed_from_int(1) then
+        if particle.life <= fixed.from_int(1) then
           -- Removing an element during this walk skips the next one; it is visited next frame. Compensating the index would change update timing and every replay.
           for i = 1, #particles do
             if particles[i] == particle then
@@ -177,10 +177,10 @@ function M.emitter_update(graphics, memory, self)
             end
           end
         else
-          local px = particle_to_int(fixed.p8_fixed_add(center_x, particle.pos.x))
-          local py = particle_to_int(fixed.p8_fixed_add(center_y, particle.pos.y))
+          local px = particle_to_int(fixed.add(center_x, particle.pos.x))
+          local py = particle_to_int(fixed.add(center_y, particle.pos.y))
           local col = 0
-          local idx = particle_to_int(fixed.p8_fixed_flr(particle.life))
+          local idx = particle_to_int(fixed.flr(particle.life))
 
           if colors ~= nil then
             local found, value = game_data.int_seq_at(colors.items, colors.count, idx, col)
@@ -194,7 +194,7 @@ function M.emitter_update(graphics, memory, self)
             points[n] = { x = px, y = py, col = col }
             point_count = n
             if point_count == EMITTER_POINT_BATCH then
-              gfx_module.p8_psets(graphics, memory, points, point_count)
+              gfx_module.psets(graphics, memory, points, point_count)
               point_count = 0
             end
           end
@@ -203,7 +203,7 @@ function M.emitter_update(graphics, memory, self)
       index = index + 1
     end
     if point_count > 0 then
-      gfx_module.p8_psets(graphics, memory, points, point_count)
+      gfx_module.psets(graphics, memory, points, point_count)
     end
   end
 

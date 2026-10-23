@@ -69,7 +69,7 @@ function M.update_entities()
       entity_registry.entity_unregister(qc)
     end
 
-    qc.state_time = fixed.p8_fixed_add(qc.state_time, fixed.p8_fixed_from_int(1))
+    qc.state_time = fixed.add(qc.state_time, fixed.from_int(1))
     i = i + 1
   end
 end

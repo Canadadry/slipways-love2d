@@ -4,7 +4,7 @@ local map_tables = require("game.map_tables")
 local fixed = require("p8.fixed")
 
 local expect = check.expect
-local resource = fixed.p8_fixed_from_int
+local resource = fixed.from_int
 
 local function new_map()
   return { count = 0, entries = {} }
@@ -58,7 +58,7 @@ local function test_format_signed_prefixes_a_plus_and_keeps_the_color_from_zero_
 end
 
 local function test_format_signed_gives_a_negative_value_color_8_and_no_plus()
-  local text, color = economy_formulas.economy_formulas_format_signed(fixed.p8_fixed_neg(resource(5)), 10, "$", 3)
+  local text, color = economy_formulas.economy_formulas_format_signed(fixed.neg(resource(5)), 10, "$", 3)
   expect(text, "-5$", "negative text")
   expect(color, 8, "negative color")
 end

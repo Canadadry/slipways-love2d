@@ -271,7 +271,7 @@ end
 
 function M.cart_start_game(chosen_option)
   start_world(chosen_option)
-  galaxy.galaxy_populate(fixed.p8_fixed_from_int(90))
+  galaxy.galaxy_populate(fixed.from_int(90))
   start_interface()
   recompute_economy()
 end
@@ -348,7 +348,7 @@ function M.cart_draw()
   end
   text_image.text_image_frame_begin()
   button_image.button_image_frame_begin()
-  gfx.p8_cls(mem)
+  gfx.cls(mem)
   hud.hud_select_palette_block_default(mem)
   entity_registry.draw_layers(entity_registry.ENTITY_MESSAGE_DRAW)
   entity_registry.draw_layers(entity_registry.ENTITY_MESSAGE_DRAW_OVERLAY)

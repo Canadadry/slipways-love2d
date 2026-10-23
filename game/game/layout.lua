@@ -84,7 +84,7 @@ local function tuple_scalar_of_item(item)
   if item.is_fixed then
     return M.layout_row_scalar_fixed(item.fixed)
   end
-  return M.layout_row_scalar_fixed(fixed.p8_fixed_from_int(item.number))
+  return M.layout_row_scalar_fixed(fixed.from_int(item.number))
 end
 
 -- Copies the row's scalars: the cell keeps nothing of `row`. nil gives a nothing cell.
@@ -97,7 +97,7 @@ function M.layout_row_cell_row(row)
   if row.resource ~= nil then
     tuple.count = 2
     tuple.scalars[1] = M.layout_row_scalar_fixed(row.resource)
-    tuple.scalars[2] = M.layout_row_scalar_fixed(fixed.p8_fixed_from_int(5))
+    tuple.scalars[2] = M.layout_row_scalar_fixed(fixed.from_int(5))
     return M.layout_row_cell_tuple(tuple)
   end
   tuple.count = row.count
@@ -120,7 +120,7 @@ function M.layout_row_cell_item(item)
   if item.is_fixed then
     return M.layout_row_cell_fixed(item.fixed)
   end
-  return M.layout_row_cell_fixed(fixed.p8_fixed_from_int(item.number))
+  return M.layout_row_cell_fixed(fixed.from_int(item.number))
 end
 
 local function row_scalar_item(item)
@@ -152,10 +152,10 @@ local function tuple_fixed_at(tuple, i)
 end
 
 local function row_measure_item(self, cell, out_item, out_w, out_spacing)
-  local width = fixed.p8_fixed_from_int(6)
-  local palette_block = fixed.p8_fixed_from_int(0)
+  local width = fixed.from_int(6)
+  local palette_block = fixed.from_int(0)
   local have_spacing = false
-  local spacing = fixed.p8_fixed_from_int(0)
+  local spacing = fixed.from_int(0)
 
   item_zero(out_item)
   if cell.kind == M.LAYOUT_ROW_CELL_TUPLE then
@@ -176,7 +176,7 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
   end
 
   if cell.kind == M.LAYOUT_ROW_CELL_STRING then
-    local c = fixed.p8_fixed_from_int(6)
+    local c = fixed.from_int(6)
 
     if self ~= nil and self.color ~= nil then
       c = self.color
@@ -184,8 +184,8 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
     out_item.kind = M.LAYOUT_ROW_ITEM_TEXT
     out_item.text = cell.as.text
     out_item.color = c
-    out_w = fixed.p8_fixed_from_int(c_strlen(cell.as.text) * 4 + 3)
-    out_spacing = fixed.p8_fixed_from_int(1)
+    out_w = fixed.from_int(c_strlen(cell.as.text) * 4 + 3)
+    out_spacing = fixed.from_int(1)
     return out_w, out_spacing
   end
 
@@ -194,7 +194,7 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
     if cell.kind == M.LAYOUT_ROW_CELL_FIXED then
       out_item.sprite_id = cell.as.fixed
     else
-      out_item.sprite_id = fixed.p8_fixed_from_int(0)
+      out_item.sprite_id = fixed.from_int(0)
     end
     out_item.sprite_palette_block = palette_block
   else
@@ -204,19 +204,19 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
   if have_spacing then
     out_spacing = spacing
   else
-    out_spacing = fixed.p8_fixed_from_int(2)
+    out_spacing = fixed.from_int(2)
   end
   return out_w, out_spacing
 end
 
 local function layout_row_construct(self, cells, n)
-  local w = fixed.p8_fixed_from_int(0)
-  local fs = fixed.p8_fixed_from_int(0)
+  local w = fixed.from_int(0)
+  local fs = fixed.from_int(0)
 
   self.placed_items = {}
   for i = 1, n do
-    local w_i = fixed.p8_fixed_from_int(0)
-    local spacing_i = fixed.p8_fixed_from_int(0)
+    local w_i = fixed.from_int(0)
+    local spacing_i = fixed.from_int(0)
     local x = w
 
     self.placed_items[i] = {}
@@ -224,26 +224,26 @@ local function layout_row_construct(self, cells, n)
     if self.placed_items[i].kind == M.LAYOUT_ROW_ITEM_TEXT then
       self.placed_items[i].text = row_copy_text(self.placed_items[i].text)
     end
-    self.placed_items[i].offset = vec.vec_make(x, fixed.p8_fixed_from_int(0))
-    w = fixed.p8_fixed_add(w, fixed.p8_fixed_add(w_i, spacing_i))
+    self.placed_items[i].offset = vec.vec_make(x, fixed.from_int(0))
+    w = fixed.add(w, fixed.add(w_i, spacing_i))
     fs = spacing_i
   end
   self.placed_items_count = n
-  self.width = fixed.p8_fixed_sub(w, fs)
+  self.width = fixed.sub(w, fs)
 end
 
 local function row_draw_at_item_draw(gfx, mem, item, p)
   local pos = vec.vec_add(p, item.offset)
 
   if item.kind == M.LAYOUT_ROW_ITEM_TEXT then
-    hud.hud_print_outlined_default(gfx, mem, item.text, fixed.p8_fixed_add(pos.x, fixed.p8_fixed_from_int(2)),
-      fixed.p8_fixed_add(pos.y, fixed.p8_fixed_from_int(1)),
-      fixed.p8_fixed_flr_int(item.color))
+    hud.hud_print_outlined_default(gfx, mem, item.text, fixed.add(pos.x, fixed.from_int(2)),
+      fixed.add(pos.y, fixed.from_int(1)),
+      fixed.flr_int(item.color))
   elseif item.kind == M.LAYOUT_ROW_ITEM_SPRITE then
     hud.hud_select_palette_block(mem, item.sprite_palette_block)
-    gfx_module.p8_spr_default(gfx, mem, fixed.p8_fixed_flr_int(item.sprite_id),
-      fixed.p8_fixed_flr_int(pos.x),
-      fixed.p8_fixed_flr_int(pos.y))
+    gfx_module.spr_default(gfx, mem, fixed.flr_int(item.sprite_id),
+      fixed.flr_int(pos.x),
+      fixed.flr_int(pos.y))
     hud.hud_select_palette_block_default(mem)
   end
 end
@@ -259,7 +259,7 @@ function M.layout_row_draw_at(gfx, mem, self, p, a)
     .. "a tooltip's rows, a message box's layout-row article) is a layout row; anything else would be read through "
     .. "the wrong layout")
   w = self.width
-  p = vec.vec_sub(p, vec.vec_make(fixed.p8_fixed_mul(a, w), fixed.p8_fixed_from_int(0)))
+  p = vec.vec_sub(p, vec.vec_make(fixed.mul(a, w), fixed.from_int(0)))
 
   if self.placed_items == nil then
     return
@@ -276,7 +276,7 @@ function M.layout_row_draw_at_text_image(gfx, mem, self, p, a)
     return
   end
   assert(self.class == M.layout_row_class_def, "layout_row_draw_at_text_image: not a layout row")
-  p = vec.vec_sub(p, vec.vec_make(fixed.p8_fixed_mul(a, self.width), fixed.p8_fixed_from_int(0)))
+  p = vec.vec_sub(p, vec.vec_make(fixed.mul(a, self.width), fixed.from_int(0)))
   if self.placed_items == nil then
     return
   end
@@ -289,16 +289,16 @@ function M.layout_row_draw_at_text_image(gfx, mem, self, p, a)
     do
       local pos = vec.vec_add(p, item.offset)
       text_image.text_image_print_outlined(gfx, mem, item.text,
-        fixed.p8_fixed_flr_int(fixed.p8_fixed_add(pos.x, fixed.p8_fixed_from_int(2))),
-        fixed.p8_fixed_flr_int(fixed.p8_fixed_add(pos.y, fixed.p8_fixed_from_int(1))),
-        bit.band(fixed.p8_fixed_flr_int(item.color), 0x0F))
+        fixed.flr_int(fixed.add(pos.x, fixed.from_int(2))),
+        fixed.flr_int(fixed.add(pos.y, fixed.from_int(1))),
+        bit.band(fixed.flr_int(item.color), 0x0F))
     end
     ::continue::
   end
 end
 
 function M.layout_row_draw_at_default(gfx, mem, self, p)
-  M.layout_row_draw_at(gfx, mem, self, p, fixed.p8_fixed_from_int(0))
+  M.layout_row_draw_at(gfx, mem, self, p, fixed.from_int(0))
 end
 
 local function keys_zero()
@@ -325,7 +325,7 @@ local function tooltip_line(item)
     M.layout_row_keys_append(keys, row_scalar_item(item.row.items[i]))
   end
   if item.row.color ~= nil then
-    keys.color = fixed.p8_fixed_from_int(item.row.color)
+    keys.color = fixed.from_int(item.row.color)
   end
   return M.layout_row_new(keys)
 end
@@ -349,20 +349,20 @@ function M.tooltip_draw_at(gfx, mem, self, om, a)
     return
   end
 
-  h = fixed.p8_fixed_add(fixed.p8_fixed_mul(fixed.p8_fixed_from_int(self.rows_count), fixed.p8_fixed_from_int(8)),
-    fixed.p8_fixed_from_int(2))
-  om = fixed.p8_fixed_sub(om, fixed.p8_fixed_mul(h, a))
-  dn = fixed.p8_fixed_add(om, h)
+  h = fixed.add(fixed.mul(fixed.from_int(self.rows_count), fixed.from_int(8)),
+    fixed.from_int(2))
+  om = fixed.sub(om, fixed.mul(h, a))
+  dn = fixed.add(om, h)
 
-  gfx_module.p8_fillp(gfx, 0x0F0F)
+  gfx_module.fillp(gfx, 0x0F0F)
   hud.hud_draw_bar(gfx, mem, om, dn, 0x10)
-  gfx_module.p8_fillp_reset(gfx)
+  gfx_module.fillp_reset(gfx)
 
   for i = 1, self.rows_count do
-    local pos = vec.vec_make(fixed.p8_fixed_from_int(cint.div(vram.P8_SCREEN_WIDTH, 2)),
-      fixed.p8_fixed_add(om, fixed.p8_fixed_from_int(2)))
-    M.layout_row_draw_at_text_image(gfx, mem, self.rows[i], pos, fixed.P8_FIXED_LIT(0x00008000, 0.5))
-    om = fixed.p8_fixed_add(om, fixed.p8_fixed_from_int(8))
+    local pos = vec.vec_make(fixed.from_int(cint.div(vram.SCREEN_WIDTH, 2)),
+      fixed.add(om, fixed.from_int(2)))
+    M.layout_row_draw_at_text_image(gfx, mem, self.rows[i], pos, fixed.LIT(0x00008000, 0.5))
+    om = fixed.add(om, fixed.from_int(8))
   end
 end
 
@@ -372,7 +372,7 @@ end
 
 local function tooltip_draw_at_method(self, p, a)
   M.tooltip_draw_at(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self,
-    fixed.p8_fixed_from_int(0), a)
+    fixed.from_int(0), a)
 end
 
 M.layout_row_class_def = {
@@ -448,7 +448,7 @@ function M.layout_row_keys_of_row(row)
     M.layout_row_keys_append(keys, M.layout_row_cell_item(row.items[i]))
   end
   if row.color ~= nil then
-    keys.color = fixed.p8_fixed_from_int(row.color)
+    keys.color = fixed.from_int(row.color)
   end
   return keys
 end

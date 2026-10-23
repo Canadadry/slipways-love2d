@@ -18,7 +18,7 @@ local M = {}
 -- p8.gfx_software stores any byte; a LÖVE colour has to be one of the 16.
 local function check_color(call, col)
   if col < 0 or col > 15 or col ~= math.floor(col) then
-    fatal.p8_fatal(string.format("love backend %s: colour %s is not 0..15", call, tostring(col)))
+    fatal.raise(string.format("love backend %s: colour %s is not 0..15", call, tostring(col)))
   end
 end
 
@@ -28,7 +28,7 @@ local function set_color(col)
 end
 
 local function on_screen(sx, sy)
-  return sx >= 0 and sx < vram.P8_SCREEN_WIDTH and sy >= 0 and sy < vram.P8_SCREEN_HEIGHT
+  return sx >= 0 and sx < vram.SCREEN_WIDTH and sy >= 0 and sy < vram.SCREEN_HEIGHT
 end
 
 local function love_cls(mem)
@@ -174,9 +174,9 @@ end
 -- nothing is left.
 local function clip_rectangle(gfx, x0, y0, x1, y1)
   local sx0 = max(x0 - gfx.camera_x, 0)
-  local sx1 = min(x1 - gfx.camera_x, vram.P8_SCREEN_WIDTH - 1)
+  local sx1 = min(x1 - gfx.camera_x, vram.SCREEN_WIDTH - 1)
   local sy0 = max(y0 - gfx.camera_y, 0)
-  local sy1 = min(y1 - gfx.camera_y, vram.P8_SCREEN_HEIGHT - 1)
+  local sy1 = min(y1 - gfx.camera_y, vram.SCREEN_HEIGHT - 1)
   if sx0 > sx1 or sy0 > sy1 then
     return nil
   end
@@ -272,15 +272,15 @@ local function love_spr(gfx, mem, n, x, y, w, h)
   if w <= 0 or h <= 0 then
     return
   end
-  local sprites_per_row = cint.div(vram.P8_SPRITE_SHEET_WIDTH, gfx_module.P8_SPRITE_SIZE)
-  local sheet_x = cint.mod(n, sprites_per_row) * gfx_module.P8_SPRITE_SIZE
-  local sheet_y = cint.div(n, sprites_per_row) * gfx_module.P8_SPRITE_SIZE
-  local box_x1 = x + w * gfx_module.P8_SPRITE_SIZE - 1
-  local box_y1 = y + h * gfx_module.P8_SPRITE_SIZE - 1
+  local sprites_per_row = cint.div(vram.SPRITE_SHEET_WIDTH, gfx_module.SPRITE_SIZE)
+  local sheet_x = cint.mod(n, sprites_per_row) * gfx_module.SPRITE_SIZE
+  local sheet_y = cint.div(n, sprites_per_row) * gfx_module.SPRITE_SIZE
+  local box_x1 = x + w * gfx_module.SPRITE_SIZE - 1
+  local box_y1 = y + h * gfx_module.SPRITE_SIZE - 1
   local wx0 = x + max(sheet_x, 0) - sheet_x
   local wy0 = y + max(sheet_y, 0) - sheet_y
-  local wx1 = min(box_x1, x + vram.P8_SPRITE_SHEET_WIDTH - 1 - sheet_x)
-  local wy1 = min(box_y1, y + vram.P8_SPRITE_SHEET_HEIGHT - 1 - sheet_y)
+  local wx1 = min(box_x1, x + vram.SPRITE_SHEET_WIDTH - 1 - sheet_x)
+  local wy1 = min(box_y1, y + vram.SPRITE_SHEET_HEIGHT - 1 - sheet_y)
   local on_sheet = wx0 <= wx1 and wy0 <= wy1
   if on_sheet then
     local sx0, sy0, sx1, sy1 = clip_rectangle(gfx, wx0, wy0, wx1, wy1)
@@ -290,13 +290,13 @@ local function love_spr(gfx, mem, n, x, y, w, h)
       local qw = sx1 - sx0 + 1
       local qh = sy1 - sy0 + 1
       local image = sheet.sheet_image(mem, qx, qy, qx + qw - 1, qy + qh - 1)
-      local quad = love.graphics.newQuad(qx, qy, qw, qh, vram.P8_SPRITE_SHEET_WIDTH, vram.P8_SPRITE_SHEET_HEIGHT)
+      local quad = love.graphics.newQuad(qx, qy, qw, qh, vram.SPRITE_SHEET_WIDTH, vram.SPRITE_SHEET_HEIGHT)
       love.graphics.setColor(1, 1, 1)
       love.graphics.draw(image, quad, sx0, sy0)
     end
   end
   local entry = mem.draw_palette[0]
-  if bit.band(entry, vram.P8_DRAW_PALETTE_TRANSPARENT_BIT) ~= 0 then
+  if bit.band(entry, vram.DRAW_PALETTE_TRANSPARENT_BIT) ~= 0 then
     return
   end
   set_color(bit.band(entry, 0x0F))
@@ -328,7 +328,7 @@ local function love_print_outlined(gfx, mem, str, x, y, col)
   love_print(gfx, mem, str, x, y, col)
 end
 
-local SOFTWARE_BACKEND = gfx_software.p8_gfx_software_backend()
+local SOFTWARE_BACKEND = gfx_software.backend()
 local building = false
 
 local function love_image_begin(slot_index, w, h)

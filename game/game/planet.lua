@@ -231,7 +231,7 @@ function M.planet_construct_in(self)
   end
 
   if bit.band(self.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)) ~= 0 then
-    local target = research.research_projects_at(fixed.p8_fixed_flr_int(self.archetype.project_index))
+    local target = research.research_projects_at(fixed.flr_int(self.archetype.project_index))
 
     if target ~= nil then
       M.planet_install_project(self, target)
@@ -287,7 +287,7 @@ function M.planet_install_project(self, research_project_instance)
     self.production = production_zero()
   end
   self.production.resource = (research_project_instance ~= nil) and research_project_instance.output or nil
-  self.production.amount = fixed.p8_fixed_from_int(0)
+  self.production.amount = fixed.from_int(0)
 end
 
 function M.planet_is_colonized(self)
@@ -304,14 +304,14 @@ function M.planet_restart_shake(self)
   if self == nil then
     return
   end
-  self.shake = fixed.P8_FIXED_LIT(0x00014000, 1.25)
+  self.shake = fixed.LIT(0x00014000, 1.25)
 end
 
 function M.planet_update_vanishing(self, t)
   if self == nil then
     return
   end
-  self.is_dead = t > fixed.p8_fixed_from_int(60)
+  self.is_dead = t > fixed.from_int(60)
   assert(not self.is_dead or #self.slipways == 0,
     "a linked planet never dies: the routes kept in outgoing_routes would name it, and the cart never drops them")
 end
@@ -326,7 +326,7 @@ function M.planet_roll_type(self)
     local roll = gen.random_walk_next(g_planet_vanish_roll)
     local use_vanishing = false
 
-    if roll < fixed.P8_FIXED_LIT(0x00007333, 0.45) then
+    if roll < fixed.LIT(0x00007333, 0.45) then
       use_vanishing = game_data.planet_types_lookup("vanishing") ~= nil
     end
     if use_vanishing then
@@ -350,7 +350,7 @@ function M.planet_new_year(self)
   if self == nil then
     return
   end
-  if self.net_income == nil or self.net_income == fixed.p8_fixed_from_int(0) then
+  if self.net_income == nil or self.net_income == fixed.from_int(0) then
     return
   end
   if not entity_geom.entity_geom_is_on_screen(self) then
@@ -365,21 +365,21 @@ function M.planet_new_year(self)
     keys.source = entity_id.entity_id_link(self)
     text, color = economy_formulas.economy_formulas_format_signed(self.net_income, 10, "$", color)
     message_box.toast_keys_set_text(keys, text)
-    keys.color = fixed.p8_fixed_from_int(color)
+    keys.color = fixed.from_int(color)
     message_box.toast_new(keys)
   end
 end
 
 local function bob_delta(t)
-  return fixed.p8_fixed_mul(fixed.p8_fixed_sin(fixed.p8_fixed_mul(t, fixed.P8_FIXED_LIT(0x00000147, 0.005))),
-    fixed.P8_FIXED_LIT(0x00000f5c, 0.06))
+  return fixed.mul(fixed.sin(fixed.mul(t, fixed.LIT(0x00000147, 0.005))),
+    fixed.LIT(0x00000f5c, 0.06))
 end
 
 function M.planet_bob(self, t)
   assert(self == nil or M.planet_is_family(self),
     "planet_bob: self is a planet (structure and trading hub settled updates) -- stop")
   if self ~= nil and self.pos ~= nil then
-    self.pos.y = fixed.p8_fixed_add(self.pos.y, bob_delta(t))
+    self.pos.y = fixed.add(self.pos.y, bob_delta(t))
   end
 end
 
@@ -390,8 +390,8 @@ function M.planet_bob_total(state_time)
   local total = 0
   local t = 0
   for _ = 1, frames do
-    total = fixed.p8_fixed_add(total, bob_delta(t))
-    t = fixed.p8_fixed_add(t, fixed.p8_fixed_from_int(1))
+    total = fixed.add(total, bob_delta(t))
+    t = fixed.add(t, fixed.from_int(1))
   end
   return total
 end

@@ -85,10 +85,10 @@ function M.trading_hub_update_settled(self, t)
 
   assert(self.development_tier ~= nil,
     "trading_hub_update_settled: a settled trading hub has a development tier; only ascension_draw checks for none")
-  if self.development_tier ~= nil and self.development_tier >= fixed.p8_fixed_from_int(2) then
+  if self.development_tier ~= nil and self.development_tier >= fixed.from_int(2) then
     self.palette_block =
-      fixed.p8_fixed_add(fixed.p8_fixed_from_int(8),
-        fixed.p8_fixed_div(fixed.p8_fixed_mod(t, fixed.p8_fixed_from_int(42)), fixed.p8_fixed_from_int(6)))
+      fixed.add(fixed.from_int(8),
+        fixed.div(fixed.mod(t, fixed.from_int(42)), fixed.from_int(6)))
   end
 end
 
@@ -183,7 +183,7 @@ function M.ascension_draw(gfx, mem, self, p)
   if self == nil then
     return
   end
-  if self.development_tier ~= nil and self.development_tier >= fixed.p8_fixed_from_int(2) then
+  if self.development_tier ~= nil and self.development_tier >= fixed.from_int(2) then
     require("game.particle").emitter_update(gfx, mem, self)
   end
   planet_display.planet_draw(gfx, mem, self, p)
@@ -311,12 +311,12 @@ function M.burst_construct(self)
   end
   local particle = require("game.particle")
   particle.emitter_init(self)
-  particle.emitter_spawn(self, fixed.p8_fixed_from_int(140))
+  particle.emitter_spawn(self, fixed.from_int(140))
 
   if entity_registry.main_camera() ~= nil then
     mo = require("game.scroll").main_camera_typed()
     assert(mo ~= nil, "burst_construct: the camera placeholder has no shake; a burst before reset_world() stops the run")
-    mo.shake = fixed.p8_fixed_from_int(3)
+    mo.shake = fixed.from_int(3)
   end
 end
 
@@ -331,11 +331,11 @@ function M.burst_spawn_particle(self_ptr)
   local a
   local particle
 
-  qd = fixed.p8_fixed_add(visual_random.visual_random_draw(fixed.P8_FIXED_LIT(0x00018000, 1.5)),
-    fixed.P8_FIXED_LIT(0x00008000, 0.5))
-  if visual_random.visual_random_draw_one() < fixed.P8_FIXED_LIT(0x00009999, 0.6) then
-    qd = fixed.p8_fixed_mul(fixed.p8_fixed_flr(fixed.p8_fixed_div(qd, fixed.P8_FIXED_LIT(0x00008000, 0.5))),
-      fixed.P8_FIXED_LIT(0x00008000, 0.5))
+  qd = fixed.add(visual_random.visual_random_draw(fixed.LIT(0x00018000, 1.5)),
+    fixed.LIT(0x00008000, 0.5))
+  if visual_random.visual_random_draw_one() < fixed.LIT(0x00009999, 0.6) then
+    qd = fixed.mul(fixed.flr(fixed.div(qd, fixed.LIT(0x00008000, 0.5))),
+      fixed.LIT(0x00008000, 0.5))
   end
   p = vec.vec_from_polar(qd, visual_random.visual_random_draw_one())
 
@@ -350,7 +350,7 @@ function M.burst_spawn_particle(self_ptr)
   particle.pos = p
   particle.velocity = v
   particle.acceleration = a
-  particle.life = fixed.p8_fixed_add(visual_random.visual_random_draw(py), py)
+  particle.life = fixed.add(visual_random.visual_random_draw(py), py)
 
   return particle
 end
@@ -371,8 +371,8 @@ function M.burst_draw(graphics, memory, self, screen_pos)
 
   particles = self.emitter.particles
 
-  screen_x = fixed.p8_fixed_flr_int(screen_pos.x)
-  screen_y = fixed.p8_fixed_flr_int(screen_pos.y)
+  screen_x = fixed.flr_int(screen_pos.x)
+  screen_y = fixed.flr_int(screen_pos.y)
 
   for index = 1, 3 do
     local pt = nil
@@ -387,13 +387,13 @@ function M.burst_draw(graphics, memory, self, screen_pos)
       local trail_color
       local found
 
-      idx = fixed.p8_fixed_flr_int(fixed.p8_fixed_flr(fixed.p8_fixed_div(pt.life, fixed.p8_fixed_from_int(2))))
+      idx = fixed.flr_int(fixed.flr(fixed.div(pt.life, fixed.from_int(2))))
       found, trail_color = game_data.int_seq_at(ramp.items, ramp.count, idx, trail_color)
       if found then
         color = trail_color
       end
       if not particle.particle_pixels_hidden() then
-        gfx_module.p8_circ(graphics, memory, screen_x, screen_y, fixed.p8_fixed_flr_int(vec.vec_length(pt.pos)), color)
+        gfx_module.circ(graphics, memory, screen_x, screen_y, fixed.flr_int(vec.vec_length(pt.pos)), color)
       end
     end
 

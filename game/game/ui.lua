@@ -29,7 +29,7 @@ M.SEND_TO_HOVERED_LEFT_PRESS = 0
 M.SEND_TO_HOVERED_ACCEPT_DROP = 1
 
 local function zero_vec()
-  return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
+  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
 end
 
 local g_ui_up = false
@@ -83,14 +83,14 @@ M.g_main_mouse_placeholder = {}
 entity_class.entity_init_header(M.g_main_mouse_placeholder, M.main_mouse_placeholder_class_def)
 
 local function ui_to_int(x)
-  return fixed.p8_fixed_flr_int(x)
+  return fixed.flr_int(x)
 end
 
 local function ui_pos_or_zero(e)
   if e ~= nil then
     return entity_class.entity_pos(e)
   end
-  return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
+  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
 end
 
 local function ui_main_mouse_button()
@@ -344,13 +344,13 @@ function M.ui_update(mem, self)
 end
 
 local function ui_draw_pad_crosshair(gfx, mem)
-  local x = cint.div(vram.P8_SCREEN_WIDTH, 2)
-  local y = cint.div(vram.P8_SCREEN_HEIGHT, 2)
+  local x = cint.div(vram.SCREEN_WIDTH, 2)
+  local y = cint.div(vram.SCREEN_HEIGHT, 2)
   for d = 1, M.UI_PAD_CROSSHAIR_ARM do
-    gfx_module.p8_pset(gfx, mem, x - d, y, M.UI_PAD_CROSSHAIR_COLOUR)
-    gfx_module.p8_pset(gfx, mem, x + d, y, M.UI_PAD_CROSSHAIR_COLOUR)
-    gfx_module.p8_pset(gfx, mem, x, y - d, M.UI_PAD_CROSSHAIR_COLOUR)
-    gfx_module.p8_pset(gfx, mem, x, y + d, M.UI_PAD_CROSSHAIR_COLOUR)
+    gfx_module.pset(gfx, mem, x - d, y, M.UI_PAD_CROSSHAIR_COLOUR)
+    gfx_module.pset(gfx, mem, x + d, y, M.UI_PAD_CROSSHAIR_COLOUR)
+    gfx_module.pset(gfx, mem, x, y - d, M.UI_PAD_CROSSHAIR_COLOUR)
+    gfx_module.pset(gfx, mem, x, y + d, M.UI_PAD_CROSSHAIR_COLOUR)
   end
 end
 

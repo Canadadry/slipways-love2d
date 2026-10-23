@@ -25,7 +25,7 @@ end
 local function mouse_at(x, y)
   local camera = scroll.main_camera_typed()
   local mouse = { world = vec.vec_make(0, 0), screen = vec.vec_make(0, 0), has = 0 }
-  mouse.screen = vec.vec_make(fixed.p8_fixed_from_int(x), fixed.p8_fixed_from_int(y))
+  mouse.screen = vec.vec_make(fixed.from_int(x), fixed.from_int(y))
   mouse.world = camera ~= nil and vec.vec_add(mouse.screen, entity_class.entity_pos(camera)) or mouse.screen
   mouse.has = bit.bor(entity_class.MOUSE_POS_HAS_SCREEN, entity_class.MOUSE_POS_HAS_WORLD)
   return mouse
@@ -36,7 +36,7 @@ function M.pad_panel_entity_under(x, y, above, accept)
   local bucket = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_HIT_TEST)
   for i = 1, #bucket do
     local e = bucket[i]
-    if not e.is_dead and (above == M.PAD_PANEL_ANY_LAYER or fixed.p8_fixed_flr_int(e.layer) > above) and
+    if not e.is_dead and (above == M.PAD_PANEL_ANY_LAYER or fixed.flr_int(e.layer) > above) and
       accept(e) and e.class.hit_test ~= nil and e.class.hit_test(e, mouse) then
       return e
     end
@@ -143,7 +143,7 @@ local function top_layer()
   local top = -1
   local e = candidates_next(it)
   while e ~= nil do
-    local layer = fixed.p8_fixed_flr_int(e.layer)
+    local layer = fixed.flr_int(e.layer)
     if layer > top then
       top = layer
     end
@@ -153,7 +153,7 @@ local function top_layer()
 end
 
 local function is_item_on(e, layer)
-  return M.pad_panel_is_candidate(e) and fixed.p8_fixed_flr_int(e.layer) == layer and
+  return M.pad_panel_is_candidate(e) and fixed.flr_int(e.layer) == layer and
     e.hit_box ~= nil
 end
 
@@ -191,17 +191,17 @@ end
 
 -- Returns a new box on each call.
 local function box_at(e, origin)
-  if fixed.p8_fixed_flr_int(e.layer) < SCREEN_SPACE_LAYER then
+  if fixed.flr_int(e.layer) < SCREEN_SPACE_LAYER then
     local camera = scroll.main_camera_typed()
     if camera ~= nil then
       origin = vec.vec_sub(origin, entity_class.entity_pos(camera))
     end
   end
   local box = {
-    left = fixed.p8_fixed_add(origin.x, e.hit_box.left),
-    top = fixed.p8_fixed_add(origin.y, e.hit_box.top),
-    right = fixed.p8_fixed_add(origin.x, e.hit_box.right),
-    bottom = fixed.p8_fixed_add(origin.y, e.hit_box.bottom),
+    left = fixed.add(origin.x, e.hit_box.left),
+    top = fixed.add(origin.y, e.hit_box.top),
+    right = fixed.add(origin.x, e.hit_box.right),
+    bottom = fixed.add(origin.y, e.hit_box.bottom),
   }
   return box
 end
@@ -218,12 +218,12 @@ local function rest_box(e)
 end
 
 local function middle(low, high)
-  return fixed.p8_fixed_flr(fixed.p8_fixed_div(fixed.p8_fixed_add(low, high), fixed.p8_fixed_from_int(2)))
+  return fixed.flr(fixed.div(fixed.add(low, high), fixed.from_int(2)))
 end
 
 local function box_middle(box, x, y)
-  x = fixed.p8_fixed_flr_int(middle(box.left, box.right))
-  y = fixed.p8_fixed_flr_int(middle(box.top, box.bottom))
+  x = fixed.flr_int(middle(box.left, box.right))
+  y = fixed.flr_int(middle(box.top, box.bottom))
   return x, y
 end
 
@@ -243,10 +243,10 @@ end
 
 local function span_gap(low_a, high_a, low_b, high_b)
   if low_b > high_a then
-    return fixed.p8_fixed_flr_int(fixed.p8_fixed_sub(low_b, high_a))
+    return fixed.flr_int(fixed.sub(low_b, high_a))
   end
   if low_a > high_b then
-    return fixed.p8_fixed_flr_int(fixed.p8_fixed_sub(low_a, high_b))
+    return fixed.flr_int(fixed.sub(low_a, high_b))
   end
   return 0
 end
@@ -257,13 +257,13 @@ local function neighbor_score(item, candidate, direction)
   local from_x, from_y = box_middle(from, 0, 0)
   local to_x, to_y = box_middle(to, 0, 0)
   if direction == pad_direction.PAD_DIRECTION_UP then
-    if fixed.p8_fixed_from_int(to_y) >= from.top then return -1 end
+    if fixed.from_int(to_y) >= from.top then return -1 end
   elseif direction == pad_direction.PAD_DIRECTION_DOWN then
-    if fixed.p8_fixed_from_int(to_y) <= from.bottom then return -1 end
+    if fixed.from_int(to_y) <= from.bottom then return -1 end
   elseif direction == pad_direction.PAD_DIRECTION_LEFT then
-    if fixed.p8_fixed_from_int(to_x) >= from.left then return -1 end
+    if fixed.from_int(to_x) >= from.left then return -1 end
   else
-    if fixed.p8_fixed_from_int(to_x) <= from.right then return -1 end
+    if fixed.from_int(to_x) <= from.right then return -1 end
   end
   if direction == pad_direction.PAD_DIRECTION_UP or direction == pad_direction.PAD_DIRECTION_DOWN then
     return absolute(to_y - from_y) + 2 * span_gap(from.left, from.right, to.left, to.right)
@@ -304,7 +304,7 @@ function M.pad_panel_step(focus, choose_held, direction, x, y, mouse_buttons)
     x, y = M.pad_panel_focus_point(at, x, y)
   end
   -- With no focus the cursor still sits on the last point: on the score panel a press there closes it.
-  mouse_buttons = (at ~= nil and choose_held) and input.P8_MOUSE_LEFT or 0
+  mouse_buttons = (at ~= nil and choose_held) and input.MOUSE_LEFT or 0
   return at, x, y, mouse_buttons
 end
 

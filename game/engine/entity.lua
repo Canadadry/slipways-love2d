@@ -25,7 +25,7 @@ function M.entity_set_state(self, state)
     return
   end
   self.state = state
-  self.state_time = fixed.p8_fixed_from_int(0)
+  self.state_time = fixed.from_int(0)
 end
 
 function M.entity_init_instance(self, cls, state, t)

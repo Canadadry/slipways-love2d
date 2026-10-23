@@ -25,7 +25,7 @@ M.MESSAGE_BOX_ARTICLE_LAYOUT_ROW = 1
 M.MESSAGE_BOX_ARTICLE_SHARED_ROW = 2
 
 local function zero_vec()
-  return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
+  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
 end
 
 local function vec_copy(v)
@@ -145,25 +145,25 @@ function M.message_box_draw_overlay(gfx, mem, self)
 
   self_t = self.state_time
   rh = self.duration_scale
-  t = fixed.p8_fixed_sub(fixed.p8_fixed_div(self_t, rh), fixed.p8_fixed_from_int(10))
+  t = fixed.sub(fixed.div(self_t, rh), fixed.from_int(10))
 
   if t >= 0 then
     if self.keep_open ~= nil and self.keep_open(self) then
-      self.state_time = fixed.p8_fixed_mul(rh, fixed.p8_fixed_from_int(10))
-      t = fixed.p8_fixed_from_int(0)
+      self.state_time = fixed.mul(rh, fixed.from_int(10))
+      t = fixed.from_int(0)
     end
   end
 
-  t3 = fixed.p8_fixed_mul(fixed.p8_fixed_mul(t, t), t)
-  nc = fixed.p8_fixed_div(fixed.p8_fixed_neg(t3), fixed.p8_fixed_from_int(9))
+  t3 = fixed.mul(fixed.mul(t, t), t)
+  nc = fixed.div(fixed.neg(t3), fixed.from_int(9))
 
   if gfx ~= nil and mem ~= nil then
     for i = 1, self.articles_count do
-      gfx_module.p8_camera(gfx, fixed.p8_fixed_flr_int(nc), 0)
-      nc = fixed.p8_fixed_neg(nc)
+      gfx_module.camera(gfx, fixed.flr_int(nc), 0)
+      nc = fixed.neg(nc)
       message_box_draw_article(gfx, mem, self.articles[i])
     end
-    gfx_module.p8_camera_reset(gfx)
+    gfx_module.camera_reset(gfx)
   end
 
   if t > 0x000a8000 then
@@ -207,7 +207,7 @@ function M.message_box_add_row(self, row)
 
     article.as.scalars.arguments[i] = argument
     assert(item.row == nil, "message_box_add_row: a draw function reads no nested row")
-    argument.number = fixed.p8_fixed_from_int(0)
+    argument.number = fixed.from_int(0)
     if item.text ~= nil then
       assert(i == 1, "message_box_add_row: only print_outlined's first argument is read as text -- stop, do not widen")
       article.as.scalars.text = item.text
@@ -221,7 +221,7 @@ function M.message_box_add_row(self, row)
       if item.is_fixed then
         argument.number = item.fixed
       else
-        argument.number = fixed.p8_fixed_from_int(item.number)
+        argument.number = fixed.from_int(item.number)
       end
     end
   end
@@ -317,7 +317,7 @@ function M.toast_construct(self)
     local mo = scroll.main_camera_typed()
     local main_mouse_pos = toast_pos_or_zero(je)
     local main_camera_pos = toast_pos_or_zero(mo)
-    local offset = vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(5))
+    local offset = vec.vec_make(fixed.from_int(0), fixed.from_int(5))
     entity_class.entity_set_pos(self, vec.vec_sub(vec.vec_add(main_mouse_pos, main_camera_pos), offset))
   end
 end
@@ -333,10 +333,10 @@ function M.toast_update(self)
   self.follow = nil
   entity_class.entity_set_pos(self, vec.vec_add(entity_class.entity_pos(self), self.archetype.velocity))
 
-  new_l = fixed.p8_fixed_add(self.fade, 0x00001999)
+  new_l = fixed.add(self.fade, 0x00001999)
   self.fade = new_l
 
-  self.is_dead = new_l >= fixed.p8_fixed_from_int(5)
+  self.is_dead = new_l >= fixed.from_int(5)
 end
 
 local function toast_update_method(self, t)
@@ -353,7 +353,7 @@ function M.toast_draw(gfx, mem, self, p)
 
   hud.hud_select_palette_block(mem, self.fade)
 
-  color = fixed.p8_fixed_flr_int(self.color)
+  color = fixed.flr_int(self.color)
 
   hud.hud_print_outlined(gfx, mem, self.text, p.x, p.y, color, a_center)
 
@@ -385,7 +385,7 @@ local function toast_create(keys)
   self.follow = nil
   self.is_dead = false
   self.text = ""
-  self.color = fixed.p8_fixed_from_int(0)
+  self.color = fixed.from_int(0)
   if keys ~= nil then
     local source = entity_id.entity_get(keys.source)
 
@@ -487,7 +487,7 @@ function M.message_box_open_box(frame, buttons, button_count)
 
   if frame.description ~= nil then
     layout.layout_row_keys_append(description_row.layout_row_keys, layout.layout_row_cell_string(frame.description))
-    description_row.layout_row_keys.color = fixed.p8_fixed_from_int(13)
+    description_row.layout_row_keys.color = fixed.from_int(13)
   end
 
   if frame.fixed_pos ~= nil then

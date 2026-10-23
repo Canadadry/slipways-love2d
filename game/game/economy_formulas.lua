@@ -16,7 +16,7 @@ end
 
 -- Returns found, out: out unchanged when the key is missing or map is nil.
 function M.resource_map_get(map, qe, out)
-  local key = fixed.p8_fixed_flr_int(qe)
+  local key = fixed.flr_int(qe)
   local i = 1
   while map ~= nil and i <= map.count do
     if map.entries[i].resource == key then
@@ -29,7 +29,7 @@ function M.resource_map_get(map, qe, out)
 end
 
 function M.resource_map_set(map, qe, v)
-  local key = fixed.p8_fixed_flr_int(qe)
+  local key = fixed.flr_int(qe)
   for i = 1, map.count do
     if map.entries[i].resource == key then
       map.entries[i].value = v
@@ -44,33 +44,33 @@ end
 function M.economy_formulas_fill_resource_map(out, jm)
   out.count = 0
   for i = 1, map_tables.RESOURCE_CODE_COUNT do
-    M.resource_map_set(out, fixed.p8_fixed_from_int(map_tables.resource_codes[i].resource), jm)
+    M.resource_map_set(out, fixed.from_int(map_tables.resource_codes[i].resource), jm)
   end
 end
 
 function M.economy_formulas_route_base_cost(from_pos, to_pos)
   local diff = vec.vec_sub(to_pos, from_pos)
   local length_squared = vec.vec_length_squared(diff)
-  local x = fixed.p8_fixed_div(length_squared, game_data.game_data_route_length_factor())
-  local ec = fixed.p8_fixed_pow075(x)
-  local clamped = fixed_max(fixed.P8_FIXED_LIT(0x00008000, 0.5), ec)
-  local scale = fixed.p8_fixed_mul(game_data.game_data_route_cost_factor(), M.economy_formulas_cost_scale())
-  local cost = fixed.p8_fixed_flr(fixed.p8_fixed_mul(scale, clamped))
+  local x = fixed.div(length_squared, game_data.game_data_route_length_factor())
+  local ec = fixed.pow075(x)
+  local clamped = fixed_max(fixed.LIT(0x00008000, 0.5), ec)
+  local scale = fixed.mul(game_data.game_data_route_cost_factor(), M.economy_formulas_cost_scale())
+  local cost = fixed.flr(fixed.mul(scale, clamped))
   return cost
 end
 
 function M.economy_formulas_cost_scale()
   local jc = entity_registry.entities_by_tag(entity_class.TAG_SLIPWAY)
   local count = (jc ~= nil) and #jc or 0
-  local sq = fixed.p8_fixed_sqrt(fixed.p8_fixed_from_int(count))
-  local val = fixed.p8_fixed_sub(fixed.p8_fixed_mul(sq, fixed.P8_FIXED_LIT(0x0000451e, 0.27)),
-    fixed.P8_FIXED_LIT(0x00001999, 0.1))
-  return fixed_max(fixed.p8_fixed_from_int(1), val)
+  local sq = fixed.sqrt(fixed.from_int(count))
+  local val = fixed.sub(fixed.mul(sq, fixed.LIT(0x0000451e, 0.27)),
+    fixed.LIT(0x00001999, 0.1))
+  return fixed_max(fixed.from_int(1), val)
 end
 
 -- Returns text, color: out_color is ignored, the color is c from zero up and 8 below.
 function M.economy_formulas_format_signed(d, c, ku, out_color)
-  local num_str = str.p8_tostr_fixed(d)
+  local num_str = str.tostr_fixed(d)
   local suffix = (ku ~= nil) and ku or ""
   local result
 

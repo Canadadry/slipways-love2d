@@ -103,7 +103,7 @@ local function update_tiers_visit(entity, context)
   local changed = context
   local planet
   local tier
-  local development_tier = fixed.p8_fixed_from_int(0)
+  local development_tier = fixed.from_int(0)
   local production
 
   if entity == nil then
@@ -117,7 +117,7 @@ local function update_tiers_visit(entity, context)
   end
 
   if planet.development_tier == nil or tier > development_tier then
-    if planet.development_tier ~= nil and development_tier == fixed.p8_fixed_from_int(1) then
+    if planet.development_tier ~= nil and development_tier == fixed.from_int(1) then
       local hn = research.research_project_get(planet.project)
       if hn ~= nil and hn.byproduct ~= nil then
         if planet.needs ~= nil then
@@ -143,11 +143,11 @@ function M.economy_tiers_compute_production_amount(planet, out)
   local production_table
   local idx
   local clamped_idx
-  local base = fixed.p8_fixed_from_int(0)
-  local bonus = fixed.p8_fixed_from_int(0)
+  local base = fixed.from_int(0)
+  local bonus = fixed.from_int(0)
 
   assert(planet ~= nil and out ~= nil)
-  if planet.development_tier == nil or planet.development_tier == fixed.p8_fixed_from_int(0) then
+  if planet.development_tier == nil or planet.development_tier == fixed.from_int(0) then
     return false, out
   end
   project = research.research_project_get(planet.project)
@@ -155,15 +155,15 @@ function M.economy_tiers_compute_production_amount(planet, out)
   if production_table == nil then
     return false, out
   end
-  idx = fixed.p8_fixed_flr_int(planet.development_tier)
+  idx = fixed.flr_int(planet.development_tier)
   clamped_idx = (idx < production_table.count) and idx or production_table.count
   if clamped_idx >= 1 then
-    base = fixed.p8_fixed_from_int(production_table.values[clamped_idx])
+    base = fixed.from_int(production_table.values[clamped_idx])
   end
   if planet.production_bonus ~= nil then
     bonus = planet.production_bonus
   end
-  out = fixed.p8_fixed_add(base, bonus)
+  out = fixed.add(base, bonus)
   return true, out
 end
 
@@ -178,15 +178,15 @@ function M.economy_tiers_compute_tier(entity)
   local planet
   local needs
   local incoming_routes
-  local tier = fixed.p8_fixed_from_int(1)
+  local tier = fixed.from_int(1)
 
   if entity == nil then
-    return fixed.p8_fixed_from_int(0)
+    return fixed.from_int(0)
   end
   assert(planet_module.planet_is_family(entity), "economy_tiers_compute_tier: the entity is a planet")
   planet = entity
   if planet.state ~= entity_class.ENTITY_STATE_SETTLED then
-    return fixed.p8_fixed_from_int(0)
+    return fixed.from_int(0)
   end
 
   needs = planet.needs
@@ -208,14 +208,14 @@ function M.economy_tiers_compute_tier(entity)
             end
           end
         end
-        want.satisfied = fixed.p8_fixed_from_int(gc)
-        tier = fixed.p8_fixed_mul(tier, fixed.p8_fixed_from_int(gc))
+        want.satisfied = fixed.from_int(gc)
+        tier = fixed.mul(tier, fixed.from_int(gc))
       end
     end
   end
 
-  if tier == fixed.p8_fixed_from_int(0) then
-    return fixed.p8_fixed_from_int(1)
+  if tier == fixed.from_int(0) then
+    return fixed.from_int(1)
   end
 
   if bit.band(entity.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_TRADING_HUB)) ~= 0 then
@@ -224,13 +224,13 @@ function M.economy_tiers_compute_tier(entity)
       for index = 1, #needs do
         local want = needs[index]
         if want ~= nil then
-          if want.satisfied ~= nil and want.satisfied > fixed.p8_fixed_from_int(0) then
+          if want.satisfied ~= nil and want.satisfied > fixed.from_int(0) then
             count = count + 1
           end
         end
       end
     end
-    return fixed_min(fixed.p8_fixed_from_int(count), fixed.p8_fixed_from_int(3))
+    return fixed_min(fixed.from_int(count), fixed.from_int(3))
   end
 
   if not planet.archetype.is_planet then
@@ -238,20 +238,20 @@ function M.economy_tiers_compute_tier(entity)
       local last = needs[#needs]
       if last ~= nil then
         if last.satisfied ~= nil then
-          return fixed_min(fixed.p8_fixed_add(last.satisfied, fixed.p8_fixed_from_int(1)), fixed.p8_fixed_from_int(4))
+          return fixed_min(fixed.add(last.satisfied, fixed.from_int(1)), fixed.from_int(4))
         end
       end
     end
-    return fixed.p8_fixed_from_int(2)
+    return fixed.from_int(2)
   end
 
   do
     local by = planet.outgoing_routes
     local by_count = (by ~= nil) and #by or 0
     local incoming_routes_count = (incoming_routes ~= nil) and #incoming_routes or 0
-    local mid_val = fixed.p8_fixed_mid(fixed.p8_fixed_from_int(by_count), fixed.p8_fixed_from_int(incoming_routes_count),
-      fixed.p8_fixed_from_int(1))
-    return fixed_min(fixed.p8_fixed_from_int(4), fixed.p8_fixed_add(fixed.p8_fixed_from_int(1), mid_val))
+    local mid_val = fixed.mid(fixed.from_int(by_count), fixed.from_int(incoming_routes_count),
+      fixed.from_int(1))
+    return fixed_min(fixed.from_int(4), fixed.add(fixed.from_int(1), mid_val))
   end
 end
 

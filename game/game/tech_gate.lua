@@ -48,30 +48,30 @@ end
 
 local function research_cost_with_discount(od, nk)
   local fm = require("game.probe").main_economy_typed()
-  local fu = fixed.p8_fixed_from_int(0)
-  local threshold = fixed.P8_FIXED_LIT(0x00008ccc, 0.55)
+  local fu = fixed.from_int(0)
+  local threshold = fixed.LIT(0x00008ccc, 0.55)
   local factor
   if nk ~= nil and fm ~= nil and fm.demand ~= nil then
     local _
     _, fu = economy_formulas.resource_map_get(fm.demand, nk, fu)
   end
   factor = (fu > threshold) and fu or threshold
-  return fixed.p8_fixed_flr(fixed.p8_fixed_mul(od, factor))
+  return fixed.flr(fixed.mul(od, factor))
 end
 
 function M.tech_gate_research_cost(t)
   if t == nil then
-    return research_cost_with_discount(fixed.p8_fixed_from_int(0), nil)
+    return research_cost_with_discount(fixed.from_int(0), nil)
   end
-  return research_cost_with_discount(fixed.p8_fixed_from_int(t.cost), fixed.p8_fixed_from_int(t.icon))
+  return research_cost_with_discount(fixed.from_int(t.cost), fixed.from_int(t.icon))
 end
 
 local function available_technologies_predicate(t, bi)
   local probe = require("game.probe")
   local fm = probe.main_economy_typed()
   local provisional = probe.main_economy_placeholder()
-  local jk = fixed.p8_fixed_from_int(0)
-  local ew = fixed.p8_fixed_from_int(0)
+  local jk = fixed.from_int(0)
+  local ew = fixed.from_int(0)
   local affordable
   if fm ~= nil then
     jk = fm.research_points
@@ -84,7 +84,7 @@ local function available_technologies_predicate(t, bi)
   if fm ~= nil then
     ew = fm.era
   end
-  if fixed.p8_fixed_from_int(t.era) ~= ew then
+  if fixed.from_int(t.era) ~= ew then
     return false
   end
   if M.tech_gate_is_unlocked(t.name) then

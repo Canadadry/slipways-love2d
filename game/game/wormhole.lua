@@ -84,8 +84,8 @@ function M.wormhole_drag(self, mouse)
   nq, nearest = entity_geom.entity_geom_nearest_in_ids(p_vec, self.anchors, nearest)
   self.anchor = entity_id.entity_id_link(nearest)
 
-  threshold = tech_gate.tech_gate_if_unlocked("space folding", fixed.P8_FIXED_LIT(0x000030a3, 0.19),
-    fixed.P8_FIXED_LIT(0x0000451e, 0.27))
+  threshold = tech_gate.tech_gate_if_unlocked("space folding", fixed.LIT(0x000030a3, 0.19),
+    fixed.LIT(0x0000451e, 0.27))
 
   if nq > threshold then
     probe.targeting_set_target(self.targeting, M.wormhole_too_far_target_wrapper())
@@ -108,20 +108,20 @@ function M.wormhole_update_placing(self, t)
     return
   end
 
-  threshold = tech_gate.tech_gate_if_unlocked("space folding", fixed.p8_fixed_from_int(29),
-    fixed.p8_fixed_from_int(35))
+  threshold = tech_gate.tech_gate_if_unlocked("space folding", fixed.from_int(29),
+    fixed.from_int(35))
 
-  one = fixed.p8_fixed_from_int(1)
-  reach = fixed.p8_fixed_div(t, fixed.p8_fixed_from_int(15))
+  one = fixed.from_int(1)
+  reach = fixed.div(t, fixed.from_int(15))
   if reach < one then
     min_val = reach
   else
     min_val = one
   end
-  sin_term = fixed.p8_fixed_mul(fixed.p8_fixed_sin(fixed.p8_fixed_div(t, fixed.p8_fixed_from_int(40))),
-    fixed.P8_FIXED_LIT(0x00001999, 0.1))
+  sin_term = fixed.mul(fixed.sin(fixed.div(t, fixed.from_int(40))),
+    fixed.LIT(0x00001999, 0.1))
 
-  result = fixed.p8_fixed_mul(threshold, fixed.p8_fixed_add(min_val, sin_term))
+  result = fixed.mul(threshold, fixed.add(min_val, sin_term))
   self.radius = result
 end
 
@@ -140,7 +140,7 @@ function M.wormhole_drop(self)
   t = self.state_time
 
   -- targeting_confirm's side effects must not run before tick 15: do not hoist it out of the else.
-  if t < fixed.p8_fixed_from_int(15) then
+  if t < fixed.from_int(15) then
     result = true
   else
     result = not probe.targeting_confirm(self)
@@ -163,8 +163,8 @@ function M.wormhole_update_unfolding(self, t)
     return
   end
 
-  sr = fixed.p8_fixed_add(fixed.p8_fixed_div(M.wormhole_reveal_radius(self, t), fixed.p8_fixed_from_int(128)),
-    fixed.P8_FIXED_LIT(0x000007ef, 0.031))
+  sr = fixed.add(fixed.div(M.wormhole_reveal_radius(self, t), fixed.from_int(128)),
+    fixed.LIT(0x000007ef, 0.031))
 
   self_p = entity_class.entity_map_pos(self)
   planet_list = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
@@ -188,7 +188,7 @@ function M.wormhole_update_unfolding(self, t)
     end
   end
 
-  self.is_dead = t > fixed.p8_fixed_from_int(25)
+  self.is_dead = t > fixed.from_int(25)
 end
 
 local function wormhole_update_unfolding_method(self, t)
@@ -196,10 +196,10 @@ local function wormhole_update_unfolding_method(self, t)
 end
 
 function M.wormhole_reveal_radius(self, t)
-  local sq = fixed.p8_fixed_sqrt(fixed.p8_fixed_div(t, fixed.p8_fixed_from_int(15)))
-  local one = fixed.p8_fixed_from_int(1)
+  local sq = fixed.sqrt(fixed.div(t, fixed.from_int(15)))
+  local one = fixed.from_int(1)
   local min_val
-  local oi = fixed.p8_fixed_from_int(0)
+  local oi = fixed.from_int(0)
 
   if sq < one then
     min_val = sq
@@ -209,7 +209,7 @@ function M.wormhole_reveal_radius(self, t)
   if self ~= nil then
     oi = self.radius
   end
-  return fixed.p8_fixed_mul(min_val, oi)
+  return fixed.mul(min_val, oi)
 end
 
 M.wormhole_class_def = {

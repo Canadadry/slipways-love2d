@@ -9,7 +9,7 @@ local image = require("p8.image")
 
 local M = {}
 
-local ROW_IMAGE_HEIGHT = gfx_module.P8_SPRITE_SIZE
+local ROW_IMAGE_HEIGHT = gfx_module.SPRITE_SIZE
 local SPRITE_COUNT = 256
 local BLOCK_COUNT = 16
 
@@ -48,12 +48,12 @@ end
 local g_stamp = 0
 
 local function row_image_width()
-  return image.p8_image_size(image_slot.IMAGE_SLOT_ROW_FIRST).width
+  return image.size(image_slot.IMAGE_SLOT_ROW_FIRST).width
 end
 
 local function entry_of(item)
-  return u32(bit.bor(fixed.p8_fixed_flr_int(item.sprite_id), bit.lshift(fixed.p8_fixed_flr_int(item.sprite_palette_block), 8),
-    bit.lshift(fixed.p8_fixed_flr_int(item.offset.x), 12)))
+  return u32(bit.bor(fixed.flr_int(item.sprite_id), bit.lshift(fixed.flr_int(item.sprite_palette_block), 8),
+    bit.lshift(fixed.flr_int(item.offset.x), 12)))
 end
 
 -- Fills key from the row; returns false when the row cannot be copied exactly.
@@ -75,19 +75,19 @@ local function key_of(row, mem, key)
       return false
     end
     do
-      local sprite = fixed.p8_fixed_flr_int(item.sprite_id)
-      local block = fixed.p8_fixed_flr_int(item.sprite_palette_block)
-      local x = fixed.p8_fixed_flr_int(item.offset.x)
-      if fixed.p8_fixed_from_int(x) ~= item.offset.x or item.offset.y ~= 0 or x < 0
-        or x + gfx_module.P8_SPRITE_SIZE > row_image_width() or sprite < 0 or sprite >= SPRITE_COUNT or block < 0
+      local sprite = fixed.flr_int(item.sprite_id)
+      local block = fixed.flr_int(item.sprite_palette_block)
+      local x = fixed.flr_int(item.offset.x)
+      if fixed.from_int(x) ~= item.offset.x or item.offset.y ~= 0 or x < 0
+        or x + gfx_module.SPRITE_SIZE > row_image_width() or sprite < 0 or sprite >= SPRITE_COUNT or block < 0
         or block >= BLOCK_COUNT then
         return false
       end
       local n = key.count + 1
       key.entries[n] = entry_of(item)
       key.count = n
-      if x + gfx_module.P8_SPRITE_SIZE > key.extent then
-        key.extent = x + gfx_module.P8_SPRITE_SIZE
+      if x + gfx_module.SPRITE_SIZE > key.extent then
+        key.extent = x + gfx_module.SPRITE_SIZE
       end
     end
     ::continue::
@@ -157,15 +157,15 @@ function M.row_image_draw_at(gfx, mem, row, p, a)
   end
   i, built = slot_for(key)
   if not built then
-    image.p8_image_build(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i - 1, key.extent, ROW_IMAGE_HEIGHT,
+    image.build(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i - 1, key.extent, ROW_IMAGE_HEIGHT,
       row_image_build_draw, row)
     g_slots[i].key = key_copy(key)
   end
   g_stamp = g_stamp + 1
   g_slots[i].stamp = g_stamp
-  origin = vec.vec_sub(p, vec.vec_make(fixed.p8_fixed_mul(a, row.width), 0))
-  image.p8_image_draw(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i - 1, fixed.p8_fixed_flr_int(origin.x),
-    fixed.p8_fixed_flr_int(origin.y))
+  origin = vec.vec_sub(p, vec.vec_make(fixed.mul(a, row.width), 0))
+  image.draw(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i - 1, fixed.flr_int(origin.x),
+    fixed.flr_int(origin.y))
   hud.hud_select_palette_block_default(mem)
 end
 

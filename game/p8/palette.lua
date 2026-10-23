@@ -1,8 +1,8 @@
 local M = {}
 
-M.P8_PALETTE_COLORS = 16
+M.COLORS = 16
 
-M.P8_PALETTE_RGB = {
+M.RGB = {
   [0] = { red = 0x00, green = 0x00, blue = 0x00 },
   { red = 0x1D, green = 0x2B, blue = 0x53 },
   { red = 0x7E, green = 0x25, blue = 0x53 },

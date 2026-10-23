@@ -114,10 +114,10 @@ function M.pad_jump_repeat_clear(jump)
 end
 
 local inner_left = M.PAD_JUMP_SCROLL_MARGIN
-local inner_right = vram.P8_SCREEN_WIDTH - 1 - M.PAD_JUMP_SCROLL_MARGIN
+local inner_right = vram.SCREEN_WIDTH - 1 - M.PAD_JUMP_SCROLL_MARGIN
 local inner_top = M.PAD_JUMP_SCROLL_MARGIN
--- PAD_JUMP_SCROLL_MARGIN_BOTTOM is the margin plus the bottom HUD row, which starts at P8_SCREEN_HEIGHT - 11.
-local inner_bottom = vram.P8_SCREEN_HEIGHT - 1 - M.PAD_JUMP_SCROLL_MARGIN_BOTTOM
+-- PAD_JUMP_SCROLL_MARGIN_BOTTOM is the margin plus the bottom HUD row, which starts at vram.SCREEN_HEIGHT - 11.
+local inner_bottom = vram.SCREEN_HEIGHT - 1 - M.PAD_JUMP_SCROLL_MARGIN_BOTTOM
 
 function M.pad_jump_inside(x, y)
   return x >= inner_left and x <= inner_right and y >= inner_top and y <= inner_bottom
@@ -138,7 +138,7 @@ function M.pad_jump_scroll(x, y, dx, dy)
 end
 
 local function world_pixel(map_units)
-  return fixed.p8_fixed_flr_int(fixed.p8_fixed_mul(map_units, fixed.p8_fixed_from_int(galaxy.GALAXY_MAP_SCALE)))
+  return fixed.flr_int(fixed.mul(map_units, fixed.from_int(galaxy.GALAXY_MAP_SCALE)))
 end
 
 function M.pad_jump_world_point(e, x, y)

@@ -34,18 +34,18 @@ local function economy_create()
 
   entity_class.entity_init_header(self, M.economy_class_def)
   self.archetype = M.economy_archetype
-  self.credits = fixed.p8_fixed_from_int(0)
-  self.income = fixed.p8_fixed_from_int(0)
-  self.research_points = fixed.p8_fixed_from_int(0)
-  self.era = fixed.p8_fixed_from_int(0)
-  self.year_ticks = fixed.p8_fixed_from_int(0)
-  self.year = fixed.p8_fixed_from_int(0)
+  self.credits = fixed.from_int(0)
+  self.income = fixed.from_int(0)
+  self.research_points = fixed.from_int(0)
+  self.era = fixed.from_int(0)
+  self.year_ticks = fixed.from_int(0)
+  self.year = fixed.from_int(0)
   self.invented = {}
   self.save_pending = false
 
   self.credits = self.archetype.credits
-  self.income = fixed.p8_fixed_from_int(0)
-  self.research_points = fixed.p8_fixed_from_int(0)
+  self.income = fixed.from_int(0)
+  self.research_points = fixed.from_int(0)
   self.era = self.archetype.era
   self.year_ticks = self.archetype.year_ticks
   self.year = self.archetype.year
@@ -85,9 +85,9 @@ local function economy_refresh_after_figures(self)
   local refresh_list
   local qc
 
-  if self.year >= fixed.p8_fixed_from_int(3426) then
+  if self.year >= fixed.from_int(3426) then
     self.end_status = "final score"
-  elseif self.income <= fixed.p8_fixed_from_int(0) and self.credits < fixed.p8_fixed_from_int(3) then
+  elseif self.income <= fixed.from_int(0) and self.credits < fixed.from_int(3) then
     self.end_status = "bankrupt"
   else
     self.end_status = nil
@@ -112,15 +112,15 @@ local function economy_add_ticks(self, hx, bring_up_to_date)
   end
   self.save_pending = true
 
-  kx = tech_gate.tech_gate_if_unlocked("time compression", fixed.p8_fixed_from_int(12), fixed.p8_fixed_from_int(15))
+  kx = tech_gate.tech_gate_if_unlocked("time compression", fixed.from_int(12), fixed.from_int(15))
 
-  lo = fixed.p8_fixed_add(self.year_ticks, hx)
+  lo = fixed.add(self.year_ticks, hx)
   self.year_ticks = lo
 
   bring_up_to_date(self)
 
   if lo > kx then
-    self.year_ticks = fixed.p8_fixed_sub(lo, kx)
+    self.year_ticks = fixed.sub(lo, kx)
     M.economy_new_year(self)
   end
 end
@@ -141,7 +141,7 @@ function M.economy_new_year(self)
   local income
   local research_points
   local new_year
-  local science_production = fixed.p8_fixed_from_int(0)
+  local science_production = fixed.from_int(0)
   local new_year_list
   local qc
 
@@ -161,15 +161,15 @@ function M.economy_new_year(self)
     found, k = map_tables.resource_code_lookup("k", k)
     if found then
       local _
-      _, science_production = economy_formulas.resource_map_get(self.production, fixed.p8_fixed_from_int(k),
+      _, science_production = economy_formulas.resource_map_get(self.production, fixed.from_int(k),
         science_production)
     end
   end
 
-  self.credits = fixed.p8_fixed_add(credits, income)
-  self.research_points = fixed.p8_fixed_add(fixed.p8_fixed_add(research_points, science_production),
-    fixed.p8_fixed_from_int(1))
-  new_year = fixed.p8_fixed_add(self.year, fixed.p8_fixed_from_int(1))
+  self.credits = fixed.add(credits, income)
+  self.research_points = fixed.add(fixed.add(research_points, science_production),
+    fixed.from_int(1))
+  new_year = fixed.add(self.year, fixed.from_int(1))
   self.year = new_year
 
   M.economy_recompute(self)
@@ -189,26 +189,26 @@ function M.economy_spend(self, jt)
   local keys = message_box.toast_keys_zero()
 
   assert_economy(self)
-  nz = self ~= nil and self.credits or fixed.p8_fixed_from_int(0)
+  nz = self ~= nil and self.credits or fixed.from_int(0)
 
   if nz < jt then
     message_box.toast_keys_set_text(keys, "-no money-")
-    keys.color = fixed.p8_fixed_from_int(8)
+    keys.color = fixed.from_int(8)
     message_box.toast_new(keys)
     return false
   end
 
   if self ~= nil then
-    self.credits = fixed.p8_fixed_sub(nz, jt)
+    self.credits = fixed.sub(nz, jt)
     self.save_pending = true
   end
 
-  if jt ~= fixed.p8_fixed_from_int(0) then
+  if jt ~= fixed.from_int(0) then
     local color = 0
     local text
-    text, color = economy_formulas.economy_formulas_format_signed(fixed.p8_fixed_neg(jt), 10, "$", color)
+    text, color = economy_formulas.economy_formulas_format_signed(fixed.neg(jt), 10, "$", color)
     message_box.toast_keys_set_text(keys, text)
-    keys.color = fixed.p8_fixed_from_int(color)
+    keys.color = fixed.from_int(color)
     message_box.toast_new(keys)
   end
 
@@ -218,7 +218,7 @@ end
 function M.economy_recompute(self)
   local economy_score = require("game.economy_score")
   local economy_tiers = require("game.economy_tiers")
-  local trade_total = fixed.p8_fixed_from_int(0)
+  local trade_total = fixed.from_int(0)
   local income
   local happiness
   local skill_multiplier
@@ -249,13 +249,13 @@ function M.economy_recompute(self)
     for i = 1, #planet_list do
       local kr = economy_score.economy_score_net_income(planet_list[i])
 
-      trade_total = fixed.p8_fixed_add(trade_total, kr)
+      trade_total = fixed.add(trade_total, kr)
     end
   end
 
-  skill_multiplier = tech_gate.tech_gate_if_unlocked("skill implants", fixed.p8_fixed_from_int(1),
-    fixed.P8_FIXED_LIT(0x00012666, 1.15))
-  income = fixed.p8_fixed_sub(fixed.p8_fixed_flr(fixed.p8_fixed_mul(trade_total, skill_multiplier)),
+  skill_multiplier = tech_gate.tech_gate_if_unlocked("skill implants", fixed.from_int(1),
+    fixed.LIT(0x00012666, 1.15))
+  income = fixed.sub(fixed.flr(fixed.mul(trade_total, skill_multiplier)),
     economy_score.economy_score_colony_upkeep())
   self.income = income
 
@@ -277,7 +277,7 @@ function M.economy_invent(self, t)
   self.save_pending = true
 
   jk = self.research_points
-  self.research_points = fixed.p8_fixed_sub(jk, tech_gate.tech_gate_research_cost(t))
+  self.research_points = fixed.sub(jk, tech_gate.tech_gate_research_cost(t))
 
   if t ~= nil and t.name ~= nil then
     self.invented[#self.invented + 1] = t.name
@@ -285,13 +285,13 @@ function M.economy_invent(self, t)
   count = #self.invented
 
   ew = self.era
-  if ew < fixed.p8_fixed_from_int(4) then
+  if ew < fixed.from_int(4) then
     local found
     local threshold = 0
     found, threshold = game_data.int_seq_at(game_data.tier_thresholds_table, game_data.TIER_THRESHOLDS_COUNT,
-      fixed.p8_fixed_flr_int(ew), threshold)
-    if found and fixed.p8_fixed_from_int(count) >= fixed.p8_fixed_from_int(threshold) then
-      self.era = fixed.p8_fixed_add(ew, fixed.p8_fixed_from_int(1))
+      fixed.flr_int(ew), threshold)
+    if found and fixed.from_int(count) >= fixed.from_int(threshold) then
+      self.era = fixed.add(ew, fixed.from_int(1))
     end
   end
 
@@ -327,13 +327,13 @@ local function total_production_visit(pt, ctx)
   end
   found, current = economy_formulas.resource_map_get(p, kw.resource, current)
   if not found then
-    current = fixed.p8_fixed_from_int(0)
+    current = fixed.from_int(0)
   end
-  economy_formulas.resource_map_set(p, kw.resource, fixed.p8_fixed_add(current, kw.amount))
+  economy_formulas.resource_map_set(p, kw.resource, fixed.add(current, kw.amount))
 end
 
 function M.economy_total_production(out)
-  economy_formulas.economy_formulas_fill_resource_map(out, fixed.p8_fixed_from_int(0))
+  economy_formulas.economy_formulas_fill_resource_map(out, fixed.from_int(0))
   for_each_tagged(entity_class.TAG_PLANET, total_production_visit, out)
 end
 
@@ -366,14 +366,14 @@ local function crowding_penalty_visit(l, ctx)
   -- Fallback 1, not 0: the map was seeded with 1 for every resource code.
   found, current = economy_formulas.resource_map_get(d, last.row.resource, current)
   if not found then
-    current = fixed.p8_fixed_from_int(1)
+    current = fixed.from_int(1)
   end
   economy_formulas.resource_map_set(d, last.row.resource,
-    fixed.p8_fixed_sub(current, fixed.P8_FIXED_LIT(0x00002666, 0.15)))
+    fixed.sub(current, fixed.LIT(0x00002666, 0.15)))
 end
 
 function M.economy_crowding_penalty(out)
-  economy_formulas.economy_formulas_fill_resource_map(out, fixed.p8_fixed_from_int(1))
+  economy_formulas.economy_formulas_fill_resource_map(out, fixed.from_int(1))
   for_each_tagged(entity_class.TAG_STRUCTURE, crowding_penalty_visit, out)
 end
 

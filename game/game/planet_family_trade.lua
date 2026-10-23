@@ -95,7 +95,7 @@ end
 
 function M.slipgate_refresh(self)
   local slipways_count = 0
-  local s_val = fixed.p8_fixed_from_int(0)
+  local s_val = fixed.from_int(0)
 
   if self == nil then
     return
@@ -107,7 +107,7 @@ function M.slipgate_refresh(self)
     local found, entry = game_data.int_seq_at(self.archetype.link_sprites.items, self.archetype.link_sprites.count,
       slipways_count + 1, nil)
     if found then
-      s_val = fixed.p8_fixed_from_int(entry)
+      s_val = fixed.from_int(entry)
     end
   end
 
@@ -133,7 +133,7 @@ function M.slipgate_offer_trade(self, trade_offer)
 
   for i = 1, #slipways do
     local slipway = entity_id.entity_id_resolve(slipways[i])
-    if trade_offer.amount <= fixed.p8_fixed_from_int(0) then
+    if trade_offer.amount <= fixed.from_int(0) then
       goto continue
     end
 
@@ -278,8 +278,8 @@ function M.synthesizer_attach_slipway(self, slipway)
       end
       i = i_val
 
-      gc = i.satisfied or fixed.p8_fixed_from_int(0)
-      if gc ~= fixed.p8_fixed_from_int(0) then
+      gc = i.satisfied or fixed.from_int(0)
+      if gc ~= fixed.from_int(0) then
         goto continue
       end
 

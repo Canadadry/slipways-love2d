@@ -49,14 +49,14 @@ function M.slipway_end_map_pos(end_)
   if end_ ~= nil then
     return entity_class.entity_map_pos(end_)
   end
-  return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
+  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
 end
 
 function M.slipway_end_pos(end_)
   if end_ ~= nil then
     return entity_class.entity_pos(end_)
   end
-  return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
+  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
 end
 
 -- nil once the planet was flushed.
@@ -91,9 +91,9 @@ local function slipway_inherit_infraspace(self)
     slipway_copy_infraspace(self, M.slipway_end(self))
   end
   if self.infraspace ~= nil then
-    entity_registry.entity_registry_set_layer(self, fixed.p8_fixed_from_int(2))
+    entity_registry.entity_registry_set_layer(self, fixed.from_int(2))
   else
-    entity_registry.entity_registry_set_layer(self, fixed.p8_fixed_from_int(4))
+    entity_registry.entity_registry_set_layer(self, fixed.from_int(4))
   end
 end
 
@@ -158,7 +158,7 @@ function M.slipway_drag(self, mouse)
     else
       entity_class.entity_clear_pos(self.point)
     end
-    entity_class.entity_set_map_pos(self.point, vec.vec_div(point_pos, fixed.p8_fixed_from_int(128)))
+    entity_class.entity_set_map_pos(self.point, vec.vec_div(point_pos, fixed.from_int(128)))
     self.end_ = nil
     self.end_is_point = true
   end
@@ -199,7 +199,7 @@ function M.slipway_drop(self, end_planet)
     return
   end
 
-  self.fade_in_step = fixed.p8_fixed_from_int(1)
+  self.fade_in_step = fixed.from_int(1)
   self.end_ = entity_id.entity_id_link(end_planet)
   self.end_is_point = false
 
@@ -216,7 +216,7 @@ function M.slipway_drop(self, end_planet)
     end
     assert(start_registered and end_registered,
       "slipway_drop: both endpoints must have attach_slipway, or the slipway never joins their slipways lists")
-    require("game.economy").economy_advance_clock(probe.main_economy_typed(), fixed.p8_fixed_from_int(1))
+    require("game.economy").economy_advance_clock(probe.main_economy_typed(), fixed.from_int(1))
   end
 end
 
@@ -227,7 +227,7 @@ local function slipway_obstruction_node_predicate(e, ctx_ptr)
     return false
   end
   return geom.geom_near_segment(ctx.start_point, ctx.end_point, M.slipway_end_map_pos(e),
-    fixed.P8_FIXED_LIT(0x000000d1, 0.0032))
+    fixed.LIT(0x000000d1, 0.0032))
 end
 
 local function slipway_obstruction_slipway_predicate(e, ctx_ptr)
@@ -262,8 +262,8 @@ function M.slipway_obstruction(self)
   start_point = M.slipway_end_map_pos(start_node)
   end_point = M.slipway_end_map_pos(end_node)
 
-  threshold = tech_gate.tech_gate_if_unlocked("space folding", fixed.P8_FIXED_LIT(0x00008000, 0.5),
-    fixed.P8_FIXED_LIT(0x0001147a, 1.08))
+  threshold = tech_gate.tech_gate_if_unlocked("space folding", fixed.LIT(0x00008000, 0.5),
+    fixed.LIT(0x0001147a, 1.08))
 
   if vec.vec_length_squared(vec.vec_sub(start_point, end_point)) > threshold then
     return M.g_slipway_too_far
@@ -400,7 +400,7 @@ local function slipway_create(keys)
   self.targeted_by = nil
   self.is_dead = false
   entity_class.entity_init_header(self.point, M.slipway_mouse_point_class_def)
-  entity_class.entity_set_map_pos(self.point, vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0)))
+  entity_class.entity_set_map_pos(self.point, vec.vec_make(fixed.from_int(0), fixed.from_int(0)))
   if keys ~= nil and entity_id.entity_get(keys.start) ~= nil then
     assert(slipway_is_endpoint_class(entity_id.entity_get(keys.start).class),
       "slipway_create: a start key that is neither NULL nor a planet or a structure "

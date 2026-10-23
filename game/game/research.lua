@@ -110,7 +110,7 @@ local function resource_code_of(s)
   found, qe = map_tables.resource_code_lookup(s, qe)
   assert(found, "resource_code_of: a routed position missing from the resource codes would stay a string in a "
     .. "fixed member -- stop, do not widen the member")
-  return fixed.p8_fixed_from_int(qe)
+  return fixed.from_int(qe)
 end
 
 local function research_project_positions(self, ri, input_codes)
@@ -126,7 +126,7 @@ local function research_project_positions(self, ri, input_codes)
     self.planet_codes = research_project_string(ri.planet_codes)
   end
   if n >= 3 then
-    self.base_cost = fixed.p8_fixed_from_int(ri.base_cost)
+    self.base_cost = fixed.from_int(ri.base_cost)
   end
   if n >= 4 then
     self.production_key = research_project_string(ri.production_key)
@@ -229,7 +229,7 @@ local function project_create(keys)
 
     input_codes = research_project_positions(self, ri, input_codes)
     if ri.icon_sprite ~= nil then
-      self.icon_sprite = fixed.p8_fixed_from_int(ri.icon_sprite)
+      self.icon_sprite = fixed.from_int(ri.icon_sprite)
     end
     self.class_name = ri.class_name
     self.next_type = ri.next_type
@@ -257,7 +257,7 @@ local function project_create(keys)
 
     if found then
       self.inputs[#self.inputs + 1] =
-        M.need_new({ kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(r_resource) })
+        M.need_new({ kind = trade.RESOURCE_FIXED, number = fixed.from_int(r_resource) })
     else
       self.inputs[#self.inputs + 1] = M.need_new({ kind = trade.RESOURCE_NIL, number = 0 })
     end
@@ -372,7 +372,7 @@ function M.research_project_production(self)
 end
 
 function M.research_project_cost(self)
-  local od = fixed.p8_fixed_from_int(0)
+  local od = fixed.from_int(0)
   local il
 
   M.research_project_assert(self)
@@ -381,12 +381,12 @@ function M.research_project_cost(self)
     od = self.base_cost
   end
   if self ~= nil and il ~= nil and tech_gate.tech_gate_is_unlocked(il) then
-    od = fixed.p8_fixed_mul(od, fixed.P8_FIXED_LIT(0x00018000, 1.5))
+    od = fixed.mul(od, fixed.LIT(0x00018000, 1.5))
   end
   if (self == nil or self.icon_sprite == nil) and tech_gate.tech_gate_is_unlocked("nanomaterials") then
-    od = fixed.p8_fixed_mul(od, fixed.P8_FIXED_LIT(0x0000d999, 0.85))
+    od = fixed.mul(od, fixed.LIT(0x0000d999, 0.85))
   end
-  return fixed.p8_fixed_flr(od)
+  return fixed.flr(od)
 end
 
 return M

@@ -7,8 +7,8 @@ local vram = require("p8.vram")
 local M = {}
 
 -- One screen-wide span at any origin 0..3 fits.
-M.PATTERN_IMAGE_WIDTH = vram.P8_SCREEN_WIDTH + 4
-M.PATTERN_IMAGE_HEIGHT = vram.P8_SCREEN_HEIGHT + 4
+M.PATTERN_IMAGE_WIDTH = vram.SCREEN_WIDTH + 4
+M.PATTERN_IMAGE_HEIGHT = vram.SCREEN_HEIGHT + 4
 
 local images = {}
 
@@ -31,9 +31,9 @@ end
 
 -- The image whose pixel (i, j) is p8.gfx_software's fillp_color at world (i, j) for the
 -- current pattern of gfx, alpha 0 where it returns -1. Built on first use per
--- p8_draw_cost_pattern_key, kept for the run: never draw into it.
+-- draw_cost.pattern_key, kept for the run: never draw into it.
 function M.pattern_image(gfx, col)
-  local key = draw_cost.p8_draw_cost_pattern_key(gfx, col)
+  local key = draw_cost.pattern_key(gfx, col)
   local image = images[key]
   if image == nil then
     image = build_image(bit.band(gfx.fillp_pattern, 0xFFFF), bit.band(col, 0xFF), gfx.fillp_transparent)

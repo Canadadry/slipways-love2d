@@ -54,7 +54,7 @@ By kind of file:
 - **Bodies (`.c`, and every `.lua` file: a Lua module has no header, so the block at its top is body)** keep only traps, at the exact line, **one sentence** — or the assert that replaces it.
 - **Tests** keep the reason for a literal value (a pixel, a range, a frame index). Everything else goes.
 
-The reference failure for this rule is under-deletion, not over-deletion: a pass on the C port kept every "contract" in `allocator.h` — "Handle on an already initialised zone, which must outlive it", "The block may be NULL", "Uninitialised memory; p8_fatal when the zone is full" — because each was true, short, and fitted the old destination 4. The user's verdict: none of them was useful. The calibrated result kept zero lines in the header and two one-line traps in the body.
+The reference failure for this rule is under-deletion, not over-deletion: a pass on the C port kept every "contract" in `allocator.h` — "Handle on an already initialised zone, which must outlive it", "The block may be NULL", "Uninitialised memory; fatal.raise when the zone is full" — because each was true, short, and fitted the old destination 4. The user's verdict: none of them was useful. The calibrated result kept zero lines in the header and two one-line traps in the body.
 
 Every comment that survives goes to **one** of these destinations:
 

@@ -749,7 +749,7 @@ sheet changes both.
 
 - **Format:** 8-bit RGB, no alpha, non-interlaced; stored (uncompressed)
   deflate blocks.
-- **Colours:** every pixel is one of the 16 `P8_PALETTE_RGB` triples, byte
+- **Colours:** every pixel is one of the 16 `palette.RGB` triples, byte
   for byte. Colour 0 is opaque black in both files: the game builds its
   see-through copies itself (the recoloured sprite sheets; per-colour letter
   images, background made transparent) and never draws raw `font.png` pieces.
@@ -808,13 +808,15 @@ has no C original.
 `static` ones `local function <c name>(`; a module's file-level tables are
 `M.NAME = {` or `local NAME = {`, its header constants and enum values
 `M.<MACRO> = value`, computed as the C does; a `.c`-local macro is a module
-local. A C identifier that is a Lua keyword takes a trailing underscore
+local. In `game/p8/` a name drops `p8_` and the module's name (`fixed.add`
+for `p8_fixed_add`, `vram.SCREEN_WIDTH` for `P8_SCREEN_WIDTH`). A C
+identifier that is a Lua keyword takes a trailing underscore
 (the slipway's `end_`). A module local that would
 clash with a C parameter or local takes the `_module` suffix
 (`local planet_module = require("game.planet")` in `save_load.lua`). A
 function the Lua adds is, when another module needs it, exported after
-the C functions as `M.p8_<file>_<what>` in
-`game/p8/` (`p8_gfx_software_slot_pixels`) or with a C-style name
+the C functions as `M.<what>` in
+`game/p8/` (`gfx_software.slot_pixels`) or with a C-style name
 elsewhere (`planet_keys_zero`). `game/love/` names follow
 `module_verb[_object]`.
 
@@ -888,7 +890,7 @@ a `{ value = 0 }` table. A by-value `p8_graphics_t` is a local
 `graphics_copy` of its five fields. An out-parameter is an input argument
 whose new value comes back after the C return value, several in C order, a
 `void` function returning only them (`result, state =
-p8_fixed_rnd_from_state(state, x)`; `pad_panel_step` returns `at, x, y,
+fixed.rnd_from_state(state, x)`; `pad_panel_step` returns `at, x, y,
 mouse_buttons`).
 
 **Memory.** A new object is a table built where it is needed. The
@@ -923,7 +925,7 @@ lookup table built once; `continue` is `goto continue`; a C `for` is a
 numeric `for` only when the body changes neither counter nor bound.
 Function pointers are Lua functions, a vtable a table with the C field
 names; an X-macro list is a module function calling its entry function once
-per entry, in order (`P8_IMAGE_SLOTS(SLOT)`). `fatal.p8_fatal(msg)` raises
+per entry, in order (`image.SLOTS(SLOT)`). `fatal.raise(msg)` raises
 `error(msg, 0)`; `snprintf` messages are `string.format` with the C text.
 
 **Modules and loading.** One module per C pair, required by its path under

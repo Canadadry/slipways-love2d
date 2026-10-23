@@ -74,17 +74,17 @@ end
 -- The pad has no mouse to reach the screen's edges: the bound keeps the screen centre over the galaxy's planet area.
 local function camera_pad_bound(p, frame_size)
   local galaxy = require("game.galaxy")
-  local scale = fixed.p8_fixed_from_int(galaxy.GALAXY_MAP_SCALE)
-  local half = fixed.p8_fixed_from_int(cint.div(frame_size, 2))
-  local near = fixed.p8_fixed_sub(fixed.p8_fixed_mul(galaxy.GALAXY_MAP_MARGIN, scale), half)
-  local far = fixed.p8_fixed_sub(
-    fixed.p8_fixed_mul(fixed.p8_fixed_add(galaxy.GALAXY_MAP_MARGIN, galaxy.GALAXY_MAP_SPAN), scale), half)
+  local scale = fixed.from_int(galaxy.GALAXY_MAP_SCALE)
+  local half = fixed.from_int(cint.div(frame_size, 2))
+  local near = fixed.sub(fixed.mul(galaxy.GALAXY_MAP_MARGIN, scale), half)
+  local far = fixed.sub(
+    fixed.mul(fixed.add(galaxy.GALAXY_MAP_MARGIN, galaxy.GALAXY_MAP_SPAN), scale), half)
 
-  return fixed.p8_fixed_mid(near, far, p)
+  return fixed.mid(near, far, p)
 end
 
 local function camera_bounded(p)
-  return vec.vec_make(camera_pad_bound(p.x, vram.P8_SCREEN_WIDTH), camera_pad_bound(p.y, vram.P8_SCREEN_HEIGHT))
+  return vec.vec_make(camera_pad_bound(p.x, vram.SCREEN_WIDTH), camera_pad_bound(p.y, vram.SCREEN_HEIGHT))
 end
 
 function M.camera_update(self)
@@ -101,7 +101,7 @@ end
 
 -- Moves the map position and the position by whole pixels, within the camera bound.
 function M.camera_pan(self, dx, dy)
-  local step = vec.vec_make(fixed.p8_fixed_from_int(dx), fixed.p8_fixed_from_int(dy))
+  local step = vec.vec_make(fixed.from_int(dx), fixed.from_int(dy))
 
   assert(self ~= nil, "camera_pan: the caller checks for the placeholder camera")
   entity_class.entity_set_map_pos(self, camera_bounded(vec.vec_add(M.camera_pos_before_shake(self), step)))
@@ -116,7 +116,7 @@ function M.camera_apply(gfx, self, parallax)
   end
 
   cp = vec.vec_mul(entity_class.entity_pos(self), parallax)
-  gfx_module.p8_camera(gfx, fixed.p8_fixed_flr_int(cp.x), fixed.p8_fixed_flr_int(cp.y))
+  gfx_module.camera(gfx, fixed.flr_int(cp.x), fixed.flr_int(cp.y))
 end
 
 function M.main_camera_typed()

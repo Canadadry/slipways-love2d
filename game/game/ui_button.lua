@@ -25,7 +25,7 @@ local g_button_up = false
 local g_modal_backdrop_up = false
 
 local function ui_to_int(x)
-  return fixed.p8_fixed_flr_int(x)
+  return fixed.flr_int(x)
 end
 
 local function button_update_method(self, t)
@@ -164,9 +164,9 @@ function M.button_construct(self, keys)
   end
 
   self.layout_row = layout.layout_row_new(keys.layout_row_keys)
-  self.width = fixed.p8_fixed_add(self.layout_row.width, fixed.p8_fixed_from_int(2))
-  self.hit_box = { left = fixed.p8_fixed_from_int(0), top = fixed.p8_fixed_from_int(-1), right = self.width,
-    bottom = fixed.p8_fixed_from_int(11) }
+  self.width = fixed.add(self.layout_row.width, fixed.from_int(2))
+  self.hit_box = { left = fixed.from_int(0), top = fixed.from_int(-1), right = self.width,
+    bottom = fixed.from_int(11) }
 
   if keys.side_tooltip_row ~= nil then
     self.side_tooltip = layout.layout_row_new(keys.side_tooltip_row)
@@ -187,10 +187,10 @@ function M.button_update(self)
     local d = vec.vec_sub(qf, ra)
     local length_squared = vec.vec_length_squared(d)
     local delta
-    if length_squared <= fixed.p8_fixed_from_int(1) then
+    if length_squared <= fixed.from_int(1) then
       delta = d
     else
-      delta = vec.vec_mul(d, fixed.P8_FIXED_LIT(0x00006666, 0.4))
+      delta = vec.vec_mul(d, fixed.LIT(0x00006666, 0.4))
     end
     entity_class.entity_set_pos(self, vec.vec_add(ra, delta))
   end
@@ -202,56 +202,56 @@ function M.button_draw_overlay(gfx, mem, self)
   end
 
   if self.tooltip ~= nil and self.is_hovered then
-    layout.tooltip_draw_at(gfx, mem, self.tooltip, fixed.p8_fixed_from_int(vram.P8_SCREEN_HEIGHT - 1),
-      fixed.p8_fixed_from_int(1))
+    layout.tooltip_draw_at(gfx, mem, self.tooltip, fixed.from_int(vram.SCREEN_HEIGHT - 1),
+      fixed.from_int(1))
   end
 end
 
 -- Text items go through the text image cache, or are printed directly when through_text_image is false.
 local function button_draw_body(graphics, memory, self, draw_pos, body, top, through_text_image)
   local width = self.width
-  local right = fixed.p8_fixed_sub(fixed.p8_fixed_add(draw_pos.x, width), fixed.p8_fixed_from_int(1))
-  local bottom = fixed.p8_fixed_add(draw_pos.y, fixed.p8_fixed_from_int(9))
+  local right = fixed.sub(fixed.add(draw_pos.x, width), fixed.from_int(1))
+  local bottom = fixed.add(draw_pos.y, fixed.from_int(9))
   local left_pixel = ui_to_int(draw_pos.x)
   local top_pixel = ui_to_int(draw_pos.y)
   local right_pixel = ui_to_int(right)
   local bottom_pixel = ui_to_int(bottom)
 
-  gfx_module.p8_rect(graphics, memory, left_pixel - 1, top_pixel, right_pixel + 1, bottom_pixel + 1, 1)
-  gfx_module.p8_rectfill(graphics, memory, left_pixel, top_pixel, right_pixel, bottom_pixel, body)
-  gfx_module.p8_rectfill(graphics, memory, left_pixel, top_pixel, right_pixel, top_pixel, top)
+  gfx_module.rect(graphics, memory, left_pixel - 1, top_pixel, right_pixel + 1, bottom_pixel + 1, 1)
+  gfx_module.rectfill(graphics, memory, left_pixel, top_pixel, right_pixel, bottom_pixel, body)
+  gfx_module.rectfill(graphics, memory, left_pixel, top_pixel, right_pixel, top_pixel, top)
 
   if self.layout_row ~= nil then
-    local off = vec.vec_add(draw_pos, vec.vec_make(fixed.p8_fixed_from_int(1), fixed.p8_fixed_from_int(2)))
+    local off = vec.vec_add(draw_pos, vec.vec_make(fixed.from_int(1), fixed.from_int(2)))
     if through_text_image then
-      layout.layout_row_draw_at_text_image(graphics, memory, self.layout_row, off, fixed.p8_fixed_from_int(0))
+      layout.layout_row_draw_at_text_image(graphics, memory, self.layout_row, off, fixed.from_int(0))
     else
-      layout.layout_row_draw_at(graphics, memory, self.layout_row, off, fixed.p8_fixed_from_int(0))
+      layout.layout_row_draw_at(graphics, memory, self.layout_row, off, fixed.from_int(0))
     end
   end
 
   if self.side_tooltip ~= nil then
     local c = self.side_tooltip
     local bg = 2
-    local x2 = fixed.p8_fixed_add(right, c.width)
+    local x2 = fixed.add(right, c.width)
 
     if c.background ~= nil and not c.background_is_bool then
       bg = ui_to_int(c.background)
     end
-    gfx_module.p8_rectfill(graphics, memory, ui_to_int(right) + 3, top_pixel + 1, ui_to_int(x2) + 4, bottom_pixel, bg)
+    gfx_module.rectfill(graphics, memory, ui_to_int(right) + 3, top_pixel + 1, ui_to_int(x2) + 4, bottom_pixel, bg)
 
-    local off2 = vec.vec_add(draw_pos, vec.vec_make(fixed.p8_fixed_add(width, fixed.p8_fixed_from_int(3)),
-      fixed.p8_fixed_from_int(2)))
+    local off2 = vec.vec_add(draw_pos, vec.vec_make(fixed.add(width, fixed.from_int(3)),
+      fixed.from_int(2)))
     if through_text_image then
-      layout.layout_row_draw_at_text_image(graphics, memory, c, off2, fixed.p8_fixed_from_int(0))
+      layout.layout_row_draw_at_text_image(graphics, memory, c, off2, fixed.from_int(0))
     else
-      layout.layout_row_draw_at(graphics, memory, c, off2, fixed.p8_fixed_from_int(0))
+      layout.layout_row_draw_at(graphics, memory, c, off2, fixed.from_int(0))
     end
   end
 end
 
 local function is_whole(x)
-  return fixed.p8_fixed_from_int(ui_to_int(x)) == x
+  return fixed.from_int(ui_to_int(x)) == x
 end
 
 -- Returns ok, extent: extent widened to the row's items drawn dx right of the button's border; ok false when
@@ -269,9 +269,9 @@ local function row_extent(row, dx, extent)
     local end_ = left
     if item.kind == layout.LAYOUT_ROW_ITEM_TEXT then
       left = left + 1
-      end_ = left + c_strlen(item.text) * gfx_module.P8_FONT_CELL_WIDTH + 1
+      end_ = left + c_strlen(item.text) * gfx_module.FONT_CELL_WIDTH + 1
     elseif item.kind == layout.LAYOUT_ROW_ITEM_SPRITE then
-      end_ = left + gfx_module.P8_SPRITE_SIZE
+      end_ = left + gfx_module.SPRITE_SIZE
     end
     if left < 0 then
       return false, extent
@@ -326,7 +326,7 @@ local g_building_look = { body = 0, top = 0 }
 
 -- context is the button. Draws no visual random number and reads no game state but its rows.
 local function button_image_build_draw(gfx, mem, context)
-  button_draw_body(gfx, mem, context, vec.vec_make(fixed.p8_fixed_from_int(1), fixed.p8_fixed_from_int(0)),
+  button_draw_body(gfx, mem, context, vec.vec_make(fixed.from_int(1), fixed.from_int(0)),
     g_building_look.body, g_building_look.top, false)
 end
 

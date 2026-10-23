@@ -62,7 +62,7 @@ function M.help_screen_construct(self)
     bs[i] = ui_button.button_keys_zero({})
     bs[i].layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
     bs[i].name = e.name
-    bs[i].trade = fixed.p8_fixed_from_int(e.trade)
+    bs[i].trade = fixed.from_int(e.trade)
     bs[i].type_bias = e.type_bias
     bs[i].on_click = M.help_start_game_field_value()
   end
@@ -87,7 +87,7 @@ end
 
 function M.help_screen_draw(gfx, mem, self, p)
   -- The seed tick, result unused: without it every game started from boot gets the same galaxy.
-  fixed.p8_fixed_rnd_default()
+  fixed.rnd_default()
   particle.emitter_update(gfx, mem, self)
 
   if gfx ~= nil and mem ~= nil then

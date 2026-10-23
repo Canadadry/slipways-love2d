@@ -80,7 +80,7 @@
   - [x] Chunk 7 — input, cart, save, pad, docs, full check
 - [ ] Step 3.4 chunks
   - [x] Chunk 1 — the check tool and lua-names target
-  - [ ] Chunk 2 — runtime p8/
+  - [x] Chunk 2 — runtime p8/
   - [ ] Chunk 3 — LÖVE glue and devtools
   - [ ] Chunk 4 — engine
   - [ ] Chunk 5 — data and generation

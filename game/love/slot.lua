@@ -14,7 +14,7 @@ local slot_images = {}
 -- Turns the slot's last software build into its image: a fresh ImageData is
 -- alpha 0 everywhere, so pixels the build never wrote are skipped.
 function M.slot_build(slot)
-  local store, first, width, height, empty = gfx_software.p8_gfx_software_slot_pixels(slot)
+  local store, first, width, height, empty = gfx_software.slot_pixels(slot)
   slot_images[slot] = nil
   if width == 0 or height == 0 then
     return
@@ -26,7 +26,7 @@ function M.slot_build(slot)
       local col = store[row + x]
       if col ~= empty then
         if col > 15 then
-          fatal.p8_fatal(string.format("love backend image slot %d: colour %d is not 0..15", slot, col))
+          fatal.raise(string.format("love backend image slot %d: colour %d is not 0..15", slot, col))
         end
         local color = screen.SCREEN_COLORS[col]
         data:setPixel(x, y, color.red, color.green, color.blue, 1)
@@ -46,9 +46,9 @@ function M.slot_draw(slot, sx, sy)
   local width = slot_image.width
   local height = slot_image.height
   local ix_first = math.max(0, -sx)
-  local ix_end = math.min(width, vram.P8_SCREEN_WIDTH - sx)
+  local ix_end = math.min(width, vram.SCREEN_WIDTH - sx)
   local iy_first = math.max(0, -sy)
-  local iy_end = math.min(height, vram.P8_SCREEN_HEIGHT - sy)
+  local iy_end = math.min(height, vram.SCREEN_HEIGHT - sy)
   if ix_first >= ix_end or iy_first >= iy_end then
     return
   end

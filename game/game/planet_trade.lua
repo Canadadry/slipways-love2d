@@ -58,7 +58,7 @@ local function planet_rebuild_trades_attach_slipway_closure(self, a)
 
     kept = trade.trade_copy(a)
     trade.trade_route_list_add(self.accepted_routes, kept)
-    self.amount = fixed.p8_fixed_sub(self.amount, fixed.p8_fixed_from_int(1))
+    self.amount = fixed.sub(self.amount, fixed.from_int(1))
   end
 end
 
@@ -106,11 +106,11 @@ function M.planet_offer_trade(self, trade_offer)
 
   found, resource = map_tables.resource_code_lookup("e", resource)
   if found then
-    bonus_resource = { kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(resource) }
+    bonus_resource = { kind = trade.RESOURCE_FIXED, number = fixed.from_int(resource) }
   end
   found, resource = map_tables.resource_code_lookup("?", resource)
   if found then
-    any_resource = { kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(resource) }
+    any_resource = { kind = trade.RESOURCE_FIXED, number = fixed.from_int(resource) }
   end
 
   assert(self.needs ~= nil, "planet_offer_trade: an offer goes to a planet holding needs")
@@ -121,11 +121,11 @@ function M.planet_offer_trade(self, trade_offer)
       local entry = needs[index]
       if entry ~= nil then
         local i = entry
-        local gc = i.satisfied or fixed.p8_fixed_from_int(0)
+        local gc = i.satisfied or fixed.from_int(0)
         local resource_is_any
 
         resource_is_any = any_resource ~= nil and trade.resource_equal(research.need_resource(i), any_resource)
-        if gc == fixed.p8_fixed_from_int(0) and not resource_is_any then
+        if gc == fixed.from_int(0) and not resource_is_any then
           table.remove(needs, index)
           break
         end
@@ -140,7 +140,7 @@ function M.planet_offer_trade(self, trade_offer)
       end
       needs_refill(self.needs, prefixed)
     end
-    self.production_bonus = fixed.p8_fixed_from_int(1)
+    self.production_bonus = fixed.from_int(1)
   end
 
   for index = 1, #needs do
@@ -186,7 +186,7 @@ function M.planet_rebuild_trades(self)
   local planet = require("game.planet")
   local slipway = require("game.slipway")
   local keys = trade_keys_zero()
-  local amount = fixed.p8_fixed_from_int(0)
+  local amount = fixed.from_int(0)
 
   if self == nil then
     return nil
@@ -216,10 +216,10 @@ function M.planet_rebuild_trades(self)
 
     lw.route = trade.trade_new(keys)
     -- Recomputed each iteration: an earlier offer's accept may have grown the outgoing routes.
-    lw.amount = fixed.p8_fixed_sub(amount, fixed.p8_fixed_from_int(#self.outgoing_routes))
+    lw.amount = fixed.sub(amount, fixed.from_int(#self.outgoing_routes))
     lw.accept = planet_rebuild_trades_attach_slipway_closure
 
-    if lw.amount == fixed.p8_fixed_from_int(0) then
+    if lw.amount == fixed.from_int(0) then
       break
     end
 

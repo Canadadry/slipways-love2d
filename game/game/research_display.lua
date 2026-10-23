@@ -30,7 +30,7 @@ local function research_project_tooltip_join(self)
       qe = research.need_resource(entry)
     end
     if qe.kind == trade.RESOURCE_FIXED then
-      num_str = str.p8_tostr_fixed(qe.number)
+      num_str = str.tostr_fixed(qe.number)
     else
       num_str = nil
     end
@@ -77,7 +77,7 @@ function M.research_project_tooltip(self)
   jb.inner.items = jb.inner_items
 
   if self.output ~= nil then
-    local o_str = str.p8_tostr_fixed(self.output)
+    local o_str = str.tostr_fixed(self.output)
     local resource_names_o = map_tables.resource_names_lookup(o_str)
 
     if resource_names_o ~= nil then
@@ -120,15 +120,15 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
     return false, out_keys
   end
 
-  crowded = (is_count >= 3) and fixed.p8_fixed_from_int(1) or fixed.p8_fixed_from_int(0)
+  crowded = (is_count >= 3) and fixed.from_int(1) or fixed.from_int(0)
 
   do
     local found_w, r_w = map_tables.resource_code_lookup("w", nil)
-    local o_is_r_w = found_w and output == fixed.p8_fixed_from_int(r_w)
+    local o_is_r_w = found_w and output == fixed.from_int(r_w)
 
     if o_is_r_w then
-      outputs[1] = fixed.p8_fixed_from_int(25)
-      outputs[2] = fixed.p8_fixed_from_int(23)
+      outputs[1] = fixed.from_int(25)
+      outputs[2] = fixed.from_int(23)
       outputs_count = 2
     else
       outputs[1] = output
@@ -136,7 +136,7 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
     end
   end
 
-  wide = fixed.p8_fixed_mul(amount, fixed.p8_fixed_from_int(outputs_count)) >= fixed.p8_fixed_from_int(3)
+  wide = fixed.mul(amount, fixed.from_int(outputs_count)) >= fixed.from_int(3)
 
   if inputs ~= nil then
     for index = 1, #inputs do
@@ -158,50 +158,50 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
         tuple.scalars[1] = layout.layout_row_scalar_nothing()
       end
       tuple.scalars[2] = layout.layout_row_scalar_fixed(
-        fixed.p8_fixed_sub(fixed.p8_fixed_from_int(3), crowded))
-      tuple.scalars[3] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(gc_zero and 7 or 0))
+        fixed.sub(fixed.from_int(3), crowded))
+      tuple.scalars[3] = layout.layout_row_scalar_fixed(fixed.from_int(gc_zero and 7 or 0))
       layout.layout_row_keys_append(keys, layout.layout_row_cell_tuple(tuple))
     end
   end
 
   if is_count > 0 then
-    local use_35 = spacing == fixed.p8_fixed_from_int(1) or wide
+    local use_35 = spacing == fixed.from_int(1) or wide
 
     layout.layout_row_keys_append(keys, planet_resource_row_pair(layout.layout_row_scalar_nothing(),
-      fixed.p8_fixed_add(spacing, crowded)))
+      fixed.add(spacing, crowded)))
     if use_35 then
       layout.layout_row_keys_append(keys, planet_resource_row_pair(
-        layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(35)), fixed.p8_fixed_add(fixed.p8_fixed_from_int(2), spacing)))
+        layout.layout_row_scalar_fixed(fixed.from_int(35)), fixed.add(fixed.from_int(2), spacing)))
     else
       layout.layout_row_keys_append(keys, planet_resource_row_pair(
-        layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(32)), fixed.p8_fixed_from_int(5)))
+        layout.layout_row_scalar_fixed(fixed.from_int(32)), fixed.from_int(5)))
     end
   end
 
-  if amount > fixed.p8_fixed_from_int(5) then
-    local amount_text = str.p8_tostr_fixed(amount)
+  if amount > fixed.from_int(5) then
+    local amount_text = str.tostr_fixed(amount)
 
     layout.layout_row_keys_append(keys, layout.layout_row_cell_string(amount_text))
     layout.layout_row_keys_append(keys, layout.layout_row_cell_row(tail_row))
-    keys.color = fixed.p8_fixed_from_int(13)
-    amount = fixed.p8_fixed_from_int(1)
+    keys.color = fixed.from_int(13)
+    amount = fixed.from_int(1)
   end
 
   for output_index = 1, outputs_count do
     local qq = outputs[output_index]
-    local loop_bound = (amount > fixed.p8_fixed_from_int(1)) and amount or fixed.p8_fixed_from_int(1)
-    local n = fixed.p8_fixed_flr_int(loop_bound)
+    local loop_bound = (amount > fixed.from_int(1)) and amount or fixed.from_int(1)
+    local n = fixed.flr_int(loop_bound)
 
     for i = 1, n do
-      local i_fixed = fixed.p8_fixed_from_int(i)
+      local i_fixed = fixed.from_int(i)
       local within = i_fixed <= amount and i_fixed > used
       local tuple = tuple_zero()
 
       tuple.count = 4
       tuple.scalars[1] = layout.layout_row_scalar_fixed(qq)
-      tuple.scalars[2] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(6))
-      tuple.scalars[3] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(within and 0 or 7))
-      tuple.scalars[4] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(wide and -4 or -3))
+      tuple.scalars[2] = layout.layout_row_scalar_fixed(fixed.from_int(6))
+      tuple.scalars[3] = layout.layout_row_scalar_fixed(fixed.from_int(within and 0 or 7))
+      tuple.scalars[4] = layout.layout_row_scalar_fixed(fixed.from_int(wide and -4 or -3))
       layout.layout_row_keys_append(keys, layout.layout_row_cell_tuple(tuple))
     end
 
@@ -229,14 +229,14 @@ function M.research_project_layout_row_keys(self, out_keys)
   end
 
   po = research.research_project_production(self)
-  jq = fixed.p8_fixed_from_int(1)
+  jq = fixed.from_int(1)
   if po ~= nil and po.count >= 1 then
-    local first_production = fixed.p8_fixed_from_int(po.values[1])
-    jq = (first_production > fixed.p8_fixed_from_int(1)) and first_production or fixed.p8_fixed_from_int(1)
+    local first_production = fixed.from_int(po.values[1])
+    jq = (first_production > fixed.from_int(1)) and first_production or fixed.from_int(1)
   end
 
-  found, out_keys = planet_resource_row_keys(self.inputs, self.output, jq, fixed.p8_fixed_from_int(0),
-    fixed.p8_fixed_from_int(1), out_keys)
+  found, out_keys = planet_resource_row_keys(self.inputs, self.output, jq, fixed.from_int(0),
+    fixed.from_int(1), out_keys)
   if not found then
     return false, out_keys
   end
@@ -257,9 +257,9 @@ function M.research_project_icon_row_keys(self)
   assert(self.icon_sprite ~= nil,
     "research_project_icon_row_keys: the row {name, 32, {icon_sprite, 8}} is a project with an icon sprite's")
   icon.scalars[1] = layout.layout_row_scalar_fixed(self.icon_sprite)
-  icon.scalars[2] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(8))
+  icon.scalars[2] = layout.layout_row_scalar_fixed(fixed.from_int(8))
   layout.layout_row_keys_append(keys, layout.layout_row_cell_string(self.name))
-  layout.layout_row_keys_append(keys, layout.layout_row_cell_fixed(fixed.p8_fixed_from_int(32)))
+  layout.layout_row_keys_append(keys, layout.layout_row_cell_fixed(fixed.from_int(32)))
   layout.layout_row_keys_append(keys, layout.layout_row_cell_tuple(icon))
   return keys
 end

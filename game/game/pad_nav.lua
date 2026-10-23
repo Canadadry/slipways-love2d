@@ -375,8 +375,8 @@ local function screen_point(e, x, y)
   if camera ~= nil then
     at = vec.vec_sub(at, entity_class.entity_pos(camera))
   end
-  x = fixed.p8_fixed_flr_int(at.x)
-  y = fixed.p8_fixed_flr_int(at.y)
+  x = fixed.flr_int(at.x)
+  y = fixed.flr_int(at.y)
   return x, y
 end
 
@@ -389,19 +389,19 @@ local function presses_off_background(e)
 end
 
 local function click(nav, played)
-  played.mouse_buttons = input.P8_MOUSE_LEFT
+  played.mouse_buttons = input.MOUSE_LEFT
   nav.release_pending = true
 end
 
 local function enter_aim_mode(nav)
   nav.map_mode = M.PAD_NAV_MAP_AIM
-  nav.cursor_x = cint.div(vram.P8_SCREEN_WIDTH, 2)
-  nav.cursor_y = cint.div(vram.P8_SCREEN_HEIGHT, 2)
+  nav.cursor_x = cint.div(vram.SCREEN_WIDTH, 2)
+  nav.cursor_y = cint.div(vram.SCREEN_HEIGHT, 2)
   pad_jump.pad_jump_repeat_clear(nav.jump)
 end
 
 local function pressed_before(planet, x, y)
-  return pad_panel.pad_panel_entity_under(x, y, fixed.p8_fixed_flr_int(planet.layer),
+  return pad_panel.pad_panel_entity_under(x, y, fixed.flr_int(planet.layer),
     pad_panel.pad_panel_is_candidate) ~= nil
 end
 
@@ -432,8 +432,8 @@ local function centre_world_point(x, y)
   else
     at = vec.vec_make(0, 0)
   end
-  x = fixed.p8_fixed_flr_int(at.x) + cint.div(vram.P8_SCREEN_WIDTH, 2)
-  y = fixed.p8_fixed_flr_int(at.y) + cint.div(vram.P8_SCREEN_HEIGHT, 2)
+  x = fixed.flr_int(at.x) + cint.div(vram.SCREEN_WIDTH, 2)
+  y = fixed.flr_int(at.y) + cint.div(vram.SCREEN_HEIGHT, 2)
   return x, y
 end
 
@@ -494,8 +494,8 @@ end
 -- On a click's release frame probe_or_fold starts nothing: finish_step forces its press up.
 local function aim_mode_step(nav, pad_buttons, pressed, back_returns, release, still, select_tapped, played, shown)
   nav.focus = nil
-  nav.cursor_x = cint.div(vram.P8_SCREEN_WIDTH, 2)
-  nav.cursor_y = cint.div(vram.P8_SCREEN_HEIGHT, 2)
+  nav.cursor_x = cint.div(vram.SCREEN_WIDTH, 2)
+  nav.cursor_y = cint.div(vram.SCREEN_HEIGHT, 2)
   if not still then
     aim_pan(nav, bindings_module.BINDINGS_MODE_AIM, pad_buttons)
   end
@@ -519,7 +519,7 @@ local function aim_mode_step(nav, pad_buttons, pressed, back_returns, release, s
     nav.probe_or_fold_engaged = entity_under(nav.cursor_x, nav.cursor_y, presses_off_background) == nil
   end
   if nav.probe_or_fold_engaged then
-    played.mouse_buttons = input.P8_MOUSE_LEFT
+    played.mouse_buttons = input.MOUSE_LEFT
   elseif back_returns then
     leave_aim_mode(nav)
   end
@@ -712,7 +712,7 @@ local function build_step(nav, pressed, release, played)
   local icon = pad_build.pad_build_focus(nav.build)
   if icon ~= nil and action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_BUILD_BAR,
       bindings_module.BINDINGS_ACTION_TAKE_STRUCTURE) and not release then
-    played.mouse_buttons = input.P8_MOUSE_LEFT
+    played.mouse_buttons = input.MOUSE_LEFT
     nav.placement = M.PAD_NAV_PLACEMENT_PRESSED
   end
   -- The bar has no up or down: it borrows the panels' pair, which ranks before left and right.
@@ -740,8 +740,8 @@ local function place_cursor(nav)
     if hovered ~= nil then
       nav.cursor_x, nav.cursor_y = screen_point(hovered, nav.cursor_x, nav.cursor_y)
     else
-      nav.cursor_x = cint.div(vram.P8_SCREEN_WIDTH, 2)
-      nav.cursor_y = cint.div(vram.P8_SCREEN_HEIGHT, 2)
+      nav.cursor_x = cint.div(vram.SCREEN_WIDTH, 2)
+      nav.cursor_y = cint.div(vram.SCREEN_HEIGHT, 2)
     end
   elseif button ~= nil then
     nav.cursor_x, nav.cursor_y = pad_panel.pad_panel_focus_point(button, nav.cursor_x, nav.cursor_y)
@@ -792,7 +792,7 @@ local function cancel_point(nav)
     nav.cursor_x = PARKED_X
     nav.cursor_y = PARKED_Y
   end
-  local at = vec.vec_make(fixed.p8_fixed_from_int(nav.cursor_x), fixed.p8_fixed_from_int(nav.cursor_y))
+  local at = vec.vec_make(fixed.from_int(nav.cursor_x), fixed.from_int(nav.cursor_y))
   assert(ui_module.ui_panel_box() == nil or not geom.box_contains(ui_module.ui_panel_box(), at),
     "cancel_point: inside the ui's panel box the drop would be judged on the map, not cancelled")
 end
@@ -805,15 +805,15 @@ local function placement_step(nav, pad_buttons, pressed, played)
     cancel_point(nav)
     return
   end
-  nav.cursor_x = cint.div(vram.P8_SCREEN_WIDTH, 2)
-  nav.cursor_y = cint.div(vram.P8_SCREEN_HEIGHT, 2)
+  nav.cursor_x = cint.div(vram.SCREEN_WIDTH, 2)
+  nav.cursor_y = cint.div(vram.SCREEN_HEIGHT, 2)
   aim_pan(nav, bindings_module.BINDINGS_MODE_PLACEMENT, pad_buttons)
   -- place_structure drops by letting the held left button go for one frame: the ui's drop runs the cart's rules.
   if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PLACEMENT,
       bindings_module.BINDINGS_ACTION_PLACE_STRUCTURE) then
     return
   end
-  played.mouse_buttons = input.P8_MOUSE_LEFT
+  played.mouse_buttons = input.MOUSE_LEFT
 end
 
 local function seed_hovered(nav)
@@ -828,8 +828,8 @@ end
 local function rest_screen_point(camera, hovered, x, y)
   local from = scroll.camera_pos_before_shake(camera)
   x, y = pad_jump.pad_jump_world_point(hovered, x, y)
-  x = x - fixed.p8_fixed_flr_int(from.x)
-  y = y - fixed.p8_fixed_flr_int(from.y)
+  x = x - fixed.flr_int(from.x)
+  y = y - fixed.flr_int(from.y)
   return x, y
 end
 
@@ -870,7 +870,7 @@ end
 
 local function press_slipway_start(nav, start, played)
   nav.cursor_x, nav.cursor_y = screen_point(start, nav.cursor_x, nav.cursor_y)
-  played.mouse_buttons = input.P8_MOUSE_LEFT
+  played.mouse_buttons = input.MOUSE_LEFT
 end
 
 local function act_on_hovered_starts_slipway(nav, hovered, played)
@@ -918,8 +918,8 @@ local function jump_step(nav, pad_buttons, pressed, release, back_returns, selec
     return shown
   end
   if hovered == nil then
-    nav.cursor_x = cint.div(vram.P8_SCREEN_WIDTH, 2)
-    nav.cursor_y = cint.div(vram.P8_SCREEN_HEIGHT, 2)
+    nav.cursor_x = cint.div(vram.SCREEN_WIDTH, 2)
+    nav.cursor_y = cint.div(vram.SCREEN_HEIGHT, 2)
     return shown
   end
   if not clicking and action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_JUMP,
@@ -1035,7 +1035,7 @@ local function slipway_step(nav, pad_buttons, pressed, back_returns, release, pl
   end
   edge_scroll(aimed)
   nav.cursor_x, nav.cursor_y = screen_point(aimed, nav.cursor_x, nav.cursor_y)
-  played.mouse_buttons = input.P8_MOUSE_LEFT
+  played.mouse_buttons = input.MOUSE_LEFT
   shown = aimed
   return shown
 end
@@ -1139,8 +1139,8 @@ local function pause_step(nav, pressed, release, played)
       release then
       return false
     end
-    nav.cursor_x = cint.div(vram.P8_SCREEN_WIDTH, 2)
-    nav.cursor_y = cint.div(vram.P8_SCREEN_HEIGHT, 2)
+    nav.cursor_x = cint.div(vram.SCREEN_WIDTH, 2)
+    nav.cursor_y = cint.div(vram.SCREEN_HEIGHT, 2)
     click(nav, played)
     return true
   end
@@ -1182,7 +1182,7 @@ local function finish_step(nav, release, shown, played)
   if release then
     played.mouse_buttons = 0
   end
-  nav.left_was_down = bit.band(played.mouse_buttons, input.P8_MOUSE_LEFT) ~= 0
+  nav.left_was_down = bit.band(played.mouse_buttons, input.MOUSE_LEFT) ~= 0
   played.mouse_x = nav.cursor_x
   played.mouse_y = nav.cursor_y
   show_marker(nav, shown)
@@ -1305,7 +1305,7 @@ local function run_step(nav, raw_buttons, played)
     if cancelled == CANCELLED_STRUCTURE then
       cancel_point(nav)
     elseif M.pad_nav_placing(nav) ~= nil then
-      played.mouse_buttons = input.P8_MOUSE_LEFT
+      played.mouse_buttons = input.MOUSE_LEFT
     end
   elseif select == pad_select.PAD_SELECT_YEAR and select_ends_year(nav, played) then
     reset_aim_mode(nav)

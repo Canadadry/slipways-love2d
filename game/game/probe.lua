@@ -57,7 +57,7 @@ entity_class.entity_init_header(M.g_targeting_track_target, M.targeting_track_ta
 M.g_targeting_track_target.targeted_by = nil
 
 local function probe_to_int(x)
-  return fixed.p8_fixed_flr_int(x)
+  return fixed.flr_int(x)
 end
 
 local function targeting_track_slipway_predicate(e, ctx_ptr)
@@ -76,7 +76,7 @@ local function targeting_track_slipway_predicate(e, ctx_ptr)
   start_p = slipway.slipway_end_map_pos(slipway.slipway_start(sw))
   end_p = slipway.slipway_end_map_pos(slipway.slipway_end(sw))
 
-  return geom.geom_near_segment(start_p, end_p, ctx.self_map_pos, fixed.P8_FIXED_LIT(0x000000d1, 0.0032))
+  return geom.geom_near_segment(start_p, end_p, ctx.self_map_pos, fixed.LIT(0x000000d1, 0.0032))
 end
 
 local function probe_panel_box_contains(rp)
@@ -194,7 +194,7 @@ function M.targeting_track(self, mouse)
   assert(targeting ~= nil, "targeting_track: a class that carries no targeting is no receiver -- stop")
 
   mouse_world_vec = entity_class.mouse_pos_world(mouse)
-  p_vec = vec.vec_div(mouse_world_vec, fixed.p8_fixed_from_int(128))
+  p_vec = vec.vec_div(mouse_world_vec, fixed.from_int(128))
   assert(bit.band(self.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_PROBE)) ~= 0 or
     require("game.planet").planet_is_family(self) or self.class == require("game.wormhole").wormhole_class(),
     "targeting_track: a host neither a probe, of the planet family nor a wormhole, none of whose drag runs it -- stop")
@@ -289,7 +289,7 @@ function M.targeting_tooltip_show(gfx, mem, state, pb)
   if je ~= nil then
     mp = entity_class.entity_pos(je)
   else
-    mp = vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
+    mp = vec.vec_make(fixed.from_int(0), fixed.from_int(0))
   end
 
   if M.targeting_target(pb) ~= nil then
@@ -298,17 +298,17 @@ function M.targeting_tooltip_show(gfx, mem, state, pb)
       display = qs
     else
       if gfx ~= nil and mem ~= nil then
-        gfx_module.p8_spr_default(gfx, mem, 31, probe_to_int(fixed.p8_fixed_sub(mp.x, fixed.p8_fixed_from_int(3))),
-          probe_to_int(fixed.p8_fixed_sub(mp.y, fixed.p8_fixed_from_int(8))))
+        gfx_module.spr_default(gfx, mem, 31, probe_to_int(fixed.sub(mp.x, fixed.from_int(3))),
+          probe_to_int(fixed.sub(mp.y, fixed.from_int(8))))
       end
     end
   elseif pb.cost ~= nil then
-    display = str.p8_concat2(str.p8_tostr_fixed(pb.cost), "$")
+    display = str.concat2(str.tostr_fixed(pb.cost), "$")
   end
 
   if gfx ~= nil and mem ~= nil then
-    local a = fixed.P8_FIXED_LIT(0x00008000, 0.5)
-    hud.hud_print_outlined(gfx, mem, display, mp.x, fixed.p8_fixed_sub(mp.y, fixed.p8_fixed_from_int(8)), 8, a)
+    local a = fixed.LIT(0x00008000, 0.5)
+    hud.hud_print_outlined(gfx, mem, display, mp.x, fixed.sub(mp.y, fixed.from_int(8)), 8, a)
   end
 end
 
@@ -338,7 +338,7 @@ local function targeting_charge(self)
     if targeting.cost ~= nil then
       cost = targeting.cost
     else
-      cost = fixed.p8_fixed_from_int(0)
+      cost = fixed.from_int(0)
     end
     spend_ok = require("game.economy").economy_spend(M.main_economy_typed(), cost)
   end
@@ -406,12 +406,12 @@ function M.probe_spawn_particle(self)
 
   -- Two statements: rnd(angle_slices) must be drawn before rnd(0.5), or the replays move.
   rnd_angle_slices = visual_random.visual_random_draw(angle_slices)
-  rnd_half = visual_random.visual_random_draw(fixed.P8_FIXED_LIT(0x00008000, 0.5))
-  a = fixed.p8_fixed_add(
-    fixed.p8_fixed_div(fixed.p8_fixed_add(fixed.p8_fixed_flr(rnd_angle_slices), rnd_half), angle_slices),
-    fixed.p8_fixed_mul(state_time, fixed.P8_FIXED_LIT(0x00000041, 0.001)))
+  rnd_half = visual_random.visual_random_draw(fixed.LIT(0x00008000, 0.5))
+  a = fixed.add(
+    fixed.div(fixed.add(fixed.flr(rnd_angle_slices), rnd_half), angle_slices),
+    fixed.mul(state_time, fixed.LIT(0x00000041, 0.001)))
 
-  p = vec.vec_from_polar(fixed.p8_fixed_add(base_radius, visual_random.visual_random_draw_one()), a)
+  p = vec.vec_from_polar(fixed.add(base_radius, visual_random.visual_random_draw_one()), a)
   v = vec.vec_mul(p, speed_factor)
 
   if pk then

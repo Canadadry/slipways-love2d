@@ -7,10 +7,10 @@ local M = {}
 
 M.SCREEN_SCALE = 4
 
--- Indexed 0..15 like P8_PALETTE_RGB: { red, green, blue } as byte / 255.
+-- Indexed 0..15 like palette.RGB: { red, green, blue } as byte / 255.
 M.SCREEN_COLORS = {}
-for c = 0, palette.P8_PALETTE_COLORS - 1 do
-  local rgb = palette.P8_PALETTE_RGB[c]
+for c = 0, palette.COLORS - 1 do
+  local rgb = palette.RGB[c]
   M.SCREEN_COLORS[c] = { red = rgb.red / 255, green = rgb.green / 255, blue = rgb.blue / 255 }
 end
 
@@ -19,10 +19,10 @@ local sprites_data = nil
 local font_data = nil
 
 -- Must run first in love.load: the canvas has to be canvas 0, the one
--- tmp/fake_love captures. It starts colour 0, as p8_vram_init's screen.
+-- tmp/fake_love captures. It starts colour 0, as vram.init's screen.
 function M.screen_init()
   love.graphics.setDefaultFilter("nearest", "nearest")
-  canvas = love.graphics.newCanvas(vram.P8_SCREEN_WIDTH, vram.P8_SCREEN_HEIGHT)
+  canvas = love.graphics.newCanvas(vram.SCREEN_WIDTH, vram.SCREEN_HEIGHT)
   love.graphics.setCanvas(canvas)
   love.graphics.clear(0, 0, 0)
   love.graphics.setCanvas()

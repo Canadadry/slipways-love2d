@@ -48,7 +48,7 @@ function M.save_load_difficulty(state, out)
     out[key] = value
   end
   out.name = option.name
-  out.trade = fixed.p8_fixed_from_int(option.trade)
+  out.trade = fixed.from_int(option.trade)
   out.type_bias = option.type_bias
 end
 
@@ -56,7 +56,7 @@ end
 -- the saved tile map.
 function M.save_load_background_seed(state)
   assert(state ~= nil)
-  fixed.p8_fixed_set_rnd_state(state.background_seed)
+  fixed.set_rnd_state(state.background_seed)
 end
 
 local function load_needs(planet, node)
@@ -88,7 +88,7 @@ local function load_production(planet, node)
   planet.production.resource = has(node, save_state.SAVE_NODE_PRODUCTION_HAS_RESOURCE)
     and node.production_resource or nil
   -- The routes rebuild of the first recompute reads the amount before update_tiers sets it.
-  planet.production.amount = fixed.p8_fixed_from_int(0)
+  planet.production.amount = fixed.from_int(0)
   local _, amount = economy_tiers.economy_tiers_compute_production_amount(planet, planet.production.amount)
   planet.production.amount = amount
 end
@@ -360,7 +360,7 @@ function M.save_load_globals(state)
   camera.shake = 0
 
   -- Last: the constructors before it may draw from the RNG.
-  fixed.p8_fixed_set_rnd_state(state.rnd_state)
+  fixed.set_rnd_state(state.rnd_state)
 end
 
 return M

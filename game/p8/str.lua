@@ -1,6 +1,6 @@
 local M = {}
 
-function M.p8_sub(s, i, j)
+function M.sub(s, i, j)
   local len = #s
 
   if i < 1 then
@@ -17,7 +17,7 @@ function M.p8_sub(s, i, j)
   return string.sub(s, i, j)
 end
 
-function M.p8_tostr_fixed(x)
+function M.tostr_fixed(x)
   local negative = x < 0
   local mag = negative and -x or x
   local ip = math.floor(mag / 0x10000)
@@ -46,7 +46,7 @@ function M.p8_tostr_fixed(x)
   return buf
 end
 
-function M.p8_concat2(a, b)
+function M.concat2(a, b)
   return a .. b
 end
 

@@ -78,7 +78,7 @@ function M.entity_pos(self)
   if self.pos ~= nil then
     return vec.vec_make(self.pos.x, self.pos.y)
   end
-  return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
+  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
 end
 
 -- The zero vector when the map position is absent.
@@ -86,7 +86,7 @@ function M.entity_map_pos(self)
   if self.map_pos ~= nil then
     return vec.vec_make(self.map_pos.x, self.map_pos.y)
   end
-  return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
+  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
 end
 
 function M.entity_set_pos(self, pos)
@@ -121,7 +121,7 @@ function M.mouse_pos_world(mouse)
   if M.mouse_pos_has_world(mouse) then
     return vec.vec_make(mouse.world.x, mouse.world.y)
   end
-  return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
+  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
 end
 
 -- The zero vector when the screen point is absent.
@@ -129,7 +129,7 @@ function M.mouse_pos_screen(mouse)
   if M.mouse_pos_has_screen(mouse) then
     return vec.vec_make(mouse.screen.x, mouse.screen.y)
   end
-  return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
+  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
 end
 
 return M

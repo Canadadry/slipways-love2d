@@ -3,7 +3,7 @@
 -- { line, text }. A range [start, end_) of a parsed text excludes end_; a
 -- position past the text reads 0.
 -- The parameter error of fail, parse_line and bindings_parse shadows Lua's
--- error there: raise through fatal.p8_fatal, never error().
+-- error there: raise through fatal.raise, never error().
 local bit_module = require("bit")
 local input = require("p8.input")
 
@@ -160,12 +160,12 @@ function M.bindings_read_button_number(text)
   local cursor = 1
   local number = 0
   while byte_at(text, cursor) >= 48 and byte_at(text, cursor) <= 57 do
-    if number <= input.P8_PAD_BUTTON_COUNT then
+    if number <= input.PAD_BUTTON_COUNT then
       number = number * 10 + (byte_at(text, cursor) - 48)
     end
     cursor = cursor + 1
   end
-  if number > input.P8_PAD_BUTTON_COUNT then
+  if number > input.PAD_BUTTON_COUNT then
     return 0, end_
   end
   end_ = cursor
@@ -290,7 +290,7 @@ local function parse_line(file_name, line_number, text, start, end_, out, given_
     local number, digits_end = M.bindings_read_button_number(token)
     if number == 0 or digits_end <= #token then
       return fail(error, file_name, line_number, "bad button \"%s\": expected a number from 1 to %d", token,
-        input.P8_PAD_BUTTON_COUNT)
+        input.PAD_BUTTON_COUNT)
     end
     local bit = bit_module.lshift(1, number - 1)
     if bit_module.band(line_mask, bit) ~= 0 then

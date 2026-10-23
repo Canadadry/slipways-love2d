@@ -13,18 +13,18 @@ local IMAGE_EMPTY = 0xFF
 
 local SLOT_PIXELS = {}
 local slot_pixels_defined = 0
-image.P8_IMAGE_SLOTS(function(width, height)
+image.SLOTS(function(width, height)
   SLOT_PIXELS[slot_pixels_defined] = width * height
   slot_pixels_defined = slot_pixels_defined + 1
 end)
 M.SLOT_PIXELS = SLOT_PIXELS
 
 local image_store = {}
-for i = 0, image.P8_IMAGE_PIXELS - 1 do
+for i = 0, image.PIXELS - 1 do
   image_store[i] = 0
 end
 local image_built = {}
-for slot = 0, image.P8_IMAGE_SLOT_COUNT - 1 do
+for slot = 0, image.SLOT_COUNT - 1 do
   image_built[slot] = { width = 0, height = 0 }
 end
 
@@ -34,9 +34,9 @@ local window_x = 0
 local window_y = 0
 
 local function software_cls(mem)
-  for y = 0, vram.P8_SCREEN_HEIGHT - 1 do
+  for y = 0, vram.SCREEN_HEIGHT - 1 do
     local row = mem.screen[y]
-    for x = 0, vram.P8_SCREEN_WIDTH - 1 do
+    for x = 0, vram.SCREEN_WIDTH - 1 do
       row[x] = 0
     end
   end
@@ -45,7 +45,7 @@ end
 local function plot(gfx, mem, x, y, col)
   local sx = x - gfx.camera_x
   local sy = y - gfx.camera_y
-  if sx < 0 or sx >= vram.P8_SCREEN_WIDTH or sy < 0 or sy >= vram.P8_SCREEN_HEIGHT then
+  if sx < 0 or sx >= vram.SCREEN_WIDTH or sy < 0 or sy >= vram.SCREEN_HEIGHT then
     return
   end
   if target == nil then
@@ -92,7 +92,7 @@ local function fillp_bit_set(gfx, x, y)
   return bit.band(bit.rshift(gfx.fillp_pattern, bit_index), 1) ~= 0
 end
 
--- Masked here, not in p8_pset, so love.backend's check_color still refuses a primitive drawing an index above 0x0f.
+-- Masked here, not in gfx.pset, so love.backend's check_color still refuses a primitive drawing an index above 0x0f.
 local function fillp_color(gfx, x, y, col)
   if not fillp_bit_set(gfx, x, y) then
     return bit.band(col, 0x0F)
@@ -196,23 +196,23 @@ local function software_circfill(gfx, mem, cx, cy, r, col)
 end
 
 local function sheet_get(mem, x, y)
-  if x < 0 or x >= vram.P8_SPRITE_SHEET_WIDTH or y < 0 or y >= vram.P8_SPRITE_SHEET_HEIGHT then
+  if x < 0 or x >= vram.SPRITE_SHEET_WIDTH or y < 0 or y >= vram.SPRITE_SHEET_HEIGHT then
     return 0
   end
   return mem.sprite_sheet[y][x]
 end
 
 local function software_spr(gfx, mem, n, x, y, w, h)
-  local sprites_per_row = cint.div(vram.P8_SPRITE_SHEET_WIDTH, gfx_module.P8_SPRITE_SIZE)
-  local sheet_x = cint.mod(n, sprites_per_row) * gfx_module.P8_SPRITE_SIZE
-  local sheet_y = cint.div(n, sprites_per_row) * gfx_module.P8_SPRITE_SIZE
-  local pixel_w = w * gfx_module.P8_SPRITE_SIZE
-  local pixel_h = h * gfx_module.P8_SPRITE_SIZE
+  local sprites_per_row = cint.div(vram.SPRITE_SHEET_WIDTH, gfx_module.SPRITE_SIZE)
+  local sheet_x = cint.mod(n, sprites_per_row) * gfx_module.SPRITE_SIZE
+  local sheet_y = cint.div(n, sprites_per_row) * gfx_module.SPRITE_SIZE
+  local pixel_w = w * gfx_module.SPRITE_SIZE
+  local pixel_h = h * gfx_module.SPRITE_SIZE
 
   for dy = 0, pixel_h - 1 do
     for dx = 0, pixel_w - 1 do
       local col = sheet_get(mem, sheet_x + dx, sheet_y + dy)
-      if bit.band(mem.draw_palette[col], vram.P8_DRAW_PALETTE_TRANSPARENT_BIT) ~= 0 then
+      if bit.band(mem.draw_palette[col], vram.DRAW_PALETTE_TRANSPARENT_BIT) ~= 0 then
         goto continue
       end
       plot(gfx, mem, x + dx, y + dy, bit.band(mem.draw_palette[col], 0x0f))
@@ -328,7 +328,7 @@ M.FONT_ROWS_COLON = FONT_ROWS_COLON
 M.FONT_ROWS_EQUALS = FONT_ROWS_EQUALS
 M.FONT_ROWS_QUESTION = FONT_ROWS_QUESTION
 
--- The cases of p8_font_glyph_rows's switch, in its order: the characters of
+-- The cases of gfx_software.font_glyph_rows's switch, in its order: the characters of
 -- each case label, then the rows it returns.
 local FONT_CASES = {
   { " ", FONT_ROWS_SPACE },
@@ -353,30 +353,30 @@ for _, case in ipairs(FONT_CASES) do
   end
 end
 
--- character is a byte value. The P8_FONT_GLYPH_HEIGHT row bytes print draws
+-- character is a byte value. The gfx.FONT_GLYPH_HEIGHT row bytes print draws
 -- for it, keyed by row offset from 0, bit 2 the leftmost column: the placeholder's for a
 -- character with no glyph. Shared by every caller: never write it.
-function M.p8_font_glyph_rows(character)
+function M.font_glyph_rows(character)
   return FONT_ROWS_BY_CHARACTER[character] or FONT_ROWS_PLACEHOLDER
 end
 
-function M.p8_font_has_glyph(character)
-  return M.p8_font_glyph_rows(character) ~= FONT_ROWS_PLACEHOLDER
+function M.font_has_glyph(character)
+  return M.font_glyph_rows(character) ~= FONT_ROWS_PLACEHOLDER
 end
 
 local function software_print(gfx, mem, str, x, y, col)
   local cx = x
   for p = 1, #str do
-    local rows = M.p8_font_glyph_rows(string.byte(str, p))
-    for row = 0, gfx_module.P8_FONT_GLYPH_HEIGHT - 1 do
-      for gx = 0, gfx_module.P8_FONT_GLYPH_WIDTH - 1 do
-        local bit_index = gfx_module.P8_FONT_GLYPH_WIDTH - 1 - gx
+    local rows = M.font_glyph_rows(string.byte(str, p))
+    for row = 0, gfx_module.FONT_GLYPH_HEIGHT - 1 do
+      for gx = 0, gfx_module.FONT_GLYPH_WIDTH - 1 do
+        local bit_index = gfx_module.FONT_GLYPH_WIDTH - 1 - gx
         if bit.band(bit.rshift(rows[row], bit_index), 1) ~= 0 then
           plot(gfx, mem, cx + gx, y + row, col)
         end
       end
     end
-    cx = cx + gfx_module.P8_FONT_CELL_WIDTH
+    cx = cx + gfx_module.FONT_CELL_WIDTH
   end
 end
 
@@ -444,9 +444,9 @@ local function software_image_draw(gfx, mem, slot, x, y)
   local left = x - gfx.camera_x
   local top = y - gfx.camera_y
   local ix_first = max(0, -left)
-  local ix_end = min(size.width, vram.P8_SCREEN_WIDTH - left)
+  local ix_end = min(size.width, vram.SCREEN_WIDTH - left)
   local iy_first = max(0, -top)
-  local iy_end = min(size.height, vram.P8_SCREEN_HEIGHT - top)
+  local iy_end = min(size.height, vram.SCREEN_HEIGHT - top)
   for iy = iy_first, iy_end - 1 do
     local row = pixels + iy * size.width
     local screen_row = mem.screen[top + iy]
@@ -481,7 +481,7 @@ local SOFTWARE_BACKEND = {
 M.SOFTWARE_BACKEND = SOFTWARE_BACKEND
 
 -- Rasterises into mem.screen. Shared by every caller: never write it.
-function M.p8_gfx_software_backend()
+function M.backend()
   return SOFTWARE_BACKEND
 end
 
@@ -489,7 +489,7 @@ end
 -- pixel (0, 0), the width and height of its last build, and the byte of a
 -- pixel the build never wrote. Pixel (x, y) is at first + y * width + x.
 -- Never write the store.
-function M.p8_gfx_software_slot_pixels(slot)
+function M.slot_pixels(slot)
   local size = image_built[slot]
   return image_store, slot_pixels(slot), size.width, size.height, IMAGE_EMPTY
 end

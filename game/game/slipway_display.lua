@@ -18,7 +18,7 @@ local function slipway_line_ends_make(start, end_)
 end
 
 local function to_int(x)
-  return fixed.p8_fixed_flr_int(x)
+  return fixed.flr_int(x)
 end
 
 function M.slipway_spawn_transit_dot(self, f, t)
@@ -30,7 +30,7 @@ function M.slipway_spawn_transit_dot(self, f, t)
     return
   end
   -- The visual draw must stay before the served planets test, or the visual stream desynchronises.
-  if visual_random.visual_random_draw_one() >= fixed.P8_FIXED_LIT(0x0000147a, 0.08) then
+  if visual_random.visual_random_draw_one() >= fixed.LIT(0x0000147a, 0.08) then
     return
   end
 
@@ -59,16 +59,16 @@ function M.slipway_line_ends(self)
   local slipway = require("game.slipway")
   local t = self.state_time
   local start = vec.vec_add(slipway.slipway_end_pos(slipway.slipway_start(self)),
-    vec.vec_from_polar(fixed.P8_FIXED_LIT(0x00018000, 1.5), fixed.p8_fixed_div(t, fixed.p8_fixed_from_int(126))))
+    vec.vec_from_polar(fixed.LIT(0x00018000, 1.5), fixed.div(t, fixed.from_int(126))))
   local end_ = vec.vec_add(slipway.slipway_end_pos(slipway.slipway_end(self)),
-    vec.vec_from_polar(fixed.P8_FIXED_LIT(0x00018000, 1.5), fixed.p8_fixed_div(t, fixed.p8_fixed_from_int(176))))
+    vec.vec_from_polar(fixed.LIT(0x00018000, 1.5), fixed.div(t, fixed.from_int(176))))
   return slipway_line_ends_make(start, end_)
 end
 
 local function floored_far_from_the_wrap(p)
-  local floored = fixed.p8_fixed_flr_int(p)
+  local floored = fixed.flr_int(p)
   assert(floored >= -32765 and floored <= 32765,
-    "int adds of the offsets match p8_fixed_add only away from its +-32768 wrap")
+    "int adds of the offsets match fixed.add only away from its +-32768 wrap")
   return floored
 end
 
@@ -80,7 +80,7 @@ function M.slipway_draw_line(gfx, mem, ends, l, h, s, c)
 
   assert(s > 0, "slipway_draw_line only ascends: a zero step hangs, a negative one draws nothing")
   assert(gfx ~= nil and mem ~= nil,
-    "p8_lines dereferences the graphics state and memory: neither may be NULL here")
+    "gfx.lines dereferences the graphics state and memory: neither may be NULL here")
 
   x1 = floored_far_from_the_wrap(ends.start.x)
   y1 = floored_far_from_the_wrap(ends.start.y)
@@ -102,13 +102,13 @@ function M.slipway_draw_line(gfx, mem, ends, l, h, s, c)
       segment.x2 = x2 + dx
       segment.y2 = y2 + dy
       if count == 4 then
-        gfx_module.p8_lines(gfx, mem, bundle, count, c)
+        gfx_module.lines(gfx, mem, bundle, count, c)
         count = 0
       end
     end
   end
   if count > 0 then
-    gfx_module.p8_lines(gfx, mem, bundle, count, c)
+    gfx_module.lines(gfx, mem, bundle, count, c)
   end
 end
 
@@ -128,7 +128,7 @@ function M.slipway_draw(graphics, memory, self)
   if entity_geom.entity_geom_is_on_screen(start_node) or entity_geom.entity_geom_is_on_screen(end_node) then
     local fade_in_step = self.fade_in_step
     local fade_in_step_i = to_int(fade_in_step)
-    local fade_color = fixed.p8_fixed_from_int(0)
+    local fade_color = fixed.from_int(0)
     local target_or_targeted_by
     local line_color
     local border_color
@@ -141,25 +141,25 @@ function M.slipway_draw(graphics, memory, self)
       local found, entry = game_data.int_seq_at(self.archetype.trail_colors.items, self.archetype.trail_colors.count,
         fade_in_step_i, nil)
       if found then
-        fade_color = fixed.p8_fixed_from_int(entry)
+        fade_color = fixed.from_int(entry)
       end
     end
 
-    if fade_in_step < fixed.p8_fixed_from_int(20) then
-      self.fade_in_step = fixed.p8_fixed_add(fade_in_step, fixed.p8_fixed_from_int(1))
+    if fade_in_step < fixed.from_int(20) then
+      self.fade_in_step = fixed.add(fade_in_step, fixed.from_int(1))
     end
 
     target_or_targeted_by = probe.targeting_target(self.targeting) ~= nil or entity_id.entity_get(self.targeted_by) ~= nil
 
     if target_or_targeted_by then
-      line_color = fixed.p8_fixed_from_int(2)
+      line_color = fixed.from_int(2)
     elseif self.infraspace then
-      line_color = fixed.p8_fixed_from_int(0)
+      line_color = fixed.from_int(0)
     else
       line_color = fade_color
     end
-    border_color = self.infraspace and fade_color or fixed.p8_fixed_from_int(0)
-    dot_color = self.infraspace and fixed.p8_fixed_from_int(5) or fixed.p8_fixed_from_int(13)
+    border_color = self.infraspace and fade_color or fixed.from_int(0)
+    dot_color = self.infraspace and fixed.from_int(5) or fixed.from_int(13)
 
     local ends = M.slipway_line_ends(self)
     M.slipway_draw_line(graphics, memory, ends, -1, 2, 3, to_int(border_color))
@@ -180,11 +180,11 @@ function M.slipway_draw(graphics, memory, self)
         new_pos = vec.vec_add(t.pos, t.velocity)
         t.pos = new_pos
 
-        new_l = fixed.p8_fixed_sub(t.life, fixed.p8_fixed_from_int(1))
+        new_l = fixed.sub(t.life, fixed.from_int(1))
         t.life = new_l
 
         -- No `else`: an expired particle is still drawn once more at its final position.
-        if new_l <= fixed.p8_fixed_from_int(0) then
+        if new_l <= fixed.from_int(0) then
           -- Removing an element during this walk skips the next one; it is visited next frame. Compensating the index would change update timing and every replay.
           for j = 1, #ts do
             if ts[j] == t then
@@ -197,8 +197,8 @@ function M.slipway_draw(graphics, memory, self)
         if not particle.particle_pixels_hidden() then
           local x = to_int(new_pos.x)
           local y = to_int(new_pos.y)
-          gfx_module.p8_rectfill(graphics, memory, x, y, x + 1, y + 1, 0)
-          gfx_module.p8_pset(graphics, memory, x, y, to_int(dot_color))
+          gfx_module.rectfill(graphics, memory, x, y, x + 1, y + 1, 0)
+          gfx_module.pset(graphics, memory, x, y, to_int(dot_color))
         end
 
         ::continue::

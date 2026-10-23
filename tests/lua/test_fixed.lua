@@ -56,19 +56,19 @@ end
 -- holds the call's results then the state it leaves.
 local ADAPTERS = {
   p8_fixed_rnd = function(m)
-    return m.p8_fixed_rnd and m.p8_fixed_rnd_state and function(x)
-      return m.p8_fixed_rnd(x), m.p8_fixed_rnd_state()
+    return m.rnd and m.rnd_state and function(x)
+      return m.rnd(x), m.rnd_state()
     end
   end,
   p8_fixed_rnd_default = function(m)
-    return m.p8_fixed_rnd_default and m.p8_fixed_rnd_state and function()
-      return m.p8_fixed_rnd_default(), m.p8_fixed_rnd_state()
+    return m.rnd_default and m.rnd_state and function()
+      return m.rnd_default(), m.rnd_state()
     end
   end,
   p8_fixed_set_rnd_state = function(m)
-    return m.p8_fixed_set_rnd_state and m.p8_fixed_rnd_state and function(state)
-      m.p8_fixed_set_rnd_state(state)
-      return m.p8_fixed_rnd_state()
+    return m.set_rnd_state and m.rnd_state and function(state)
+      m.set_rnd_state(state)
+      return m.rnd_state()
     end
   end,
 }
@@ -114,8 +114,13 @@ local function malformed(message)
   fail(string.format("malformed reference line %d: %s", line_number, message))
 end
 
+-- The reference keeps the C names: p8_fixed_add checks fixed.add.
+local function export_name(record_name)
+  return (record_name:gsub("^[pP]8_[fF][iI][xX][eE][dD]_", ""))
+end
+
 local function function_for(name)
-  local fn = ADAPTERS[name] and ADAPTERS[name](fixed) or fixed[name]
+  local fn = ADAPTERS[name] and ADAPTERS[name](fixed) or fixed[export_name(name)]
   if type(fn) == "number" then
     local value = fn
     fn = function()

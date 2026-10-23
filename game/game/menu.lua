@@ -62,12 +62,12 @@ local function tech_tree_screen_step(t, b)
   local research_cost_result
   local research_cost_str
 
-  layout.layout_row_keys_append(b.layout_row_keys, layout.layout_row_cell_fixed(fixed.p8_fixed_from_int(t.icon)))
+  layout.layout_row_keys_append(b.layout_row_keys, layout.layout_row_cell_fixed(fixed.from_int(t.icon)))
   layout.layout_row_keys_append(b.layout_row_keys, layout.layout_row_cell_string(t.name))
-  b.layout_row_keys.color = fixed.p8_fixed_from_int(6)
+  b.layout_row_keys.color = fixed.from_int(6)
 
   research_cost_result = tech_gate.tech_gate_research_cost(t)
-  research_cost_str = str.p8_tostr_fixed(research_cost_result)
+  research_cost_str = str.tostr_fixed(research_cost_result)
 
   b.side_tooltip_row = layout.layout_row_keys_zero()
   layout.layout_row_keys_append(b.side_tooltip_row, layout.layout_row_cell_row(pair))
@@ -102,9 +102,9 @@ end
 
 function M.menu_show_tech_tree_screen()
   local economy = probe.main_economy_typed()
-  local current_era = fixed.p8_fixed_from_int(0)
+  local current_era = fixed.from_int(0)
   local invented_count = 0
-  local next_threshold = fixed.p8_fixed_from_int(0)
+  local next_threshold = fixed.from_int(0)
   local tier_thresholds
   local available_technologies_list
   local buttons
@@ -121,9 +121,9 @@ function M.menu_show_tech_tree_screen()
   end
 
   found, tier_thresholds = game_data.int_seq_at(game_data.tier_thresholds_table, game_data.TIER_THRESHOLDS_COUNT,
-    fixed.p8_fixed_flr_int(current_era) - 1, tier_thresholds)
+    fixed.flr_int(current_era) - 1, tier_thresholds)
   if found then
-    next_threshold = fixed.p8_fixed_from_int(tier_thresholds)
+    next_threshold = fixed.from_int(tier_thresholds)
   end
 
   -- true lists every tech of the era, affordable or not; the galaxy row's refresh must pass false.
@@ -140,17 +140,17 @@ function M.menu_show_tech_tree_screen()
   if invented_count > 0 then
     row_count = row_count + 1
     local extra = buttons[row_count]
-    local invented_text = str.p8_tostr_fixed(fixed.p8_fixed_from_int(invented_count))
-    local label = str.p8_concat2(invented_text, " invented")
-    layout.layout_row_keys_append(extra.layout_row_keys, layout.layout_row_cell_fixed(fixed.p8_fixed_from_int(30)))
+    local invented_text = str.tostr_fixed(fixed.from_int(invented_count))
+    local label = str.concat2(invented_text, " invented")
+    layout.layout_row_keys_append(extra.layout_row_keys, layout.layout_row_cell_fixed(fixed.from_int(30)))
     layout.layout_row_keys_append(extra.layout_row_keys, layout.layout_row_cell_string(label))
-    extra.layout_row_keys.color = fixed.p8_fixed_from_int(3)
+    extra.layout_row_keys.color = fixed.from_int(3)
     ui_button.button_keys_set_tooltip_row(extra, invented_lines(economy.invented))
   end
 
   layout_block = score_panel.score_panel_layout_block()
   if layout_block ~= nil then
-    local tier_thresholds_era = fixed.p8_fixed_from_int(0)
+    local tier_thresholds_era = fixed.from_int(0)
     local era_str
     local diff1_str
     local diff2_str
@@ -160,22 +160,22 @@ function M.menu_show_tech_tree_screen()
     local ep
 
     found, tier_thresholds = game_data.int_seq_at(game_data.tier_thresholds_table, game_data.TIER_THRESHOLDS_COUNT,
-      fixed.p8_fixed_flr_int(current_era), tier_thresholds)
+      fixed.flr_int(current_era), tier_thresholds)
     if found then
-      tier_thresholds_era = fixed.p8_fixed_from_int(tier_thresholds)
+      tier_thresholds_era = fixed.from_int(tier_thresholds)
     end
 
-    era_str = str.p8_tostr_fixed(current_era)
-    diff1_str = str.p8_tostr_fixed(
-      fixed.p8_fixed_sub(fixed.p8_fixed_from_int(invented_count), next_threshold))
-    diff2_str = str.p8_tostr_fixed(fixed.p8_fixed_sub(tier_thresholds_era, next_threshold))
+    era_str = str.tostr_fixed(current_era)
+    diff1_str = str.tostr_fixed(
+      fixed.sub(fixed.from_int(invented_count), next_threshold))
+    diff2_str = str.tostr_fixed(fixed.sub(tier_thresholds_era, next_threshold))
 
-    tmp1 = str.p8_concat2("level ", era_str)
-    tmp2 = str.p8_concat2(tmp1, " (")
-    tmp3 = str.p8_concat2(tmp2, diff1_str)
-    tmp1 = str.p8_concat2(tmp3, "/")
-    tmp2 = str.p8_concat2(tmp1, diff2_str)
-    ep = str.p8_concat2(tmp2, ")")
+    tmp1 = str.concat2("level ", era_str)
+    tmp2 = str.concat2(tmp1, " (")
+    tmp3 = str.concat2(tmp2, diff1_str)
+    tmp1 = str.concat2(tmp3, "/")
+    tmp2 = str.concat2(tmp1, diff2_str)
+    ep = str.concat2(tmp2, ")")
 
     message_box.open_box_frame_set_description(frame, ep)
     if layout_block.fixed_pos ~= nil then
@@ -192,7 +192,7 @@ end
 local function galaxy_menu_button1_on_click_method(self)
   local fm = probe.main_economy_typed()
   if fm ~= nil then
-    fm.year_ticks = fixed.p8_fixed_from_int(1)
+    fm.year_ticks = fixed.from_int(1)
   end
   economy_module.economy_new_year(fm)
 end
@@ -215,7 +215,7 @@ local function galaxy_menu_button2_refresh_method(self)
   available_technologies_count = available_technologies_list.count
 
   layout.layout_row_keys_append(keys,
-    layout.layout_row_cell_fixed(fixed.p8_fixed_from_int((available_technologies_count > 0) and 24 or 37)))
+    layout.layout_row_cell_fixed(fixed.from_int((available_technologies_count > 0) and 24 or 37)))
   self.layout_row = layout.layout_row_new(keys)
 end
 
@@ -339,14 +339,14 @@ function M.menu_init()
   M.menu_shutdown()
 
   for i = 1, game_data.GALAXY_MENU_COUNT do
-    g_galaxy_menu_pos[i] = vec.vec_make(fixed.p8_fixed_from_int(game_data.galaxy_menu_table[i].pos_x),
-      fixed.p8_fixed_from_int(game_data.galaxy_menu_table[i].pos_y))
+    g_galaxy_menu_pos[i] = vec.vec_make(fixed.from_int(game_data.galaxy_menu_table[i].pos_x),
+      fixed.from_int(game_data.galaxy_menu_table[i].pos_y))
   end
-  M.g_pause_menu_open_box.fixed_pos = vec.vec_make(fixed.p8_fixed_from_int(game_data.pause_menu_tail.fixed_pos_x),
-    fixed.p8_fixed_from_int(game_data.pause_menu_tail.fixed_pos_y))
-  M.g_pause_menu_open_box.row_step = vec.vec_make(fixed.p8_fixed_from_int(game_data.pause_menu_tail.row_step_x),
-    fixed.p8_fixed_from_int(game_data.pause_menu_tail.row_step_y))
-  M.g_pause_menu_open_box.back_color = fixed.p8_fixed_from_int(game_data.pause_menu_tail.back_color)
+  M.g_pause_menu_open_box.fixed_pos = vec.vec_make(fixed.from_int(game_data.pause_menu_tail.fixed_pos_x),
+    fixed.from_int(game_data.pause_menu_tail.fixed_pos_y))
+  M.g_pause_menu_open_box.row_step = vec.vec_make(fixed.from_int(game_data.pause_menu_tail.row_step_x),
+    fixed.from_int(game_data.pause_menu_tail.row_step_y))
+  M.g_pause_menu_open_box.back_color = fixed.from_int(game_data.pause_menu_tail.back_color)
   g_menu_up = true
 end
 

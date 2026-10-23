@@ -211,7 +211,7 @@ local function layer_key(e)
   if e.layer == nil then
     return 0
   end
-  local layer = fixed.p8_fixed_flr_int(e.layer)
+  local layer = fixed.flr_int(e.layer)
   return (layer < 1 or layer > ENTITY_REGISTRY_LAYERS) and 0 or layer
 end
 

@@ -24,7 +24,7 @@ end
 local g_id_counter = nil
 
 local function structure_icon_to_int(x)
-  return fixed.p8_fixed_flr_int(x)
+  return fixed.flr_int(x)
 end
 
 local function structure_icon_own_kind(self)
@@ -86,7 +86,7 @@ function M.structure_icon_refresh(self)
   self.is_revealed = true
 
   M.structure_icon_set_cursor(vec.vec_sub(M.structure_icon_cursor(),
-    vec.vec_make(fixed.p8_fixed_from_int(10), fixed.p8_fixed_from_int(0))))
+    vec.vec_make(fixed.from_int(10), fixed.from_int(0))))
 end
 
 function M.structure_icon_is_revealed(e)
@@ -112,7 +112,7 @@ function M.structure_icon_left_press(self)
 
   assert(g_structure_icon_up,
     "structure_icon_init() must run before structure_icon_left_press bumps the shared identifier counter")
-  new_id = fixed.p8_fixed_add(g_id_counter or fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(1))
+  new_id = fixed.add(g_id_counter or fixed.from_int(0), fixed.from_int(1))
   g_id_counter = new_id
 
   entity_kind = structure_icon_own_kind(self)
@@ -120,8 +120,8 @@ function M.structure_icon_left_press(self)
     return out
   end
 
-  id_num_str = str.p8_tostr_fixed(new_id)
-  planet.planet_keys_set_id(keys, str.p8_concat2("s", id_num_str))
+  id_num_str = str.tostr_fixed(new_id)
+  planet.planet_keys_set_id(keys, str.concat2("s", id_num_str))
   held = entity_kind.new_entity(keys)
   out.held = entity_id.entity_id_link(held)
   out.stop = held ~= nil
@@ -142,10 +142,10 @@ function M.structure_icon_draw(gfx, mem, self, p)
     return
   end
 
-  gfx_module.p8_palt(mem, 3, false)
+  gfx_module.palt(mem, 3, false)
 
   view = M.structure_icon_kind_view(self)
-  gfx_module.p8_spr_default(gfx, mem, (view.sprite ~= nil) and structure_icon_to_int(view.sprite) or 0,
+  gfx_module.spr_default(gfx, mem, (view.sprite ~= nil) and structure_icon_to_int(view.sprite) or 0,
     structure_icon_to_int(p.x), structure_icon_to_int(p.y))
 
   if self.is_hovered then
@@ -157,12 +157,12 @@ function M.structure_icon_draw(gfx, mem, self, p)
       require("game.probe").targeting_tooltip_show(gfx, mem, view.state, pb)
     end
     if self.tooltip ~= nil then
-      require("game.layout").tooltip_draw_at(gfx, mem, self.tooltip, fixed.p8_fixed_from_int(0),
-        fixed.p8_fixed_from_int(0))
+      require("game.layout").tooltip_draw_at(gfx, mem, self.tooltip, fixed.from_int(0),
+        fixed.from_int(0))
     end
   end
 
-  gfx_module.p8_palt(mem, 3, true)
+  gfx_module.palt(mem, 3, true)
 end
 
 local function structure_icon_draw_method(self, screen_pos)
@@ -214,7 +214,7 @@ function M.structure_icon_init()
 
   g_structure_icon_up = true
   structure_icon_clear_cursor()
-  g_id_counter = fixed.p8_fixed_from_int(0)
+  g_id_counter = fixed.from_int(0)
 end
 
 function M.structure_icon_shutdown()
@@ -248,7 +248,7 @@ function M.structure_icon_cursor()
   if g_cursor ~= nil then
     return vec.vec_make(g_cursor.x, g_cursor.y)
   end
-  return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
+  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
 end
 
 function M.structure_icon_set_id_counter(id)

@@ -20,7 +20,7 @@ function M.entity_geom_contains_cursor_inline(e, mouse)
   if e == nil or e.hit_box == nil then
     return false
   end
-  if e.layer ~= nil and e.layer >= fixed.P8_FIXED_INT(10) then
+  if e.layer ~= nil and e.layer >= fixed.INT(10) then
     chosen = entity_class.mouse_pos_screen(mouse)
   else
     chosen = entity_class.mouse_pos_world(mouse)
@@ -34,7 +34,7 @@ function M.entity_geom_contains_cursor_inline(e, mouse)
 end
 
 local function zero_vec()
-  return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
+  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
 end
 
 local function pos_of(e)
@@ -59,30 +59,30 @@ function M.entity_geom_is_on_screen(e)
   local entity_registry = require("engine.entity_registry")
   local e_pos = pos_of(e)
   local main_camera_pos = pos_of(entity_registry.main_camera())
-  local half_w = fixed.p8_fixed_from_int(cint.div(vram.P8_SCREEN_WIDTH, 2))
-  local half_h = fixed.p8_fixed_from_int(cint.div(vram.P8_SCREEN_HEIGHT, 2))
-  local margin = fixed.p8_fixed_from_int(12)
+  local half_w = fixed.from_int(cint.div(vram.SCREEN_WIDTH, 2))
+  local half_h = fixed.from_int(cint.div(vram.SCREEN_HEIGHT, 2))
+  local margin = fixed.from_int(12)
 
-  return (fixed.p8_fixed_abs(fixed.p8_fixed_sub(fixed.p8_fixed_sub(e_pos.x, main_camera_pos.x), half_w)) <= fixed.p8_fixed_add(half_w, margin) and
-          fixed.p8_fixed_abs(fixed.p8_fixed_sub(fixed.p8_fixed_sub(e_pos.y, main_camera_pos.y), half_h)) <= fixed.p8_fixed_add(half_h, margin))
+  return (fixed.abs(fixed.sub(fixed.sub(e_pos.x, main_camera_pos.x), half_w)) <= fixed.add(half_w, margin) and
+          fixed.abs(fixed.sub(fixed.sub(e_pos.y, main_camera_pos.y), half_h)) <= fixed.add(half_h, margin))
 end
 
 function M.entity_geom_shake(p, e)
   local decremented
   local clamped
-  local t = fixed.p8_fixed_from_int(0)
+  local t = fixed.from_int(0)
 
   if e ~= nil then
     assert(e.shake ~= nil,
       "entity_geom_shake: the entity is a planet (planet_draw) or the camera (camera_update)")
   end
-  decremented = fixed.p8_fixed_sub((e ~= nil) and e.shake or fixed.p8_fixed_from_int(0), fixed.P8_FIXED_LIT(0x00001999, 0.1))
+  decremented = fixed.sub((e ~= nil) and e.shake or fixed.from_int(0), fixed.LIT(0x00001999, 0.1))
   clamped = (decremented > 0) and decremented or 0
   if e ~= nil then
     t = e.state_time
     e.shake = clamped
   end
-  return vec.vec_add(p, vec.vec_from_polar(clamped, fixed.p8_fixed_mul(t, fixed.P8_FIXED_LIT(0x00003333, 0.2))))
+  return vec.vec_add(p, vec.vec_from_polar(clamped, fixed.mul(t, fixed.LIT(0x00003333, 0.2))))
 end
 
 local function nearest_step(p, o, best, out_nearest)
@@ -97,7 +97,7 @@ local function nearest_step(p, o, best, out_nearest)
 end
 
 function M.entity_geom_nearest(p, j_, out_nearest)
-  local mk = fixed.p8_fixed_from_int(32767)
+  local mk = fixed.from_int(32767)
 
   out_nearest = nil
   if j_ == nil then
@@ -127,7 +127,7 @@ end
 
 -- Skips only `excluded`, by identity: another entity on the very point counts.
 function M.entity_geom_nearest_except(p, j_, excluded, out_nearest)
-  local best = fixed.p8_fixed_from_int(32767)
+  local best = fixed.from_int(32767)
 
   out_nearest = nil
   if j_ == nil then return best, out_nearest end
@@ -143,7 +143,7 @@ function M.entity_geom_nearest_except(p, j_, excluded, out_nearest)
 end
 
 function M.entity_geom_nearest_in_ids(p, ids, out_nearest)
-  local best = fixed.p8_fixed_from_int(32767)
+  local best = fixed.from_int(32767)
 
   out_nearest = nil
   if ids == nil then return best, out_nearest end

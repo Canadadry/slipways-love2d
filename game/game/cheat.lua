@@ -7,8 +7,8 @@ local M = {}
 
 M.CHEAT_CHORDS = 4
 
-local CHORD_FIRST = input.P8_PAD_BUTTON_5
-local CHORD_SECOND = input.P8_PAD_BUTTON_6
+local CHORD_FIRST = input.PAD_BUTTON_5
+local CHORD_SECOND = input.PAD_BUTTON_6
 
 function M.cheat_init(cheat)
   cheat.previous_first = false
@@ -24,13 +24,13 @@ local function apply()
   end
   if fm.class == probe.main_economy_placeholder_class() then
     local provisional = fm
-    provisional.research_points = fixed.p8_fixed_from_int(99)
-    provisional.credits = fixed.p8_fixed_from_int(200)
+    provisional.research_points = fixed.from_int(99)
+    provisional.credits = fixed.from_int(200)
     return
   end
   hy = probe.main_economy_typed()
-  hy.research_points = fixed.p8_fixed_from_int(99)
-  hy.credits = fixed.p8_fixed_from_int(200)
+  hy.research_points = fixed.from_int(99)
+  hy.credits = fixed.from_int(200)
 end
 
 function M.cheat_chord_buttons()

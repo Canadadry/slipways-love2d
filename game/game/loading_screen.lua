@@ -14,10 +14,10 @@ local DRAW_PALETTE_LENGTH = 16
 
 local TEXT_COLOR = 7
 local MARGIN = 1
-local TEXT_WIDTH = (LOADING_TEXT_LENGTH - 1) * gfx_module.P8_FONT_CELL_WIDTH -
-  (gfx_module.P8_FONT_CELL_WIDTH - gfx_module.P8_FONT_GLYPH_WIDTH)
-local TEXT_X = vram.P8_SCREEN_WIDTH - MARGIN - TEXT_WIDTH
-local TEXT_Y = vram.P8_SCREEN_HEIGHT - MARGIN - gfx_module.P8_FONT_GLYPH_HEIGHT
+local TEXT_WIDTH = (LOADING_TEXT_LENGTH - 1) * gfx_module.FONT_CELL_WIDTH -
+  (gfx_module.FONT_CELL_WIDTH - gfx_module.FONT_GLYPH_WIDTH)
+local TEXT_X = vram.SCREEN_WIDTH - MARGIN - TEXT_WIDTH
+local TEXT_Y = vram.SCREEN_HEIGHT - MARGIN - gfx_module.FONT_GLYPH_HEIGHT
 
 local function graphics_copy(gfx)
   return {
@@ -39,13 +39,13 @@ function M.loading_screen_draw(gfx, mem)
     palette[i] = mem.draw_palette[i]
   end
   for col = 0, DRAW_PALETTE_LENGTH - 1 do
-    mem.draw_palette[col] = bit.band((col == 0) and bit.bor(col, vram.P8_DRAW_PALETTE_TRANSPARENT_BIT) or col, 0xFF)
+    mem.draw_palette[col] = bit.band((col == 0) and bit.bor(col, vram.DRAW_PALETTE_TRANSPARENT_BIT) or col, 0xFF)
   end
-  gfx_module.p8_camera_reset(gfx)
-  gfx_module.p8_fillp_reset(gfx)
+  gfx_module.camera_reset(gfx)
+  gfx_module.fillp_reset(gfx)
 
-  gfx_module.p8_cls(mem)
-  gfx_module.p8_print(gfx, mem, M.LOADING_TEXT, TEXT_X, TEXT_Y, TEXT_COLOR)
+  gfx_module.cls(mem)
+  gfx_module.print(gfx, mem, M.LOADING_TEXT, TEXT_X, TEXT_Y, TEXT_COLOR)
 
   gfx.camera_x = found.camera_x
   gfx.camera_y = found.camera_y
