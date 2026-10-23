@@ -167,7 +167,7 @@ local function background_draw_map_image(gfx, mem)
   local key = g_background_image_key
 
   if not key.built or key.mem ~= mem or key.map_version ~= mem.map_version or draw_palette_differs(key, mem) then
-    image.build(gfx, mem, image_slot.IMAGE_SLOT_BACKGROUND, BACKGROUND_IMAGE_SIDE, BACKGROUND_IMAGE_SIDE,
+    image.build(gfx, mem, image_slot.BACKGROUND, BACKGROUND_IMAGE_SIDE, BACKGROUND_IMAGE_SIDE,
       background_draw_map, nil)
     key.built = true
     key.mem = mem
@@ -176,7 +176,7 @@ local function background_draw_map_image(gfx, mem)
       key.draw_palette[i] = mem.draw_palette[i]
     end
   end
-  image.draw(gfx, mem, image_slot.IMAGE_SLOT_BACKGROUND, 0, 0)
+  image.draw(gfx, mem, image_slot.BACKGROUND, 0, 0)
 end
 
 function M.draw(gfx, mem, self)

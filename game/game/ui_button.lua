@@ -163,13 +163,13 @@ function M.button_construct(self, keys)
     keys = none
   end
 
-  self.layout_row = layout.layout_row_new(keys.layout_row_keys)
+  self.layout_row = layout.row_new(keys.layout_row_keys)
   self.width = fixed.add(self.layout_row.width, fixed.from_int(2))
   self.hit_box = { left = fixed.from_int(0), top = fixed.from_int(-1), right = self.width,
     bottom = fixed.from_int(11) }
 
   if keys.side_tooltip_row ~= nil then
-    self.side_tooltip = layout.layout_row_new(keys.side_tooltip_row)
+    self.side_tooltip = layout.row_new(keys.side_tooltip_row)
   end
   if keys.tooltip_row ~= nil then
     self.tooltip = layout.tooltip_new(keys.tooltip_row)
@@ -224,9 +224,9 @@ local function button_draw_body(graphics, memory, self, draw_pos, body, top, thr
   if self.layout_row ~= nil then
     local off = vec.add(draw_pos, vec.make(fixed.from_int(1), fixed.from_int(2)))
     if through_text_image then
-      layout.layout_row_draw_at_text_image(graphics, memory, self.layout_row, off, fixed.from_int(0))
+      layout.row_draw_at_text_image(graphics, memory, self.layout_row, off, fixed.from_int(0))
     else
-      layout.layout_row_draw_at(graphics, memory, self.layout_row, off, fixed.from_int(0))
+      layout.row_draw_at(graphics, memory, self.layout_row, off, fixed.from_int(0))
     end
   end
 
@@ -243,9 +243,9 @@ local function button_draw_body(graphics, memory, self, draw_pos, body, top, thr
     local off2 = vec.add(draw_pos, vec.make(fixed.add(width, fixed.from_int(3)),
       fixed.from_int(2)))
     if through_text_image then
-      layout.layout_row_draw_at_text_image(graphics, memory, c, off2, fixed.from_int(0))
+      layout.row_draw_at_text_image(graphics, memory, c, off2, fixed.from_int(0))
     else
-      layout.layout_row_draw_at(graphics, memory, c, off2, fixed.from_int(0))
+      layout.row_draw_at(graphics, memory, c, off2, fixed.from_int(0))
     end
   end
 end
@@ -267,10 +267,10 @@ local function row_extent(row, dx, extent)
     end
     local left = dx + ui_to_int(item.offset.x) + 1
     local end_ = left
-    if item.kind == layout.LAYOUT_ROW_ITEM_TEXT then
+    if item.kind == layout.ROW_ITEM_TEXT then
       left = left + 1
       end_ = left + c_strlen(item.text) * gfx_module.FONT_CELL_WIDTH + 1
-    elseif item.kind == layout.LAYOUT_ROW_ITEM_SPRITE then
+    elseif item.kind == layout.ROW_ITEM_SPRITE then
       end_ = left + gfx_module.SPRITE_SIZE
     end
     if left < 0 then
@@ -345,8 +345,8 @@ local function button_draw_image(graphics, memory, self, draw_pos, look)
     ui_to_int(self.width),
   } }
   g_building_look = { body = look.body, top = look.top }
-  return button_image.button_image_draw(graphics, memory, key, ui_to_int(draw_pos.x) - 1, ui_to_int(draw_pos.y), width,
-    button_image.BUTTON_IMAGE_HEIGHT, button_image_build_draw, self)
+  return button_image.draw(graphics, memory, key, ui_to_int(draw_pos.x) - 1, ui_to_int(draw_pos.y), width,
+    button_image.HEIGHT, button_image_build_draw, self)
 end
 
 function M.button_draw(graphics, memory, self, draw_pos)
@@ -448,7 +448,7 @@ end
 -- Writes every field of keys in place and returns keys; the optional ones (layer, side_tooltip_row,
 -- tooltip_row, pos, slide_target, trade, type_bias, project_cost) are left as they are, nil when not given.
 function M.button_keys_zero(keys)
-  keys.layout_row_keys = layout.layout_row_keys_zero()
+  keys.layout_row_keys = layout.row_keys_zero()
   keys.on_click = nil
   keys.refresh = nil
   keys.name = nil

@@ -60,7 +60,7 @@ function M.help_screen_construct(self)
     local e = game_data.difficulty_options_table[i]
 
     bs[i] = ui_button.button_keys_zero({})
-    bs[i].layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
+    bs[i].layout_row_keys = layout.row_keys_of_row(e.layout_row)
     bs[i].name = e.name
     bs[i].trade = fixed.from_int(e.trade)
     bs[i].type_bias = e.type_bias
@@ -77,7 +77,7 @@ function M.help_screen_construct(self)
   if M.help_resume_game_field_value() ~= nil then
     local resume = ui_button.button_keys_zero({})
 
-    resume.layout_row_keys = layout.layout_row_keys_of_row(game_data.resume_layout_row)
+    resume.layout_row_keys = layout.row_keys_of_row(game_data.resume_layout_row)
     resume.name = "resume"
     resume.on_click = M.help_resume_game_field_value()
     frame.fixed_pos = vec.sub(frame.fixed_pos, frame.row_step)
@@ -98,7 +98,7 @@ function M.help_screen_draw(gfx, mem, self, p)
     for i = 1, n do
       items[i] = rows.items[i].row
     end
-    draw_functions.draw_functions_draw_rows_default(gfx, mem, items, n)
+    draw_functions.draw_rows_default(gfx, mem, items, n)
   end
 end
 

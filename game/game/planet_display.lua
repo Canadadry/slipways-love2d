@@ -44,10 +44,10 @@ local function planet_production_cell(kw)
 
   if kw.resource ~= nil then
     tuple.count = 2
-    tuple.scalars[1] = layout.layout_row_scalar_fixed(kw.resource)
-    tuple.scalars[2] = layout.layout_row_scalar_fixed(fixed.from_int(5))
+    tuple.scalars[1] = layout.row_scalar_fixed(kw.resource)
+    tuple.scalars[2] = layout.row_scalar_fixed(fixed.from_int(5))
   end
-  return layout.layout_row_cell_tuple(tuple)
+  return layout.row_cell_tuple(tuple)
 end
 
 local ROW_SIGNATURE_VALID = 1
@@ -135,9 +135,9 @@ function M.planet_refresh(self)
   end
 
   found, keys = research_display.research_display_planet_resource_row_keys(needs_list, output, mu,
-    fixed.from_int(route_count), fixed.from_int(0), layout.layout_row_keys_zero())
+    fixed.from_int(route_count), fixed.from_int(0), layout.row_keys_zero())
   if found then
-    layout_row_result = layout.layout_row_new(keys)
+    layout_row_result = layout.row_new(keys)
   end
   self.layout_row = layout_row_result
   self.layout_row_signature = signature
@@ -238,15 +238,15 @@ function M.planet_inspection_panel(self)
     end
   end
   if icon_row ~= nil then
-    buttons[1].layout_row_keys = layout.layout_row_keys_of_row(icon_row)
+    buttons[1].layout_row_keys = layout.row_keys_of_row(icon_row)
   end
   if self.net_income ~= nil then
     local discard_color = 0
-    local h_keys = layout.layout_row_keys_zero()
+    local h_keys = layout.row_keys_zero()
     local signed
 
     signed, discard_color = economy_formulas.economy_formulas_format_signed(self.net_income, 0, nil, discard_color)
-    layout.layout_row_keys_append(h_keys, layout.layout_row_cell_string(planet_dollar(signed)))
+    layout.row_keys_append(h_keys, layout.row_cell_string(planet_dollar(signed)))
     h_keys.background_is_bool = self.net_income < fixed.from_int(0)
     h_keys.background = (self.net_income >= fixed.from_int(0)) and fixed.from_int(1) or 0
     buttons[1].side_tooltip_row = h_keys
@@ -270,10 +270,10 @@ function M.planet_inspection_panel(self)
     local row
 
     row, row_count = planet_append_button(buttons, row_count)
-    layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string("needs:"))
+    layout.row_keys_append(row.layout_row_keys, layout.row_cell_string("needs:"))
     for index = 1, #unmet_needs do
-      layout.layout_row_keys_append(row.layout_row_keys,
-        layout.layout_row_cell_row(need_row(unmet_needs[index])))
+      layout.row_keys_append(row.layout_row_keys,
+        layout.row_cell_row(need_row(unmet_needs[index])))
     end
   else
     local development_tier_fixed = self.development_tier or fixed.from_int(0)
@@ -292,14 +292,14 @@ function M.planet_inspection_panel(self)
       local row
 
       row, row_count = planet_append_button(buttons, row_count)
-      layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string("wants more:"))
+      layout.row_keys_append(row.layout_row_keys, layout.row_cell_string("wants more:"))
       if last_only then
-        layout.layout_row_keys_append(row.layout_row_keys,
-          layout.layout_row_cell_row(need_row(needs[#needs])))
+        layout.row_keys_append(row.layout_row_keys,
+          layout.row_cell_row(need_row(needs[#needs])))
       else
         for index = 1, #needs do
-          layout.layout_row_keys_append(row.layout_row_keys,
-            layout.layout_row_cell_row(need_row(needs[index])))
+          layout.row_keys_append(row.layout_row_keys,
+            layout.row_cell_row(need_row(needs[index])))
         end
       end
     end
@@ -309,10 +309,10 @@ function M.planet_inspection_panel(self)
     local row
 
     row, row_count = planet_append_button(buttons, row_count)
-    layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string("receives:"))
+    layout.row_keys_append(row.layout_row_keys, layout.row_cell_string("receives:"))
     for index = 1, #filter_context.received_needs do
-      layout.layout_row_keys_append(row.layout_row_keys,
-        layout.layout_row_cell_row(need_row(filter_context.received_needs[index])))
+      layout.row_keys_append(row.layout_row_keys,
+        layout.row_cell_row(need_row(filter_context.received_needs[index])))
     end
   end
 
@@ -327,8 +327,8 @@ function M.planet_inspection_panel(self)
       row, row_count = planet_append_button(buttons, row_count)
       if makes then
         local amount_str = str.tostr_fixed(mu)
-        layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string("makes:"))
-        layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string(amount_str))
+        layout.row_keys_append(row.layout_row_keys, layout.row_cell_string("makes:"))
+        layout.row_keys_append(row.layout_row_keys, layout.row_cell_string(amount_str))
       else
         local by = self.outgoing_routes
         local by_count = (by ~= nil) and #by or 0
@@ -336,16 +336,16 @@ function M.planet_inspection_panel(self)
         local amount_str = str.tostr_fixed(mu)
         local combined = str.concat2(str.concat2(count_str, "/"),
           amount_str)
-        layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string("exports:"))
-        layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string(combined))
+        layout.row_keys_append(row.layout_row_keys, layout.row_cell_string("exports:"))
+        layout.row_keys_append(row.layout_row_keys, layout.row_cell_string(combined))
       end
-      layout.layout_row_keys_append(row.layout_row_keys, planet_production_cell(kw))
+      layout.row_keys_append(row.layout_row_keys, planet_production_cell(kw))
     end
   end
 
   -- Starts at 2: row 1's layout row is a single icon, not a list.
   for index = 2, row_count do
-    layout.layout_row_keys_append(buttons[index].layout_row_keys, layout.layout_row_cell_row(gap))
+    layout.row_keys_append(buttons[index].layout_row_keys, layout.row_cell_row(gap))
   end
 
   frame = planet_open_box_frame(self)
@@ -407,9 +407,9 @@ local function planet_projects_panel_keys(self, b, keys)
   end
 
   if od > fixed.from_int(0) then
-    keys.side_tooltip_row = layout.layout_row_keys_zero()
-    layout.layout_row_keys_append(keys.side_tooltip_row,
-      layout.layout_row_cell_string(planet_dollar(str.tostr_fixed(od))))
+    keys.side_tooltip_row = layout.row_keys_zero()
+    layout.row_keys_append(keys.side_tooltip_row,
+      layout.row_cell_string(planet_dollar(str.tostr_fixed(od))))
     keys.side_tooltip_row.color = fixed.from_int(13)
   end
 
@@ -473,11 +473,11 @@ local function planet_build_images(gfx, mem)
   if planet_images_built then
     return
   end
-  image.build(gfx, mem, image_slot.IMAGE_SLOT_PLANET_DISC, 2 * PLANET_DISC_RADIUS + 1, 2 * PLANET_DISC_RADIUS + 1,
+  image.build(gfx, mem, image_slot.PLANET_DISC, 2 * PLANET_DISC_RADIUS + 1, 2 * PLANET_DISC_RADIUS + 1,
     planet_draw_disc_image, nil)
   assert(ring_colors.count == game_data.PLANET_RING_COLORS_COUNT)
   for index = 1, game_data.PLANET_RING_COLORS_COUNT do
-    image.build(gfx, mem, image_slot.IMAGE_SLOT_PLANET_RING_FIRST + index - 1, 2 * PLANET_RING_RADIUS + 1,
+    image.build(gfx, mem, image_slot.PLANET_RING_FIRST + index - 1, 2 * PLANET_RING_RADIUS + 1,
       2 * PLANET_RING_RADIUS + 1, planet_draw_ring_image, ring_colors.items[index])
   end
   planet_images_built = true
@@ -513,7 +513,7 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
 
   if graphics.fillp_pattern == 0 then
     planet_build_images(graphics, memory)
-    image.draw(graphics, memory, image_slot.IMAGE_SLOT_PLANET_DISC, screen_x - PLANET_DISC_RADIUS,
+    image.draw(graphics, memory, image_slot.PLANET_DISC, screen_x - PLANET_DISC_RADIUS,
       screen_y - PLANET_DISC_RADIUS)
   else
     gfx_module.circfill(graphics, memory, screen_x, screen_y, PLANET_DISC_RADIUS, 0)
@@ -539,7 +539,7 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
     found, color = game_data.int_seq_at(planet.planet_ring_colors().items, planet.planet_ring_colors().count, mi, color)
     if found and graphics.fillp_pattern == 0 then
       planet_build_images(graphics, memory)
-      image.draw(graphics, memory, image_slot.IMAGE_SLOT_PLANET_RING_FIRST + mi - 1, screen_x - PLANET_RING_RADIUS,
+      image.draw(graphics, memory, image_slot.PLANET_RING_FIRST + mi - 1, screen_x - PLANET_RING_RADIUS,
         screen_y - PLANET_RING_RADIUS)
     else
       gfx_module.circ(graphics, memory, screen_x, screen_y, PLANET_RING_RADIUS, color)
@@ -554,7 +554,7 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
   do
     if self.layout_row ~= nil then
       local offset = vec.add(shaken_pos, vec.make(fixed.from_int(0), fixed.from_int(7)))
-      row_image.row_image_draw_at(graphics, memory, self.layout_row, offset, fixed.LIT(0x00008000, 0.5))
+      row_image.draw_at(graphics, memory, self.layout_row, offset, fixed.LIT(0x00008000, 0.5))
     end
   end
 

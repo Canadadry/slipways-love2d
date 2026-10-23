@@ -15,18 +15,18 @@ local vram = require("p8.vram")
 
 local M = {}
 
-M.LAYOUT_ROW_ITEM_NONE = 0
-M.LAYOUT_ROW_ITEM_TEXT = 1
-M.LAYOUT_ROW_ITEM_SPRITE = 2
+M.ROW_ITEM_NONE = 0
+M.ROW_ITEM_TEXT = 1
+M.ROW_ITEM_SPRITE = 2
 
-M.LAYOUT_ROW_CELL_NOTHING = 0
-M.LAYOUT_ROW_CELL_FIXED = 1
-M.LAYOUT_ROW_CELL_STRING = 2
-M.LAYOUT_ROW_CELL_TUPLE = 3
-M.LAYOUT_ROW_CELL_TRUE = 4
+M.ROW_CELL_NOTHING = 0
+M.ROW_CELL_FIXED = 1
+M.ROW_CELL_STRING = 2
+M.ROW_CELL_TUPLE = 3
+M.ROW_CELL_TRUE = 4
 
-M.LAYOUT_ROW_SCALAR_NOTHING = 0
-M.LAYOUT_ROW_SCALAR_FIXED = 1
+M.ROW_SCALAR_NOTHING = 0
+M.ROW_SCALAR_FIXED = 1
 
 local g_layout_up = false
 local g_row_serial = 0
@@ -36,38 +36,38 @@ local function c_strlen(s)
   return (string.find(s, "\0", 1, true) or #s + 1) - 1
 end
 
-function M.layout_row_scalar_nothing()
-  local scalar = { kind = M.LAYOUT_ROW_SCALAR_NOTHING, value = 0 }
+function M.row_scalar_nothing()
+  local scalar = { kind = M.ROW_SCALAR_NOTHING, value = 0 }
   return scalar
 end
 
-function M.layout_row_scalar_fixed(x)
-  local scalar = { kind = M.LAYOUT_ROW_SCALAR_FIXED, value = x }
+function M.row_scalar_fixed(x)
+  local scalar = { kind = M.ROW_SCALAR_FIXED, value = x }
   return scalar
 end
 
-function M.layout_row_cell_nothing()
-  local cell = { kind = M.LAYOUT_ROW_CELL_NOTHING, as = {} }
+function M.row_cell_nothing()
+  local cell = { kind = M.ROW_CELL_NOTHING, as = {} }
   return cell
 end
 
-function M.layout_row_cell_fixed(x)
-  local cell = { kind = M.LAYOUT_ROW_CELL_FIXED, as = { fixed = x } }
+function M.row_cell_fixed(x)
+  local cell = { kind = M.ROW_CELL_FIXED, as = { fixed = x } }
   return cell
 end
 
-function M.layout_row_cell_string(s)
-  local cell = { kind = M.LAYOUT_ROW_CELL_STRING, as = { text = s } }
+function M.row_cell_string(s)
+  local cell = { kind = M.ROW_CELL_STRING, as = { text = s } }
 
   assert(s ~= nil,
-    "layout_row_cell_string: no producer writes a NULL string; its kind would have no reader in row_measure_item")
+    "layout.row_cell_string: no producer writes a NULL string; its kind would have no reader in row_measure_item")
   return cell
 end
 
-function M.layout_row_cell_tuple(tuple)
-  local cell = { kind = M.LAYOUT_ROW_CELL_TUPLE, as = { tuple = tuple } }
+function M.row_cell_tuple(tuple)
+  local cell = { kind = M.ROW_CELL_TUPLE, as = { tuple = tuple } }
 
-  assert(tuple.count >= 0, "layout_row_cell_tuple: a negative count")
+  assert(tuple.count >= 0, "layout.row_cell_tuple: a negative count")
   return cell
 end
 
@@ -79,53 +79,53 @@ local function tuple_scalar_of_item(item)
   assert(item.row == nil and item.text == nil,
     "a tuple holds numbers only; a text one needs a pointer in the cell -- stop, measure first")
   if item.is_false or item.is_nil then
-    return M.layout_row_scalar_nothing()
+    return M.row_scalar_nothing()
   end
   if item.is_fixed then
-    return M.layout_row_scalar_fixed(item.fixed)
+    return M.row_scalar_fixed(item.fixed)
   end
-  return M.layout_row_scalar_fixed(fixed.from_int(item.number))
+  return M.row_scalar_fixed(fixed.from_int(item.number))
 end
 
 -- Copies the row's scalars: the cell keeps nothing of `row`. nil gives a nothing cell.
-function M.layout_row_cell_row(row)
+function M.row_cell_row(row)
   local tuple = tuple_zero()
 
   if row == nil then
-    return M.layout_row_cell_nothing()
+    return M.row_cell_nothing()
   end
   if row.resource ~= nil then
     tuple.count = 2
-    tuple.scalars[1] = M.layout_row_scalar_fixed(row.resource)
-    tuple.scalars[2] = M.layout_row_scalar_fixed(fixed.from_int(5))
-    return M.layout_row_cell_tuple(tuple)
+    tuple.scalars[1] = M.row_scalar_fixed(row.resource)
+    tuple.scalars[2] = M.row_scalar_fixed(fixed.from_int(5))
+    return M.row_cell_tuple(tuple)
   end
   tuple.count = row.count
   for i = 1, row.count do
     tuple.scalars[i] = tuple_scalar_of_item(row.items[i])
   end
-  return M.layout_row_cell_tuple(tuple)
+  return M.row_cell_tuple(tuple)
 end
 
-function M.layout_row_cell_item(item)
+function M.row_cell_item(item)
   if item.row ~= nil then
-    return M.layout_row_cell_row(item.row)
+    return M.row_cell_row(item.row)
   end
   if item.text ~= nil then
-    return M.layout_row_cell_string(item.text)
+    return M.row_cell_string(item.text)
   end
   if item.is_false or item.is_nil then
-    return M.layout_row_cell_nothing()
+    return M.row_cell_nothing()
   end
   if item.is_fixed then
-    return M.layout_row_cell_fixed(item.fixed)
+    return M.row_cell_fixed(item.fixed)
   end
-  return M.layout_row_cell_fixed(fixed.from_int(item.number))
+  return M.row_cell_fixed(fixed.from_int(item.number))
 end
 
 local function row_scalar_item(item)
   assert(item.row == nil, "a tuple or a line holds scalar items only; a row inside one has no reader here")
-  return M.layout_row_cell_item(item)
+  return M.row_cell_item(item)
 end
 
 local function row_copy_text(s)
@@ -134,7 +134,7 @@ end
 
 -- Resets every field of the caller's item in place.
 local function item_zero(item)
-  item.kind = M.LAYOUT_ROW_ITEM_NONE
+  item.kind = M.ROW_ITEM_NONE
   item.text = nil
   item.color = 0
   item.sprite_id = 0
@@ -145,7 +145,7 @@ end
 -- Positions 1-4 are sprite, width, palette block and spacing; nil for a nothing scalar or one past count.
 local function tuple_fixed_at(tuple, i)
   local scalar = i <= tuple.count and tuple.scalars[i] or nil
-  if scalar ~= nil and scalar.kind == M.LAYOUT_ROW_SCALAR_FIXED then
+  if scalar ~= nil and scalar.kind == M.ROW_SCALAR_FIXED then
     return scalar.value
   end
   return nil
@@ -158,14 +158,14 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
   local spacing = fixed.from_int(0)
 
   item_zero(out_item)
-  if cell.kind == M.LAYOUT_ROW_CELL_TUPLE then
+  if cell.kind == M.ROW_CELL_TUPLE then
     local t = cell.as.tuple
     local sprite = tuple_fixed_at(t, 1)
 
     if sprite ~= nil then
-      cell = M.layout_row_cell_fixed(sprite)
+      cell = M.row_cell_fixed(sprite)
     else
-      cell = M.layout_row_cell_nothing()
+      cell = M.row_cell_nothing()
     end
     width = tuple_fixed_at(t, 2) or width
     palette_block = tuple_fixed_at(t, 3) or palette_block
@@ -175,13 +175,13 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
     end
   end
 
-  if cell.kind == M.LAYOUT_ROW_CELL_STRING then
+  if cell.kind == M.ROW_CELL_STRING then
     local c = fixed.from_int(6)
 
     if self ~= nil and self.color ~= nil then
       c = self.color
     end
-    out_item.kind = M.LAYOUT_ROW_ITEM_TEXT
+    out_item.kind = M.ROW_ITEM_TEXT
     out_item.text = cell.as.text
     out_item.color = c
     out_w = fixed.from_int(c_strlen(cell.as.text) * 4 + 3)
@@ -189,16 +189,16 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
     return out_w, out_spacing
   end
 
-  if cell.kind ~= M.LAYOUT_ROW_CELL_NOTHING then
-    out_item.kind = M.LAYOUT_ROW_ITEM_SPRITE
-    if cell.kind == M.LAYOUT_ROW_CELL_FIXED then
+  if cell.kind ~= M.ROW_CELL_NOTHING then
+    out_item.kind = M.ROW_ITEM_SPRITE
+    if cell.kind == M.ROW_CELL_FIXED then
       out_item.sprite_id = cell.as.fixed
     else
       out_item.sprite_id = fixed.from_int(0)
     end
     out_item.sprite_palette_block = palette_block
   else
-    out_item.kind = M.LAYOUT_ROW_ITEM_NONE
+    out_item.kind = M.ROW_ITEM_NONE
   end
   out_w = width
   if have_spacing then
@@ -221,7 +221,7 @@ local function layout_row_construct(self, cells, n)
 
     self.placed_items[i] = {}
     w_i, spacing_i = row_measure_item(self, cells[i], self.placed_items[i], w_i, spacing_i)
-    if self.placed_items[i].kind == M.LAYOUT_ROW_ITEM_TEXT then
+    if self.placed_items[i].kind == M.ROW_ITEM_TEXT then
       self.placed_items[i].text = row_copy_text(self.placed_items[i].text)
     end
     self.placed_items[i].offset = vec.make(x, fixed.from_int(0))
@@ -235,11 +235,11 @@ end
 local function row_draw_at_item_draw(gfx, mem, item, p)
   local pos = vec.add(p, item.offset)
 
-  if item.kind == M.LAYOUT_ROW_ITEM_TEXT then
+  if item.kind == M.ROW_ITEM_TEXT then
     hud.hud_print_outlined_default(gfx, mem, item.text, fixed.add(pos.x, fixed.from_int(2)),
       fixed.add(pos.y, fixed.from_int(1)),
       fixed.flr_int(item.color))
-  elseif item.kind == M.LAYOUT_ROW_ITEM_SPRITE then
+  elseif item.kind == M.ROW_ITEM_SPRITE then
     hud.hud_select_palette_block(mem, item.sprite_palette_block)
     gfx_module.spr_default(gfx, mem, fixed.flr_int(item.sprite_id),
       fixed.flr_int(pos.x),
@@ -248,14 +248,14 @@ local function row_draw_at_item_draw(gfx, mem, item, p)
   end
 end
 
-function M.layout_row_draw_at(gfx, mem, self, p, a)
+function M.row_draw_at(gfx, mem, self, p, a)
   local w
 
   if self == nil then
     return
   end
-  assert(self.class == M.layout_row_class_def,
-    "layout_row_draw_at: every row reaching it (a planet's or a button's layout_row, a button's side_tooltip, "
+  assert(self.class == M.row_class_def,
+    "layout.row_draw_at: every row reaching it (a planet's or a button's layout_row, a button's side_tooltip, "
     .. "a tooltip's rows, a message box's layout-row article) is a layout row; anything else would be read through "
     .. "the wrong layout")
   w = self.width
@@ -269,26 +269,26 @@ function M.layout_row_draw_at(gfx, mem, self, p, a)
   end
 end
 
--- layout_row_draw_at's contract (same pixels, same draw palette after), each text item through
--- text_image_print_outlined. gfx's camera moves during a build and is restored.
-function M.layout_row_draw_at_text_image(gfx, mem, self, p, a)
+-- layout.row_draw_at's contract (same pixels, same draw palette after), each text item through
+-- text_image.print_outlined. gfx's camera moves during a build and is restored.
+function M.row_draw_at_text_image(gfx, mem, self, p, a)
   if self == nil then
     return
   end
-  assert(self.class == M.layout_row_class_def, "layout_row_draw_at_text_image: not a layout row")
+  assert(self.class == M.row_class_def, "layout.row_draw_at_text_image: not a layout row")
   p = vec.sub(p, vec.make(fixed.mul(a, self.width), fixed.from_int(0)))
   if self.placed_items == nil then
     return
   end
   for i = 1, self.placed_items_count do
     local item = self.placed_items[i]
-    if item.kind ~= M.LAYOUT_ROW_ITEM_TEXT then
+    if item.kind ~= M.ROW_ITEM_TEXT then
       row_draw_at_item_draw(gfx, mem, item, p)
       goto continue
     end
     do
       local pos = vec.add(p, item.offset)
-      text_image.text_image_print_outlined(gfx, mem, item.text,
+      text_image.print_outlined(gfx, mem, item.text,
         fixed.flr_int(fixed.add(pos.x, fixed.from_int(2))),
         fixed.flr_int(fixed.add(pos.y, fixed.from_int(1))),
         bit.band(fixed.flr_int(item.color), 0x0F))
@@ -297,8 +297,8 @@ function M.layout_row_draw_at_text_image(gfx, mem, self, p, a)
   end
 end
 
-function M.layout_row_draw_at_default(gfx, mem, self, p)
-  M.layout_row_draw_at(gfx, mem, self, p, fixed.from_int(0))
+function M.row_draw_at_default(gfx, mem, self, p)
+  M.row_draw_at(gfx, mem, self, p, fixed.from_int(0))
 end
 
 local function keys_zero()
@@ -313,21 +313,21 @@ local function tooltip_line(item)
   local keys = keys_zero()
 
   if item.text ~= nil then
-    M.layout_row_keys_append(keys, M.layout_row_cell_string(item.text))
-    return M.layout_row_new(keys)
+    M.row_keys_append(keys, M.row_cell_string(item.text))
+    return M.row_new(keys)
   end
   if item.row == nil then
-    return M.layout_row_new(nil)
+    return M.row_new(nil)
   end
   assert(item.row.draw_function == map_tables.DRAW_FUNCTION_NONE,
     "tooltip_line: a line's only named key is its color; a draw_function has no member -- stop, do not add one")
   for i = 1, item.row.count do
-    M.layout_row_keys_append(keys, row_scalar_item(item.row.items[i]))
+    M.row_keys_append(keys, row_scalar_item(item.row.items[i]))
   end
   if item.row.color ~= nil then
     keys.color = fixed.from_int(item.row.color)
   end
-  return M.layout_row_new(keys)
+  return M.row_new(keys)
 end
 
 local function tooltip_construct(self, row)
@@ -361,13 +361,13 @@ function M.tooltip_draw_at(gfx, mem, self, om, a)
   for i = 1, self.rows_count do
     local pos = vec.make(fixed.from_int(cint.div(vram.SCREEN_WIDTH, 2)),
       fixed.add(om, fixed.from_int(2)))
-    M.layout_row_draw_at_text_image(gfx, mem, self.rows[i], pos, fixed.LIT(0x00008000, 0.5))
+    M.row_draw_at_text_image(gfx, mem, self.rows[i], pos, fixed.LIT(0x00008000, 0.5))
     om = fixed.add(om, fixed.from_int(8))
   end
 end
 
 local function layout_row_draw_at_method(self, p, a)
-  M.layout_row_draw_at(dispatch_context.gfx(), dispatch_context.mem(), self, p, a)
+  M.row_draw_at(dispatch_context.gfx(), dispatch_context.mem(), self, p, a)
 end
 
 local function tooltip_draw_at_method(self, p, a)
@@ -375,7 +375,7 @@ local function tooltip_draw_at_method(self, p, a)
     fixed.from_int(0), a)
 end
 
-M.layout_row_class_def = {
+M.row_class_def = {
   draw_at = layout_row_draw_at_method,
   states = {},
   tags = 0,
@@ -384,7 +384,7 @@ M.layout_row_class_def = {
 }
 
 local function row_struct_init(self)
-  entity_class.init_header(self, M.layout_row_class_def)
+  entity_class.init_header(self, M.row_class_def)
   self.color = nil
   self.background = nil
   self.background_is_bool = false
@@ -427,25 +427,25 @@ local function row_create(keys)
 end
 
 -- color, background and score stay nil when the keys lack them.
-function M.layout_row_init(self, keys)
+function M.row_init(self, keys)
   row_struct_init(self)
   row_fill(self, keys)
 end
 
-function M.layout_row_keys_append(keys, cell)
+function M.row_keys_append(keys, cell)
   local n = keys.count + 1
   keys.items[n] = cell
   keys.count = n
 end
 
-function M.layout_row_keys_of_row(row)
+function M.row_keys_of_row(row)
   local keys = keys_zero()
 
   assert(row.draw_function == map_tables.DRAW_FUNCTION_NONE and row.resource == nil,
-    "layout_row_keys_of_row: a row passes positional items and a color; a draw_function or a resource has no member "
+    "layout.row_keys_of_row: a row passes positional items and a color; a draw_function or a resource has no member "
     .. "-- stop, do not add one")
   for i = 1, row.count do
-    M.layout_row_keys_append(keys, M.layout_row_cell_item(row.items[i]))
+    M.row_keys_append(keys, M.row_cell_item(row.items[i]))
   end
   if row.color ~= nil then
     keys.color = fixed.from_int(row.color)
@@ -480,16 +480,16 @@ local function tooltip_create(row)
   return self
 end
 
-function M.layout_init()
-  M.layout_shutdown()
+function M.init()
+  M.shutdown()
   g_layout_up = true
 end
 
-function M.layout_shutdown()
+function M.shutdown()
   g_layout_up = false
 end
 
-function M.layout_row_ready()
+function M.row_ready()
   return g_layout_up
 end
 
@@ -497,15 +497,15 @@ function M.tooltip_ready()
   return g_layout_up
 end
 
-function M.layout_row_class()
-  return M.layout_row_class_def
+function M.row_class()
+  return M.row_class_def
 end
 
 function M.tooltip_class()
   return M.tooltip_class_def
 end
 
-function M.layout_row_new(keys)
+function M.row_new(keys)
   return row_create(keys)
 end
 
@@ -515,7 +515,7 @@ end
 
 -- A new table each call. color, background, score and pos stay nil when absent; background_is_bool
 -- is read only with a background.
-function M.layout_row_keys_zero()
+function M.row_keys_zero()
   return keys_zero()
 end
 

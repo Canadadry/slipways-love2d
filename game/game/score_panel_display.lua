@@ -145,7 +145,7 @@ end
 local function score_panel_update_add_row(box, entry, context)
   local score_i
   local values = {}
-  local keys = layout.layout_row_keys_zero()
+  local keys = layout.row_keys_zero()
 
   if entry.score == nil then
     message_box.message_box_add_row(box, entry.row)
@@ -189,7 +189,7 @@ local function score_panel_update_add_row(box, entry, context)
 
   for index = 1, 5 do
     if values[index] ~= nil then
-      layout.layout_row_keys_append(keys, layout.layout_row_cell_item(values[index]))
+      layout.row_keys_append(keys, layout.row_cell_item(values[index]))
     end
   end
   if entry.row.color ~= nil then
@@ -221,13 +221,13 @@ function M.score_panel_update(self)
 
     ui_button.modal_backdrop_new(nil)
 
-    layout.layout_row_keys_append(restart_keys.layout_row_keys, layout.layout_row_cell_string(" again? "))
+    layout.row_keys_append(restart_keys.layout_row_keys, layout.row_cell_string(" again? "))
     restart_keys.layer = fixed.from_int(15)
     restart_keys.pos = first_line_pos
     restart_keys.on_click = score_panel.score_panel_init_field_value()
     made1 = ui_button.button_new(restart_keys)
 
-    layout.layout_row_keys_append(toggle_keys.layout_row_keys, layout.layout_row_cell_row(back))
+    layout.row_keys_append(toggle_keys.layout_row_keys, layout.row_cell_row(back))
     toggle_keys.layer = fixed.from_int(15)
     toggle_keys.pos = second_line_pos
     toggle_keys.on_click = score_panel_toggle_button_on_click_method

@@ -1,4 +1,4 @@
--- A draw function takes the data row; draw_functions_by_id is keyed by the
+-- A draw function takes the data row; draw_functions.by_id is keyed by the
 -- DRAW_FUNCTION_* constants of map_tables, [DRAW_FUNCTION_NONE] absent.
 local hud = require("game.hud")
 local map_tables = require("game.map_tables")
@@ -100,13 +100,13 @@ local function spr_entry(e)
   end
 end
 
-M.draw_functions_by_id = {
+M.by_id = {
   [map_tables.DRAW_FUNCTION_DRAW_BAR] = draw_bar_entry,
   [map_tables.DRAW_FUNCTION_PRINT_OUTLINED] = print_outlined_entry,
   [map_tables.DRAW_FUNCTION_DRAW_HELP_FRAME] = draw_help_frame_entry,
   [map_tables.DRAW_FUNCTION_SPR] = spr_entry,
 }
-local draw_functions_by_id = M.draw_functions_by_id
+local draw_functions_by_id = M.by_id
 
 local function draw_rows_dispatch_one(gfx, mem, e, print_outlined)
   local fn
@@ -127,16 +127,16 @@ local function draw_rows_dispatch_one(gfx, mem, e, print_outlined)
   end
 end
 
-function M.draw_functions_draw_row(gfx, mem, row)
+function M.draw_row(gfx, mem, row)
   draw_rows_dispatch_one(gfx, mem, row, print_outlined_entry)
 end
 
--- draw_functions_draw_row's contract, a PRINT_OUTLINED row through hud_print_outlined_text_image.
-function M.draw_functions_draw_row_text_image(gfx, mem, row)
+-- draw_functions.draw_row's contract, a PRINT_OUTLINED row through hud_print_outlined_text_image.
+function M.draw_row_text_image(gfx, mem, row)
   draw_rows_dispatch_one(gfx, mem, row, print_outlined_text_image_entry)
 end
 
-function M.draw_functions_draw_rows_default(gfx, mem, rb, n)
+function M.draw_rows_default(gfx, mem, rb, n)
   for i = 1, n do
     draw_rows_dispatch_one(gfx, mem, rb[i], print_outlined_entry)
   end

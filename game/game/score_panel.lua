@@ -252,7 +252,7 @@ function M.score_panel_draw(gfx, mem, self)
     i = i + 1
   end
 
-  draw_functions.draw_functions_draw_rows_default(gfx, mem, combined, n)
+  draw_functions.draw_rows_default(gfx, mem, combined, n)
 
   if self ~= nil and self.curtain ~= nil then
     local gz = fixed.add(self.curtain, fixed.LIT(0x00003333, 0.2))

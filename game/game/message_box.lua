@@ -33,7 +33,7 @@ local function vec_copy(v)
 end
 
 -- The three members of `as` are kept apart: only the member of `kind` is written or read. The layout
--- row is filled in place by layout_row_init; layout.pos and row_of are nil when absent.
+-- row is filled in place by layout.row_init; layout.pos and row_of are nil when absent.
 local function article_zero()
   local row = {}
 
@@ -101,7 +101,7 @@ local function message_box_draw_article(gfx, mem, article)
     local shared = article.as.row_of()
 
     if shared ~= nil then
-      draw_functions.draw_functions_draw_row_text_image(gfx, mem, shared)
+      draw_functions.draw_row_text_image(gfx, mem, shared)
     end
     return
   end
@@ -112,7 +112,7 @@ local function message_box_draw_article(gfx, mem, article)
     else
       p = zero_vec()
     end
-    layout.layout_row_draw_at_text_image(gfx, mem, article.as.layout.row, p, article.as.layout.align)
+    layout.row_draw_at_text_image(gfx, mem, article.as.layout.row, p, article.as.layout.align)
     return
   end
   for i = 1, article.as.scalars.count do
@@ -133,7 +133,7 @@ local function message_box_draw_article(gfx, mem, article)
     items = items,
     draw_function = article.draw_function,
   })
-  draw_functions.draw_functions_draw_row_text_image(gfx, mem, row)
+  draw_functions.draw_row_text_image(gfx, mem, row)
 end
 
 function M.message_box_draw_overlay(gfx, mem, self)
@@ -233,7 +233,7 @@ function M.message_box_add_layout_row(self, keys, pos, align)
 
   article.kind = M.MESSAGE_BOX_ARTICLE_LAYOUT_ROW
   article.draw_function = map_tables.DRAW_FUNCTION_DRAW_ROW
-  layout.layout_row_init(article.as.layout.row, keys)
+  layout.row_init(article.as.layout.row, keys)
   article.as.layout.pos = pos and vec_copy(pos)
   article.as.layout.align = align
 end
@@ -486,7 +486,7 @@ function M.message_box_open_box(frame, buttons, button_count)
     "message_box_open_box: buttons is an array of button_count keys, from 1")
 
   if frame.description ~= nil then
-    layout.layout_row_keys_append(description_row.layout_row_keys, layout.layout_row_cell_string(frame.description))
+    layout.row_keys_append(description_row.layout_row_keys, layout.row_cell_string(frame.description))
     description_row.layout_row_keys.color = fixed.from_int(13)
   end
 

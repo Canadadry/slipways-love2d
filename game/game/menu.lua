@@ -62,16 +62,16 @@ local function tech_tree_screen_step(t, b)
   local research_cost_result
   local research_cost_str
 
-  layout.layout_row_keys_append(b.layout_row_keys, layout.layout_row_cell_fixed(fixed.from_int(t.icon)))
-  layout.layout_row_keys_append(b.layout_row_keys, layout.layout_row_cell_string(t.name))
+  layout.row_keys_append(b.layout_row_keys, layout.row_cell_fixed(fixed.from_int(t.icon)))
+  layout.row_keys_append(b.layout_row_keys, layout.row_cell_string(t.name))
   b.layout_row_keys.color = fixed.from_int(6)
 
   research_cost_result = tech_gate.tech_gate_research_cost(t)
   research_cost_str = str.tostr_fixed(research_cost_result)
 
-  b.side_tooltip_row = layout.layout_row_keys_zero()
-  layout.layout_row_keys_append(b.side_tooltip_row, layout.layout_row_cell_row(pair))
-  layout.layout_row_keys_append(b.side_tooltip_row, layout.layout_row_cell_string(research_cost_str))
+  b.side_tooltip_row = layout.row_keys_zero()
+  layout.row_keys_append(b.side_tooltip_row, layout.row_cell_row(pair))
+  layout.row_keys_append(b.side_tooltip_row, layout.row_cell_string(research_cost_str))
 
   ui_button.button_keys_set_tooltip_row(b, t.tooltip_rows)
 
@@ -142,8 +142,8 @@ function M.menu_show_tech_tree_screen()
     local extra = buttons[row_count]
     local invented_text = str.tostr_fixed(fixed.from_int(invented_count))
     local label = str.concat2(invented_text, " invented")
-    layout.layout_row_keys_append(extra.layout_row_keys, layout.layout_row_cell_fixed(fixed.from_int(30)))
-    layout.layout_row_keys_append(extra.layout_row_keys, layout.layout_row_cell_string(label))
+    layout.row_keys_append(extra.layout_row_keys, layout.row_cell_fixed(fixed.from_int(30)))
+    layout.row_keys_append(extra.layout_row_keys, layout.row_cell_string(label))
     extra.layout_row_keys.color = fixed.from_int(3)
     ui_button.button_keys_set_tooltip_row(extra, invented_lines(economy.invented))
   end
@@ -204,7 +204,7 @@ end
 local function galaxy_menu_button2_refresh_method(self)
   local available_technologies_list
   local available_technologies_count
-  local keys = layout.layout_row_keys_zero()
+  local keys = layout.row_keys_zero()
 
   if self == nil then
     return
@@ -214,9 +214,9 @@ local function galaxy_menu_button2_refresh_method(self)
   available_technologies_list = tech_gate.tech_gate_available_technologies(false)
   available_technologies_count = available_technologies_list.count
 
-  layout.layout_row_keys_append(keys,
-    layout.layout_row_cell_fixed(fixed.from_int((available_technologies_count > 0) and 24 or 37)))
-  self.layout_row = layout.layout_row_new(keys)
+  layout.row_keys_append(keys,
+    layout.row_cell_fixed(fixed.from_int((available_technologies_count > 0) and 24 or 37)))
+  self.layout_row = layout.row_new(keys)
 end
 
 local function galaxy_menu_button3_on_click_method(self)
@@ -266,7 +266,7 @@ galaxy_menu_button4_on_click_method = function(self)
     local e = game_data.pause_menu_table[i]
 
     bs[i] = ui_button.button_keys_zero({})
-    bs[i].layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
+    bs[i].layout_row_keys = layout.row_keys_of_row(e.layout_row)
     bs[i].on_click = my[i]
   end
   frame.fixed_pos = M.g_pause_menu_open_box.fixed_pos and vec_copy(M.g_pause_menu_open_box.fixed_pos)
@@ -283,7 +283,7 @@ function M.galaxy_menu_button(i)
   assert(g_menu_up and i >= 1 and i <= game_data.GALAXY_MENU_COUNT,
     "galaxy_menu_button: the galaxy menu has GALAXY_MENU_COUNT rows, after menu_init()")
   e = game_data.galaxy_menu_table[i]
-  keys.layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
+  keys.layout_row_keys = layout.row_keys_of_row(e.layout_row)
   keys.pos = vec_copy(g_galaxy_menu_pos[i])
   keys.on_click = M.galaxy_menu_on_click_table[i]
   keys.refresh = M.galaxy_menu_refresh_table[i]

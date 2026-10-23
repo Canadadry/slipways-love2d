@@ -74,7 +74,7 @@ function M.cart_load()
   mouse.mouse_init()
   ui.ui_init()
 
-  layout.layout_init()
+  layout.init()
   trade.trade_init()
 
   ui_button.button_init()
@@ -140,7 +140,7 @@ function M.cart_shutdown()
   ui_button.button_shutdown()
 
   trade.trade_shutdown()
-  layout.layout_shutdown()
+  layout.shutdown()
 
   ui.ui_shutdown()
   mouse.mouse_shutdown()
@@ -346,8 +346,8 @@ function M.cart_draw()
     loading_screen.loading_screen_draw(dispatch_context.gfx(), mem)
     return
   end
-  text_image.text_image_frame_begin()
-  button_image.button_image_frame_begin()
+  text_image.frame_begin()
+  button_image.frame_begin()
   gfx.cls(mem)
   hud.hud_select_palette_block_default(mem)
   entity_registry.draw_layers(entity_registry.MESSAGE_DRAW)

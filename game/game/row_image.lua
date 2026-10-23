@@ -42,13 +42,13 @@ local function key_copy(key)
 end
 
 local g_slots = {}
-for i = 1, image_slot.IMAGE_SLOT_ROW_COUNT do
+for i = 1, image_slot.ROW_COUNT do
   g_slots[i] = { key = key_zero(), stamp = 0 }
 end
 local g_stamp = 0
 
 local function row_image_width()
-  return image.size(image_slot.IMAGE_SLOT_ROW_FIRST).width
+  return image.size(image_slot.ROW_FIRST).width
 end
 
 local function entry_of(item)
@@ -68,10 +68,10 @@ local function key_of(row, mem, key)
   end
   for i = 1, row.placed_items_count do
     local item = row.placed_items[i]
-    if item.kind == layout.LAYOUT_ROW_ITEM_NONE then
+    if item.kind == layout.ROW_ITEM_NONE then
       goto continue
     end
-    if item.kind ~= layout.LAYOUT_ROW_ITEM_SPRITE then
+    if item.kind ~= layout.ROW_ITEM_SPRITE then
       return false
     end
     do
@@ -104,9 +104,9 @@ local function key_of(row, mem, key)
   return true
 end
 
--- true when row_image_draw_at copies the row from an image slot: only sprite and nothing items, at
+-- true when row_image.draw_at copies the row from an image slot: only sprite and nothing items, at
 -- least one sprite, each at a whole, non-negative x offset, a y offset of 0, within a slot.
-function M.row_image_cacheable(row)
+function M.cacheable(row)
   local key = key_zero()
   return key_of(row, nil, key)
 end
@@ -126,12 +126,12 @@ end
 -- Draws no visual random number and reads no game state: only the row's own items, each at its
 -- whole offset, so at (offset, 0) whatever the caller's alignment.
 local function row_image_build_draw(gfx, mem, context)
-  layout.layout_row_draw_at(gfx, mem, context, vec.make(0, 0), 0)
+  layout.row_draw_at(gfx, mem, context, vec.make(0, 0), 0)
 end
 
 local function slot_for(key)
   local oldest = 1
-  for i = 1, image_slot.IMAGE_SLOT_ROW_COUNT do
+  for i = 1, image_slot.ROW_COUNT do
     if g_slots[i].key.mem ~= nil and same_key(g_slots[i].key, key) then
       return i, true
     end
@@ -142,29 +142,29 @@ local function slot_for(key)
   return oldest, false
 end
 
--- layout_row_draw_at's contract (same pixels, same draw palette after), through an image slot
+-- layout.row_draw_at's contract (same pixels, same draw palette after), through an image slot
 -- keyed by the row's content when the row is cacheable. gfx's camera moves during a build and is
 -- restored.
-function M.row_image_draw_at(gfx, mem, row, p, a)
+function M.draw_at(gfx, mem, row, p, a)
   local key = key_zero()
   local built
   local i
   local origin
 
   if not key_of(row, mem, key) then
-    layout.layout_row_draw_at(gfx, mem, row, p, a)
+    layout.row_draw_at(gfx, mem, row, p, a)
     return
   end
   i, built = slot_for(key)
   if not built then
-    image.build(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i - 1, key.extent, ROW_IMAGE_HEIGHT,
+    image.build(gfx, mem, image_slot.ROW_FIRST + i - 1, key.extent, ROW_IMAGE_HEIGHT,
       row_image_build_draw, row)
     g_slots[i].key = key_copy(key)
   end
   g_stamp = g_stamp + 1
   g_slots[i].stamp = g_stamp
   origin = vec.sub(p, vec.make(fixed.mul(a, row.width), 0))
-  image.draw(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i - 1, fixed.flr_int(origin.x),
+  image.draw(gfx, mem, image_slot.ROW_FIRST + i - 1, fixed.flr_int(origin.x),
     fixed.flr_int(origin.y))
   hud.hud_select_palette_block_default(mem)
 end

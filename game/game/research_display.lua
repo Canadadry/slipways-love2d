@@ -97,8 +97,8 @@ local function planet_resource_row_pair(first, width)
 
   tuple.count = 2
   tuple.scalars[1] = first
-  tuple.scalars[2] = layout.layout_row_scalar_fixed(width)
-  return layout.layout_row_cell_tuple(tuple)
+  tuple.scalars[2] = layout.row_scalar_fixed(width)
+  return layout.row_cell_tuple(tuple)
 end
 
 local tail_row_items = {
@@ -109,7 +109,7 @@ local tail_row = map_tables.make_data_row({ count = 2, items = tail_row_items })
 
 local function planet_resource_row_keys(inputs, output, amount, used, spacing, out_keys)
   local planet = require("game.planet")
-  local keys = layout.layout_row_keys_zero()
+  local keys = layout.row_keys_zero()
   local crowded
   local is_count = (inputs ~= nil) and #inputs or 0
   local outputs = {}
@@ -153,36 +153,36 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
         gc_zero = i.satisfied ~= nil and i.satisfied == 0
       end
       if qe.kind == trade.RESOURCE_FIXED then
-        tuple.scalars[1] = layout.layout_row_scalar_fixed(qe.number)
+        tuple.scalars[1] = layout.row_scalar_fixed(qe.number)
       else
-        tuple.scalars[1] = layout.layout_row_scalar_nothing()
+        tuple.scalars[1] = layout.row_scalar_nothing()
       end
-      tuple.scalars[2] = layout.layout_row_scalar_fixed(
+      tuple.scalars[2] = layout.row_scalar_fixed(
         fixed.sub(fixed.from_int(3), crowded))
-      tuple.scalars[3] = layout.layout_row_scalar_fixed(fixed.from_int(gc_zero and 7 or 0))
-      layout.layout_row_keys_append(keys, layout.layout_row_cell_tuple(tuple))
+      tuple.scalars[3] = layout.row_scalar_fixed(fixed.from_int(gc_zero and 7 or 0))
+      layout.row_keys_append(keys, layout.row_cell_tuple(tuple))
     end
   end
 
   if is_count > 0 then
     local use_35 = spacing == fixed.from_int(1) or wide
 
-    layout.layout_row_keys_append(keys, planet_resource_row_pair(layout.layout_row_scalar_nothing(),
+    layout.row_keys_append(keys, planet_resource_row_pair(layout.row_scalar_nothing(),
       fixed.add(spacing, crowded)))
     if use_35 then
-      layout.layout_row_keys_append(keys, planet_resource_row_pair(
-        layout.layout_row_scalar_fixed(fixed.from_int(35)), fixed.add(fixed.from_int(2), spacing)))
+      layout.row_keys_append(keys, planet_resource_row_pair(
+        layout.row_scalar_fixed(fixed.from_int(35)), fixed.add(fixed.from_int(2), spacing)))
     else
-      layout.layout_row_keys_append(keys, planet_resource_row_pair(
-        layout.layout_row_scalar_fixed(fixed.from_int(32)), fixed.from_int(5)))
+      layout.row_keys_append(keys, planet_resource_row_pair(
+        layout.row_scalar_fixed(fixed.from_int(32)), fixed.from_int(5)))
     end
   end
 
   if amount > fixed.from_int(5) then
     local amount_text = str.tostr_fixed(amount)
 
-    layout.layout_row_keys_append(keys, layout.layout_row_cell_string(amount_text))
-    layout.layout_row_keys_append(keys, layout.layout_row_cell_row(tail_row))
+    layout.row_keys_append(keys, layout.row_cell_string(amount_text))
+    layout.row_keys_append(keys, layout.row_cell_row(tail_row))
     keys.color = fixed.from_int(13)
     amount = fixed.from_int(1)
   end
@@ -198,14 +198,14 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
       local tuple = tuple_zero()
 
       tuple.count = 4
-      tuple.scalars[1] = layout.layout_row_scalar_fixed(qq)
-      tuple.scalars[2] = layout.layout_row_scalar_fixed(fixed.from_int(6))
-      tuple.scalars[3] = layout.layout_row_scalar_fixed(fixed.from_int(within and 0 or 7))
-      tuple.scalars[4] = layout.layout_row_scalar_fixed(fixed.from_int(wide and -4 or -3))
-      layout.layout_row_keys_append(keys, layout.layout_row_cell_tuple(tuple))
+      tuple.scalars[1] = layout.row_scalar_fixed(qq)
+      tuple.scalars[2] = layout.row_scalar_fixed(fixed.from_int(6))
+      tuple.scalars[3] = layout.row_scalar_fixed(fixed.from_int(within and 0 or 7))
+      tuple.scalars[4] = layout.row_scalar_fixed(fixed.from_int(wide and -4 or -3))
+      layout.row_keys_append(keys, layout.row_cell_tuple(tuple))
     end
 
-    layout.layout_row_keys_append(keys, layout.layout_row_cell_row(planet.planet_spacer()))
+    layout.row_keys_append(keys, layout.row_cell_row(planet.planet_spacer()))
   end
 
   out_keys = keys
@@ -241,26 +241,26 @@ function M.research_project_layout_row_keys(self, out_keys)
     return false, out_keys
   end
 
-  layout.layout_row_keys_append(out_keys, layout.layout_row_cell_row(research.research_project_row_tail()))
+  layout.row_keys_append(out_keys, layout.row_cell_row(research.research_project_row_tail()))
   if self.name ~= nil then
-    layout.layout_row_keys_append(out_keys, layout.layout_row_cell_string(self.name))
+    layout.row_keys_append(out_keys, layout.row_cell_string(self.name))
   end
   return true, out_keys
 end
 
 -- Keys of the row {name, 32, {icon_sprite, 8}}, for a project with an icon sprite.
 function M.research_project_icon_row_keys(self)
-  local keys = layout.layout_row_keys_zero()
+  local keys = layout.row_keys_zero()
   local icon = tuple_zero()
 
   icon.count = 2
   assert(self.icon_sprite ~= nil,
     "research_project_icon_row_keys: the row {name, 32, {icon_sprite, 8}} is a project with an icon sprite's")
-  icon.scalars[1] = layout.layout_row_scalar_fixed(self.icon_sprite)
-  icon.scalars[2] = layout.layout_row_scalar_fixed(fixed.from_int(8))
-  layout.layout_row_keys_append(keys, layout.layout_row_cell_string(self.name))
-  layout.layout_row_keys_append(keys, layout.layout_row_cell_fixed(fixed.from_int(32)))
-  layout.layout_row_keys_append(keys, layout.layout_row_cell_tuple(icon))
+  icon.scalars[1] = layout.row_scalar_fixed(self.icon_sprite)
+  icon.scalars[2] = layout.row_scalar_fixed(fixed.from_int(8))
+  layout.row_keys_append(keys, layout.row_cell_string(self.name))
+  layout.row_keys_append(keys, layout.row_cell_fixed(fixed.from_int(32)))
+  layout.row_keys_append(keys, layout.row_cell_tuple(icon))
   return keys
 end
 

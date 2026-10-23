@@ -93,9 +93,9 @@ function M.hud_print_outlined(gfx, mem, t, x, y, c, a)
 end
 
 -- hud_print_outlined's contract (same pixels, same draw palette after), through
--- text_image_print_outlined. gfx's camera moves during a build and is restored.
+-- text_image.print_outlined. gfx's camera moves during a build and is restored.
 function M.hud_print_outlined_text_image(gfx, mem, t, x, y, c, a)
-  text_image.text_image_print_outlined(gfx, mem, t, aligned_x(t, x, a), to_int(y), bit.band(c, 0x0F))
+  text_image.print_outlined(gfx, mem, t, aligned_x(t, x, a), to_int(y), bit.band(c, 0x0F))
 end
 
 function M.hud_print_outlined_default(gfx, mem, t, x, y, c)
