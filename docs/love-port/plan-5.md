@@ -191,3 +191,16 @@ e2e notes quoting dump peaks were rewritten; notes quoting per-pool live
 counts as game state (`pad_message_box.txt`, `pad_pause_restart.txt`,
 `pad_game_end.txt`, `pad_bankrupt.txt`, `pad_planet_projects.txt`) were left
 as they are.
+
+### Step 1.3
+
+Two chunks: the id representation, then the old API. An entity id is a
+number from a counter never reset, looked up in one `id → entity` table
+that drops the entity when the exit queue flushes it, before its class
+release; "no link" is `nil`. `engine.entity_id_type`, the
+`{ index, generation }` tables, the 512 cap with the "entity table full" and
+"layer order full" fatals, `entity_id_live` and every `entity_id_none()`
+helper are gone. Predicates kept their 0/1 results for step 3.1. No unit
+test added: ids reach no capture, save or end state; the replays are the net.
+Seen: the step's grep finds nothing. `make e2e` 20/20 in 5.2 s, `make
+end-state` 20/20, `make test` 0.65 s.
