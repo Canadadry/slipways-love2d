@@ -3,13 +3,12 @@
 -- Shapes, with the C field names:
 --   button_t: one table holding the entity header and its own fields; its own `has`
 --     (BUTTON_HAS_* bits) is `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
---   modal_backdrop_t: one table holding the entity header and { slot, archetype, on_click }.
+--   modal_backdrop_t: one table holding the entity header and { archetype, on_click }.
 --   button_keys_t: the fields of button_keys_zero; tooltip_row a data_row_t table.
 --   button_look_t: { body, top }.
 --
 -- Include cycle: game.ui is required at call time (button_draw).
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -23,18 +22,11 @@ local hud = require("game.hud")
 local layout = require("game.layout")
 local map_tables = require("game.map_tables")
 local research = require("game.research")
-local ui_zone = require("game.ui_zone")
 local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")
 local vram = require("p8.vram")
 
 local M = {}
-
-M.SIZEOF = {
-  button_t = 232,
-  modal_backdrop_t = 104,
-}
-local SIZEOF = M.SIZEOF
 
 M.BUTTON_HAS_SLIDE_TARGET = bit.lshift(1, 0)
 
@@ -54,19 +46,6 @@ end
 
 local g_button_up = 0
 local g_modal_backdrop_up = 0
-
-local function release_button(self)
-  local js = self
-
-  if js.layout_row_slot ~= nil then
-    allocator.arena_release(js.layout_row_slot)
-  end
-  allocator.arena_release(js.slot)
-end
-
-local function release_modal_backdrop(self)
-  allocator.arena_release(self.slot)
-end
 
 local function ui_to_int(x)
   return fixed.p8_fixed_flr_int(x)
@@ -112,21 +91,17 @@ M.button_class_def = {
   has_refresh = button_has_refresh,
   left_press = button_left_press_method,
   states = { [entity_class.ENTITY_STATE_NORMAL] = button_update_method },
-  release = release_button,
   tags = 0,
   lineage = 0,
   skip_draw_off_screen = 0,
 }
 
 local function button_create(keys)
-  local slot = ui_zone.ui_zone_slot(ui_zone.SLOT_KIND_BUTTON)
-  local self = allocator.allocator_alloc(slot, SIZEOF.button_t)
+  local self = {}
 
-  self.slot = slot
   entity.entity_init_instance(self, M.button_class_def, game_data.button_archetype.state,
     game_data.button_archetype.state_time)
   self.layout_row = nil
-  self.layout_row_slot = nil
   self.width = 0
   self.side_tooltip = nil
   self.has_side_tooltip = 0
@@ -228,21 +203,21 @@ function M.button_construct(self, keys)
     keys = none
   end
 
-  self.layout_row = layout.layout_row_new(self.slot, keys.layout_row_keys)
+  self.layout_row = layout.layout_row_new(nil, keys.layout_row_keys)
   self.width = fixed.p8_fixed_add(self.layout_row.width, fixed.p8_fixed_from_int(2))
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_HIT_BOX)
   self.hit_box = { left = fixed.p8_fixed_from_int(0), top = fixed.p8_fixed_from_int(-1), right = self.width,
     bottom = fixed.p8_fixed_from_int(11) }
 
   if keys.has_side_tooltip_row ~= 0 then
-    self.side_tooltip = layout.layout_row_new(self.slot, keys.side_tooltip_row)
+    self.side_tooltip = layout.layout_row_new(nil, keys.side_tooltip_row)
     self.has_side_tooltip = 1
   elseif keys.has_side_tooltip ~= 0 and keys.side_tooltip_is_false ~= 0 then
     self.side_tooltip = nil
     self.has_side_tooltip = 1
   end
   if keys.has_tooltip_row ~= 0 then
-    self.tooltip = layout.tooltip_new(self.slot, keys.tooltip_row)
+    self.tooltip = layout.tooltip_new(nil, keys.tooltip_row)
   end
 end
 
@@ -456,7 +431,6 @@ end
 M.modal_backdrop_class_def = {
   hit_test = entity_registry.entity_registry_hit_test_always,
   left_press = modal_backdrop_left_press_method,
-  release = release_modal_backdrop,
   states = {},
   tags = 0,
   lineage = 0,
@@ -464,10 +438,8 @@ M.modal_backdrop_class_def = {
 }
 
 local function modal_backdrop_create(keys)
-  local slot = ui_zone.ui_zone_slot(ui_zone.SLOT_KIND_MODAL_BACKDROP)
-  local self = allocator.allocator_alloc(slot, SIZEOF.modal_backdrop_t)
+  local self = {}
 
-  self.slot = slot
   entity.entity_init_instance(self, M.modal_backdrop_class_def, game_data.modal_backdrop_archetype.state,
     game_data.modal_backdrop_archetype.state_time)
   self.archetype = game_data.modal_backdrop_archetype
@@ -554,11 +526,9 @@ end
 function M.button_zero()
   local b = {}
   entity_class.entity_init_header(b, nil)
-  b.slot = nil
   b.has_ = 0
   b.archetype = nil
   b.layout_row = nil
-  b.layout_row_slot = nil
   b.width = 0
   b.side_tooltip = nil
   b.has_side_tooltip = 0

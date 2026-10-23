@@ -6,7 +6,7 @@
 --   planet_row_signature_t: { output, amount, need_resources, route_count, needs_count, flags,
 --     need_flags }, need_resources and need_flags 0-indexed of PLANET_ROW_SIGNATURE_NEEDS.
 --   planet_t: one table holding the entity header and { archetype, planet_id, slipways, project,
---     description, needs, planet_type, layout_row, layout_row_slot, layout_row_signature,
+--     description, needs, planet_type, layout_row, layout_row_signature,
 --     targeted_by, production_bonus, has_production_bonus, net_income, has_net_income,
 --     incoming_routes, outgoing_routes, development_tier, has_development_tier, production,
 --     sprite, palette_block, acceleration_factor, speed, synthesizable_resources, has_,
@@ -173,7 +173,6 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.needs = list_zero()
   self.planet_type = nil
   self.layout_row = nil
-  self.layout_row_slot = nil
   self.layout_row_signature = M.planet_row_signature_zero()
   self.targeted_by = entity_id_none()
   self.production_bonus = 0

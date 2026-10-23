@@ -112,19 +112,30 @@ function M.allocator_from_flip_zone(storage, zone)
   return storage
 end
 
+-- A missing allocator allocates a new table, grows into a new table holding a copy, releases nothing.
 function M.allocator_alloc(z, n)
-  assert(z ~= nil, "alloc without an allocator")
+  if z == nil then
+    return {}
+  end
   return z.alloc(z, n)
 end
 
 function M.allocator_grow(z, p, old_n, new_n)
-  assert(z ~= nil, "grow without an allocator")
   assert(old_n <= new_n and (p ~= nil or old_n == 0))
+  if z == nil then
+    local q = {}
+    if old_n > 0 then
+      copy_block(q, p)
+    end
+    return q
+  end
   return z.grow(z, p, old_n, new_n)
 end
 
 function M.allocator_release(z, p)
-  assert(z ~= nil, "release without an allocator")
+  if z == nil then
+    return
+  end
   z.release(z, p)
 end
 

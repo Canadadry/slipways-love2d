@@ -20,7 +20,6 @@ local score_panel_display = require("game.score_panel_display")
 local tech_gate = require("game.tech_gate")
 local ui_module = require("game.ui")
 local ui_button = require("game.ui_button")
-local ui_zone = require("game.ui_zone")
 local fixed = require("p8.fixed")
 local str = require("p8.str")
 
@@ -244,7 +243,6 @@ local function galaxy_menu_button2_refresh_method(self)
   local available_technologies_list
   local available_technologies_count
   local keys = layout.layout_row_keys_zero()
-  local slot
 
   if self == nil then
     return
@@ -256,12 +254,7 @@ local function galaxy_menu_button2_refresh_method(self)
 
   layout.layout_row_keys_append(keys,
     layout.layout_row_cell_fixed(fixed.p8_fixed_from_int((available_technologies_count > 0) and 24 or 37)))
-  slot = ui_zone.ui_zone_slot(ui_zone.SLOT_KIND_ROW)
-  self.layout_row = layout.layout_row_new(slot, keys)
-  if self.layout_row_slot ~= nil then
-    allocator.arena_release(self.layout_row_slot)
-  end
-  self.layout_row_slot = slot
+  self.layout_row = layout.layout_row_new(nil, keys)
 end
 
 local function galaxy_menu_button3_on_click_method(self)

@@ -20,7 +20,6 @@ local planet_family = require("game.planet_family")
 local planet_family_trade = require("game.planet_family_trade")
 local probe = require("game.probe")
 local slipway = require("game.slipway")
-local ui_zone = require("game.ui_zone")
 local draw_meter = require("p8.draw_meter")
 local fixed = require("p8.fixed")
 
@@ -32,9 +31,7 @@ local GPU_BUILD_BUFFER_BYTES = 14336
 local GPU_CLUT_SLOTS = 6
 local GPU_PATTERN_SLOTS = 4
 
-M.SLOT_KIND_NAMES = { [0] = "button", "modal_backdrop", "message_box", "toast", "row", "ephemerals" }
 M.PARTICLE_NAMES = { [0] = "particle", "particles", "particles_help_screen", "burst", "transit_dots" }
-local SLOT_KIND_NAMES = M.SLOT_KIND_NAMES
 local PARTICLE_NAMES = M.PARTICLE_NAMES
 
 local LINE_CAP = 256
@@ -288,7 +285,6 @@ local function write_zones(sink)
   write_zone(sink, "game", game_zone.game_zone_used(), game_zone.game_zone_max(), zone_sizes.GENERATION_ZONE_BYTES)
   write_zone(sink, "load", game_zone.load_zone_used(), game_zone.game_zone_load_zone_max(), zone_sizes.LOAD_ZONE_BYTES)
   write_zone(sink, "frame", frame_zone.frame_zone_used(), frame_zone.frame_zone_max(), zone_sizes.FRAME_ZONE_BYTES)
-  write_zone(sink, "ui", ui_zone.ui_zone_used(), ui_zone.ui_zone_max_used(), ui_zone.ui_zone_reserved())
   write_zone(sink, "particles", particle_zone.particle_zone_used(), particle_zone.particle_zone_max_used(),
              particle_zone.particle_zone_reserved())
   local line = line_start(sink)
@@ -313,10 +309,6 @@ local function write_peak(sink, name, peak, limit)
 end
 
 local function write_caps(sink)
-  for i = 0, ui_zone.SLOT_KIND_COUNT - 1 do
-    local k = i
-    write_cap(sink, SLOT_KIND_NAMES[i], ui_zone.ui_zone_live(k), ui_zone.ui_zone_max_live(k), ui_zone.ui_zone_count(k))
-  end
   for i = 0, particle_zone.PARTICLE_SLOT_COUNT - 1 do
     local k = i
     write_cap(sink, PARTICLE_NAMES[i], particle_zone.particle_zone_live(k), particle_zone.particle_zone_max_live(k),
@@ -332,16 +324,10 @@ local function write_caps(sink)
   write_peak(sink, "elements_transit_dots",
              particle_zone.particle_zone_max_elements(particle_zone.PARTICLE_SLOT_TRANSIT_DOT),
              slipway.SLIPWAY_TRANSIT_DOTS_RESERVE)
-  write_peak(sink, "elements_ephemerals", ui_zone.ui_zone_max_ephemerals(), ui_zone.UI_EPHEMERALS_RESERVE)
   for i = particle_zone.PARTICLE_SLOT_LIST, particle_zone.PARTICLE_SLOT_BURST do
     local k = i
     local name = string.format("bytes_%s", PARTICLE_NAMES[i])
     write_peak(sink, name, particle_zone.particle_zone_max_bytes(k), particle_zone.particle_zone_slot_size(k))
-  end
-  for i = 0, ui_zone.SLOT_KIND_COUNT - 1 do
-    local k = i
-    local name = string.format("bytes_%s", SLOT_KIND_NAMES[i])
-    write_peak(sink, name, ui_zone.ui_zone_max_bytes(k), ui_zone.ui_zone_slot_size(k))
   end
   write_peak(sink, "gpu_cluts", draw_meter.p8_draw_meter_peak().cluts, GPU_CLUT_SLOTS)
   write_peak(sink, "gpu_patterns", draw_meter.p8_draw_meter_peak().patterns, GPU_PATTERN_SLOTS)

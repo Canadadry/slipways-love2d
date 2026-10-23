@@ -4,6 +4,13 @@
   - [x] Step 1.1 — lua-test-modules checks only that every module loads
     - [x] PRD phase1-step1-module-load-check
   - [ ] Step 1.2 — zones and allocators removed
+    - [x] Chunk 1 — UI pool
+    - [ ] Chunk 2 — particle pool, slot groups and slot zones
+    - [ ] Chunk 3 — grab arena and arenas
+    - [ ] Chunk 4 — frame zone
+    - [ ] Chunk 5 — game zone and load zone
+    - [ ] Chunk 6 — engine containers and helpers without a zone
+    - [ ] Chunk 7 — game modules without a zone; allocator and zones deleted
   - [ ] Step 1.3 — entity ids as plain numbers
   - [ ] Step 1.4 — the four list kinds as plain arrays
 - [ ] Phase 2 — The entity model

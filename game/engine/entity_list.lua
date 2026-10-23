@@ -14,7 +14,6 @@ local SIZEOF = M.SIZEOF
 local ENTITY_LIST_INITIAL_CAPACITY = 4
 
 function M.entity_list_init(entity_list, zone)
-  assert(zone ~= nil, "entity_list_init: a list without a zone would grow nowhere")
   entity_list.items = nil
   entity_list.count = 0
   entity_list.capacity = 0
@@ -48,7 +47,6 @@ end
 
 local function entity_list_grow(entity_list)
   local new_capacity = (entity_list.capacity == 0) and ENTITY_LIST_INITIAL_CAPACITY or entity_list.capacity * 2
-  assert(entity_list.zone ~= nil, "entity_list_add on a list entity_list_init never gave a zone")
   entity_list.items = allocator.allocator_grow(entity_list.zone, entity_list.items,
     entity_list.capacity * SIZEOF["entity_t *"], new_capacity * SIZEOF["entity_t *"])
   entity_list.capacity = new_capacity

@@ -436,7 +436,6 @@ M.layout_row_class_def = {
 }
 
 local function row_struct_init(self, zone)
-  assert(zone ~= nil, "row_struct_init: a row without a zone would have nowhere to keep its placed items")
   entity_class.entity_init_header(self, M.layout_row_class_def)
   self.color = 0
   self.has_color = 0
@@ -485,7 +484,6 @@ end
 local function row_create(zone, keys)
   local self
 
-  assert(zone ~= nil, "row_create: a row without a zone would have nowhere to keep its placed items")
   self = allocator.allocator_alloc(zone, SIZEOF.layout_row_t)
   row_struct_init(self, zone)
   row_fill(self, keys)
@@ -530,7 +528,6 @@ M.tooltip_class_def = {
 local function tooltip_struct_alloc(zone)
   local self
 
-  assert(zone ~= nil, "tooltip_struct_alloc: a tooltip without a zone would have nowhere to keep its lines")
   self = allocator.allocator_alloc(zone, SIZEOF.tooltip_t)
 
   entity_class.entity_init_header(self, M.tooltip_class_def)

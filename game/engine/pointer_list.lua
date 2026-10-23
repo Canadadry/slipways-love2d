@@ -13,7 +13,6 @@ local SIZEOF = M.SIZEOF
 local POINTER_LIST_INITIAL_CAPACITY = 4
 
 function M.pointer_list_init(pointer_list, zone)
-  assert(zone ~= nil, "pointer_list_init: a list without a zone would grow nowhere")
   pointer_list.items = nil
   pointer_list.count = 0
   pointer_list.capacity = 0
@@ -39,7 +38,6 @@ end
 
 local function pointer_list_grow(pointer_list)
   local new_capacity = (pointer_list.capacity == 0) and POINTER_LIST_INITIAL_CAPACITY or pointer_list.capacity * 2
-  assert(pointer_list.zone ~= nil, "pointer_list_add on a list pointer_list_init never gave a zone")
   pointer_list.items = allocator.allocator_grow(pointer_list.zone, pointer_list.items,
     pointer_list.capacity * SIZEOF["void *"], new_capacity * SIZEOF["void *"])
   pointer_list.capacity = new_capacity

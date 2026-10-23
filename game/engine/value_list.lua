@@ -22,7 +22,6 @@ local function copy_value(value)
 end
 
 function M.value_list_init(list, zone, element_size)
-  assert(zone ~= nil, "value_list_init: a list without a zone would grow nowhere")
   assert(element_size > 0)
   list.items = nil
   list.element_size = element_size

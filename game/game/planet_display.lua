@@ -30,7 +30,6 @@ local research = require("game.research")
 local row_image = require("game.row_image")
 local tech_gate = require("game.tech_gate")
 local trade = require("game.trade")
-local ui_zone = require("game.ui_zone")
 local visual_random = require("game.visual_random")
 local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")
@@ -149,7 +148,6 @@ function M.planet_refresh(self)
   local mu
   local keys
   local layout_row_result = nil
-  local slot
   local scratch
   local route_count
   local signature
@@ -175,20 +173,12 @@ function M.planet_refresh(self)
   end
 
   scratch = frame_zone.frame_zone_mark()
-  slot = ui_zone.ui_zone_slot(ui_zone.SLOT_KIND_ROW)
   found, keys = research_display.research_display_planet_resource_row_keys(needs_list, has_output, output, mu,
     fixed.p8_fixed_from_int(route_count), fixed.p8_fixed_from_int(0), layout.layout_row_keys_zero())
   if found ~= 0 then
-    layout_row_result = layout.layout_row_new(slot, keys)
-  else
-    allocator.arena_release(slot)
-    slot = nil
-  end
-  if self.layout_row_slot ~= nil then
-    allocator.arena_release(self.layout_row_slot)
+    layout_row_result = layout.layout_row_new(nil, keys)
   end
   self.layout_row = layout_row_result
-  self.layout_row_slot = slot
   self.layout_row_signature = signature
   frame_zone.frame_zone_rewind(scratch)
 end
@@ -196,11 +186,7 @@ end
 function M.planet_release_row(self)
   local jo = self
 
-  if jo.layout_row_slot ~= nil then
-    allocator.arena_release(jo.layout_row_slot)
-  end
   jo.layout_row = nil
-  jo.layout_row_slot = nil
   jo.layout_row_signature.flags = 0
 end
 

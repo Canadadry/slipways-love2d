@@ -1,7 +1,7 @@
 -- Copy of src/game/message_box.h then src/game/message_box.c.
 --
 -- Shapes, with the C field names:
---   message_box_t: one table holding the entity header and { slot, archetype, duration_scale,
+--   message_box_t: one table holding the entity header and { archetype, duration_scale,
 --     keep_open, articles, articles_count }, articles a 0-indexed array of MESSAGE_BOX_ITEMS_CAP
 --     message_box_article_t tables created by message_box_create.
 --   message_box_article_t: { kind, draw_function, as = { scalars, layout, row_of } }, the union's
@@ -9,14 +9,13 @@
 --     scalars = { count, arguments, text }, arguments a 0-indexed array of
 --     MESSAGE_BOX_ARGUMENTS_CAP { kind, number }; layout = { row, has_pos, pos, align }, row a
 --     layout_row_t filled in place by layout_row_init; row_of a Lua function or nil.
---   toast_t: one table holding the entity header and { slot, follow, text, archetype, fade, color }.
+--   toast_t: one table holding the entity header and { follow, text, archetype, fade, color }.
 --   message_box_keys_t: { has_duration_scale, duration_scale, keep_open }.
 --   toast_keys_t, open_box_frame_t: the fields of toast_keys_zero and open_box_frame_zero.
 --   Char arrays are Lua strings, "" at zero.
 --
 -- Include cycle: game.scroll, game.ui and game.ui_button are required at call time.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -30,17 +29,10 @@ local game_data = require("game.game_data")
 local hud = require("game.hud")
 local layout = require("game.layout")
 local map_tables = require("game.map_tables")
-local ui_zone = require("game.ui_zone")
 local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")
 
 local M = {}
-
-M.SIZEOF = {
-  message_box_t = 2136,
-  toast_t = 128,
-}
-local SIZEOF = M.SIZEOF
 
 M.MESSAGE_BOX_ITEMS_CAP = game_data.SCORE_ROWS_COUNT
 M.MESSAGE_BOX_ARGUMENTS_CAP = 5
@@ -224,14 +216,9 @@ function M.message_box_draw_overlay(gfx, mem, self)
   end
 end
 
-local function message_box_release(self)
-  allocator.arena_release(self.slot)
-end
-
 M.message_box_class_def = {
   draw_overlay = message_box_draw_overlay_method,
   tags = entity_class.TAG(entity_class.TAG_MESSAGE_BOX),
-  release = message_box_release,
   states = {},
   lineage = 0,
   skip_draw_off_screen = 0,
@@ -292,7 +279,7 @@ function M.message_box_add_layout_row(self, keys, pos, has_pos, align)
 
   article.kind = M.MESSAGE_BOX_ARTICLE_LAYOUT_ROW
   article.draw_function = map_tables.DRAW_FUNCTION_DRAW_ROW
-  layout.layout_row_init(article.as.layout.row, self.slot, keys)
+  layout.layout_row_init(article.as.layout.row, nil, keys)
   article.as.layout.has_pos = has_pos
   if has_pos ~= 0 then
     article.as.layout.pos = vec_copy(pos)
@@ -313,10 +300,8 @@ function M.message_box_add_shared_row(self, row_of)
 end
 
 local function message_box_create(keys)
-  local slot = ui_zone.ui_zone_slot(ui_zone.SLOT_KIND_MESSAGE_BOX)
-  local self = allocator.allocator_alloc(slot, SIZEOF.message_box_t)
+  local self = {}
 
-  self.slot = slot
   entity.entity_init_instance(self, M.message_box_class_def, game_data.message_box_archetype.state,
     game_data.message_box_archetype.state_time)
   self.archetype = game_data.message_box_archetype
@@ -436,24 +421,16 @@ local function toast_draw_method(self, screen_pos)
     entity_class.entity_pos(self))
 end
 
-local function toast_release(self)
-  allocator.arena_release(self.slot)
-end
-
 M.toast_class_def = {
   draw = toast_draw_method,
   states = { [entity_class.ENTITY_STATE_NORMAL] = toast_update_method },
-  release = toast_release,
   tags = 0,
   lineage = 0,
   skip_draw_off_screen = 0,
 }
 
 local function toast_create(keys)
-  local slot = ui_zone.ui_zone_slot(ui_zone.SLOT_KIND_TOAST)
-  local self = allocator.allocator_alloc(slot, SIZEOF.toast_t)
-
-  self.slot = slot
+  local self = {}
 
   entity.entity_init_instance(self, M.toast_class_def, game_data.toast_archetype.state,
     game_data.toast_archetype.state_time)
@@ -499,8 +476,7 @@ end
 
 function M.toast_keys_set_text(keys, text)
   assert(#text <= M.TOAST_TEXT_CAP,
-    "toast_keys_set_text: a toast's text is a price or \"-no money-\": a longer one needs a bigger text array and "
-    .. "toast slot")
+    "toast_keys_set_text: a toast's text is a price or \"-no money-\": a longer one needs a bigger text array")
   keys.text = text
   keys.has_text = 1
 end

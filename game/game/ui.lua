@@ -21,13 +21,11 @@ local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
 local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
-local exit_queue = require("engine.exit_queue")
 local frame_zone = require("engine.frame_zone")
 local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
 local mouse_module = require("game.mouse")
-local ui_zone = require("game.ui_zone")
 local cint = require("p8.cint")
 local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")
@@ -41,6 +39,7 @@ M.SIZEOF = {
 local SIZEOF = M.SIZEOF
 
 M.UI_HOVER_LAYERS = 16
+M.UI_EPHEMERALS_RESERVE = 8
 
 M.MOUSE_SIDE_LEFT = 0
 
@@ -94,27 +93,17 @@ function M.ui_panel_box()
   return nil
 end
 
--- An empty list whose items live in a fresh ui-zone slot; ui_set_ephemerals hands the slot to the ui.
 function M.ui_ephemerals_new()
   local list = entity_id_list_zero()
 
-  entity_id_list.entity_id_list_init_reserve(list, ui_zone.ui_zone_slot(ui_zone.SLOT_KIND_EPHEMERALS),
-    ui_zone.UI_EPHEMERALS_RESERVE)
+  entity_id_list.entity_id_list_init_reserve(list, nil, M.UI_EPHEMERALS_RESERVE)
   return list
 end
 
--- Takes the list's slot; a slot the ui owned before goes to the exit queue.
 function M.ui_set_ephemerals(self, list)
-  local old_zone = self.ephemerals.zone
-  local owned_before = bit.band(self.has_, M.UI_HAS_OWN_EPHEMERALS) ~= 0
-
-  ui_zone.ui_zone_record_ephemerals(list.count)
   self.ephemerals = entity_id_list_copy(list)
   self.has_ = bit.bor(self.has_, M.UI_HAS_OWN_EPHEMERALS)
   self.ephemerals_serial = bit.band(self.ephemerals_serial + 1, 0xFFFF)
-  if owned_before then
-    exit_queue.exit_queue_put_arena(old_zone)
-  end
 end
 
 -- The screen point is the mouse's raw header pos, as the old &mouse->header.pos: entity_pos() would zero it when the position bit is absent.
@@ -172,9 +161,6 @@ local function ui_draw_overlay_method(self, screen_pos)
 end
 
 local function ui_ephemerals_release(self)
-  if bit.band(self.has_, M.UI_HAS_OWN_EPHEMERALS) ~= 0 then
-    allocator.arena_release(self.ephemerals.zone)
-  end
   self.has_ = bit.band(bit.band(self.has_, bit.bnot(M.UI_HAS_OWN_EPHEMERALS)), 0xFFFF)
   self.ephemerals = entity_id_list_zero()
 end
