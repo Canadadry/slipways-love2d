@@ -1,7 +1,7 @@
 -- Copy of src/game/research_display.h then src/game/research_display.c.
 --
 -- Shapes, with the C field names:
---   available_projects_kept_t: { items, count }, items 0-indexed research project ids (numbers).
+--   available_projects_kept_t: { items, count }, items 1-based research project ids (numbers).
 --   research_project_tooltip_t: the table holding { outer, outer_item, inner,
 --     inner_items }, data_row_t and data_item_t tables of map_tables, inner_items of 3;
 --     each `items` field is the table it points to.
@@ -318,8 +318,9 @@ function M.research_display_available_projects(planet_instance)
     local b = research.research_projects_at(k)
 
     if available_projects_predicate(b, planet_instance) then
-      result.items[result.count] = research.research_project_id_of(b)
-      result.count = result.count + 1
+      local n = result.count + 1
+      result.items[n] = research.research_project_id_of(b)
+      result.count = n
     end
   end
   return result

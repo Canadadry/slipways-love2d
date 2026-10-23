@@ -1,7 +1,7 @@
 -- Copy of src/game/tech_gate.h then src/game/tech_gate.c.
 --
 -- Shapes, with the C field names:
---   available_technologies_kept_t: { items, count }, items 0-indexed, each the very
+--   available_technologies_kept_t: { items, count }, items 1-based, each the very
 --     technologies_table entry.
 -- The main economy is read through game.probe at call time: these functions cannot run before
 -- game.probe exists.
@@ -104,8 +104,9 @@ function M.tech_gate_available_technologies(bi)
   local result = { items = {}, count = 0 }
   for i = 1, TECHNOLOGIES_COUNT do
     if available_technologies_predicate(technologies_table[i], bi) then
-      result.items[result.count] = technologies_table[i]
-      result.count = result.count + 1
+      local n = result.count + 1
+      result.items[n] = technologies_table[i]
+      result.count = n
     end
   end
   return result

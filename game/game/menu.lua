@@ -136,7 +136,7 @@ function M.menu_show_tech_tree_screen()
   for i = 1, available_technologies_list.count + 1 do
     buttons[i] = ui_button.button_keys_zero({})
   end
-  for index = 0, available_technologies_list.count - 1 do
+  for index = 1, available_technologies_list.count do
     row_count = row_count + 1
     tech_tree_screen_step(available_technologies_list.items[index], buttons[row_count])
   end

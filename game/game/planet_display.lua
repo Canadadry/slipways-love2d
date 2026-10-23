@@ -447,7 +447,7 @@ function M.planet_projects_panel(self)
   for i = 1, cap do
     bs[i] = ui_button.button_keys_zero({})
   end
-  for i = 0, available_projects_list.count - 1 do
+  for i = 1, available_projects_list.count do
     n = n + 1
     planet_projects_panel_keys(self, research.research_project_get(available_projects_list.items[i]), bs[n])
   end

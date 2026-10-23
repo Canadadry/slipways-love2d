@@ -32,7 +32,7 @@ local g_project_id_counter = 0
 local g_project_by_id = {}
 local g_project_id_by_project = {}
 
--- Lua only: project - g_project_table, the C index of each table.
+-- Lua only: project - g_project_table, the position of each table.
 local project_index_of = {}
 
 local g_projects = {}
@@ -52,7 +52,7 @@ end
 function M.research_expire_project_ids()
   g_project_by_id = {}
   g_project_id_by_project = {}
-  for i = 0, g_project_table_count - 1 do
+  for i = 1, g_project_table_count do
     project_id_issue(g_project_table[i])
   end
 end
@@ -86,14 +86,15 @@ end
 local function projects_register(index)
   local name = g_project_table[index].name
 
-  for i = 0, g_projects_by_name_count - 1 do
+  for i = 1, g_projects_by_name_count do
     if g_projects_by_name[i].name == name then
       g_projects_by_name[i].project = index
       return
     end
   end
-  g_projects_by_name[g_projects_by_name_count] = { name = name, project = index }
-  g_projects_by_name_count = g_projects_by_name_count + 1
+  local n = g_projects_by_name_count + 1
+  g_projects_by_name[n] = { name = name, project = index }
+  g_projects_by_name_count = n
 end
 
 M.research_project_class_def = {
@@ -208,8 +209,8 @@ local function project_create(keys)
   local input_codes = ""
   local index
 
-  index = g_project_table_count
-  g_project_table_count = g_project_table_count + 1
+  index = g_project_table_count + 1
+  g_project_table_count = index
   self = g_project_table[index]
   if self == nil then
     self = { inputs = {} }
@@ -325,8 +326,9 @@ function M.research_build_projects()
       g_required_tech = e.header
     else
       local keys = { record = e, required_tech = g_required_tech }
-      g_projects[g_projects_count] = project_index_of[M.research_project_new(keys)]
-      g_projects_count = g_projects_count + 1
+      local n = g_projects_count + 1
+      g_projects[n] = project_index_of[M.research_project_new(keys)]
+      g_projects_count = n
     end
   end
 end
@@ -339,13 +341,13 @@ function M.research_projects_at(k)
   if k < 1 or k > g_projects_count then
     return nil
   end
-  return g_project_table[g_projects[k - 1]]
+  return g_project_table[g_projects[k]]
 end
 
 function M.research_projects_find(px)
-  local i = 0
+  local i = 1
 
-  while px ~= nil and i < g_projects_by_name_count do
+  while px ~= nil and i <= g_projects_by_name_count do
     if g_projects_by_name[i].name == px then
       return g_project_table[g_projects_by_name[i].project]
     end

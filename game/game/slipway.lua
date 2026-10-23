@@ -2,7 +2,7 @@
 --
 -- Shapes, with the C field names:
 --   slipway_keys_t: { start }.
---   slipway_served_planets_t: { count, ids }, ids 0-indexed Lua strings.
+--   slipway_served_planets_t: { count, ids }, ids 1-based Lua strings.
 --   slipway_mouse_point_t: an entity header, one table.
 --   slipway_t: one table holding the entity header and { archetype, fade_in_step, start,
 --     transit_dots, served_planets, end_, end_is_point, targeted_by, targeting, point }; `end` is
@@ -120,15 +120,16 @@ function M.slipway_served_planets_add(hg, id)
   if M.slipway_served_planets_has(hg, id) then
     return
   end
-  hg.ids[hg.count] = id
-  hg.count = hg.count + 1
+  local n = hg.count + 1
+  hg.ids[n] = id
+  hg.count = n
 end
 
 function M.slipway_served_planets_has(hg, id)
   if hg == nil or id == nil then
     return false
   end
-  for i = 0, hg.count - 1 do
+  for i = 1, hg.count do
     if hg.ids[i] == id then
       return true
     end

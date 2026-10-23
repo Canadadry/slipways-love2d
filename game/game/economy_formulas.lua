@@ -1,7 +1,7 @@
 -- Copy of src/game/economy_formulas.h then src/game/economy_formulas.c.
 --
 -- Shapes, with the C field names:
---   resource_map_t: { count, entries }, entries 0-indexed of { resource, value }; filled in
+--   resource_map_t: { count, entries }, entries 1-based of { resource, value }; filled in
 --     place by its init and set functions; the caller creates entries. A value copy of a map
 --     copies entries and each entry, since set changes an entry in place.
 local entity_class = require("engine.entity_class")
@@ -21,8 +21,8 @@ end
 -- Returns found, out: out unchanged when the key is missing or map is nil.
 function M.resource_map_get(map, qe, out)
   local key = fixed.p8_fixed_flr_int(qe)
-  local i = 0
-  while map ~= nil and i < map.count do
+  local i = 1
+  while map ~= nil and i <= map.count do
     if map.entries[i].resource == key then
       out = map.entries[i].value
       return true, out
@@ -34,14 +34,15 @@ end
 
 function M.resource_map_set(map, qe, v)
   local key = fixed.p8_fixed_flr_int(qe)
-  for i = 0, map.count - 1 do
+  for i = 1, map.count do
     if map.entries[i].resource == key then
       map.entries[i].value = v
       return
     end
   end
-  map.entries[map.count] = { resource = key, value = v }
-  map.count = map.count + 1
+  local n = map.count + 1
+  map.entries[n] = { resource = key, value = v }
+  map.count = n
 end
 
 function M.economy_formulas_fill_resource_map(out, jm)

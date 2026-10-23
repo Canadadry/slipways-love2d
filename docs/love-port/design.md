@@ -831,7 +831,9 @@ production tables and their values, project records, icon tooltips, technologies
 placed items and tooltip rows, a planet's row signature, and the row, text and button image caches (cache slot `i`
 is image slot `FIRST + i - 1`, image slot handles staying 0-based) with their keys; so are the message box's
 buttons argument and articles, the menus' and panels' button lists, the score panel's readouts and the demo
-captions (`demo_overlay_find_caption` returns a position or `nil`); the other C arrays stay 0-based
+captions (`demo_overlay_find_caption` returns a position or `nil`); so are research's project table, project
+order and projects by name (`project_index_of` gives a position), the available-projects and
+available-technologies lists, a resource map's entries and a slipway's served planets; the other C arrays stay 0-based
 until the rest of the 1-based step. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
 `%` is `cint.mod` (the dividend's sign); `math.floor` and Lua `%` appear only
 where the C floors. `(unsigned char)x` is `bit.band(x, 0xFF)`; a `bit`

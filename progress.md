@@ -67,6 +67,6 @@
   - [x] Chunk 5 — data rows
   - [x] Chunk 6 — layout values and image caches
   - [x] Chunk 7 — message box, menus and panels
-  - [ ] Chunk 8 — research, tech gate, economy and slipway lists
+  - [x] Chunk 8 — research, tech gate, economy and slipway lists
   - [ ] Chunk 9 — input and pad
   - [ ] Chunk 10 — save, docs and full check
