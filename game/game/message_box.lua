@@ -1,21 +1,3 @@
--- Copy of src/game/message_box.h then src/game/message_box.c.
---
--- Shapes, with the C field names:
---   message_box_t: one table holding the entity header and { archetype, duration_scale,
---     keep_open, articles, articles_count }, articles an array of message_box_article_t tables, each created
---     when it is added.
---   message_box_article_t: { kind, draw_function, as = { scalars, layout, row_of } }, the union's
---     three members kept apart (only the member of `kind` is written or read):
---     scalars = { count, arguments, text }, arguments an array of count { kind, number };
---     layout = { row, pos, align }, row a
---     layout_row_t filled in place by layout_row_init, pos nil when absent; row_of a Lua function
---     or nil.
---   toast_t: one table holding the entity header and { follow, text, archetype, fade, color }.
---   message_box_keys_t: { duration_scale, keep_open }, duration_scale nil when not given.
---   toast_keys_t, open_box_frame_t: the fields of toast_keys_zero and open_box_frame_zero, plus a toast's text and
---     pos and a frame's description, fixed_pos, back_color, row_step and pos, each nil when not given.
---   Char arrays are Lua strings, "" at zero.
---
 -- Include cycle: game.scroll, game.ui and game.ui_button are required at call time.
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
@@ -50,7 +32,8 @@ local function vec_copy(v)
   return vec.vec_make(v.x, v.y)
 end
 
--- message_box_article_t at its C zero values.
+-- The three members of `as` are kept apart: only the member of `kind` is written or read. The layout
+-- row is filled in place by layout_row_init; layout.pos and row_of are nil when absent.
 local function article_zero()
   local row = {}
 
@@ -255,7 +238,7 @@ function M.message_box_add_layout_row(self, keys, pos, align)
   article.as.layout.align = align
 end
 
--- The row is read through `row_of` at each draw (nil draws nothing): it must live in static storage.
+-- The row is read through `row_of` at each draw (nil draws nothing): the box never copies it.
 function M.message_box_add_shared_row(self, row_of)
   local article = message_box_next_article(self)
 
@@ -447,7 +430,7 @@ function M.open_box_frame_set_description(frame, description)
   frame.description = description
 end
 
--- button_keys_t b = *row: every field of row, one level deep (nested tables shared, as
+-- A copy of every field of row, one level deep (nested tables shared, as
 -- button_create and button_construct only read the keys).
 local function button_keys_copy(row)
   local b = {}
@@ -539,7 +522,7 @@ function M.message_box_open_box(frame, buttons, button_count)
   end
 end
 
--- Lua only: toast_keys_t keys = {0}, a new table.
+-- A new table each call; text and pos are nil when not given.
 function M.toast_keys_zero()
   return {
     source = nil,
@@ -547,7 +530,7 @@ function M.toast_keys_zero()
   }
 end
 
--- Lua only: open_box_frame_t frame = {0}, a new table.
+-- A new table each call; description, fixed_pos, back_color, row_step and pos are nil when not given.
 function M.open_box_frame_zero()
   return {
     clear_ephemerals_after = false,

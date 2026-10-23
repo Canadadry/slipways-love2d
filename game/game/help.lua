@@ -1,7 +1,3 @@
--- Copy of src/game/help.h then src/game/help.c.
---
--- The help screen is a probe_t: one table with its entity header. button_fn_t is a Lua function, NULL is nil.
---
 -- game.probe is required at load: help_screen_class_def holds its targeting and particle methods by identity.
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")

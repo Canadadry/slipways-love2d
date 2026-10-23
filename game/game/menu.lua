@@ -1,7 +1,3 @@
--- Copy of src/game/menu.h then src/game/menu.c.
---
--- pause_menu_open_box_t is the entity header plus { fixed_pos, row_step, back_color }, each nil while the menu is
--- down.
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_registry = require("engine.entity_registry")
@@ -26,7 +22,6 @@ local function vec_copy(v)
   return vec.vec_make(v.x, v.y)
 end
 
--- Lua only: modal_backdrop_keys_t keys = {0}, a new table.
 local function modal_backdrop_keys_zero()
   return { on_click = nil }
 end
@@ -46,6 +41,7 @@ M.pause_menu_open_box_class_def = {
   skip_draw_off_screen = false,
 }
 
+-- An entity header plus { fixed_pos, row_step, back_color }, each nil while the menu is down.
 M.g_pause_menu_open_box = {}
 entity_class.entity_init_header(M.g_pause_menu_open_box, M.pause_menu_open_box_class_def)
 

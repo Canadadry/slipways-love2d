@@ -1,8 +1,3 @@
--- Copy of src/game/mouse.h then src/game/mouse.c.
---
--- Shapes, with the C field names:
---   mouse_t: one table holding the entity header and archetype (the
---     game_data mouse_archetype table).
 local bit_module = require("bit")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")

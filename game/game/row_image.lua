@@ -1,11 +1,3 @@
--- Copy of src/game/row_image.h then src/game/row_image.c.
---
--- Shapes, with the C field names:
---   row_image_key_t: { mem, hash, count, extent, entries }, entries 1-based uint32_t, up to count only.
---   row_image_slot_t: { key, stamp }.
--- The hash mixes in 0 where the C mixes in the p8_vram_t address: same_key also compares mem by
--- identity and every entry, so two keys are equal in Lua exactly when they are in C.
--- The unsigned long g_stamp is a Lua number: exact to 2^53, the C's wrap is unreachable.
 local bit = require("bit")
 local vec = require("engine.vec")
 local hud = require("game.hud")
@@ -32,7 +24,7 @@ local function mul_u32(a, b)
   return u32(lo * b + u32(hi * b) % 65536 * 65536)
 end
 
--- row_image_key_t key, every field at its C zero.
+-- A key's entries are numbers in 0 .. 2^32 - 1, read up to count only.
 local function key_zero()
   return { mem = nil, hash = 0, count = 0, extent = 0, entries = {} }
 end
@@ -103,6 +95,7 @@ local function key_of(row, mem, key)
   if key.count == 0 then
     return false
   end
+  -- The hash mixes in 0 for mem: same_key compares mem by identity, and every entry.
   hash = u32(bit.bxor(2166136261, 0))
   for i = 1, key.count do
     hash = mul_u32(u32(bit.bxor(hash, key.entries[i])), 16777619)

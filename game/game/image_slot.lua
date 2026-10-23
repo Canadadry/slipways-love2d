@@ -1,4 +1,3 @@
--- Copy of src/game/image_slot.h, which has no .c: its enum as fields.
 local game_data = require("game.game_data")
 local image = require("p8.image")
 

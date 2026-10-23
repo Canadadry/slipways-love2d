@@ -1,7 +1,4 @@
--- Copy of src/game/mouse_button.h then src/game/mouse_button.c.
---
--- Shapes, with the C field names:
---   mouse_button_t: { held, pressed, released }, each a boolean; held nil until the first update.
+-- A button: { held, pressed, released }, each a boolean; held nil until the first update.
 local M = {}
 
 function M.mouse_button_update(button, down)

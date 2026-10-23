@@ -1,4 +1,3 @@
--- Copy of src/game/loading_screen.h then src/game/loading_screen.c.
 local bit = require("bit")
 local gfx_module = require("p8.gfx")
 local vram = require("p8.vram")
@@ -20,7 +19,6 @@ local TEXT_WIDTH = (LOADING_TEXT_LENGTH - 1) * gfx_module.P8_FONT_CELL_WIDTH -
 local TEXT_X = vram.P8_SCREEN_WIDTH - MARGIN - TEXT_WIDTH
 local TEXT_Y = vram.P8_SCREEN_HEIGHT - MARGIN - gfx_module.P8_FONT_GLYPH_HEIGHT
 
--- Lua only: a by-value p8_graphics_t.
 local function graphics_copy(gfx)
   return {
     camera_x = gfx.camera_x,

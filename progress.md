@@ -76,5 +76,5 @@
   - [x] Chunk 3 — data tables and generation
   - [x] Chunk 4 — planets, slipways, wormholes, trade
   - [x] Chunk 5 — economy, research, probes
-  - [ ] Chunk 6 — UI
+  - [x] Chunk 6 — UI
   - [ ] Chunk 7 — input, cart, save, pad, docs, full check

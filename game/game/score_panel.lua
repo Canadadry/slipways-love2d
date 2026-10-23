@@ -1,12 +1,3 @@
--- Copy of src/game/score_panel.h then src/game/score_panel.c.
---
--- Shapes, with the C field names:
---   score_panel_t: the entity header plus { archetype, last_box, is_shown, curtain }, is_shown and curtain nil
---     until first set.
---   score_panel_layout_block_t: the entity header plus { fixed_pos, row_step, back_color }.
---   score_panel_readouts_t: { row, items, subs, sub_items, texts }; score_panel_year_banner_t: { row, items,
---     second, second_items, year, keep_open }. Every array runs from 1. Char arrays Lua strings ("" at zero).
---
 -- score_panel_new_year_method, score_panel_update_method, score_panel_display_init and
 -- score_panel_display_shutdown are defined in game.score_panel_display, required at load: the class holds
 -- the two methods by identity.
@@ -31,7 +22,7 @@ local M = {}
 local data_item = map_tables.map_tables_make_data_item
 local data_row = map_tables.map_tables_make_data_row
 
--- data_item_t assigned into storage: every field of src written into dst.
+-- Every field of the data item src written into dst.
 local function data_item_assign(dst, src)
   dst.text = src.text
   dst.number = src.number
@@ -290,6 +281,7 @@ M.score_panel_class_def = {
   skip_draw_off_screen = false,
 }
 
+-- is_shown and curtain stay nil until first set.
 local function score_panel_create()
   local self
 

@@ -1,12 +1,3 @@
--- Copy of src/game/button_image.h then src/game/button_image.c.
---
--- Shapes, with the C field names:
---   button_image_key_t: { words }, words 1-based, four 32-bit words. The caller owns its
---     meaning: two equal keys must mean the same pixels.
---   button_image_slot_t: { key, used, stamp, frame }.
---   button_image_pool_t: { first, count }: slots [first, first + count) of g_slots, image slot
---     IMAGE_SLOT_BUTTON_ICON_FIRST + index - 1.
--- The unsigned long counters are Lua numbers: exact to 2^53, the C's wrap is unreachable.
 local bit = require("bit")
 local image = require("p8.image")
 local image_slot = require("game.image_slot")
@@ -37,7 +28,7 @@ function M.button_image_frame_begin()
   g_frame = g_frame + 1
 end
 
--- memcmp over uint32_t words: bit.tobit on both sides, whatever sign a caller's word carries.
+-- Compares the four words through bit.tobit on both sides, whatever sign a caller's word carries.
 local function same_key(a, b)
   for k = 1, 4 do
     if bit.tobit(a.words[k]) ~= bit.tobit(b.words[k]) then
@@ -63,6 +54,7 @@ local function slot_for(pool, key)
   return oldest, false
 end
 
+-- key is { words }, four 32-bit words; the caller owns its meaning: two equal keys must mean the same pixels.
 -- Draws key's image, w x h, top-left at world (x, y) under gfx's camera, built through draw on the
 -- first frame it is seen (image pixel (0, 0) is the image's top-left; gfx's camera moves during the
 -- build and is restored). An image at most BUTTON_IMAGE_ICON_WIDTH wide never evicts a wider one,

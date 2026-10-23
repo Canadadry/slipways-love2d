@@ -1,4 +1,3 @@
--- Copy of src/game/demo_overlay.h then src/game/demo_overlay.c.
 local cint = require("p8.cint")
 local gfx_module = require("p8.gfx")
 local vram = require("p8.vram")
@@ -59,7 +58,6 @@ local function draw_caption(gfx, mem, text)
   print_centred(gfx, mem, second, BAND_TOP + PADDING + gfx_module.P8_FONT_GLYPH_HEIGHT + LINE_GAP)
 end
 
--- Lua only: a by-value p8_graphics_t.
 local function graphics_copy(gfx)
   return {
     camera_x = gfx.camera_x,

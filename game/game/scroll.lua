@@ -1,9 +1,3 @@
--- Copy of src/game/scroll.h then src/game/scroll.c.
---
--- Shapes, with the C field names:
---   camera_t: one table holding the entity header and archetype (the game_data camera_archetype
---     table).
---
 -- Include cycle: game.galaxy is required at call time (camera_pad_bound reads its map constants).
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")

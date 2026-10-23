@@ -1,18 +1,4 @@
--- Copy of src/game/layout.h then src/game/layout.c.
---
--- Shapes, with the C field names:
---   layout_row_item_t: { kind, text, color, sprite_id, sprite_palette_block, offset }.
---   layout_row_scalar_t: { kind, value }.
---   layout_row_tuple_t: { count, scalars }, scalars 1-based, up to count only.
---   layout_row_cell_t: { kind, as }, the union as a table holding the member the kind uses
---     (fixed, text or tuple).
---   layout_row_keys_t: { items, count, color, background_is_bool, background, score, pos },
---     items 1-based cells, up to count only; color, background, score and pos nil when
---     absent, background_is_bool read only with a background.
---   layout_row_t: one table holding the entity header and { color, background,
---     background_is_bool, score, placed_items, placed_items_count, width, serial }, placed_items
---     1-based, the same three nil when absent.
---   tooltip_t: one table holding the entity header and { rows, rows_count }, rows 1-based.
+-- A tuple's scalars and a row's items are read up to count only.
 -- Scalars, tuples and cells are by value and never changed after their constructor: passing or
 -- storing one shares the table.
 local bit = require("bit")
@@ -45,7 +31,7 @@ M.LAYOUT_ROW_SCALAR_FIXED = 1
 local g_layout_up = false
 local g_row_serial = 0
 
--- strlen: a NUL byte ends the text.
+-- A NUL byte ends the text.
 local function c_strlen(s)
   return (string.find(s, "\0", 1, true) or #s + 1) - 1
 end
@@ -85,7 +71,6 @@ function M.layout_row_cell_tuple(tuple)
   return cell
 end
 
--- layout_row_tuple_t tuple = {0}.
 local function tuple_zero()
   return { count = 0, scalars = {} }
 end
@@ -102,7 +87,7 @@ local function tuple_scalar_of_item(item)
   return M.layout_row_scalar_fixed(fixed.p8_fixed_from_int(item.number))
 end
 
--- Copies the row's scalars: the cell keeps nothing of `row`. NULL gives a nothing cell.
+-- Copies the row's scalars: the cell keeps nothing of `row`. nil gives a nothing cell.
 function M.layout_row_cell_row(row)
   local tuple = tuple_zero()
 
@@ -147,7 +132,7 @@ local function row_copy_text(s)
   return s:sub(1, c_strlen(s))
 end
 
--- memset(out_item, 0, sizeof *out_item) on the caller's table.
+-- Resets every field of the caller's item in place.
 local function item_zero(item)
   item.kind = M.LAYOUT_ROW_ITEM_NONE
   item.text = nil
@@ -316,7 +301,6 @@ function M.layout_row_draw_at_default(gfx, mem, self, p)
   M.layout_row_draw_at(gfx, mem, self, p, fixed.p8_fixed_from_int(0))
 end
 
--- layout_row_keys_t keys = {0}.
 local function keys_zero()
   return {
     items = {},
@@ -412,7 +396,7 @@ local function row_struct_init(self)
 end
 
 local function row_fill(self, keys)
-  -- uint32_t: wraps to 0 after 2^32 - 1, then skips to 1.
+  -- Wraps to 0 after 2^32 - 1, then skips to 1.
   g_row_serial = (g_row_serial + 1) % 4294967296
   if g_row_serial == 0 then
     g_row_serial = 1
@@ -442,6 +426,7 @@ local function row_create(keys)
   return self
 end
 
+-- color, background and score stay nil when the keys lack them.
 function M.layout_row_init(self, keys)
   row_struct_init(self)
   row_fill(self, keys)
@@ -528,7 +513,8 @@ function M.tooltip_new(row)
   return tooltip_create(row)
 end
 
--- Lua only: a new layout_row_keys_t at its C zero, for the keys other modules hold inline.
+-- A new table each call. color, background, score and pos stay nil when absent; background_is_bool
+-- is read only with a background.
 function M.layout_row_keys_zero()
   return keys_zero()
 end

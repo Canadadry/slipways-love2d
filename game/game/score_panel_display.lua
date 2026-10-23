@@ -1,8 +1,5 @@
--- Copy of src/game/score_panel_display.h then src/game/score_panel_display.c.
---
 -- Also defines score_panel_new_year_method, score_panel_update_method, score_panel_display_init and
--- score_panel_display_shutdown, declared in score_panel.h. message_box_keys_t is
--- { duration_scale, keep_open }, duration_scale nil when not given.
+-- score_panel_display_shutdown for game.score_panel.
 --
 -- Include cycle: game.score_panel requires this module at load (its class holds the two methods), so
 -- game.score_panel is required here at call time.
@@ -24,7 +21,7 @@ local M = {}
 local data_item = map_tables.map_tables_make_data_item
 local data_row = map_tables.map_tables_make_data_row
 
--- data_item_t assigned into storage: every field of src written into dst.
+-- Every field of the data item src written into dst.
 local function data_item_assign(dst, src)
   dst.text = src.text
   dst.number = src.number
@@ -247,7 +244,7 @@ function M.score_panel_update(self)
     local is_shown = self ~= nil and (self.is_shown or false)
     local last_box_equals_shown_message_box = false
 
-    -- Without the NULL test, NULL == NULL would fire on the first eligible tick.
+    -- Without the nil test, nil == nil would fire on the first eligible tick.
     if self ~= nil then
       local last_box = score_panel.score_panel_last_box(self)
       last_box_equals_shown_message_box = last_box ~= nil and message_box.shown_message_box() == last_box

@@ -1,4 +1,3 @@
--- Copy of src/game/hud.h then src/game/hud.c.
 -- palette_blocks[block][colour] is keyed by the cart's block number and a colour, both from 0.
 local bit = require("bit")
 local fixed = require("p8.fixed")
@@ -82,7 +81,7 @@ function M.hud_draw_help_frame(gfx, mem, x1, y1, x2)
   gfx_module.p8_spr(gfx, mem, 71, galaxy_menu_button2 - 2, top_pixel, 1, 2)
 end
 
--- strlen: a NUL byte ends the text.
+-- A NUL byte ends the text.
 local function aligned_x(t, x, a)
   local strlen = (string.find(t, "\0", 1, true) or #t + 1) - 1
   return to_int(x) - to_int(fixed.p8_fixed_mul(fixed.p8_fixed_mul(a, fixed.p8_fixed_from_int(4)),

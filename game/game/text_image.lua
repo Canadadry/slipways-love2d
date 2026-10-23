@@ -1,9 +1,3 @@
--- Copy of src/game/text_image.h then src/game/text_image.c.
---
--- Shapes, with the C field names:
---   text_image_key_t: { col, length, text }, text a Lua string of length bytes.
---   text_image_slot_t: { key, stamp, frame }.
--- The unsigned long counters are Lua numbers: exact to 2^53, the C's wrap is unreachable.
 local gfx = require("p8.gfx")
 local image = require("p8.image")
 local image_slot = require("game.image_slot")
@@ -25,7 +19,7 @@ local function image_width(length)
   return length * gfx.P8_FONT_CELL_WIDTH + OUTLINE
 end
 
--- strlen: a NUL byte ends the text.
+-- A NUL byte ends the text.
 local function text_length(str)
   return (string.find(str, "\0", 1, true) or #str + 1) - 1
 end

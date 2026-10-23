@@ -1,13 +1,3 @@
--- Copy of src/game/ui.h then src/game/ui.c.
---
--- Shapes, with the C field names:
---   ui_t: one table holding the entity header and its own fields; mouse_world and
---     hovered_by_layer nil until the first ui_update and hover pass write them.
---   ui_hovered_by_layer_t: { layer_count, written, layers }, layers keyed by floored layer
---     0 .. UI_HOVER_LAYERS - 1, each a plain 1-based array of ids created by the first hover pass.
---   ephemerals: a plain 1-based array of ids.
---   mouse_pos_t: { world, screen, has }; down_t: { stop, held }.
---
 -- Include cycle: game.scroll, game.planet, game.planet_family, game.probe, game.slipway and
 -- game.wormhole are required at call time.
 local bit = require("bit")
@@ -58,6 +48,7 @@ function M.ui_panel_box()
   return nil
 end
 
+-- An array of ids.
 function M.ui_ephemerals_new()
   return {}
 end
@@ -137,6 +128,7 @@ M.ui_class_def = {
   skip_draw_off_screen = false,
 }
 
+-- mouse_world and hovered_by_layer stay nil until the first ui_update and hover pass write them.
 local function ui_create()
   local self
 

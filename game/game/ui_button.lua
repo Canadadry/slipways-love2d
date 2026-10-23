@@ -1,14 +1,3 @@
--- Copy of src/game/ui_button.h then src/game/ui_button.c.
---
--- Shapes, with the C field names:
---   button_t: one table holding the entity header and its own fields; slide_target, trade,
---     type_bias and project_cost nil when not given.
---   modal_backdrop_t: one table holding the entity header and { archetype, on_click }.
---   button_keys_t: the fields of button_keys_zero, plus layer, side_tooltip_row (layout row
---     keys), tooltip_row (a data_row_t table), pos, slide_target, trade, type_bias and
---     project_cost, each nil when not given.
---   button_look_t: { body, top }.
---
 -- Include cycle: game.ui is required at call time (button_draw).
 local bit = require("bit")
 local dispatch_context = require("engine.dispatch_context")
@@ -84,6 +73,7 @@ M.button_class_def = {
   skip_draw_off_screen = false,
 }
 
+-- slide_target, trade, type_bias and project_cost stay nil when the keys do not give them.
 local function button_create(keys)
   local self = {}
 
@@ -162,7 +152,7 @@ function M.button_new(keys)
   return button_create(keys)
 end
 
--- static const button_keys_t none: built once by button_keys_zero at the end of the file, never written.
+-- The keys used when none are given: built once by button_keys_zero at the end of the file, never written.
 local none
 
 function M.button_construct(self, keys)
@@ -455,7 +445,8 @@ function M.modal_backdrop_left_press(self)
   return out
 end
 
--- Lua only: the memset of a button_keys_t; writes every field but the optional ones at its C zero and returns keys.
+-- Writes every field of keys in place and returns keys; the optional ones (layer, side_tooltip_row,
+-- tooltip_row, pos, slide_target, trade, type_bias, project_cost) are left as they are, nil when not given.
 function M.button_keys_zero(keys)
   keys.layout_row_keys = layout.layout_row_keys_zero()
   keys.on_click = nil
@@ -467,7 +458,6 @@ function M.button_keys_zero(keys)
   return keys
 end
 
--- Lua only: button_t b = {0}, a new table.
 function M.button_zero()
   local b = {}
   entity_class.entity_init_header(b, nil)
