@@ -78,3 +78,18 @@
   - [x] Chunk 5 — economy, research, probes
   - [x] Chunk 6 — UI
   - [x] Chunk 7 — input, cart, save, pad, docs, full check
+- [ ] Step 3.4 chunks
+  - [x] Chunk 1 — the check tool and lua-names target
+  - [ ] Chunk 2 — runtime p8/
+  - [ ] Chunk 3 — LÖVE glue and devtools
+  - [ ] Chunk 4 — engine
+  - [ ] Chunk 5 — data and generation
+  - [ ] Chunk 6 — layout and images
+  - [ ] Chunk 7 — planets
+  - [ ] Chunk 8 — slipways, wormholes, trade, probes
+  - [ ] Chunk 9 — economy and research
+  - [ ] Chunk 10 — UI core
+  - [ ] Chunk 11 — boxes and panels
+  - [ ] Chunk 12 — input and cart
+  - [ ] Chunk 13 — save
+  - [ ] Chunk 14 — pad layer, docs, full check

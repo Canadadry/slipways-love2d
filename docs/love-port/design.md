@@ -116,6 +116,12 @@ fake follows these rules, and every step that adds one measures it.
    target outside `make test-all`, and this file then says that `make test`
    no longer runs every capture.
 
+`make lua-names` (`tools/lua_names.lua`, after its fixture self-test) fails
+when a `game/` export repeats its module's prefix, or when a Lua file of
+`game/`, `tests/lua/` or the `love_runtime` fixtures reads a field a
+required module does not have, which a missed rename leaves silent; it
+loads every module, so it stays outside `make test` and `make test-all`.
+
 ### `make e2e`
 
 `make e2e` runs `tmp/fake_love <game dir> <replay> <capture> <state>` on
