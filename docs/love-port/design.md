@@ -865,9 +865,10 @@ block. Byte counts, cell rounding, capacity tests and the `zone %s full`
 message are the C ones; address arithmetic stays as byte offsets nothing
 reads. `BUMP_ZONE_STORAGE` and `FLIP_ZONE_STORAGE` return a table standing
 for the cells. A `memcpy` of unknown type is `copy_block` (`allocator.lua`,
-every key) or `copy_value` (`value_list.lua`, one level deep). A zone-built
-`char *` is a Lua string: the function performs the C allocation for
-length + 1 bytes and returns the string; `strcmp(a, b) == 0` is `a == b`.
+every key) or `copy_value` (`value_list.lua`, one level deep). The four list
+kinds take no zone: a list that grows gets a fresh items table holding a copy
+of its items, and copies of a list header share that table. A `char *` is a
+Lua string; `strcmp(a, b) == 0` is `a == b`.
 
 **Truth values.** A C int predicate returns 1 or 0, never a Lua boolean;
 `if (x)` on an int is `if x ~= 0`, `!x` is `x == 0` as a test and

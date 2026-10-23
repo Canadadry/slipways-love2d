@@ -1,40 +1,42 @@
 -- Copy of src/engine/entity_list.h then src/engine/entity_list.c.
--- An entity_list_t is { items, count, capacity, zone }, items a block indexed
+-- An entity_list_t is { items, count, capacity }, items a block indexed
 -- from 0 holding entity tables; an entity_list_iter_t is
 -- { entity_list, index, last_count }.
-local allocator = require("engine.allocator")
 
 local M = {}
 
-M.SIZEOF = {
-  ["entity_t *"] = 8,
-}
-local SIZEOF = M.SIZEOF
-
 local ENTITY_LIST_INITIAL_CAPACITY = 4
 
-function M.entity_list_init(entity_list, zone)
+-- Lua only: a list that grows gets a fresh items table holding a copy, so a
+-- header copied by value keeps its own items until its next add.
+local function grown_items(items, capacity)
+  local copy = {}
+  if capacity > 0 then
+    for key, value in pairs(items) do
+      copy[key] = value
+    end
+  end
+  return copy
+end
+
+function M.entity_list_init(entity_list)
   entity_list.items = nil
   entity_list.count = 0
   entity_list.capacity = 0
-  entity_list.zone = zone
 end
 
-function M.entity_list_init_reserve(entity_list, zone, capacity)
+function M.entity_list_init_reserve(entity_list, capacity)
   assert(capacity >= 0)
-  M.entity_list_init(entity_list, zone)
+  M.entity_list_init(entity_list)
   if capacity == 0 then
     return
   end
-  entity_list.items = allocator.allocator_alloc(zone, capacity * SIZEOF["entity_t *"])
+  entity_list.items = {}
   entity_list.capacity = capacity
 end
 
 function M.entity_list_free(entity_list)
   assert(entity_list ~= nil, "entity_list primitive called on a NULL container")
-  if entity_list.items ~= nil then
-    allocator.allocator_release(entity_list.zone, entity_list.items)
-  end
   entity_list.items = nil
   entity_list.count = 0
   entity_list.capacity = 0
@@ -47,8 +49,7 @@ end
 
 local function entity_list_grow(entity_list)
   local new_capacity = (entity_list.capacity == 0) and ENTITY_LIST_INITIAL_CAPACITY or entity_list.capacity * 2
-  entity_list.items = allocator.allocator_grow(entity_list.zone, entity_list.items,
-    entity_list.capacity * SIZEOF["entity_t *"], new_capacity * SIZEOF["entity_t *"])
+  entity_list.items = grown_items(entity_list.items, entity_list.capacity)
   entity_list.capacity = new_capacity
 end
 
@@ -87,10 +88,10 @@ function M.entity_list_has(entity_list, e)
   return 0
 end
 
-function M.entity_list_concat(zone, a, b)
+function M.entity_list_concat(a, b)
   local out = {}
   assert(a ~= nil and b ~= nil, "entity_list_concat: a NULL list is not tolerated, unlike entity_list_has")
-  M.entity_list_init(out, zone)
+  M.entity_list_init(out)
   for i = 0, a.count - 1 do
     M.entity_list_add(out, a.items[i])
   end
@@ -100,9 +101,9 @@ function M.entity_list_concat(zone, a, b)
   return out
 end
 
-function M.entity_list_filter(zone, qk, ow, ctx)
+function M.entity_list_filter(qk, ow, ctx)
   local f = {}
-  M.entity_list_init(f, zone)
+  M.entity_list_init(f)
   if qk == nil then
     return f
   end

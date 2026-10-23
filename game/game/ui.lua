@@ -63,12 +63,12 @@ end
 
 -- (entity_id_list_t){0}.
 local function entity_id_list_zero()
-  return { items = nil, count = 0, capacity = 0, zone = nil }
+  return { items = nil, count = 0, capacity = 0 }
 end
 
 -- An entity_id_list_t assigned by value: the C struct copy shares `items`.
 local function entity_id_list_copy(list)
-  return { items = list.items, count = list.count, capacity = list.capacity, zone = list.zone }
+  return { items = list.items, count = list.count, capacity = list.capacity }
 end
 
 local function zero_vec()
@@ -94,7 +94,7 @@ end
 function M.ui_ephemerals_new()
   local list = entity_id_list_zero()
 
-  entity_id_list.entity_id_list_init_reserve(list, nil, M.UI_EPHEMERALS_RESERVE)
+  entity_id_list.entity_id_list_init_reserve(list, M.UI_EPHEMERALS_RESERVE)
   return list
 end
 
@@ -443,7 +443,7 @@ function M.ui_update_hover(self)
         assert(fa >= 0 and fa < M.UI_HOVER_LAYERS,
           "ui_update_hover: a hovered entity's layer outside 0..15, the layers ui_send_to_hovered walks -- stop, do not widen")
         if bit.band(self.hovered_by_layer.written, bit.lshift(1, fa)) == 0 then
-          entity_id_list.entity_id_list_init(self.hovered_by_layer.layers[fa], nil)
+          entity_id_list.entity_id_list_init(self.hovered_by_layer.layers[fa])
           self.hovered_by_layer.written = bit.band(bit.bor(self.hovered_by_layer.written, bit.lshift(1, fa)), 0xFFFF)
         end
         entity_id_list.entity_id_list_add(self.hovered_by_layer.layers[fa], entity_id.entity_id_link(e))

@@ -3,14 +3,8 @@
 -- and leaves it unchanged.
 local fixed = require("p8.fixed")
 local vec = require("engine.vec")
-local allocator = require("engine.allocator")
 
 local M = {}
-
-M.SIZEOF = {
-  box_t = 16,
-}
-local SIZEOF = M.SIZEOF
 
 M.SIDE_ON_LINE = 0
 M.SIDE_POSITIVE = 1
@@ -67,13 +61,8 @@ function M.geom_near_segment(a, b, c, fh)
   return (l > lo and l < hi and distance_squared < fh) and 1 or 0
 end
 
-function M.box_make(zone, xl, yt, xr, yb)
-  local box = allocator.allocator_alloc(zone, SIZEOF.box_t)
-  box.left = xl
-  box.top = yt
-  box.right = xr
-  box.bottom = yb
-  return box
+function M.box_make(xl, yt, xr, yb)
+  return { left = xl, top = yt, right = xr, bottom = yb }
 end
 
 return M

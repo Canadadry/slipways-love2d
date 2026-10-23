@@ -75,7 +75,7 @@ function M.score_panel_new_year(year)
     message = item.row
   end
 
-  year_str = str.p8_tostr_fixed(nil, year)
+  year_str = str.p8_tostr_fixed(year)
   assert(#"year " + #year_str <= score_panel.SCORE_PANEL_TEXT_CAP,
     "score_panel_new_year: a year is at most a 5-digit integer")
   year_banner.year = "year " .. year_str
@@ -132,19 +132,19 @@ end
 
 local function score_panel_final_score_text(s, i)
   if i == 1 then
-    return str.p8_tostr_fixed(nil, s.development)
+    return str.p8_tostr_fixed(s.development)
   elseif i == 2 then
-    return str.p8_tostr_fixed(nil, s.population)
+    return str.p8_tostr_fixed(s.population)
   elseif i == 3 then
-    return str.p8_tostr_fixed(nil, s.technology)
+    return str.p8_tostr_fixed(s.technology)
   elseif i == 4 then
     return economy_score.economy_score_percent_text(nil, s.happiness)
   elseif i == 5 then
-    return str.p8_tostr_fixed(nil, s.total)
+    return str.p8_tostr_fixed(s.total)
   elseif i == 6 then
-    return str.p8_tostr_fixed(nil, s.tier)
+    return str.p8_tostr_fixed(s.tier)
   end
-  return str.p8_concat2(nil, "", "")
+  return str.p8_concat2("", "")
 end
 
 local function score_panel_update_add_row(box, entry, context)
@@ -189,9 +189,9 @@ local function score_panel_update_add_row(box, entry, context)
     if dk ~= nil and dk.name ~= nil then
       px = dk.name
     end
-    piece1 = str.p8_concat2(nil, end_status_str, " (")
-    piece2 = str.p8_concat2(nil, piece1, px)
-    values[0] = data_item({ text = str.p8_concat2(nil, piece2, ")") })
+    piece1 = str.p8_concat2(end_status_str, " (")
+    piece2 = str.p8_concat2(piece1, px)
+    values[0] = data_item({ text = str.p8_concat2(piece2, ")") })
     has_value[0] = 1
   end
 

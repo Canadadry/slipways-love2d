@@ -320,7 +320,7 @@ function M.targeting_tooltip_show(gfx, mem, state, pb)
       end
     end
   elseif pb.has_cost ~= 0 then
-    display = str.p8_concat2(nil, str.p8_tostr_fixed(nil, pb.cost), "$")
+    display = str.p8_concat2(str.p8_tostr_fixed(pb.cost), "$")
   end
 
   if gfx ~= nil and mem ~= nil then

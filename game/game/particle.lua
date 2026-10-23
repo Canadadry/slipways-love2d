@@ -95,7 +95,7 @@ function M.emitter_init_in(self, reserve)
   assert(emitter ~= nil, "emitter_init_in: a class that carries no particle emitter has no particle list -- stop")
 
   M.emitter_release_particles(emitter)
-  pointer_list.pointer_list_init_reserve(emitter.particles, nil, reserve)
+  pointer_list.pointer_list_init_reserve(emitter.particles, reserve)
   emitter.has = bit.bor(emitter.has, M.EMITTER_HAS_PARTICLES)
 end
 
@@ -108,7 +108,6 @@ function M.emitter_release_particles(emitter)
   qy.items = nil
   qy.count = 0
   qy.capacity = 0
-  qy.zone = nil
   emitter.has = bit.band(bit.band(emitter.has, bit.bnot(M.EMITTER_HAS_PARTICLES)), 0xFFFF)
 end
 
@@ -244,7 +243,7 @@ function M.emitter_zero()
     matrix_xy = 0,
     matrix_yx = 0,
     matrix_yy = 0,
-    particles = { items = nil, count = 0, capacity = 0, zone = nil },
+    particles = { items = nil, count = 0, capacity = 0 },
   }
 end
 

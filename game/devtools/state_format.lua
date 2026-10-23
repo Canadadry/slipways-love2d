@@ -5,9 +5,7 @@
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
-local entity_id = require("engine.entity_id")
 local entity_registry = require("engine.entity_registry")
-local exit_queue = require("engine.exit_queue")
 local vec = require("engine.vec")
 local zone_sizes = require("engine.zone_sizes")
 local economy_score = require("game.economy_score")
@@ -285,12 +283,6 @@ local function write_zones(sink)
              draw_meter.p8_draw_meter_peak().build_bytes, GPU_BUILD_BUFFER_BYTES)
 end
 
-local function write_cap(sink, name, live, peak, limit)
-  local line = line_start(sink)
-  line_add(line, "cap %s %d %d %d", name, live, peak, limit)
-  line_end(line)
-end
-
 local function write_peak(sink, name, peak, limit)
   local line = line_start(sink)
   line_add(line, "cap %s - %d %d", name, peak, limit)
@@ -298,8 +290,6 @@ local function write_peak(sink, name, peak, limit)
 end
 
 local function write_caps(sink)
-  write_cap(sink, "exit_queue", exit_queue.exit_queue_count(), exit_queue.exit_queue_max(), exit_queue.EXIT_QUEUE_CAP)
-  write_cap(sink, "entity_table", entity_id.entity_id_live(), entity_id.entity_id_max(), zone_sizes.ENTITY_TABLE_CAP)
   write_peak(sink, "gpu_cluts", draw_meter.p8_draw_meter_peak().cluts, GPU_CLUT_SLOTS)
   write_peak(sink, "gpu_patterns", draw_meter.p8_draw_meter_peak().patterns, GPU_PATTERN_SLOTS)
 end

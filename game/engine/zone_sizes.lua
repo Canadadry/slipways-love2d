@@ -1,5 +1,6 @@
 -- Copy of src/engine/zone_sizes.h, which has no .c: its macros as fields.
 local zone = require("engine.zone")
+local entity_id = require("engine.entity_id")
 
 local M = {}
 
@@ -9,9 +10,8 @@ M.SIZEOF = {
 }
 local SIZEOF = M.SIZEOF
 
-M.ENTITY_TABLE_CAP = 512
 M.ENTITY_TABLE_BYTES =
-  zone.ZONE_BYTES(M.ENTITY_TABLE_CAP * (SIZEOF["void *"] + 2 * SIZEOF.uint16_t))
+  zone.ZONE_BYTES(entity_id.ENTITY_TABLE_CAP * (SIZEOF["void *"] + 2 * SIZEOF.uint16_t))
 
 M.FRAME_ZONE_BYTES = 20256
 M.UI_ZONE_BYTES = 208272

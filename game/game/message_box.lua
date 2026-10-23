@@ -539,7 +539,7 @@ function M.message_box_open_box(frame, buttons, button_count)
   local ui_button = require("game.ui_button")
   local box_pos
   local step_context = {}
-  local ephemerals = { items = nil, count = 0, capacity = 0, zone = nil }
+  local ephemerals = { items = nil, count = 0, capacity = 0 }
   local dispatcher
   local description_row = ui_button.button_keys_zero({})
   local has_dispatcher

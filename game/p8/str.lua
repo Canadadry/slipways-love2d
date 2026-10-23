@@ -1,11 +1,8 @@
 -- Copy of src/p8/str.h then src/p8/str.c.
--- Each function performs the C allocation in zone for the C byte count
--- (length plus the terminator) and returns a Lua string; the block is dropped.
-local allocator = require("engine.allocator")
 
 local M = {}
 
-function M.p8_sub(zone, s, i, j)
+function M.p8_sub(s, i, j)
   local len = #s
 
   if i < 1 then
@@ -16,16 +13,13 @@ function M.p8_sub(zone, s, i, j)
   end
 
   if j < i then
-    allocator.allocator_alloc(zone, 1)
     return ""
   end
 
-  local n = j - i + 1
-  allocator.allocator_alloc(zone, n + 1)
   return string.sub(s, i, j)
 end
 
-function M.p8_tostr_fixed(zone, x)
+function M.p8_tostr_fixed(x)
   local negative = (x < 0) and 1 or 0
   local mag = (negative ~= 0) and -x or x
   local ip = math.floor(mag / 0x10000)
@@ -51,15 +45,10 @@ function M.p8_tostr_fixed(zone, x)
     end
     buf = string.sub(buf, 1, last)
   end
-  local n = #buf
-  allocator.allocator_alloc(zone, n + 1)
   return buf
 end
 
-function M.p8_concat2(zone, a, b)
-  local la = #a
-  local lb = #b
-  allocator.allocator_alloc(zone, la + lb + 1)
+function M.p8_concat2(a, b)
   return a .. b
 end
 

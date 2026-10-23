@@ -153,8 +153,8 @@ function M.structure_icon_left_press(self)
     return out
   end
 
-  id_num_str = str.p8_tostr_fixed(nil, new_id)
-  planet.planet_keys_set_id(keys, str.p8_concat2(nil, "s", id_num_str))
+  id_num_str = str.p8_tostr_fixed(new_id)
+  planet.planet_keys_set_id(keys, str.p8_concat2("s", id_num_str))
   held = entity_kind.new_entity(keys)
   out.held = entity_id.entity_id_link(held)
   out.stop = (held ~= nil) and 1 or 0

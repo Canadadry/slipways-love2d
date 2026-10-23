@@ -89,7 +89,7 @@ local function tech_tree_screen_step(t, b)
   b.layout_row_keys.color = fixed.p8_fixed_from_int(6)
 
   research_cost_result = tech_gate.tech_gate_research_cost(t)
-  research_cost_str = str.p8_tostr_fixed(nil, research_cost_result)
+  research_cost_str = str.p8_tostr_fixed(research_cost_result)
 
   layout.layout_row_keys_append(b.side_tooltip_row, layout.layout_row_cell_row(pair))
   layout.layout_row_keys_append(b.side_tooltip_row, layout.layout_row_cell_string(research_cost_str))
@@ -172,8 +172,8 @@ function M.menu_show_tech_tree_screen()
   if invented_count > 0 then
     local extra = buttons[row_count]
     row_count = row_count + 1
-    local invented_text = str.p8_tostr_fixed(nil, fixed.p8_fixed_from_int(invented_count))
-    local label = str.p8_concat2(nil, invented_text, " invented")
+    local invented_text = str.p8_tostr_fixed(fixed.p8_fixed_from_int(invented_count))
+    local label = str.p8_concat2(invented_text, " invented")
     layout.layout_row_keys_append(extra.layout_row_keys, layout.layout_row_cell_fixed(fixed.p8_fixed_from_int(30)))
     layout.layout_row_keys_append(extra.layout_row_keys, layout.layout_row_cell_string(label))
     extra.layout_row_keys.has_color = 1
@@ -199,17 +199,17 @@ function M.menu_show_tech_tree_screen()
       tier_thresholds_era = fixed.p8_fixed_from_int(tier_thresholds)
     end
 
-    era_str = str.p8_tostr_fixed(nil, current_era)
-    diff1_str = str.p8_tostr_fixed(nil,
+    era_str = str.p8_tostr_fixed(current_era)
+    diff1_str = str.p8_tostr_fixed(
       fixed.p8_fixed_sub(fixed.p8_fixed_from_int(invented_count), next_threshold))
-    diff2_str = str.p8_tostr_fixed(nil, fixed.p8_fixed_sub(tier_thresholds_era, next_threshold))
+    diff2_str = str.p8_tostr_fixed(fixed.p8_fixed_sub(tier_thresholds_era, next_threshold))
 
-    tmp1 = str.p8_concat2(nil, "level ", era_str)
-    tmp2 = str.p8_concat2(nil, tmp1, " (")
-    tmp3 = str.p8_concat2(nil, tmp2, diff1_str)
-    tmp1 = str.p8_concat2(nil, tmp3, "/")
-    tmp2 = str.p8_concat2(nil, tmp1, diff2_str)
-    ep = str.p8_concat2(nil, tmp2, ")")
+    tmp1 = str.p8_concat2("level ", era_str)
+    tmp2 = str.p8_concat2(tmp1, " (")
+    tmp3 = str.p8_concat2(tmp2, diff1_str)
+    tmp1 = str.p8_concat2(tmp3, "/")
+    tmp2 = str.p8_concat2(tmp1, diff2_str)
+    ep = str.p8_concat2(tmp2, ")")
 
     message_box.open_box_frame_set_description(frame, ep)
     if bit.band(layout_block.has_, score_panel.SCORE_PANEL_LAYOUT_BLOCK_HAS_FIXED_POS) ~= 0 then

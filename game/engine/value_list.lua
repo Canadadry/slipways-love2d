@@ -1,11 +1,22 @@
 -- Copy of src/engine/value_list.h then src/engine/value_list.c.
--- A value_list_t is { items, element_size, count, capacity, zone }, items a
--- block indexed from 0 holding one value per element.
-local allocator = require("engine.allocator")
+-- A value_list_t is { items, count, capacity }, items a block indexed from 0
+-- holding one value per element.
 
 local M = {}
 
 local VALUE_LIST_INITIAL_CAPACITY = 4
+
+-- Lua only: a list that grows gets a fresh items table holding a copy, so a
+-- header copied by value keeps its own items until its next add.
+local function grown_items(items, capacity)
+  local copy = {}
+  if capacity > 0 then
+    for key, value in pairs(items) do
+      copy[key] = value
+    end
+  end
+  return copy
+end
 
 -- Lua only: the memcpy of one element of unknown type, a table copied one
 -- level deep. An inline sub-table is shared with the source: the caller copies
@@ -21,19 +32,13 @@ local function copy_value(value)
   return copy
 end
 
-function M.value_list_init(list, zone, element_size)
-  assert(element_size > 0)
+function M.value_list_init(list)
   list.items = nil
-  list.element_size = element_size
   list.count = 0
   list.capacity = 0
-  list.zone = zone
 end
 
 function M.value_list_free(list)
-  if list.items ~= nil then
-    allocator.allocator_release(list.zone, list.items)
-  end
   list.items = nil
   list.count = 0
   list.capacity = 0
@@ -43,15 +48,14 @@ function M.value_list_clear(list)
   list.count = 0
 end
 
--- A new list in zone holding a copy of every value of list.
-function M.value_list_copy(zone, list)
+-- A new list holding a copy of every value of list.
+function M.value_list_copy(list)
   local out = {}
-  M.value_list_init(out, zone, list.element_size)
+  M.value_list_init(out)
   if list.count == 0 then
     return out
   end
-  local bytes = list.count * list.element_size
-  out.items = allocator.allocator_alloc(zone, bytes)
+  out.items = {}
   for i = 0, list.count - 1 do
     out.items[i] = copy_value(list.items[i])
   end
@@ -62,8 +66,7 @@ end
 
 local function grow(list)
   local new_capacity = (list.capacity == 0) and VALUE_LIST_INITIAL_CAPACITY or list.capacity * 2
-  list.items = allocator.allocator_grow(list.zone, list.items, list.capacity * list.element_size,
-    new_capacity * list.element_size)
+  list.items = grown_items(list.items, list.capacity)
   list.capacity = new_capacity
 end
 

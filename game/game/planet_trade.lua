@@ -25,8 +25,8 @@ local M = {}
 -- trade_keys_t keys = {0}.
 local function trade_keys_zero()
   return {
-    planets = { items = nil, count = 0, capacity = 0, zone = nil },
-    slipways = { items = nil, count = 0, capacity = 0, zone = nil },
+    planets = { items = nil, count = 0, capacity = 0 },
+    slipways = { items = nil, count = 0, capacity = 0 },
     resource = 0,
     has_resource = 0,
     resource_is_bool = 0,
@@ -40,10 +40,8 @@ local function trade_route_list_value(list)
   return {
     values = {
       items = values.items,
-      element_size = values.element_size,
       count = values.count,
       capacity = values.capacity,
-      zone = values.zone,
     },
   }
 end
@@ -53,7 +51,6 @@ local function pointer_list_assign(dst, src)
   dst.items = src.items
   dst.count = src.count
   dst.capacity = src.capacity
-  dst.zone = src.zone
 end
 
 local function contains_trade(list, v)
@@ -162,9 +159,9 @@ function M.planet_offer_trade(self, trade_offer)
       local fresh = research.need_new(nil, bonus_resource)
       local prefix = {}
 
-      pointer_list.pointer_list_init(prefix, nil)
+      pointer_list.pointer_list_init(prefix)
       pointer_list.pointer_list_add(prefix, fresh)
-      pointer_list_assign(self.needs, collect.collect_concat_pointer_list(nil, prefix, needs))
+      pointer_list_assign(self.needs, collect.collect_concat_pointer_list(prefix, needs))
     end
     self.production_bonus = fixed.p8_fixed_from_int(1)
     self.has_production_bonus = 1
@@ -256,9 +253,9 @@ function M.planet_rebuild_trades(self)
     -- its own list headers.
     keys.planets = {}
     keys.slipways = {}
-    entity_id_list.entity_id_list_init(keys.planets, nil)
+    entity_id_list.entity_id_list_init(keys.planets)
     entity_id_list.entity_id_list_add(keys.planets, entity_id.entity_id_of(self))
-    entity_id_list.entity_id_list_init(keys.slipways, nil)
+    entity_id_list.entity_id_list_init(keys.slipways)
     entity_id_list.entity_id_list_add(keys.slipways, entity_id.entity_id_of(w))
 
     lw.route = trade.trade_new(keys)

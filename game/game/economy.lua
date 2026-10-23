@@ -73,7 +73,7 @@ local function economy_create()
   self.income = fixed.p8_fixed_from_int(0)
   self.research_points = fixed.p8_fixed_from_int(0)
   self.era = self.archetype.era
-  pointer_list.pointer_list_init(self.invented, nil)
+  pointer_list.pointer_list_init(self.invented)
   self.year_ticks = self.archetype.year_ticks
   self.year = self.archetype.year
 
@@ -250,7 +250,7 @@ function M.economy_spend(self, jt)
   if jt ~= fixed.p8_fixed_from_int(0) then
     local color = 0
     local text
-    text, color = collect.collect_format_signed(nil, fixed.p8_fixed_neg(jt), 10, "$", color)
+    text, color = collect.collect_format_signed(fixed.p8_fixed_neg(jt), 10, "$", color)
     message_box.toast_keys_set_text(keys, text)
     keys.color = fixed.p8_fixed_from_int(color)
     message_box.toast_new(keys)

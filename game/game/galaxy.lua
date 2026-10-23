@@ -38,8 +38,8 @@ function M.galaxy_populate(planet_count)
     until entity_geom.entity_geom_any_within(p_vec, entity_registry.entities_by_tag(entity_class.TAG_PLANET),
       threshold) == 0
 
-    id_num_str = str.p8_tostr_fixed(nil, planet_id)
-    planet.planet_keys_set_id(keys, str.p8_concat2(nil, "p", id_num_str))
+    id_num_str = str.p8_tostr_fixed(planet_id)
+    planet.planet_keys_set_id(keys, str.p8_concat2("p", id_num_str))
     keys.map_pos = p_vec
     keys.has_map_pos = 1
     keys.pos = vec.vec_mul(p_vec, fixed.p8_fixed_from_int(M.GALAXY_MAP_SCALE))

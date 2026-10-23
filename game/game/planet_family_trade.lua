@@ -45,10 +45,8 @@ local function trade_route_list_value(list)
   return {
     values = {
       items = values.items,
-      element_size = values.element_size,
       count = values.count,
       capacity = values.capacity,
-      zone = values.zone,
     },
   }
 end

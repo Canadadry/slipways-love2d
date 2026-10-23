@@ -64,7 +64,7 @@ local function research_project_tooltip_join(self)
       qe = research.need_resource(entry)
     end
     if qe.kind == trade.RESOURCE_FIXED then
-      num_str = str.p8_tostr_fixed(nil, qe.number)
+      num_str = str.p8_tostr_fixed(qe.number)
     else
       num_str = nil
     end
@@ -121,7 +121,7 @@ function M.research_project_tooltip(self)
   jb.inner.items = jb.inner_items
 
   if self.has_output ~= 0 then
-    local o_str = str.p8_tostr_fixed(nil, self.output)
+    local o_str = str.p8_tostr_fixed(self.output)
     local resource_names_o = map_tables.resource_names_lookup(o_str)
 
     if resource_names_o ~= nil then
@@ -239,7 +239,7 @@ local function planet_resource_row_keys(inputs, has_output, output, amount, used
   end
 
   if amount > fixed.p8_fixed_from_int(5) then
-    local amount_text = str.p8_tostr_fixed(nil, amount)
+    local amount_text = str.p8_tostr_fixed(amount)
 
     layout.layout_row_keys_append(keys, layout.layout_row_cell_string(amount_text))
     layout.layout_row_keys_append(keys, layout.layout_row_cell_row(tail_row))

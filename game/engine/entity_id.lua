@@ -2,20 +2,18 @@
 -- The table's block is the entities array (indexed 0 .. ENTITY_TABLE_CAP - 1,
 -- nil for a free slot); generations and free_indexes are 0-indexed tables
 -- standing for the C offsets into the same block, which nothing reads.
-local allocator = require("engine.allocator")
-local zone_sizes = require("engine.zone_sizes")
 local entity_id_type = require("engine.entity_id_type")
 local fatal = require("p8.fatal")
 
 local M = {}
 
-local ENTITY_TABLE_CAP = zone_sizes.ENTITY_TABLE_CAP
-local ENTITY_TABLE_BYTES = zone_sizes.ENTITY_TABLE_BYTES
+M.ENTITY_TABLE_CAP = 512
+
+local ENTITY_TABLE_CAP = M.ENTITY_TABLE_CAP
 local UINT16_MAX = 65535
 local ENTITY_ID_NONE = entity_id_type.ENTITY_ID_NONE
 
 local g_table = { entities = nil, generations = nil, free_indexes = nil, free_count = 0 }
-local g_max_live = 0
 -- The next table starts every slot above any generation handed out so far,
 -- so an old id never matches a new entity on a reused index.
 local g_highest_generation = 0
@@ -24,11 +22,9 @@ local function next_generation(generation)
   return (generation == UINT16_MAX) and 1 or generation + 1
 end
 
--- Takes the table's ENTITY_TABLE_BYTES block from zone; every id of the
--- previous table resolves to nil afterwards.
-function M.entity_id_table_init(zone)
-  local block = allocator.allocator_alloc(zone, ENTITY_TABLE_BYTES)
-  g_table.entities = block
+-- Every id of the previous table resolves to nil afterwards.
+function M.entity_id_table_init()
+  g_table.entities = {}
   g_table.generations = {}
   g_table.free_indexes = {}
   local epoch = next_generation(g_highest_generation)
@@ -62,9 +58,6 @@ function M.entity_id_take(e)
   local id = { index = index, generation = g_table.generations[index] }
   assert(id.generation ~= 0, "generation 0 is reserved for ENTITY_ID_NONE")
   e.id = { index = id.index, generation = id.generation }
-  if M.entity_id_live() > g_max_live then
-    g_max_live = M.entity_id_live()
-  end
   return id
 end
 
@@ -122,10 +115,6 @@ end
 
 function M.entity_id_live()
   return (g_table.entities == nil) and 0 or ENTITY_TABLE_CAP - g_table.free_count
-end
-
-function M.entity_id_max()
-  return g_max_live
 end
 
 return M

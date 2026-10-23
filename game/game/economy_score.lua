@@ -98,7 +98,7 @@ end
 
 function M.economy_score_colony_upkeep()
   local planet_list = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
-  local filtered = entity_list.entity_list_filter(nil, planet_list, colony_upkeep_predicate, nil)
+  local filtered = entity_list.entity_list_filter(planet_list, colony_upkeep_predicate, nil)
   local mu = filtered.count
   local result
   result = fixed.p8_fixed_mul(fixed.P8_FIXED_LIT(0x00002e14, 0.18), fixed.p8_fixed_from_int(mu * mu))
@@ -194,7 +194,7 @@ end
 
 -- Returns `value` printed with a trailing '%', allocated in `zone`.
 function M.economy_score_percent_text(zone, value)
-  local s = str.p8_tostr_fixed(zone, value)
+  local s = str.p8_tostr_fixed(value)
   local len = #s
   allocator.allocator_alloc(zone, len + 2)
   return s .. "%"

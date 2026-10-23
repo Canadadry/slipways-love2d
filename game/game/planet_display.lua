@@ -212,7 +212,7 @@ end
 local PLANET_INSPECTION_PANEL_ROWS = 4
 
 local function planet_dollar(s)
-  return str.p8_concat2(nil, s, "$")
+  return str.p8_concat2(s, "$")
 end
 
 local function planet_open_box_frame(self)
@@ -282,7 +282,7 @@ function M.planet_inspection_panel(self)
     local h_keys = buttons[0].side_tooltip_row
     local signed
 
-    signed, discard_color = collect.collect_format_signed(nil, self.net_income, 0, nil, discard_color)
+    signed, discard_color = collect.collect_format_signed(self.net_income, 0, nil, discard_color)
     layout.layout_row_keys_append(h_keys, layout.layout_row_cell_string(planet_dollar(signed)))
     h_keys.has_background = 1
     h_keys.background_is_bool = (self.net_income < fixed.p8_fixed_from_int(0)) and 1 or 0
@@ -292,10 +292,10 @@ function M.planet_inspection_panel(self)
   row_count = 1
 
   filter_context.received_needs = {}
-  pointer_list.pointer_list_init(filter_context.received_needs, nil)
+  pointer_list.pointer_list_init(filter_context.received_needs)
 
   needs = (bit.band(self.has_, planet.PLANET_HAS_NEEDS) ~= 0) and self.needs or nil
-  unmet_needs = collect.collect_filter_pointer_list(nil, needs, planet_inspection_panel_filter_step,
+  unmet_needs = collect.collect_filter_pointer_list(needs, planet_inspection_panel_filter_step,
     filter_context)
 
   if unmet_needs.count > 0 then
@@ -351,15 +351,15 @@ function M.planet_inspection_panel(self)
       local makes = kw.has_resource ~= 0 and game_data.int_seq_has_fixed(planet.planet_made_resources(), kw.resource) ~= 0
 
       if makes then
-        local amount_str = str.p8_tostr_fixed(nil, mu)
+        local amount_str = str.p8_tostr_fixed(mu)
         layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("makes:"))
         layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string(amount_str))
       else
         local by = (bit.band(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES) ~= 0) and self.outgoing_routes or nil
         local by_count = (by ~= nil) and trade.trade_route_list_count(by) or 0
-        local count_str = str.p8_tostr_fixed(nil, fixed.p8_fixed_from_int(by_count))
-        local amount_str = str.p8_tostr_fixed(nil, mu)
-        local combined = str.p8_concat2(nil, str.p8_concat2(nil, count_str, "/"),
+        local count_str = str.p8_tostr_fixed(fixed.p8_fixed_from_int(by_count))
+        local amount_str = str.p8_tostr_fixed(mu)
+        local combined = str.p8_concat2(str.p8_concat2(count_str, "/"),
           amount_str)
         layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("exports:"))
         layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string(combined))
@@ -436,7 +436,7 @@ local function planet_projects_panel_keys(self, b, keys)
   keys.side_tooltip_is_false = (od <= fixed.p8_fixed_from_int(0)) and 1 or 0
   if od > fixed.p8_fixed_from_int(0) then
     layout.layout_row_keys_append(keys.side_tooltip_row,
-      layout.layout_row_cell_string(planet_dollar(str.p8_tostr_fixed(nil, od))))
+      layout.layout_row_cell_string(planet_dollar(str.p8_tostr_fixed(od))))
     keys.side_tooltip_row.has_color = 1
     keys.side_tooltip_row.color = fixed.p8_fixed_from_int(13)
     keys.has_side_tooltip_row = 1

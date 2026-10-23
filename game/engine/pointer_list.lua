@@ -1,36 +1,38 @@
 -- Copy of src/engine/pointer_list.h then src/engine/pointer_list.c.
--- A pointer_list_t is { items, count, capacity, zone }, items a block indexed
+-- A pointer_list_t is { items, count, capacity }, items a block indexed
 -- from 0; a pointer_list_iter_t is { pointer_list, index, last_count }.
-local allocator = require("engine.allocator")
 
 local M = {}
 
-M.SIZEOF = {
-  ["void *"] = 8,
-}
-local SIZEOF = M.SIZEOF
-
 local POINTER_LIST_INITIAL_CAPACITY = 4
 
-function M.pointer_list_init(pointer_list, zone)
+-- Lua only: a list that grows gets a fresh items table holding a copy, so a
+-- header copied by value keeps its own items until its next add.
+local function grown_items(items, capacity)
+  local copy = {}
+  if capacity > 0 then
+    for key, value in pairs(items) do
+      copy[key] = value
+    end
+  end
+  return copy
+end
+
+function M.pointer_list_init(pointer_list)
   pointer_list.items = nil
   pointer_list.count = 0
   pointer_list.capacity = 0
-  pointer_list.zone = zone
 end
 
-function M.pointer_list_init_reserve(pointer_list, zone, capacity)
+function M.pointer_list_init_reserve(pointer_list, capacity)
   assert(capacity > 0)
-  M.pointer_list_init(pointer_list, zone)
-  pointer_list.items = allocator.allocator_alloc(zone, capacity * SIZEOF["void *"])
+  M.pointer_list_init(pointer_list)
+  pointer_list.items = {}
   pointer_list.capacity = capacity
 end
 
 function M.pointer_list_free(pointer_list)
   assert(pointer_list ~= nil, "pointer_list primitive called on a NULL container")
-  if pointer_list.items ~= nil then
-    allocator.allocator_release(pointer_list.zone, pointer_list.items)
-  end
   pointer_list.items = nil
   pointer_list.count = 0
   pointer_list.capacity = 0
@@ -38,8 +40,7 @@ end
 
 local function pointer_list_grow(pointer_list)
   local new_capacity = (pointer_list.capacity == 0) and POINTER_LIST_INITIAL_CAPACITY or pointer_list.capacity * 2
-  pointer_list.items = allocator.allocator_grow(pointer_list.zone, pointer_list.items,
-    pointer_list.capacity * SIZEOF["void *"], new_capacity * SIZEOF["void *"])
+  pointer_list.items = grown_items(pointer_list.items, pointer_list.capacity)
   pointer_list.capacity = new_capacity
 end
 

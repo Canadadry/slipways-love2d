@@ -68,12 +68,12 @@ end
 
 -- trade_route_list_t list = {0}.
 local function trade_route_list_zero()
-  return { values = { items = nil, element_size = 0, count = 0, capacity = 0, zone = nil } }
+  return { values = { items = nil, count = 0, capacity = 0 } }
 end
 
 -- pointer_list_t / entity_id_list_t list = {0}.
 local function list_zero()
-  return { items = nil, count = 0, capacity = 0, zone = nil }
+  return { items = nil, count = 0, capacity = 0 }
 end
 
 -- A pointer_list_t assigned by value into dst, the inline list of its owner.
@@ -81,7 +81,6 @@ local function pointer_list_assign(dst, src)
   dst.items = src.items
   dst.count = src.count
   dst.capacity = src.capacity
-  dst.zone = src.zone
 end
 
 -- *copy = *input for a need_t: the row is copied, its items shared as the C copy shares the pointer.
@@ -313,7 +312,7 @@ function M.planet_construct_in(self, zone_)
     return
   end
 
-  entity_id_list.entity_id_list_init(self.slipways, zone_)
+  entity_id_list.entity_id_list_init(self.slipways)
 
   if bit.band(self.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)) ~= 0 then
     local target = research.research_projects_at(fixed.p8_fixed_flr_int(self.archetype.project_index))
@@ -351,9 +350,9 @@ function M.planet_install_project(self, research_project_instance)
   self.project = research.research_project_id_of(research_project_instance)
   self.description = nil
 
-  pointer_list.pointer_list_init(jy, nil)
+  pointer_list.pointer_list_init(jy)
   if n > 0 then
-    pointer_list.pointer_list_init_reserve(jy, nil, n)
+    pointer_list.pointer_list_init_reserve(jy, n)
   end
   if n > 0 then
     for i = 0, research_project_instance.inputs.count - 1 do
@@ -449,7 +448,7 @@ function M.planet_new_year(self)
     local text
 
     keys.source = entity_id.entity_id_link(self)
-    text, color = collect.collect_format_signed(nil, self.net_income, 10, "$", color)
+    text, color = collect.collect_format_signed(self.net_income, 10, "$", color)
     message_box.toast_keys_set_text(keys, text)
     keys.color = fixed.p8_fixed_from_int(color)
     message_box.toast_new(keys)

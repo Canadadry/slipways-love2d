@@ -62,7 +62,7 @@ local function print_outlined_with(e, print)
   local a1 = draw_functions_arg(e, 1)
   local owned = nil
   if is_number(e, 1) ~= 0 then
-    owned = str.p8_tostr_fixed(nil, number(e, 1))
+    owned = str.p8_tostr_fixed(number(e, 1))
   end
   local t
   if a1 ~= nil and a1.text ~= nil then

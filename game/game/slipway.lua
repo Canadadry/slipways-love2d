@@ -51,7 +51,7 @@ end
 
 -- pointer_list_t list = {0}.
 local function list_zero()
-  return { items = nil, count = 0, capacity = 0, zone = nil }
+  return { items = nil, count = 0, capacity = 0 }
 end
 
 local g_slipway_up = 0
@@ -162,7 +162,7 @@ function M.slipway_construct(self)
     return
   end
 
-  pointer_list.pointer_list_init_reserve(self.transit_dots, nil, M.SLIPWAY_TRANSIT_DOTS_RESERVE)
+  pointer_list.pointer_list_init_reserve(self.transit_dots, M.SLIPWAY_TRANSIT_DOTS_RESERVE)
   self.served_planets.count = 0
 end
 
@@ -348,11 +348,11 @@ function M.slipway_obstruction(self)
     slipway_ctx.self_has_infraspace = entity_class.entity_has(self, entity_class.ENTITY_HAS_INFRASPACE)
     slipway_ctx.self_infraspace = self.infraspace
 
-    part1 = entity_list.entity_list_filter(nil,
+    part1 = entity_list.entity_list_filter(
       entity_registry.entities_by_tag(entity_class.TAG_NODE), slipway_obstruction_node_predicate, node_ctx)
-    part2 = entity_list.entity_list_filter(nil,
+    part2 = entity_list.entity_list_filter(
       entity_registry.entities_by_tag(entity_class.TAG_SLIPWAY), slipway_obstruction_slipway_predicate, slipway_ctx)
-    ds = entity_list.entity_list_concat(nil, part1, part2)
+    ds = entity_list.entity_list_concat(part1, part2)
 
     if ds.count > 0 then
       result = ds.items[0]

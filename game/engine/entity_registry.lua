@@ -13,7 +13,6 @@ local entity_id = require("engine.entity_id")
 local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local exit_queue = require("engine.exit_queue")
-local zone_sizes = require("engine.zone_sizes")
 local game_data = require("game.game_data")
 local fatal = require("p8.fatal")
 local fixed = require("p8.fixed")
@@ -36,11 +35,11 @@ local ENTITY_MESSAGE_NEW_YEAR = M.ENTITY_MESSAGE_NEW_YEAR
 local ENTITY_MESSAGE_COUNT = M.ENTITY_MESSAGE_COUNT
 local ENTITY_REGISTRY_LAYERS = M.ENTITY_REGISTRY_LAYERS
 local TAG_COUNT = entity_class.TAG_COUNT
-local ENTITY_TABLE_CAP = zone_sizes.ENTITY_TABLE_CAP
+local ENTITY_TABLE_CAP = entity_id.ENTITY_TABLE_CAP
 local UINT_WRAP = 4294967296
 
 local function zero_list()
-  return { items = nil, count = 0, capacity = 0, zone = nil }
+  return { items = nil, count = 0, capacity = 0 }
 end
 
 local g_entities_by_message = {}
@@ -120,16 +119,16 @@ function M.entity_registry_init(reserve)
 
   M.entity_registry_shutdown()
 
-  entity_id.entity_id_table_init(nil)
+  entity_id.entity_id_table_init()
 
-  entity_list.entity_list_init_reserve(g_live_entities, nil, reserve.live)
+  entity_list.entity_list_init_reserve(g_live_entities, reserve.live)
 
   for i = 0, ENTITY_MESSAGE_COUNT - 1 do
-    entity_list.entity_list_init_reserve(g_entities_by_message[i], nil, reserve.by_message[i])
+    entity_list.entity_list_init_reserve(g_entities_by_message[i], reserve.by_message[i])
   end
 
   for i = 0, TAG_COUNT - 1 do
-    entity_list.entity_list_init_reserve(g_entities_by_tag[i].list, nil, reserve.by_tag[i])
+    entity_list.entity_list_init_reserve(g_entities_by_tag[i].list, reserve.by_tag[i])
   end
 
   g_main_camera = M.g_main_camera_placeholder

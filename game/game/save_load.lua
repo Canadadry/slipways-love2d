@@ -71,9 +71,9 @@ local function load_needs(planet, node)
     planet.has_ = bit.band(bit.band(planet.has_, bit.bnot(planet_module.PLANET_HAS_NEEDS)), 0xFFFF)
     return
   end
-  pointer_list.pointer_list_init(needs, nil)
+  pointer_list.pointer_list_init(needs)
   if node.need_count > 0 then
-    pointer_list.pointer_list_init_reserve(needs, nil, node.need_count)
+    pointer_list.pointer_list_init_reserve(needs, node.need_count)
   end
   for i = 0, node.need_count - 1 do
     local resource = { kind = trade.RESOURCE_NIL, number = 0 }
@@ -233,7 +233,7 @@ end
 
 local function route_id_list(state, first, count, ids)
   local list = {}
-  entity_id_list.entity_id_list_init(list, nil)
+  entity_id_list.entity_id_list_init(list)
   for i = 0, count - 1 do
     entity_id_list.entity_id_list_add(list, ids[state.route_indices[first + i]])
   end

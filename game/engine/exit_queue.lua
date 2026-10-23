@@ -13,7 +13,6 @@ for i = 0, M.EXIT_QUEUE_CAP - 1 do
   g_queue[i] = { entity = nil }
 end
 local g_count = 0
-local g_max = 0
 
 local function put(entry)
   if g_count == M.EXIT_QUEUE_CAP then
@@ -21,7 +20,6 @@ local function put(entry)
   end
   g_queue[g_count].entity = entry.entity
   g_count = g_count + 1
-  if g_count > g_max then g_max = g_count end
 end
 
 function M.exit_queue_put(e)
@@ -32,10 +30,6 @@ end
 
 function M.exit_queue_count()
   return g_count
-end
-
-function M.exit_queue_max()
-  return g_max
 end
 
 function M.exit_queue_flush()

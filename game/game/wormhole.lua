@@ -35,7 +35,7 @@ M.WORMHOLE_HAS_TOO_FAR_TARGET = bit.lshift(1, 0)
 
 -- entity_id_list_t list = {0}.
 local function id_list_zero()
-  return { items = nil, count = 0, capacity = 0, zone = nil }
+  return { items = nil, count = 0, capacity = 0 }
 end
 
 local g_wormhole_up = 0
@@ -85,7 +85,7 @@ function M.wormhole_construct(self)
 
   n = wormhole_anchor_count()
   ox = self.anchors
-  entity_id_list.entity_id_list_init_reserve(ox, nil, n)
+  entity_id_list.entity_id_list_init_reserve(ox, n)
   it = entity_list.entity_list_all(entity_registry.live_entities())
   while true do
     more, p = entity_list.entity_list_iter_next(it, p)

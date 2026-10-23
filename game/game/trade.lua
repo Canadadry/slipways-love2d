@@ -4,7 +4,7 @@
 --   trade_route_t, trade_keys_t: { planets, slipways, resource, has_resource,
 --     resource_is_bool }, planets and slipways entity_id_list_t tables.
 --   resource_t: { kind, number }, a new table at every creation.
---   trade_route_list_t: { values }, a value_list_t of SIZEOF.trade_route_t.
+--   trade_route_list_t: { values }, a value_list_t of trade_route_t.
 -- The id lists are immutable once built: a value copy of a route is a new table with the five
 -- fields whose two list tables are shared, as the C copies share their items.
 local entity_id = require("engine.entity_id")
@@ -13,11 +13,6 @@ local entity_id_type = require("engine.entity_id_type")
 local value_list = require("engine.value_list")
 
 local M = {}
-
-M.SIZEOF = {
-  trade_route_t = 64,
-}
-local SIZEOF = M.SIZEOF
 
 M.RESOURCE_NIL = 0
 M.RESOURCE_FALSE = 1
@@ -36,7 +31,7 @@ local function route_value(planets, slipways, resource, has_resource, resource_i
 end
 
 local function empty_id_list()
-  return { items = nil, count = 0, capacity = 0, zone = nil }
+  return { items = nil, count = 0, capacity = 0 }
 end
 
 local function copy_route(route)
@@ -92,7 +87,7 @@ local function id_list_extended(zone, list, extra)
   if count == 0 then
     return out
   end
-  entity_id_list.entity_id_list_init_reserve(out, zone, count)
+  entity_id_list.entity_id_list_init_reserve(out, count)
   for i = 0, list.count - 1 do
     entity_id_list.entity_id_list_add(out, list.items[i])
   end
@@ -155,7 +150,7 @@ end
 
 function M.trade_route_list_init(list, zone)
   list.values = {}
-  value_list.value_list_init(list.values, zone, SIZEOF.trade_route_t)
+  value_list.value_list_init(list.values)
 end
 
 function M.trade_route_list_free(list)
