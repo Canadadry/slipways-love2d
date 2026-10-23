@@ -2,7 +2,6 @@
 
 Replace only **system boundaries**:
 
-- Memory: the allocator table a `game/engine/` module receives (`{ alloc, grow, release }`); a test backs it with plain tables
 - Input: a scripted events file, never a real pad or mouse
 - Output: the draw backend of `game/p8/gfx.lua` — the LÖVE backend's frames read back as a fake-LÖVE capture (`tools/capture_read.lua`), the software backend's through the vram — never a window
 
@@ -17,36 +16,42 @@ Don't replace:
 
 **1. Pass the dependency in**
 
-The module receives its allocator, its graphics or its input as a parameter instead of reaching for a global:
+The module receives its graphics state and its memory as parameters instead of reaching for a global:
 
 ```lua
--- Easy to test: the caller chooses the allocator (real signature)
-function M.entity_list_init(entity_list, zone)
+-- Easy to test: the caller chooses the state (real signature)
+function M.p8_pset(gfx, mem, x, y, col)
 
--- Hard to test: hidden dependency on the game's zone
-function M.entity_list_init(entity_list)
+-- Hard to test: hidden dependency on the game's screen
+function M.p8_pset(x, y, col)
 ```
 
-The test then passes a table of its own; the game passes a zone allocator:
+The test then builds tables of its own, and installs a recording backend where the game installs the LÖVE one:
 
 ```lua
-local function table_allocator()
-  return {
-    alloc = function(z, n) return {} end,
-    grow = function(z, p, old_n, new_n)
-      local q = {}
-      for k, v in pairs(p or {}) do q[k] = v end
-      return q
+local function new_runtime()
+  local graphics, mem = {}, {}
+  gfx.p8_gfx_init(graphics)
+  vram.p8_vram_init(mem)
+  return graphics, mem
+end
+
+-- Returns the backend and the list of { n, x, y } of every spr it received.
+local function spr_recorder()
+  local calls = {}
+  local recorder = {
+    spr = function(_, _, n, x, y, w, h)
+      calls[#calls + 1] = { n = n, x = x, y = y }
     end,
-    release = function(z, p) end,
   }
+  return recorder, calls
 end
 ```
 
 **2. One narrow function per boundary operation**
 
-An allocator has `alloc`, `grow` and `release` — not one `do(op, ...)` entry point with a switch. Each double then implements one plain behavior:
+A draw backend has one field per operation (`cls`, `pset`, `rectfill`, `spr`, ...) — not one `draw(op, ...)` entry point with a switch. Each double then implements one plain behavior:
 
 - No conditional logic in the test setup
 - Easy to see which operations a test exercises
-- A refusing double (`grow` set to a function that asserts) tests the refusal path in one line
+- A refusing double (`spr` set to a function that asserts) proves in one line that a path never draws a sprite

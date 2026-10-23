@@ -822,9 +822,10 @@ table goes through a Lua-only reverse map built at load
 (`project_index_of` in `research.lua`). Lists handed to LÖVE, the trade
 route lists, the id lists (a planet's slipways, a route's planets and
 slipways, the UI's ephemerals and hover layers, a wormhole's anchors),
-needs, project inputs, invented technologies, particles, transit dots and
-the registry's buckets (live, per-message, per-tag) with the filter results
-built from them are plain 1-based arrays without holes. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
+needs, project inputs, invented technologies, particles, transit dots, the
+registry's buckets (live, per-message, per-tag) and the exit queue are plain
+1-based arrays without holes; the data tables shaped `{ items, count }`
+stay 0-based until the 1-based step. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
 `%` is `cint.mod` (the dividend's sign); `math.floor` and Lua `%` appear only
 where the C floors. `(unsigned char)x` is `bit.band(x, 0xFF)`; a `bit`
 result above 2^31 − 1 is brought back to unsigned where it is compared or

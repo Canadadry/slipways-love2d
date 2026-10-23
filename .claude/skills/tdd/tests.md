@@ -96,15 +96,17 @@ end
 Rule of thumb: if a test setup must respect a constraint to call a function, that constraint is asserted inside the function.
 
 ```lua
--- BAD: verifies by poking the list's storage
-local function test_add_stores_the_entity_last()
-  entity_list.entity_list_add(list, e)
-  check.expect(list.items[list.count - 1], e, "last item")
+-- BAD: verifies by poking the map's storage
+local function test_set_stores_the_resource_last()
+  economy_formulas.resource_map_set(map, resource(28), 3)
+  check.expect(map.entries[map.count - 1].value, 3, "last entry")
 end
 
 -- GOOD: verifies through the interface
-local function test_an_added_entity_is_in_the_list()
-  entity_list.entity_list_add(list, e)
-  check.expect(entity_list.entity_list_has(list, e), 1, "e in the list")
+local function test_a_set_resource_is_found()
+  economy_formulas.resource_map_set(map, resource(28), 3)
+  local found, value = economy_formulas.resource_map_get(map, resource(28), -1)
+  check.expect(found, 1, "food found")
+  check.expect(value, 3, "food value")
 end
 ```

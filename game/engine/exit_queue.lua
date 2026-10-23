@@ -1,46 +1,27 @@
 -- Copy of src/engine/exit_queue.h then src/engine/exit_queue.c.
--- An entry_t is { entity }; g_queue is a 0-indexed array of
--- EXIT_QUEUE_CAP entries, each slot overwritten field by field by put.
 local entity_id = require("engine.entity_id")
-local fatal = require("p8.fatal")
 
 local M = {}
 
-M.EXIT_QUEUE_CAP = 315
-
 local g_queue = {}
-for i = 0, M.EXIT_QUEUE_CAP - 1 do
-  g_queue[i] = { entity = nil }
-end
-local g_count = 0
-
-local function put(entry)
-  if g_count == M.EXIT_QUEUE_CAP then
-    fatal.p8_fatal(string.format("exit queue full, limit %d", M.EXIT_QUEUE_CAP))
-  end
-  g_queue[g_count].entity = entry.entity
-  g_count = g_count + 1
-end
 
 function M.exit_queue_put(e)
-  local entry = { entity = e }
   assert(e ~= nil)
-  put(entry)
-end
-
-function M.exit_queue_count()
-  return g_count
+  g_queue[#g_queue + 1] = e
 end
 
 function M.exit_queue_flush()
-  for i = 0, g_count - 1 do
-    local e = g_queue[i].entity
+  local n = #g_queue
+  for i = 1, n do
+    local e = g_queue[i]
     local release = e.class.release
     -- The entity stops resolving before its class release runs.
     entity_id.entity_id_release(e)
     if release ~= nil then release(e) end
   end
-  g_count = 0
+  -- An entity queued by a release during this flush is dropped unreleased,
+  -- as in the C: releasing it here would move the replays.
+  for i = #g_queue, 1, -1 do g_queue[i] = nil end
 end
 
 return M

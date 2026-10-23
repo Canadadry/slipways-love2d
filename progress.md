@@ -19,7 +19,7 @@
     - [x] Chunk 2 — pointer_list and collect
     - [x] Chunk 3 — entity_id_list
     - [x] Chunk 4 — entity_list and the registry buckets
-    - [ ] Chunk 5 — the exit queue, design.md and the tdd examples
+    - [x] Chunk 5 — the exit queue, design.md and the tdd examples
 - [ ] Phase 2 — The entity model
   - [ ] Step 2.1 — optional parts as nil-able fields
 - [ ] Phase 3 — The surface

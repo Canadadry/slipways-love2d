@@ -8,7 +8,7 @@
 
 ## Layout and naming
 
-- `game/` has `main.lua` and `conf.lua` (LÖVE's entry points) and five directories: `p8/` is the emulated PICO-8 runtime (symbols prefixed `p8_`, file names unprefixed); `engine/` is the object layer, with no planets or slipways (entities, classes, registries, lists); `game/` is the game; `love/` draws through LÖVE (backend, screen, sprite sheet, text); `devtools/` is the state dump. A module is required by its path under `game/` (`require("game.planet")`).
+- `game/` has `main.lua` and `conf.lua` (LÖVE's entry points) and five directories: `p8/` is the emulated PICO-8 runtime (symbols prefixed `p8_`, file names unprefixed); `engine/` is the object layer, with no planets or slipways (entities, ids, classes, the registry, geometry, the exit queue); `game/` is the game; `love/` draws through LÖVE (backend, screen, sprite sheet, text); `devtools/` is the state dump. A module is required by its path under `game/` (`require("game.planet")`).
 - `tests/` holds the C tests of the fake and the tools (`tests/test_<name>.c`, listed in `UNIT_TESTS`), the Lua library tests and their frozen references (`tests/lua/`), the game regression tests (`tests/lua/game/test_<module>.lua`), the fixtures (`tests/fixtures/`) and the replays (`tests/e2e/`). `tools/` holds the fake LÖVE, the real-LÖVE capture programs (`tools/love_capture/`) and the check scripts.
 - Names are full English words: no prefix for the game, `p8_` for the runtime only. An exported function is named `module_verb[_object]` (`M.planet_init_instance`). One- or two-letter names are only for a local or parameter whose scope fits in 40 lines.
 
