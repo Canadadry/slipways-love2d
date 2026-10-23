@@ -124,17 +124,22 @@ phase 1 is written, rerun `/plan-converge` on this plan, then start
 One kind per step.
 
 1. Booleans. Seen when
-   `grep -rE 'and 1 or 0|[~=]= 0( *(then|and|or|do|\))|$)' game/` finds only
-   tests on numbers that are not truth values, and no predicate (`is_*`,
-   `has_*`, `can_*`, or with those inside its name) returns `0` or `1`, each
-   exception listed in the step note. A predicate's `return 0` is truthy in
+   `grep -rE 'and 1 or 0|[~=]= [01]( *(then|and|or|do|\))|$)' game/` finds
+   only tests on numbers that are not truth values, and no function whose
+   returns are all `0`/`1` (`grep -rnE 'return [01]$' game/`) is still used
+   as a truth value, whatever its name, each exception listed in the step
+   note. A predicate's `return 0` is truthy in
    Lua: a missed one is a bug the replays may not see.
-2. 1-based arrays. Seen when `grep -rE '\[0\]|for [a-z_]+ = 0,' game/` finds
-   only loops over plain numbers, not indices, each listed in the step note.
+2. 1-based arrays. Seen when
+   `grep -rE '\[0\]|for [a-z_]+ = 0,|\[[a-z_.]+ *\+ *1\]|while [a-z_]+ < ' game/`
+   finds only plain numbers or genuine element shifts, not 0-based indices,
+   each listed in the step note.
 3. The C headers. Seen when `grep -r -- '-- Copy of' game/` finds nothing.
 4. Names without the module prefix, with `CLAUDE.md`'s naming rule. Seen
    when no exported name (`M.<name>`) of a module starts with the module's
-   name or, in `p8/`, with `p8_`.
+   name or with its first word followed by `_` (`entity_get` in
+   `engine.entity_id`) or, in `p8/`, with `p8_`, each exception listed in the
+   step note.
 5. `design.md` § Conventions inherited from the C replaced. Seen when the
    section is gone and no convention left in `design.md` names a C construct.
 

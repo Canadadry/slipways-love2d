@@ -1,6 +1,6 @@
 - [x] Phase 0 — Decide what "natural" means
   - [x] Step 0.1 — grilling with the user
-- [ ] Phase 1 — The engine foundation
+- [x] Phase 1 — The engine foundation
   - [x] Step 1.1 — lua-test-modules checks only that every module loads
     - [x] PRD phase1-step1-module-load-check
   - [x] Step 1.2 — zones and allocators removed
