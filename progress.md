@@ -51,7 +51,7 @@
   - [x] Chunk 5 — research and tech gate, full check
 - [ ] Step 3.1 chunks
   - [x] Chunk 1 — runtime
-  - [ ] Chunk 2 — engine
+  - [x] Chunk 2 — engine
   - [ ] Chunk 3 — class callbacks
   - [ ] Chunk 4 — data lookups
   - [ ] Chunk 5 — planets, slipways, wormholes

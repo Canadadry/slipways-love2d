@@ -42,7 +42,7 @@ local function data_item_assign(dst, src)
   dst.is_nil = src.is_nil
 end
 
-local g_score_panel_up = 0
+local g_score_panel_up = false
 local g_main_score_panel = nil
 
 local function fixed_min(a, b)
@@ -90,7 +90,7 @@ M.score_panel_layout_block_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 M.g_score_panel_layout_block = {}
@@ -100,21 +100,21 @@ M.g_score_panel_layout_block.row_step = vec.vec_make(0x0, 0xb0000)
 M.g_score_panel_layout_block.back_color = 0xa0000
 
 function M.score_panel_readouts()
-  if g_score_panel_up ~= 0 then
+  if g_score_panel_up then
     return g_score_panel_readouts
   end
   return nil
 end
 
 function M.score_panel_year_banner()
-  if g_score_panel_up ~= 0 then
+  if g_score_panel_up then
     return g_score_panel_year_banner
   end
   return nil
 end
 
 function M.score_panel_layout_block()
-  if g_score_panel_up ~= 0 then
+  if g_score_panel_up then
     return M.g_score_panel_layout_block
   end
   return nil
@@ -287,13 +287,13 @@ M.score_panel_class_def = {
   states = { [entity_class.ENTITY_STATE_NORMAL] = score_panel_display.score_panel_update_method },
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function score_panel_create()
   local self
 
-  assert(g_score_panel_up ~= 0, "score_panel_init() must run first")
+  assert(g_score_panel_up, "score_panel_init() must run first")
   self = {}
   entity.entity_init_instance(self, M.score_panel_class_def, game_data.score_panel_archetype.state,
     game_data.score_panel_archetype.state_time)
@@ -307,7 +307,7 @@ end
 function M.score_panel_init()
   M.score_panel_shutdown()
 
-  g_score_panel_up = 1
+  g_score_panel_up = true
   score_panel_row_copy(g_score_panel_readouts.row, g_score_panel_readouts.items, game_data.score_panel_readouts_row)
   for i = 0, g_score_panel_readouts.row.count - 1 do
     score_panel_row_copy(g_score_panel_readouts.subs[i], g_score_panel_readouts.sub_items[i],
@@ -329,7 +329,7 @@ end
 
 function M.score_panel_shutdown()
   score_panel_display.score_panel_display_shutdown()
-  g_score_panel_up = 0
+  g_score_panel_up = false
   M.score_panel_set_init(nil)
   g_main_score_panel = nil
 end

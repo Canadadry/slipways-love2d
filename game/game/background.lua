@@ -28,7 +28,7 @@ local DRAW_PALETTE_LENGTH = 16
 
 local BACKGROUND_IMAGE_SIDE = vram.P8_MAP_WIDTH * gfx_module.P8_SPRITE_SIZE
 
-local g_background_up = 0
+local g_background_up = false
 
 local function background_to_int(x)
   return fixed.p8_fixed_flr_int(x)
@@ -49,7 +49,7 @@ M.background_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function background_create()
@@ -68,11 +68,11 @@ end
 
 function M.background_init()
   M.background_shutdown()
-  g_background_up = 1
+  g_background_up = true
 end
 
 function M.background_shutdown()
-  g_background_up = 0
+  g_background_up = false
 end
 
 function M.background_ready()
@@ -212,7 +212,7 @@ function M.background_left_press(self)
   count = (g_tag ~= nil) and #g_tag or 0
   if count > 0 then
     local wormhole = require("game.wormhole")
-    assert(wormhole.wormhole_ready() ~= 0,
+    assert(wormhole.wormhole_ready(),
       "wormhole_init() must run before background_left_press builds a wormhole")
     made = wormhole.wormhole_new()
   else

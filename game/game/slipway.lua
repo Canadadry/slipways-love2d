@@ -40,13 +40,13 @@ local function transit_dots_empty(self)
   end
 end
 
-local g_slipway_up = 0
+local g_slipway_up = false
 
 M.slipway_too_far_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 M.g_slipway_too_far = {}
@@ -58,7 +58,7 @@ M.slipway_mouse_point_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 function M.slipway_end_map_pos(end_)
@@ -169,7 +169,7 @@ function M.slipway_drag(self, mouse)
   else
     local point_pos = entity_class.mouse_pos_world(mouse)
 
-    if entity_class.mouse_pos_has_world(mouse) ~= 0 then
+    if entity_class.mouse_pos_has_world(mouse) then
       entity_class.entity_set_pos(self.point, point_pos)
     else
       entity_class.entity_clear_pos(self.point)
@@ -211,7 +211,7 @@ function M.slipway_drop(self, end_planet)
   -- The charge spends credits: keep it behind the NULL test. The clock advances once, after both attaches.
   refused = (end_planet == nil) or probe.targeting_confirm_without_clock(self) == 0
   if refused then
-    self.is_dead = 1
+    self.is_dead = true
     return
   end
 
@@ -243,7 +243,7 @@ local function slipway_obstruction_node_predicate(e, ctx_ptr)
     return 0
   end
   return geom.geom_near_segment(ctx.start_point, ctx.end_point, M.slipway_end_map_pos(e),
-    fixed.P8_FIXED_LIT(0x000000d1, 0.0032))
+    fixed.P8_FIXED_LIT(0x000000d1, 0.0032)) and 1 or 0
 end
 
 local function slipway_obstruction_slipway_predicate(e, ctx_ptr)
@@ -259,7 +259,7 @@ local function slipway_obstruction_slipway_predicate(e, ctx_ptr)
     return 0
   end
   return geom.geom_segments_cross(ctx.start_point, ctx.end_point, M.slipway_end_map_pos(M.slipway_start(sw)),
-    M.slipway_end_map_pos(M.slipway_end(sw)))
+    M.slipway_end_map_pos(M.slipway_end(sw))) and 1 or 0
 end
 
 function M.slipway_obstruction(self)
@@ -390,7 +390,7 @@ M.slipway_class_def = {
   states = {},
   tags = entity_class.TAG(entity_class.TAG_SLIPWAY),
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function slipway_create(keys)
@@ -416,7 +416,7 @@ local function slipway_create(keys)
   self.targeting.cost = self.archetype.targeting.cost
   require("game.probe").targeting_set_target(self.targeting, nil)
   self.targeted_by = nil
-  self.is_dead = 0
+  self.is_dead = false
   entity_class.entity_init_header(self.point, M.slipway_mouse_point_class_def)
   entity_class.entity_set_map_pos(self.point, vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0)))
   if keys ~= nil and entity_id.entity_get(keys.start) ~= nil then
@@ -432,11 +432,11 @@ end
 
 function M.slipway_init()
   M.slipway_shutdown()
-  g_slipway_up = 1
+  g_slipway_up = true
 end
 
 function M.slipway_shutdown()
-  g_slipway_up = 0
+  g_slipway_up = false
 end
 
 function M.slipway_ready()

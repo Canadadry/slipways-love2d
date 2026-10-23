@@ -23,7 +23,7 @@ local M = {}
 
 local PROJECT_RECORDS_COUNT = map_tables.PROJECT_RECORDS_COUNT
 
-local g_research_project_up = 0
+local g_research_project_up = false
 
 -- Built in place: a project's layout_row items point into the project itself.
 local g_project_table = {}
@@ -100,7 +100,7 @@ M.research_project_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function research_project_string(s)
@@ -184,7 +184,7 @@ local function project_zero(self)
   self.class = nil
   self.state = 0
   self.state_time = 0
-  self.is_dead = 0
+  self.is_dead = false
   self.id = nil
   self.archetype = nil
   self.name = nil
@@ -287,14 +287,14 @@ end
 
 function M.research_init()
   M.research_shutdown()
-  g_research_project_up = 1
+  g_research_project_up = true
 end
 
 function M.research_shutdown()
   forget_projects()
   g_projects_up = 0
   g_required_tech = nil
-  g_research_project_up = 0
+  g_research_project_up = false
 end
 
 function M.research_project_ready()

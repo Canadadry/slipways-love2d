@@ -72,7 +72,7 @@ local function add_position(line, e, camera)
   add_fixed(line, fixed.p8_fixed_sub(ra.x, camera.x))
   line_add(line, " ")
   add_fixed(line, fixed.p8_fixed_sub(ra.y, camera.y))
-  line_add(line, " visible %d", entity_geom.entity_geom_is_on_screen(e))
+  line_add(line, " visible %d", entity_geom.entity_geom_is_on_screen(e) and 1 or 0)
 end
 
 local function class_of(e)

@@ -24,7 +24,7 @@ function M.camera_pos_before_shake(self)
   return entity_class.entity_map_pos(self)
 end
 
-local g_camera_up = 0
+local g_camera_up = false
 
 local function camera_update_method(self, t)
   M.camera_update(self)
@@ -39,7 +39,7 @@ M.camera_class_def = {
   apply_camera = camera_apply_method,
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function camera_create()
@@ -57,12 +57,12 @@ end
 
 function M.camera_init()
   M.camera_shutdown()
-  assert(entity.entity_ready() ~= 0, "camera_init: entity_init() runs first")
-  g_camera_up = 1
+  assert(entity.entity_ready(), "camera_init: entity_init() runs first")
+  g_camera_up = true
 end
 
 function M.camera_shutdown()
-  g_camera_up = 0
+  g_camera_up = false
 end
 
 function M.camera_ready()

@@ -236,7 +236,7 @@ function M.economy_tiers_compute_tier(entity)
     return fixed_min(fixed.p8_fixed_from_int(count), fixed.p8_fixed_from_int(3))
   end
 
-  if planet.archetype.is_planet == 0 then
+  if not planet.archetype.is_planet then
     if needs ~= nil and #needs > 0 then
       local last = needs[#needs]
       if last ~= nil then

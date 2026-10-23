@@ -15,7 +15,7 @@ M.RESOURCE_NIL = 0
 M.RESOURCE_FALSE = 1
 M.RESOURCE_FIXED = 2
 
-local g_trade_up = 0
+local g_trade_up = false
 
 local function route_value(planets, slipways, resource, resource_is_bool)
   return {
@@ -48,11 +48,11 @@ end
 
 function M.trade_init()
   M.trade_shutdown()
-  g_trade_up = 1
+  g_trade_up = true
 end
 
 function M.trade_shutdown()
-  g_trade_up = 0
+  g_trade_up = false
 end
 
 function M.trade_ready()

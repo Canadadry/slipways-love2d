@@ -286,7 +286,7 @@ function M.planet_inspection_panel(self)
     end
 
     if development_tier_fixed < fixed.p8_fixed_from_int(4) and needs ~= nil and #needs > 0 and not resource_is_r_w then
-      local last_only = lineage_has(self, entity_class.LINEAGE_STRUCTURE) and self.archetype.is_structure ~= 0
+      local last_only = lineage_has(self, entity_class.LINEAGE_STRUCTURE) and self.archetype.is_structure
 
       buttons[row_count] = ui_button.button_keys_zero({})
       layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("wants more:"))
@@ -481,7 +481,7 @@ local function planet_build_images(gfx, mem)
 end
 
 function M.planet_draw(graphics, memory, self, screen_pos)
-  if self == nil or entity_geom.entity_geom_is_on_screen(self) == 0 then
+  if self == nil or not entity_geom.entity_geom_is_on_screen(self) then
     return
   end
   planet_draw_on_screen(graphics, memory, self, screen_pos)
@@ -588,7 +588,7 @@ function M.planet_accept_drop_method(self, s)
 end
 
 function M.planet_draw_method(self, screen_pos)
-  assert(self.class.skip_draw_off_screen ~= 0 and entity_geom.entity_geom_is_on_screen(self) ~= 0,
+  assert(self.class.skip_draw_off_screen and entity_geom.entity_geom_is_on_screen(self),
     "planet_draw_method trusts draw_layers' cull: only a class with skip_draw_off_screen may use it")
   planet_draw_on_screen(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self, screen_pos)
 end
@@ -613,7 +613,7 @@ function M.planet_left_press(self)
     local keys = slipway.slipway_keys_zero()
     local made
 
-    assert(slipway.slipway_ready() ~= 0, "slipway_init() must run before planet_left_press builds a slipway")
+    assert(slipway.slipway_ready(), "slipway_init() must run before planet_left_press builds a slipway")
     keys.start = entity_id.entity_id_link(self)
     made = slipway.slipway_new(keys)
     out.held = entity_id.entity_id_link(made)
@@ -639,7 +639,7 @@ function M.planet_apply_project(self, research_project_instance)
 
     assert(#self.slipways == 0,
       "a linked planet never dies: the routes kept in outgoing_routes would name it, and the cart never drops them")
-    self.is_dead = 1
+    self.is_dead = true
 
     target_kind = require("game.planet_family").planet_kind_named(research_project_instance.class_name)
 

@@ -19,7 +19,7 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
-local g_help_screen_up = 0
+local g_help_screen_up = false
 
 local function screen_start_game_placeholder(self)
 end
@@ -50,7 +50,7 @@ function M.help_set_resume_game(fn)
 end
 
 local function help_screen_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse)
+  return entity_geom.entity_geom_contains_cursor(self, mouse) and 1 or 0
 end
 
 function M.help_screen_construct(self)
@@ -124,14 +124,14 @@ M.help_screen_class_def = {
   states = {},
   tags = entity_class.TAG(entity_class.TAG_PROBE),
   lineage = entity_class.LINEAGE(entity_class.LINEAGE_PROBE),
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function screen_create()
   local self
   local hit_box
 
-  assert(g_help_screen_up ~= 0, "help_init() must run first")
+  assert(g_help_screen_up, "help_init() must run first")
   self = {}
   probe.probe_init_instance(self, M.help_screen_class_def, game_data.help_screen_archetype)
   hit_box = self.archetype.hit_box
@@ -144,18 +144,18 @@ local function screen_create()
 end
 
 function M.help_init()
-  assert(probe.probe_ready() ~= 0, "help_init() runs after probe_init()")
+  assert(probe.probe_ready(), "help_init() runs after probe_init()")
 
   M.help_shutdown()
 
-  g_help_screen_up = 1
+  g_help_screen_up = true
 
   M.help_set_start_game(nil)
   M.help_set_resume_game(nil)
 end
 
 function M.help_shutdown()
-  g_help_screen_up = 0
+  g_help_screen_up = false
   M.help_set_start_game(nil)
   M.help_set_resume_game(nil)
 end

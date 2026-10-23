@@ -6,15 +6,15 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
-local g_entity_up = 0
+local g_entity_up = false
 
 function M.entity_init()
   M.entity_shutdown()
-  g_entity_up = 1
+  g_entity_up = true
 end
 
 function M.entity_shutdown()
-  g_entity_up = 0
+  g_entity_up = false
 end
 
 function M.entity_ready()

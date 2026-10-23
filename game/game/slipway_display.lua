@@ -130,7 +130,7 @@ function M.slipway_draw(graphics, memory, self)
   start_node = slipway.slipway_start(self)
   end_node = slipway.slipway_end(self)
 
-  if entity_geom.entity_geom_is_on_screen(start_node) ~= 0 or entity_geom.entity_geom_is_on_screen(end_node) ~= 0 then
+  if entity_geom.entity_geom_is_on_screen(start_node) or entity_geom.entity_geom_is_on_screen(end_node) then
     local fade_in_step = self.fade_in_step
     local fade_in_step_i = to_int(fade_in_step)
     local fade_color = fixed.p8_fixed_from_int(0)

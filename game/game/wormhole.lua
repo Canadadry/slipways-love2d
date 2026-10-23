@@ -26,13 +26,13 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
-local g_wormhole_up = 0
+local g_wormhole_up = false
 
 M.wormhole_too_far_target_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 M.g_wormhole_too_far_target_wrapper = {}
@@ -40,7 +40,7 @@ entity_class.entity_init_header(M.g_wormhole_too_far_target_wrapper, M.wormhole_
 M.g_wormhole_too_far_target_wrapper.status_text = game_data.wormhole_too_far_target_status_text
 
 local function wormhole_is_anchor(p)
-  return (p ~= nil and p.is_dead == 0 and p.fold_anchor ~= nil and p.fold_anchor ~= 0)
+  return (p ~= nil and not p.is_dead and p.fold_anchor ~= nil and p.fold_anchor ~= 0)
     and 1 or 0
 end
 
@@ -150,9 +150,9 @@ function M.wormhole_drop(self)
 
   -- targeting_confirm's side effects must not run before tick 15: do not hoist it out of the else.
   if t < fixed.p8_fixed_from_int(15) then
-    result = 1
+    result = true
   else
-    result = probe.targeting_confirm(self) == 0 and 1 or 0
+    result = probe.targeting_confirm(self) == 0
   end
 
   self.is_dead = result
@@ -197,7 +197,7 @@ function M.wormhole_update_unfolding(self, t)
     end
   end
 
-  self.is_dead = (t > fixed.p8_fixed_from_int(25)) and 1 or 0
+  self.is_dead = t > fixed.p8_fixed_from_int(25)
 end
 
 local function wormhole_update_unfolding_method(self, t)
@@ -233,7 +233,7 @@ M.wormhole_class_def = {
   },
   tags = entity_class.TAG(entity_class.TAG_WORMHOLE),
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function wormhole_create()
@@ -253,7 +253,7 @@ local function wormhole_create()
   self.anchors = {}
   probe.targeting_set_target(self.targeting, nil)
   self.anchor = nil
-  self.is_dead = 0
+  self.is_dead = false
   M.wormhole_construct(self)
   entity.entity_construct(self)
   return self
@@ -261,11 +261,11 @@ end
 
 function M.wormhole_init()
   M.wormhole_shutdown()
-  g_wormhole_up = 1
+  g_wormhole_up = true
 end
 
 function M.wormhole_shutdown()
-  g_wormhole_up = 0
+  g_wormhole_up = false
 end
 
 function M.wormhole_ready()

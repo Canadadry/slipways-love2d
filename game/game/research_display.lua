@@ -235,7 +235,7 @@ function M.research_project_layout_row_keys(self, out_keys)
   local found
 
   research.research_project_assert(self)
-  if self == nil or research.research_project_ready() == 0 then
+  if self == nil or not research.research_project_ready() then
     return 0, out_keys
   end
 

@@ -39,15 +39,15 @@ local function empty_list(list)
   end
 end
 
--- 1 when e was in the list.
+-- true when e was in the list.
 local function remove_first(list, e)
   for i = 1, #list do
     if list[i] == e then
       table.remove(list, i)
-      return 1
+      return true
     end
   end
-  return 0
+  return false
 end
 
 local g_entities_by_message = {}
@@ -57,7 +57,7 @@ end
 
 local g_entities_by_tag = {}
 for i = 0, TAG_COUNT - 1 do
-  g_entities_by_tag[i] = { seen = 0, list = {} }
+  g_entities_by_tag[i] = { seen = false, list = {} }
 end
 
 -- Group g (1..15) is items[start[g - 1] .. start[g]); start[ENTITY_REGISTRY_LAYERS] is the count.
@@ -74,10 +74,10 @@ local g_layer_order_mutations = 0
 
 local g_live_entities = {}
 local g_main_camera = nil
-local g_initialized = 0
+local g_initialized = false
 local g_generation = 0
 
-M.main_camera_placeholder_class_def = { states = {}, tags = 0, lineage = 0, skip_draw_off_screen = 0 }
+M.main_camera_placeholder_class_def = { states = {}, tags = 0, lineage = 0, skip_draw_off_screen = false }
 
 M.g_main_camera_placeholder = {}
 entity_class.entity_init_header(M.g_main_camera_placeholder, M.main_camera_placeholder_class_def)
@@ -92,7 +92,7 @@ end
 function M.entity_registry_shutdown()
   layer_orders_reset()
   g_generation = (g_generation + 1) % UINT_WRAP
-  if g_initialized == 0 then
+  if not g_initialized then
     return
   end
 
@@ -104,14 +104,14 @@ function M.entity_registry_shutdown()
 
   for i = 0, TAG_COUNT - 1 do
     empty_list(g_entities_by_tag[i].list)
-    g_entities_by_tag[i].seen = 0
+    g_entities_by_tag[i].seen = false
   end
 
   entity_id.entity_id_table_forget()
 
   g_main_camera = nil
 
-  g_initialized = 0
+  g_initialized = false
 end
 
 function M.entity_registry_init()
@@ -131,7 +131,7 @@ function M.entity_registry_init()
 
   g_main_camera = M.g_main_camera_placeholder
 
-  g_initialized = 1
+  g_initialized = true
 end
 
 function M.entity_registry_abandon_live_entities()
@@ -152,7 +152,7 @@ function M.entity_registry_forget_registries()
   end
   for i = 0, TAG_COUNT - 1 do
     empty_list(g_entities_by_tag[i].list)
-    g_entities_by_tag[i].seen = 0
+    g_entities_by_tag[i].seen = false
   end
 end
 
@@ -166,7 +166,7 @@ function M.live_entities()
 end
 
 function M.entities_by_message(message)
-  assert(g_initialized ~= 0, "entity_registry_init() must run before entities_by_message is read")
+  assert(g_initialized, "entity_registry_init() must run before entities_by_message is read")
   return g_entities_by_message[message]
 end
 
@@ -174,15 +174,15 @@ local function is_message_name(e, message)
   local cls = e.class
 
   if message == ENTITY_MESSAGE_DRAW then
-    return (cls.draw ~= nil) and 1 or 0
+    return cls.draw ~= nil
   elseif message == ENTITY_MESSAGE_DRAW_OVERLAY then
-    return (cls.draw_overlay ~= nil) and 1 or 0
+    return cls.draw_overlay ~= nil
   elseif message == ENTITY_MESSAGE_HIT_TEST then
-    return (cls.hit_test ~= nil) and 1 or 0
+    return cls.hit_test ~= nil
   elseif message == ENTITY_MESSAGE_NEW_YEAR then
-    return (cls.new_year ~= nil) and 1 or 0
+    return cls.new_year ~= nil
   end
-  return (cls.refresh ~= nil and (cls.has_refresh == nil or cls.has_refresh(e) ~= 0)) and 1 or 0
+  return cls.refresh ~= nil and (cls.has_refresh == nil or cls.has_refresh(e) ~= 0)
 end
 
 function M.entity_registry_hit_test_always(self, mouse)
@@ -190,7 +190,7 @@ function M.entity_registry_hit_test_always(self, mouse)
 end
 
 function M.entities_by_tag(tag)
-  if g_entities_by_tag[tag].seen ~= 0 then
+  if g_entities_by_tag[tag].seen then
     return g_entities_by_tag[tag].list
   end
   return nil
@@ -203,7 +203,7 @@ function M.entity_registry_count_tagged(tag)
 end
 
 local function is_drawn_message(message)
-  return (message == ENTITY_MESSAGE_DRAW or message == ENTITY_MESSAGE_DRAW_OVERLAY) and 1 or 0
+  return message == ENTITY_MESSAGE_DRAW or message == ENTITY_MESSAGE_DRAW_OVERLAY
 end
 
 local function layer_order_of(message)
@@ -255,7 +255,7 @@ end
 -- The draw or draw_overlay members whose floored layer is layer (1..15), in registration order;
 -- the view is invalidated by the next register, unregister or layer change.
 function M.entity_registry_layer(message, layer)
-  assert(is_drawn_message(message) ~= 0, "entity_registry_layer: only draw and draw_overlay keep a layer order")
+  assert(is_drawn_message(message), "entity_registry_layer: only draw and draw_overlay keep a layer order")
   assert(layer >= 1 and layer <= ENTITY_REGISTRY_LAYERS, "entity_registry_layer: layers run 1..15")
   local order = layer_order_of(message)
   return {
@@ -273,7 +273,7 @@ function M.entity_register(e)
   g_live_entities[#g_live_entities + 1] = e
 
   for i = 0, ENTITY_MESSAGE_COUNT - 1 do
-    if is_message_name(e, i) ~= 0 then
+    if is_message_name(e, i) then
       local bucket = g_entities_by_message[i]
       bucket[#bucket + 1] = e
     end
@@ -282,7 +282,7 @@ function M.entity_register(e)
   local key = layer_key(e)
   local i = 0
   while i < ENTITY_MESSAGE_COUNT and key ~= 0 do
-    if is_drawn_message(i) ~= 0 and is_message_name(e, i) ~= 0 then
+    if is_drawn_message(i) and is_message_name(e, i) then
       local order = layer_order_of(i)
       layer_order_insert(order, e, key, order.start[key])
     end
@@ -291,7 +291,7 @@ function M.entity_register(e)
 
   for t = 0, TAG_COUNT - 1 do
     if bit.band(e.class.tags, entity_class.TAG(t)) ~= 0 then
-      g_entities_by_tag[t].seen = 1
+      g_entities_by_tag[t].seen = true
       local tagged = g_entities_by_tag[t].list
       tagged[#tagged + 1] = e
     end
@@ -304,14 +304,14 @@ end
 function M.entity_unregister(e)
   g_generation = (g_generation + 1) % UINT_WRAP
 
-  if remove_first(g_live_entities, e) ~= 0 then
+  if remove_first(g_live_entities, e) then
     exit_queue.exit_queue_put(e)
   end
 
   for i = 0, ENTITY_MESSAGE_COUNT - 1 do
-    if is_message_name(e, i) ~= 0 then
+    if is_message_name(e, i) then
       remove_first(g_entities_by_message[i], e)
-      if is_drawn_message(i) ~= 0 then
+      if is_drawn_message(i) then
         layer_order_remove(layer_order_of(i), e)
       end
     end
@@ -360,7 +360,7 @@ function M.entity_registry_set_layer(e, layer)
     return
   end
   for i = 0, ENTITY_MESSAGE_COUNT - 1 do
-    if is_drawn_message(i) ~= 0 and is_message_name(e, i) ~= 0 then
+    if is_drawn_message(i) and is_message_name(e, i) then
       layer_order_reinsert(i, e, new_key)
     end
   end
@@ -393,7 +393,7 @@ function M.draw_layers(message)
       local mutations = g_layer_order_mutations
 
       assert(layer_key(qc) == layer, "draw_layers: a layer written directly, not through entity_registry_set_layer")
-      if draw ~= nil and not (is_draw and qc.class.skip_draw_off_screen ~= 0 and entity_geom.entity_geom_is_on_screen(qc) == 0) then
+      if draw ~= nil and not (is_draw and qc.class.skip_draw_off_screen and not entity_geom.entity_geom_is_on_screen(qc)) then
         draw(qc, entity_class.entity_pos(qc))
       end
       assert(g_layer_order_mutations == mutations,

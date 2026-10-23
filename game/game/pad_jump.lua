@@ -146,7 +146,7 @@ local function world_pixel(map_units)
 end
 
 function M.pad_jump_world_point(e, x, y)
-  assert(e ~= nil and entity_class.entity_has_map_pos(e) ~= 0, "pad_jump_world_point: the entity has a map position")
+  assert(e ~= nil and entity_class.entity_has_map_pos(e), "pad_jump_world_point: the entity has a map position")
   local map_pos = entity_class.entity_map_pos(e)
   x = world_pixel(map_pos.x)
   y = world_pixel(map_pos.y)

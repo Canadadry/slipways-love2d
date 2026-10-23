@@ -71,7 +71,7 @@ function M.cart_load()
   g_demo_frame = M.CART_NO_DEMO_FRAME
   g_loading_frame = 0
   entity.entity_init()
-  assert(entity.entity_ready() ~= 0, "cart_load: entity_init() must run before every class that extends entity_t")
+  assert(entity.entity_ready(), "cart_load: entity_init() must run before every class that extends entity_t")
   scroll.camera_init()
   mouse.mouse_init()
   ui.ui_init()
@@ -95,16 +95,16 @@ function M.cart_load()
   planet.planet_init()
   slipway.slipway_init()
   planet_family.planet_family_init()
-  assert(planet_family.structure_ready() ~= 0 and planet_family.burst_ready() ~= 0 and planet.planet_ready() ~= 0,
+  assert(planet_family.structure_ready() and planet_family.burst_ready() and planet.planet_ready(),
     "cart_load: structure and burst extend planet: planet_init() must run first")
   planet_family_trade.planet_family_trade_init()
-  assert(planet_family_trade.slipgate_ready() ~= 0 and planet_family_trade.synthesizer_ready() ~= 0
-      and planet_family.structure_ready() ~= 0 and planet_family.ascension_ready() ~= 0,
+  assert(planet_family_trade.slipgate_ready() and planet_family_trade.synthesizer_ready()
+      and planet_family.structure_ready() and planet_family.ascension_ready(),
     "cart_load: slipgate extends structure and synthesizer extends ascension: planet_family_init() must run first")
   wormhole.wormhole_init()
 
   help.help_init()
-  assert(help.help_screen_ready() ~= 0 and probe.probe_ready() ~= 0,
+  assert(help.help_screen_ready() and probe.probe_ready(),
     "cart_load: the help screen extends probe: probe_init() must run first")
   score_panel.score_panel_init()
   structure_icon.structure_icon_init()
@@ -172,7 +172,7 @@ local function title_resume_handler()
 end
 
 function M.cart_init()
-  assert(structure_icon.structure_icon_ready() ~= 0, "cart_init: cart_load() must run first")
+  assert(structure_icon.structure_icon_ready(), "cart_init: cart_load() must run first")
   assert(help.help_start_game_field_value() == M.cart_request_start_game
       and score_panel.score_panel_init_field_value() == M.cart_init_method,
     "cart_init: help_init() and score_panel_init() reset these bridges, so cart_load() must "
@@ -225,7 +225,7 @@ function M.cart_init_method(self)
 end
 
 local function start_world(difficulty)
-  assert(economy_module.economy_ready() ~= 0 and planet_family.structure_ready() ~= 0,
+  assert(economy_module.economy_ready() and planet_family.structure_ready(),
     "game start: cart_load() must run first")
 
   economy_score.economy_score_set_difficulty(difficulty)

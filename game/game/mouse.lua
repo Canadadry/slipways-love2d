@@ -15,7 +15,7 @@ local input_module = require("p8.input")
 
 local M = {}
 
-local g_mouse_up = 0
+local g_mouse_up = false
 local g_left_button = { held = nil, pressed = 0, released = 0 }
 
 local function mouse_update_method(self, t)
@@ -26,7 +26,7 @@ M.mouse_class_def = {
   states = { [entity_class.ENTITY_STATE_NORMAL] = mouse_update_method },
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function mouse_create()
@@ -42,19 +42,19 @@ end
 
 function M.mouse_init()
   M.mouse_shutdown()
-  assert(entity.entity_ready() ~= 0, "mouse_init: entity_init() runs first")
-  g_mouse_up = 1
+  assert(entity.entity_ready(), "mouse_init: entity_init() runs first")
+  g_mouse_up = true
   g_left_button.held = nil
   g_left_button.pressed = 0
   g_left_button.released = 0
 end
 
 function M.mouse_shutdown()
-  g_mouse_up = 0
+  g_mouse_up = false
 end
 
 function M.mouse_left_button()
-  if g_mouse_up ~= 0 then
+  if g_mouse_up then
     return g_left_button
   end
   return nil
@@ -80,7 +80,7 @@ function M.mouse_update(input, self)
   local mouse = input_module.p8_input_read_mouse(input)
   entity_class.entity_set_pos(self, vec.vec_make(fixed.p8_fixed_from_int(mouse.x), fixed.p8_fixed_from_int(mouse.y)))
 
-  if g_mouse_up ~= 0 then
+  if g_mouse_up then
     mouse_button.mouse_button_update(g_left_button, (bit_module.band(mouse.buttons, input_module.P8_MOUSE_LEFT) ~= 0) and 1 or 0)
   end
 end

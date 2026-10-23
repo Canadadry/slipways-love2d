@@ -33,7 +33,7 @@ local function burst_keys_zero()
   return { planet = planet.planet_keys_zero(), construct = nil }
 end
 
-local g_family_up = 0
+local g_family_up = false
 
 function M.structure_update_settled_method(self, t)
   planet.planet_bob(self, t)
@@ -41,7 +41,7 @@ end
 
 M.structure_class_def = {
   draw = planet_display.planet_draw_method,
-  skip_draw_off_screen = 1,
+  skip_draw_off_screen = true,
   draw_overlay = probe.targeting_tooltip_method,
   hit_test = planet.planet_hit_test_method,
   new_year = planet.planet_new_year_method,
@@ -74,7 +74,7 @@ end
 local function structure_create(keys)
   local self = {}
 
-  assert(g_family_up ~= 0, "planet_family_init() must run first")
+  assert(g_family_up, "planet_family_init() must run first")
   M.structure_init_instance(self, M.structure_class_def, game_data.structure_archetype)
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "structure_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
@@ -115,7 +115,7 @@ end
 
 M.trading_hub_class_def = {
   draw = planet_display.planet_draw_method,
-  skip_draw_off_screen = 1,
+  skip_draw_off_screen = true,
   draw_overlay = probe.targeting_tooltip_method,
   hit_test = planet.planet_hit_test_method,
   new_year = planet.planet_new_year_method,
@@ -139,7 +139,7 @@ M.trading_hub_class_def = {
 local function trading_hub_create(keys)
   local self = {}
 
-  assert(g_family_up ~= 0, "planet_family_init() must run first")
+  assert(g_family_up, "planet_family_init() must run first")
   M.structure_init_instance(self, M.trading_hub_class_def, game_data.trading_hub_archetype)
   self.palette_block = self.archetype.palette_block
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
@@ -153,7 +153,7 @@ end
 
 M.processor_class_def = {
   draw = planet_display.planet_draw_method,
-  skip_draw_off_screen = 1,
+  skip_draw_off_screen = true,
   draw_overlay = probe.targeting_tooltip_method,
   hit_test = planet.planet_hit_test_method,
   new_year = planet.planet_new_year_method,
@@ -176,7 +176,7 @@ M.processor_class_def = {
 local function processor_create(keys)
   local self = {}
 
-  assert(g_family_up ~= 0, "planet_family_init() must run first")
+  assert(g_family_up, "planet_family_init() must run first")
   M.structure_init_instance(self, M.processor_class_def, game_data.processor_archetype)
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "processor_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
@@ -210,7 +210,7 @@ end
 
 M.ascension_class_def = {
   draw = M.ascension_draw_method,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
   draw_overlay = probe.targeting_tooltip_method,
   hit_test = planet.planet_hit_test_method,
   new_year = planet.planet_new_year_method,
@@ -249,7 +249,7 @@ end
 local function ascension_create(keys)
   local self = {}
 
-  assert(g_family_up ~= 0, "planet_family_init() must run first")
+  assert(g_family_up, "planet_family_init() must run first")
   M.ascension_init_instance(self, M.ascension_class_def, game_data.ascension_archetype)
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "ascension_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
@@ -277,7 +277,7 @@ end
 
 M.protostar_class_def = {
   draw = M.ascension_draw_method,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
   draw_overlay = probe.targeting_tooltip_method,
   hit_test = planet.planet_hit_test_method,
   new_year = planet.planet_new_year_method,
@@ -301,7 +301,7 @@ M.protostar_class_def = {
 local function protostar_create(keys)
   local self = {}
 
-  assert(g_family_up ~= 0, "planet_family_init() must run first")
+  assert(g_family_up, "planet_family_init() must run first")
   M.ascension_init_instance(self, M.protostar_class_def, game_data.protostar_archetype)
   planet.planet_copy_keys(self, keys)
   M.protostar_construct(self)
@@ -410,7 +410,7 @@ function M.burst_draw(graphics, memory, self, screen_pos)
   end
 
   particle.emitter_update(graphics, memory, self)
-  self.is_dead = (third_taken == 0) and 1 or 0
+  self.is_dead = third_taken == 0
 end
 
 local function burst_draw_method(self, screen_pos)
@@ -423,7 +423,7 @@ end
 
 M.burst_class_def = {
   draw = burst_draw_method,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
   hit_test = planet.planet_hit_test_method,
   new_year = planet.planet_new_year_method,
   refresh = planet_display.planet_refresh_method,
@@ -441,7 +441,7 @@ M.burst_class_def = {
 local function burst_create(keys)
   local self = {}
 
-  assert(g_family_up ~= 0, "planet_family_init() must run first")
+  assert(g_family_up, "planet_family_init() must run first")
   planet.planet_init_instance(self, M.burst_class_def, game_data.burst_archetype)
   self.emitter = require("game.particle").emitter_zero()
   self.emitter.archetype = self.archetype.emitter
@@ -474,13 +474,13 @@ local function burst_create(keys)
 end
 
 function M.planet_family_init()
-  assert(planet.planet_ready() ~= 0, "planet_init() must run first")
+  assert(planet.planet_ready(), "planet_init() must run first")
   M.planet_family_shutdown()
-  g_family_up = 1
+  g_family_up = true
 end
 
 function M.planet_family_shutdown()
-  g_family_up = 0
+  g_family_up = false
 end
 
 function M.structure_ready()

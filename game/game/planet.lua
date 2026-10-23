@@ -66,7 +66,7 @@ local function need_copy_into(copy, input)
   copy.satisfied = input.satisfied
 end
 
-local g_planet_up = 0
+local g_planet_up = false
 
 local g_type_picker = nil
 local g_planet_vanish_roll = nil
@@ -75,7 +75,7 @@ local g_planet_vanish_roll = nil
 local g_planet_production_shared = production_zero()
 
 function M.planet_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse)
+  return entity_geom.entity_geom_contains_cursor(self, mouse) and 1 or 0
 end
 
 function M.planet_new_year_method(self, year)
@@ -92,7 +92,7 @@ end
 
 M.planet_class_def = {
   draw = planet_display.planet_draw_method,
-  skip_draw_off_screen = 1,
+  skip_draw_off_screen = true,
   hit_test = M.planet_hit_test_method,
   new_year = M.planet_new_year_method,
   refresh = planet_display.planet_refresh_method,
@@ -107,7 +107,7 @@ M.planet_class_def = {
 }
 
 function M.planet_init_instance(self, instance_class, archetype)
-  assert(g_planet_up ~= 0, "planet_init() must run first")
+  assert(g_planet_up, "planet_init() must run first")
   entity.entity_init_instance(self, instance_class, archetype.state, archetype.state_time)
   self.archetype = archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
@@ -124,7 +124,7 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.layout_row = nil
   self.layout_row_signature = M.planet_row_signature_zero()
   self.targeted_by = nil
-  self.is_dead = 0
+  self.is_dead = false
   self.development_tier = self.archetype.development_tier
   self.is_hovered = 0
   self.synthesizable_resources = self.archetype.synthesizable_resources
@@ -166,13 +166,13 @@ end
 
 function M.planet_init()
   M.planet_shutdown()
-  g_planet_up = 1
+  g_planet_up = true
   g_planet_production_shared.resource = nil
   g_planet_production_shared.amount = 0
 end
 
 function M.planet_shutdown()
-  g_planet_up = 0
+  g_planet_up = false
   g_type_picker = nil
   g_planet_vanish_roll = nil
 end
@@ -313,7 +313,7 @@ function M.planet_is_colonized(self)
   if self == nil then
     return 0
   end
-  if self.archetype.is_planet == 0 then
+  if not self.archetype.is_planet then
     return 0
   end
   return (self.state == entity_class.ENTITY_STATE_SETTLED) and 1 or 0
@@ -330,8 +330,8 @@ function M.planet_update_vanishing(self, t)
   if self == nil then
     return
   end
-  self.is_dead = (t > fixed.p8_fixed_from_int(60)) and 1 or 0
-  assert(self.is_dead == 0 or #self.slipways == 0,
+  self.is_dead = t > fixed.p8_fixed_from_int(60)
+  assert(not self.is_dead or #self.slipways == 0,
     "a linked planet never dies: the routes kept in outgoing_routes would name it, and the cart never drops them")
 end
 
@@ -372,7 +372,7 @@ function M.planet_new_year(self)
   if self.net_income == nil or self.net_income == fixed.p8_fixed_from_int(0) then
     return
   end
-  if entity_geom.entity_geom_is_on_screen(self) == 0 then
+  if not entity_geom.entity_geom_is_on_screen(self) then
     return
   end
   do

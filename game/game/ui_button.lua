@@ -32,8 +32,8 @@ local function c_strlen(s)
   return (string.find(s, "\0", 1, true) or #s + 1) - 1
 end
 
-local g_button_up = 0
-local g_modal_backdrop_up = 0
+local g_button_up = false
+local g_modal_backdrop_up = false
 
 local function ui_to_int(x)
   return fixed.p8_fixed_flr_int(x)
@@ -52,7 +52,7 @@ local function button_draw_method(self, screen_pos)
 end
 
 local function button_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse)
+  return entity_geom.entity_geom_contains_cursor(self, mouse) and 1 or 0
 end
 
 local function button_left_press_method(self, mouse)
@@ -81,7 +81,7 @@ M.button_class_def = {
   states = { [entity_class.ENTITY_STATE_NORMAL] = button_update_method },
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function button_create(keys)
@@ -129,11 +129,11 @@ end
 
 function M.button_init()
   M.button_shutdown()
-  g_button_up = 1
+  g_button_up = true
 end
 
 function M.button_shutdown()
-  g_button_up = 0
+  g_button_up = false
 end
 
 function M.button_ready()
@@ -399,7 +399,7 @@ M.modal_backdrop_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function modal_backdrop_create(keys)
@@ -410,7 +410,7 @@ local function modal_backdrop_create(keys)
   self.archetype = game_data.modal_backdrop_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
   self.on_click = nil
-  self.is_dead = 0
+  self.is_dead = false
   self.is_hovered = 0
   if keys ~= nil then
     self.on_click = keys.on_click
@@ -421,11 +421,11 @@ end
 
 function M.modal_backdrop_init()
   M.modal_backdrop_shutdown()
-  g_modal_backdrop_up = 1
+  g_modal_backdrop_up = true
 end
 
 function M.modal_backdrop_shutdown()
-  g_modal_backdrop_up = 0
+  g_modal_backdrop_up = false
 end
 
 function M.modal_backdrop_ready()
@@ -446,9 +446,9 @@ function M.modal_backdrop_left_press(self)
   if self == nil then
     return out
   end
-  self.is_dead = 0
+  self.is_dead = false
   if self.on_click ~= nil then
-    self.is_dead = (self.on_click(self) ~= 0) and 1 or 0
+    self.is_dead = self.on_click(self) ~= 0
   end
   return out
 end

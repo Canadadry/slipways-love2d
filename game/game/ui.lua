@@ -42,7 +42,7 @@ local function zero_vec()
   return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
 end
 
-local g_ui_up = 0
+local g_ui_up = false
 local MAIN_MOUSE_NONE = 0
 local MAIN_MOUSE_PLACEHOLDER = 1
 local MAIN_MOUSE_REAL = 2
@@ -52,7 +52,7 @@ local g_main_mouse = nil
 local g_main_ui = nil
 
 function M.ui_panel_box()
-  if g_ui_up ~= 0 then
+  if g_ui_up then
     return game_data.ui_archetype.panel_box
   end
   return nil
@@ -85,7 +85,7 @@ M.main_mouse_placeholder_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 M.g_main_mouse_placeholder = {}
@@ -134,13 +134,13 @@ M.ui_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function ui_create()
   local self
 
-  assert(g_ui_up ~= 0, "ui_init() must run first")
+  assert(g_ui_up, "ui_init() must run first")
   self = {}
   entity.entity_init_instance(self, M.ui_class_def, game_data.ui_archetype.state, game_data.ui_archetype.state_time)
   self.archetype = game_data.ui_archetype
@@ -160,13 +160,13 @@ end
 
 function M.ui_init()
   M.ui_shutdown()
-  g_ui_up = 1
+  g_ui_up = true
 
   M.ui_set_main_mouse(M.g_main_mouse_placeholder)
 end
 
 function M.ui_shutdown()
-  g_ui_up = 0
+  g_ui_up = false
   M.ui_set_main_mouse(nil)
   g_main_ui = nil
 end
@@ -374,7 +374,7 @@ local function ui_hit_test(e, mouse)
   local hit_test = e.class.hit_test
 
   if hit_test == require("game.planet").planet_hit_test_method then
-    return entity_geom.entity_geom_contains_cursor_inline(e, mouse)
+    return entity_geom.entity_geom_contains_cursor_inline(e, mouse) and 1 or 0
   end
   return (hit_test ~= nil and hit_test(e, mouse) ~= 0) and 1 or 0
 end

@@ -97,7 +97,7 @@ function M.pad_nav_aim_mode(nav)
 end
 
 local function live(e)
-  if e ~= nil and e.is_dead == 0 then
+  if e ~= nil and not e.is_dead then
     return e
   end
   return nil
@@ -798,7 +798,7 @@ local function cancel_point(nav)
     nav.cursor_y = PARKED_Y
   end
   local at = vec.vec_make(fixed.p8_fixed_from_int(nav.cursor_x), fixed.p8_fixed_from_int(nav.cursor_y))
-  assert(ui_module.ui_panel_box() == nil or geom.box_contains(ui_module.ui_panel_box(), at) == 0,
+  assert(ui_module.ui_panel_box() == nil or not geom.box_contains(ui_module.ui_panel_box(), at),
     "cancel_point: inside the ui's panel box the drop would be judged on the map, not cancelled")
 end
 

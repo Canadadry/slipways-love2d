@@ -32,7 +32,7 @@ local str = require("p8.str")
 
 local M = {}
 
-local g_probe_up = 0
+local g_probe_up = false
 local MAIN_ECONOMY_NONE = 0
 local MAIN_ECONOMY_PLACEHOLDER = 1
 local MAIN_ECONOMY_REAL = 2
@@ -44,7 +44,7 @@ M.main_economy_placeholder_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 M.g_main_economy_placeholder = {}
@@ -58,7 +58,7 @@ M.targeting_track_target_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 M.g_targeting_track_target = {}
@@ -85,7 +85,7 @@ local function targeting_track_slipway_predicate(e, ctx_ptr)
   start_p = slipway.slipway_end_map_pos(slipway.slipway_start(sw))
   end_p = slipway.slipway_end_map_pos(slipway.slipway_end(sw))
 
-  return geom.geom_near_segment(start_p, end_p, ctx.self_map_pos, fixed.P8_FIXED_LIT(0x000000d1, 0.0032))
+  return geom.geom_near_segment(start_p, end_p, ctx.self_map_pos, fixed.P8_FIXED_LIT(0x000000d1, 0.0032)) and 1 or 0
 end
 
 local function probe_panel_box_contains(rp)
@@ -94,7 +94,7 @@ local function probe_panel_box_contains(rp)
   if hw == nil then
     return 0
   end
-  return geom.box_contains(hw, rp)
+  return geom.box_contains(hw, rp) and 1 or 0
 end
 
 local function probe_is_target_class(cls)
@@ -207,7 +207,7 @@ function M.targeting_track(self, mouse)
   assert(bit.band(self.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_PROBE)) ~= 0 or
     require("game.planet").planet_is_family(self) ~= 0 or self.class == require("game.wormhole").wormhole_class(),
     "targeting_track: a host neither a probe, of the planet family nor a wormhole, none of whose drag runs it -- stop")
-  if entity_class.mouse_pos_has_world(mouse) ~= 0 then
+  if entity_class.mouse_pos_has_world(mouse) then
     entity_class.entity_set_pos(self, mouse_world_vec)
   else
     entity_class.entity_clear_pos(self)
@@ -326,7 +326,7 @@ function M.targeting_tooltip_method(self, screen_pos)
 end
 
 local function probe_host_raise_is_dead(self)
-  self.is_dead = 1
+  self.is_dead = true
 end
 
 local function targeting_charge(self)
@@ -449,7 +449,7 @@ M.probe_class_def = {
   states = {},
   tags = entity_class.TAG(entity_class.TAG_PROBE),
   lineage = entity_class.LINEAGE(entity_class.LINEAGE_PROBE),
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 function M.probe_init_instance(self, cls, archetype)
@@ -466,7 +466,7 @@ function M.probe_init_instance(self, cls, archetype)
   end
   self.targeting.archetype = self.archetype.targeting
   M.targeting_set_target(self.targeting, nil)
-  self.is_dead = 0
+  self.is_dead = false
   self.targeting.cost = self.archetype.targeting.cost
   self.emitter.speed_factor = self.archetype.emitter.speed_factor
   self.emitter.angle_slices = self.archetype.emitter.angle_slices
@@ -481,7 +481,7 @@ end
 local function probe_create(keys)
   local self
 
-  assert(g_probe_up ~= 0, "probe_init() must run first")
+  assert(g_probe_up, "probe_init() must run first")
   self = {}
   M.probe_init_instance(self, M.probe_class_def, game_data.probe_archetype)
   if keys ~= nil then
@@ -504,7 +504,7 @@ end
 function M.probe_init()
   M.probe_shutdown()
 
-  g_probe_up = 1
+  g_probe_up = true
 
   M.g_main_economy_placeholder.research_points = nil
   M.g_main_economy_placeholder.credits = nil
@@ -512,7 +512,7 @@ function M.probe_init()
 end
 
 function M.probe_shutdown()
-  g_probe_up = 0
+  g_probe_up = false
   M.probe_set_main_economy(nil)
 end
 

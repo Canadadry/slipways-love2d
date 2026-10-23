@@ -139,7 +139,7 @@ function M.emitter_update(graphics, memory, self)
   assert(emitter ~= nil, "emitter_update: a class that carries no particle emitter is no receiver -- stop")
 
   layer, screen_pos = emitter_host_layer_pos(self)
-  if layer < fixed.p8_fixed_from_int(10) and entity_geom.entity_geom_is_on_screen(self) == 0 then
+  if layer < fixed.p8_fixed_from_int(10) and not entity_geom.entity_geom_is_on_screen(self) then
     return
   end
 

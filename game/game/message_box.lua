@@ -71,8 +71,8 @@ local function article_zero()
   }
 end
 
-local g_message_box_up = 0
-local g_toast_up = 0
+local g_message_box_up = false
+local g_toast_up = false
 local g_shown_message_box = nil
 
 function M.shown_message_box()
@@ -87,7 +87,7 @@ end
 function M.message_box_close_shown()
   local shown = M.shown_message_box()
   if shown ~= nil then
-    shown.is_dead = 1
+    shown.is_dead = true
     M.message_box_set_shown(nil)
   end
 end
@@ -101,7 +101,7 @@ function M.message_box_construct(self)
 
   previous = M.shown_message_box()
   if previous ~= nil then
-    previous.is_dead = 1
+    previous.is_dead = true
   end
   M.message_box_set_shown(self)
 end
@@ -184,7 +184,7 @@ function M.message_box_draw_overlay(gfx, mem, self)
   end
 
   if t > 0x000a8000 then
-    self.is_dead = 1
+    self.is_dead = true
     M.message_box_set_shown(nil)
     assert(M.shown_message_box() == nil,
       "message_box_draw_overlay: the closing box marks itself dead and clears the shown message box")
@@ -196,7 +196,7 @@ M.message_box_class_def = {
   tags = entity_class.TAG(entity_class.TAG_MESSAGE_BOX),
   states = {},
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function message_box_next_article(self)
@@ -274,7 +274,7 @@ local function message_box_create(keys)
   self.duration_scale = self.archetype.duration_scale
   self.keep_open = nil
   self.articles = {}
-  self.is_dead = 0
+  self.is_dead = false
   self.articles_count = 0
   if keys ~= nil then
     if keys.duration_scale ~= nil then
@@ -289,11 +289,11 @@ end
 
 function M.message_box_init()
   M.message_box_shutdown()
-  g_message_box_up = 1
+  g_message_box_up = true
 end
 
 function M.message_box_shutdown()
-  g_message_box_up = 0
+  g_message_box_up = false
   M.message_box_set_shown(nil)
 end
 
@@ -316,7 +316,7 @@ end
 local function toast_follow_source(self)
   local source = entity_id.entity_get(self.follow)
 
-  if source ~= nil and entity_class.entity_has_pos(source) ~= 0 then
+  if source ~= nil and entity_class.entity_has_pos(source) then
     entity_class.entity_set_pos(self, source.pos)
   end
 end
@@ -326,7 +326,7 @@ function M.toast_construct(self)
     return
   end
 
-  if entity_class.entity_has_pos(self) == 0 then
+  if not entity_class.entity_has_pos(self) then
     local ui = require("game.ui")
     local scroll = require("game.scroll")
     local je = ui.main_mouse_typed()
@@ -352,7 +352,7 @@ function M.toast_update(self)
   new_l = fixed.p8_fixed_add(self.fade, 0x00001999)
   self.fade = new_l
 
-  self.is_dead = (new_l >= fixed.p8_fixed_from_int(5)) and 1 or 0
+  self.is_dead = new_l >= fixed.p8_fixed_from_int(5)
 end
 
 local function toast_update_method(self, t)
@@ -387,7 +387,7 @@ M.toast_class_def = {
   states = { [entity_class.ENTITY_STATE_NORMAL] = toast_update_method },
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function toast_create(keys)
@@ -399,13 +399,13 @@ local function toast_create(keys)
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
   self.fade = self.archetype.fade
   self.follow = nil
-  self.is_dead = 0
+  self.is_dead = false
   self.text = ""
   self.color = fixed.p8_fixed_from_int(0)
   if keys ~= nil then
     local source = entity_id.entity_get(keys.source)
 
-    if source ~= nil and entity_class.entity_has_pos(source) ~= 0 then
+    if source ~= nil and entity_class.entity_has_pos(source) then
       entity_class.entity_set_pos(self, source.pos)
       self.follow = keys.source
     elseif keys.pos ~= nil then
@@ -423,11 +423,11 @@ end
 
 function M.toast_init()
   M.toast_shutdown()
-  g_toast_up = 1
+  g_toast_up = true
 end
 
 function M.toast_shutdown()
-  g_toast_up = 0
+  g_toast_up = false
 end
 
 function M.toast_ready()

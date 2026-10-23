@@ -263,7 +263,7 @@ function M.score_panel_update(self)
       keys.duration_scale = fixed.p8_fixed_from_int(3)
       keys.keep_open = score_panel_update_keep_open_method
       made = message_box.message_box_new(keys)
-      while is_ready ~= 0 and i < game_data.SCORE_ROWS_COUNT do
+      while is_ready and i < game_data.SCORE_ROWS_COUNT do
         score_panel_update_add_row(made, game_data.score_rows_table[i], ctx)
         i = i + 1
       end

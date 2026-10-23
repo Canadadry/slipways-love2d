@@ -11,7 +11,7 @@
 --     has_refresh, left_press, accept_drop, drag, drop, attach_slipway,
 --     offer_trade, draw_at, spawn_particle, states (indexed from 0, STATE_COUNT
 --     entries), tags, lineage, apply_camera, release, skip_draw_off_screen }.
---     skip_draw_off_screen 1: draw_layers calls draw only when
+--     skip_draw_off_screen true: draw_layers calls draw only when
 --     entity_geom_is_on_screen holds, so draw may trust it.
 --   down_t: { stop, held } (held an entity id).
 --   mouse_pos_t: { world, screen, has }.
@@ -64,16 +64,16 @@ function M.entity_init_header(self, cls)
   self.class = cls
   self.state = 0
   self.state_time = 0
-  self.is_dead = 0
+  self.is_dead = false
   self.id = nil
 end
 
 function M.entity_has_pos(self)
-  return (self.pos ~= nil) and 1 or 0
+  return self.pos ~= nil
 end
 
 function M.entity_has_map_pos(self)
-  return (self.map_pos ~= nil) and 1 or 0
+  return self.map_pos ~= nil
 end
 
 -- The zero vector when the position is absent.
@@ -112,16 +112,16 @@ M.MOUSE_POS_HAS_WORLD = bit_module.lshift(1, 0)
 M.MOUSE_POS_HAS_SCREEN = bit_module.lshift(1, 1)
 
 function M.mouse_pos_has_world(mouse)
-  return (bit_module.band(mouse.has, M.MOUSE_POS_HAS_WORLD) ~= 0) and 1 or 0
+  return bit_module.band(mouse.has, M.MOUSE_POS_HAS_WORLD) ~= 0
 end
 
 function M.mouse_pos_has_screen(mouse)
-  return (bit_module.band(mouse.has, M.MOUSE_POS_HAS_SCREEN) ~= 0) and 1 or 0
+  return bit_module.band(mouse.has, M.MOUSE_POS_HAS_SCREEN) ~= 0
 end
 
 -- The zero vector when the world point is absent.
 function M.mouse_pos_world(mouse)
-  if M.mouse_pos_has_world(mouse) ~= 0 then
+  if M.mouse_pos_has_world(mouse) then
     return vec.vec_make(mouse.world.x, mouse.world.y)
   end
   return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
@@ -129,7 +129,7 @@ end
 
 -- The zero vector when the screen point is absent.
 function M.mouse_pos_screen(mouse)
-  if M.mouse_pos_has_screen(mouse) ~= 0 then
+  if M.mouse_pos_has_screen(mouse) then
     return vec.vec_make(mouse.screen.x, mouse.screen.y)
   end
   return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))

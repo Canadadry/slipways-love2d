@@ -944,7 +944,7 @@ end
 local function capture_probe(out)
   for i = 1, tagged_count(entity_class.TAG_PROBE) do
     local e = tagged_at(entity_class.TAG_PROBE, i)
-    if e.class ~= probe.probe_class() or e.is_dead ~= 0 or e.state ~= entity_class.ENTITY_STATE_SETTLED then
+    if e.class ~= probe.probe_class() or e.is_dead or e.state ~= entity_class.ENTITY_STATE_SETTLED then
       goto continue
     end
     out.probe = {
@@ -958,7 +958,7 @@ local function capture_probe(out)
 end
 
 local function is_saved(e)
-  return (e.is_dead == 0 and e.state ~= entity_class.ENTITY_STATE_PLACING) and 1 or 0
+  return (not e.is_dead and e.state ~= entity_class.ENTITY_STATE_PLACING) and 1 or 0
 end
 
 local function node_kind(cls)
@@ -1014,11 +1014,11 @@ local function capture_node_fields(node, planet)
 
   node.kind = node_kind(header.class)
   node.state = bit.band(header.state, 0xFF)
-  if entity_class.entity_has_pos(header) ~= 0 then
+  if entity_class.entity_has_pos(header) then
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_POS)
     node.pos = vec_of(header.pos)
   end
-  if entity_class.entity_has_map_pos(header) ~= 0 then
+  if entity_class.entity_has_map_pos(header) then
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_MAP_POS)
     node.map_pos = vec_of(header.map_pos)
   end

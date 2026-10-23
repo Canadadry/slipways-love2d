@@ -43,7 +43,7 @@ M.pause_menu_open_box_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 M.g_pause_menu_open_box = {}
@@ -305,7 +305,7 @@ function M.galaxy_menu_find_button(i)
   local bucket = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_HIT_TEST)
   for k = 1, #bucket do
     local e = bucket[k]
-    if e.is_dead == 0 and e.class == ui_button.button_class() and e.on_click == on_click then
+    if not e.is_dead and e.class == ui_button.button_class() and e.on_click == on_click then
       return e
     end
   end

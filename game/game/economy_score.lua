@@ -54,7 +54,7 @@ end
 
 function M.economy_score_planet_upkeep(pt)
   if pt ~= nil and bit.band(pt.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)) ~= 0
-      and pt.archetype.is_structure ~= 0 then
+      and pt.archetype.is_structure then
     local structure_list = entity_registry.entities_by_tag(entity_class.TAG_STRUCTURE)
     return fixed.p8_fixed_from_int(structure_list ~= nil and #structure_list or 0)
   end
@@ -118,7 +118,7 @@ function M.economy_score_trade_income(entity)
         local oz
         assert(planet_module.planet_is_family(partner) ~= 0, "economy_score_trade_income: a trade leads to a planet")
         oz = partner
-        if oz.archetype.is_planet ~= 0 then
+        if oz.archetype.is_planet then
           local trade_mult = fixed.p8_fixed_from_int(0)
           local hs = planet.archetype.trade_multiplier
           local planet_bonus = fixed.p8_fixed_from_int(0)

@@ -42,7 +42,7 @@ M.LAYOUT_ROW_CELL_TRUE = 4
 M.LAYOUT_ROW_SCALAR_NOTHING = 0
 M.LAYOUT_ROW_SCALAR_FIXED = 1
 
-local g_layout_up = 0
+local g_layout_up = false
 local g_row_serial = 0
 
 -- strlen: a NUL byte ends the text.
@@ -396,7 +396,7 @@ M.layout_row_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function row_struct_init(self)
@@ -472,7 +472,7 @@ M.tooltip_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function tooltip_struct_alloc()
@@ -496,11 +496,11 @@ end
 
 function M.layout_init()
   M.layout_shutdown()
-  g_layout_up = 1
+  g_layout_up = true
 end
 
 function M.layout_shutdown()
-  g_layout_up = 0
+  g_layout_up = false
 end
 
 function M.layout_row_ready()

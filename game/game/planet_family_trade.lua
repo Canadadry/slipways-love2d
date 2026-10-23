@@ -37,7 +37,7 @@ end
 
 M.synthesizer_synthesizable_resources_spent = { count = 0, items = nil }
 
-local g_family_trade_up = 0
+local g_family_trade_up = false
 
 function M.slipgate_takes_slipway(self)
   return (#self.slipways < 3) and 1 or 0
@@ -66,7 +66,7 @@ M.slipgate_left_press_empty_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 M.slipgate_left_press_empty = {}
@@ -88,7 +88,7 @@ function M.slipgate_left_press(self)
     return accept_drop_result
   end
 
-  assert(slipway.slipway_ready() ~= 0, "slipway_init() must run before slipgate_left_press builds a slipway")
+  assert(slipway.slipway_ready(), "slipway_init() must run before slipgate_left_press builds a slipway")
   keys.start = entity_id.entity_id_link(self)
   made = slipway.slipway_new(keys)
   accept_drop_result.held = entity_id.entity_id_link(made)
@@ -187,7 +187,7 @@ end
 
 M.slipgate_class_def = {
   draw = planet_display.planet_draw_method,
-  skip_draw_off_screen = 1,
+  skip_draw_off_screen = true,
   draw_overlay = probe.targeting_tooltip_method,
   hit_test = planet.planet_hit_test_method,
   new_year = planet.planet_new_year_method,
@@ -214,7 +214,7 @@ end
 local function slipgate_create(keys)
   local self = {}
 
-  assert(g_family_trade_up ~= 0, "planet_family_trade_init() must run first")
+  assert(g_family_trade_up, "planet_family_trade_init() must run first")
   slipgate_init_instance(self, M.slipgate_class_def, game_data.slipgate_archetype)
   planet.planet_copy_keys(self, keys)
   planet.planet_construct(self)
@@ -224,7 +224,7 @@ end
 
 M.infraspace_gate_class_def = {
   draw = planet_display.planet_draw_method,
-  skip_draw_off_screen = 1,
+  skip_draw_off_screen = true,
   draw_overlay = probe.targeting_tooltip_method,
   hit_test = planet.planet_hit_test_method,
   new_year = planet.planet_new_year_method,
@@ -247,7 +247,7 @@ M.infraspace_gate_class_def = {
 local function infraspace_gate_create(keys)
   local self = {}
 
-  assert(g_family_trade_up ~= 0, "planet_family_trade_init() must run first")
+  assert(g_family_trade_up, "planet_family_trade_init() must run first")
   slipgate_init_instance(self, M.infraspace_gate_class_def, game_data.infraspace_gate_archetype)
   self.infraspace = self.archetype.infraspace
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
@@ -316,7 +316,7 @@ end
 
 M.synthesizer_class_def = {
   draw = planet_family.ascension_draw_method,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
   draw_overlay = probe.targeting_tooltip_method,
   hit_test = planet.planet_hit_test_method,
   new_year = planet.planet_new_year_method,
@@ -340,7 +340,7 @@ M.synthesizer_class_def = {
 local function synthesizer_create(keys)
   local self = {}
 
-  assert(g_family_trade_up ~= 0, "planet_family_trade_init() must run first")
+  assert(g_family_trade_up, "planet_family_trade_init() must run first")
   planet_family.ascension_init_instance(self, M.synthesizer_class_def, game_data.synthesizer_archetype)
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "synthesizer_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
@@ -353,14 +353,14 @@ local function synthesizer_create(keys)
 end
 
 function M.planet_family_trade_init()
-  assert(planet_family.structure_ready() ~= 0 and planet_family.ascension_ready() ~= 0,
+  assert(planet_family.structure_ready() and planet_family.ascension_ready(),
     "planet_family_init() must run first")
   M.planet_family_trade_shutdown()
-  g_family_trade_up = 1
+  g_family_trade_up = true
 end
 
 function M.planet_family_trade_shutdown()
-  g_family_trade_up = 0
+  g_family_trade_up = false
 end
 
 function M.slipgate_ready()

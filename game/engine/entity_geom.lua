@@ -19,7 +19,7 @@ function M.entity_geom_contains_cursor_inline(e, mouse)
   local point
 
   if e == nil or e.hit_box == nil then
-    return 0
+    return false
   end
   if e.layer ~= nil and e.layer >= fixed.P8_FIXED_INT(10) then
     chosen = entity_class.mouse_pos_screen(mouse)
@@ -65,7 +65,7 @@ function M.entity_geom_is_on_screen(e)
   local margin = fixed.p8_fixed_from_int(12)
 
   return (fixed.p8_fixed_abs(fixed.p8_fixed_sub(fixed.p8_fixed_sub(e_pos.x, main_camera_pos.x), half_w)) <= fixed.p8_fixed_add(half_w, margin) and
-          fixed.p8_fixed_abs(fixed.p8_fixed_sub(fixed.p8_fixed_sub(e_pos.y, main_camera_pos.y), half_h)) <= fixed.p8_fixed_add(half_h, margin)) and 1 or 0
+          fixed.p8_fixed_abs(fixed.p8_fixed_sub(fixed.p8_fixed_sub(e_pos.y, main_camera_pos.y), half_h)) <= fixed.p8_fixed_add(half_h, margin))
 end
 
 function M.entity_geom_shake(p, e)
@@ -110,20 +110,20 @@ function M.entity_geom_nearest(p, j_, out_nearest)
   return mk, out_nearest
 end
 
--- Answers entity_geom_nearest(p, list, &n) <= threshold for any threshold under its 32767 bound; 0 for a NULL list.
+-- Answers entity_geom_nearest(p, list, &n) <= threshold for any threshold under its 32767 bound; false for a NULL list.
 function M.entity_geom_any_within(p, list, threshold)
   if list == nil then
-    return 0
+    return false
   end
   for i = 1, #list do
     local o_p = map_pos_of(list[i])
     local same_position = (p.x == o_p.x and p.y == o_p.y)
 
     if not same_position and vec.vec_length_squared(vec.vec_sub(p, o_p)) <= threshold then
-      return 1
+      return true
     end
   end
-  return 0
+  return false
 end
 
 -- Skips only `excluded`, by identity: another entity on the very point counts.

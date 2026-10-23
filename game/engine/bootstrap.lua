@@ -23,16 +23,16 @@ function M.reset_world()
   entity_registry.entity_registry_abandon_live_entities()
   entity_registry.entity_registry_init()
 
-  if entity.entity_ready() == 0 then
+  if not entity.entity_ready() then
     entity.entity_init()
   end
-  if scroll.camera_ready() == 0 then
+  if not scroll.camera_ready() then
     scroll.camera_init()
   end
-  if mouse.mouse_ready() == 0 then
+  if not mouse.mouse_ready() then
     mouse.mouse_init()
   end
-  if ui.ui_ready() == 0 then
+  if not ui.ui_ready() then
     ui.ui_init()
   end
 
@@ -67,7 +67,7 @@ function M.update_entities()
       qc.class.states[qc.state](qc, qc.state_time)
     end
 
-    if qc.is_dead ~= 0 then
+    if qc.is_dead then
       entity_registry.entity_unregister(qc)
     end
 

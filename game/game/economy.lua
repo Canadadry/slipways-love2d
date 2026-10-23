@@ -16,13 +16,13 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
-local g_economy_up = 0
+local g_economy_up = false
 
 M.economy_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 M.economy_archetype = {
@@ -65,11 +65,11 @@ end
 
 function M.economy_init()
   M.economy_shutdown()
-  g_economy_up = 1
+  g_economy_up = true
 end
 
 function M.economy_shutdown()
-  g_economy_up = 0
+  g_economy_up = false
 end
 
 function M.economy_ready()

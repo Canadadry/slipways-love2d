@@ -24,7 +24,7 @@ local str = require("p8.str")
 
 local M = {}
 
-local g_structure_icon_up = 0
+local g_structure_icon_up = false
 
 local g_cursor = nil
 
@@ -45,7 +45,7 @@ M.structure_icon_kind_view_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 function M.structure_icon_kind_view(self)
@@ -85,7 +85,7 @@ function M.structure_icon_refresh(self)
     return
   end
 
-  assert(g_structure_icon_up ~= 0, "structure_icon_init() must run before structure_icon_refresh moves the shared cursor")
+  assert(g_structure_icon_up, "structure_icon_init() must run before structure_icon_refresh moves the shared cursor")
 
   if g_cursor ~= nil then
     entity_class.entity_set_pos(self, g_cursor)
@@ -99,7 +99,7 @@ function M.structure_icon_refresh(self)
 end
 
 function M.structure_icon_is_revealed(e)
-  if e == nil or e.is_dead ~= 0 or e.class ~= M.structure_icon_class() then
+  if e == nil or e.is_dead or e.class ~= M.structure_icon_class() then
     return 0
   end
   local icon = e
@@ -119,7 +119,7 @@ function M.structure_icon_left_press(self)
   local held
   local out = { stop = 0, held = nil }
 
-  assert(g_structure_icon_up ~= 0,
+  assert(g_structure_icon_up,
     "structure_icon_init() must run before structure_icon_left_press bumps the shared identifier counter")
   new_id = fixed.p8_fixed_add(g_id_counter or fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(1))
   g_id_counter = new_id
@@ -180,7 +180,7 @@ local function structure_icon_draw_method(self, screen_pos)
 end
 
 local function structure_icon_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse)
+  return entity_geom.entity_geom_contains_cursor(self, mouse) and 1 or 0
 end
 
 M.structure_icon_class_def = {
@@ -191,7 +191,7 @@ M.structure_icon_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function structure_icon_create(keys)
@@ -199,7 +199,7 @@ local function structure_icon_create(keys)
   local archetype = game_data.structure_icon_archetype
   local hit_box
 
-  assert(g_structure_icon_up ~= 0, "structure_icon_init() must run before a structure icon is created")
+  assert(g_structure_icon_up, "structure_icon_init() must run before a structure icon is created")
   entity.entity_init_instance(self, M.structure_icon_class_def, archetype.state, archetype.state_time)
   self.archetype = archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
@@ -220,13 +220,13 @@ end
 function M.structure_icon_init()
   M.structure_icon_shutdown()
 
-  g_structure_icon_up = 1
+  g_structure_icon_up = true
   structure_icon_clear_cursor()
   g_id_counter = fixed.p8_fixed_from_int(0)
 end
 
 function M.structure_icon_shutdown()
-  g_structure_icon_up = 0
+  g_structure_icon_up = false
   structure_icon_clear_cursor()
 end
 
@@ -244,7 +244,7 @@ end
 
 -- The archetype's own table, nil while the module is down.
 function M.structure_icon_rest_cursor()
-  return (g_structure_icon_up ~= 0) and game_data.structure_icon_archetype.rest_cursor or nil
+  return g_structure_icon_up and game_data.structure_icon_archetype.rest_cursor or nil
 end
 
 function M.structure_icon_has_cursor()
@@ -260,7 +260,7 @@ function M.structure_icon_cursor()
 end
 
 function M.structure_icon_set_id_counter(id)
-  assert(g_structure_icon_up ~= 0,
+  assert(g_structure_icon_up,
     "structure_icon_init() must run before structure_icon_set_id_counter, or the next init resets the counter")
   g_id_counter = id
 end

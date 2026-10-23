@@ -27,7 +27,7 @@ function M.pad_slipway_init(slipway)
 end
 
 function M.pad_slipway_can_start(e)
-  if e == nil or e.is_dead ~= 0 or planet.planet_is_family(e) == 0 or e.state ~= entity_class.ENTITY_STATE_SETTLED then
+  if e == nil or e.is_dead or planet.planet_is_family(e) == 0 or e.state ~= entity_class.ENTITY_STATE_SETTLED then
     return 0
   end
   return (bit.band(e.class.tags, entity_class.TAG(entity_class.TAG_SLIPGATE)) == 0 or
@@ -53,7 +53,7 @@ function M.pad_slipway_between(start, target)
   local slipways = start.slipways
   for i = 1, #slipways do
     local slipway = entity_id.entity_id_resolve(slipways[i])
-    assert(slipway.is_dead == 0,
+    assert(not slipway.is_dead,
       "pad_slipway_between: a slipway dies only when its drop is refused, before it joins a planet's list")
     if slipway_module.slipway_other_end(slipway, start) == target then
       return slipway
