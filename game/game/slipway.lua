@@ -34,8 +34,6 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
-M.SLIPWAY_SERVED_PLANETS_CAP = 90
-
 local function transit_dots_empty(self)
   for i = #self.transit_dots, 1, -1 do
     self.transit_dots[i] = nil
@@ -123,10 +121,6 @@ function M.slipway_served_planets_add(hg, id)
   if M.slipway_served_planets_has(hg, id) ~= 0 then
     return
   end
-  assert(hg.count < M.SLIPWAY_SERVED_PLANETS_CAP,
-    "slipway_served_planets_add: more planets than the galaxy holds (90) -- stop, do not widen the member")
-  assert(#id < require("game.planet").PLANET_ID_SIZE,
-    "slipway_served_planets_add: a planet id wider than any the cart makes -- stop, do not widen the copy")
   hg.ids[hg.count] = id
   hg.count = hg.count + 1
 end

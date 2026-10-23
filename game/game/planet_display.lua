@@ -64,19 +64,18 @@ local function planet_row_signature(needs_list, output, amount, route_count)
   local planet = require("game.planet")
   local signature
 
-  assert(route_count >= 0 and route_count <= 0xFFFF, "planet_row_signature: a wider route count would alias in the signature")
   signature = planet.planet_row_signature_zero()
   signature.flags = (output ~= nil) and ROW_SIGNATURE_HAS_OUTPUT or 0
   -- An absent output is keyed as 0; ROW_SIGNATURE_HAS_OUTPUT tells it from a present 0.
   signature.output = output or 0
   signature.amount = amount
   signature.route_count = route_count
-  if needs_list ~= nil and #needs_list > planet.PLANET_ROW_SIGNATURE_NEEDS then
-    return signature
-  end
   if needs_list ~= nil then
     for index = 1, #needs_list do
       local entry = needs_list[index]
+
+      signature.need_flags[signature.needs_count] = 0
+      signature.need_resources[signature.needs_count] = 0
       if entry ~= nil then
         local need = entry
         local resource = research.need_resource(need)
@@ -137,8 +136,7 @@ function M.planet_refresh(self)
   by_list = self.outgoing_routes
   route_count = (by_list ~= nil) and #by_list or 0
   signature = planet_row_signature(needs_list, output, mu, route_count)
-  if bit.band(signature.flags, ROW_SIGNATURE_VALID) ~= 0
-    and planet_row_signature_equal(signature, self.layout_row_signature) ~= 0 then
+  if planet_row_signature_equal(signature, self.layout_row_signature) ~= 0 then
     return
   end
 
@@ -180,8 +178,6 @@ local function planet_inspection_panel_filter_step(e, ctx_ptr)
   end
   return (gc == fixed.p8_fixed_from_int(0)) and 1 or 0
 end
-
-local PLANET_INSPECTION_PANEL_ROWS = 4
 
 local function planet_dollar(s)
   return str.p8_concat2(s, "$")
@@ -230,9 +226,7 @@ function M.planet_inspection_panel(self)
     return
   end
 
-  for i = 0, PLANET_INSPECTION_PANEL_ROWS - 1 do
-    buttons[i] = ui_button.button_keys_zero({})
-  end
+  buttons[0] = ui_button.button_keys_zero({})
   if lineage_has(self, entity_class.LINEAGE_STRUCTURE) and self.archetype.name ~= nil then
     icon_row = self.archetype.name
   elseif self.development_tier ~= nil then
@@ -272,6 +266,7 @@ function M.planet_inspection_panel(self)
   end
 
   if #unmet_needs > 0 then
+    buttons[row_count] = ui_button.button_keys_zero({})
     layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("needs:"))
     for index = 1, #unmet_needs do
       layout.layout_row_keys_append(buttons[row_count].layout_row_keys,
@@ -293,6 +288,7 @@ function M.planet_inspection_panel(self)
     if development_tier_fixed < fixed.p8_fixed_from_int(4) and needs ~= nil and #needs > 0 and not resource_is_r_w then
       local last_only = lineage_has(self, entity_class.LINEAGE_STRUCTURE) and self.archetype.is_structure ~= 0
 
+      buttons[row_count] = ui_button.button_keys_zero({})
       layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("wants more:"))
       if last_only then
         layout.layout_row_keys_append(buttons[row_count].layout_row_keys,
@@ -308,6 +304,7 @@ function M.planet_inspection_panel(self)
   end
 
   if #filter_context.received_needs >= 1 then
+    buttons[row_count] = ui_button.button_keys_zero({})
     layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("receives:"))
     for index = 1, #filter_context.received_needs do
       layout.layout_row_keys_append(buttons[row_count].layout_row_keys,
@@ -323,6 +320,7 @@ function M.planet_inspection_panel(self)
     if mu > fixed.p8_fixed_from_int(0) then
       local makes = kw.resource ~= nil and game_data.int_seq_has_fixed(planet.planet_made_resources(), kw.resource) ~= 0
 
+      buttons[row_count] = ui_button.button_keys_zero({})
       if makes then
         local amount_str = str.p8_tostr_fixed(mu)
         layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("makes:"))

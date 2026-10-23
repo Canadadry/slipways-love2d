@@ -47,5 +47,5 @@
   - [x] Chunk 1 — startup, devtools and storage
   - [x] Chunk 2 — layout, row image and text image
   - [x] Chunk 3 — boxes and panels
-  - [ ] Chunk 4 — planets, slipways and the economy
+  - [x] Chunk 4 — planets, slipways and the economy
   - [ ] Chunk 5 — research and tech gate, full check

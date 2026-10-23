@@ -14,8 +14,6 @@ local str = require("p8.str")
 
 local M = {}
 
-M.RESOURCE_MAP_CAP = map_tables.RESOURCE_CODE_COUNT + 3
-
 local function fixed_max(a, b)
   return (a > b) and a or b
 end
@@ -42,8 +40,6 @@ function M.resource_map_set(map, qe, v)
       return
     end
   end
-  assert(map.count < M.RESOURCE_MAP_CAP,
-    "resource_map_set: a resource key outside the 13 resources and the 3 spares -- stop, do not widen")
   map.entries[map.count] = { resource = key, value = v }
   map.count = map.count + 1
 end

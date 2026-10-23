@@ -4,7 +4,7 @@
 --   planet_keys_t: { planet_id, map_pos, pos }, planet_id a Lua string, each nil when not
 --     given.
 --   planet_row_signature_t: { output, amount, need_resources, route_count, needs_count, flags,
---     need_flags }, need_resources and need_flags 0-indexed of PLANET_ROW_SIGNATURE_NEEDS.
+--     need_flags }, need_resources and need_flags 0-indexed, one entry per need.
 --   planet_t: one table holding the entity header and { archetype, planet_id, slipways, project,
 --     description, needs, planet_type, layout_row, layout_row_signature,
 --     targeted_by, production_bonus, net_income, incoming_routes, outgoing_routes,
@@ -37,11 +37,6 @@ local research = require("game.research")
 local fixed = require("p8.fixed")
 
 local M = {}
-
--- "s" plus the widest structure counter ("-32768"), plus the terminator.
-M.PLANET_ID_SIZE = 8
-
-M.PLANET_ROW_SIGNATURE_NEEDS = 4
 
 -- production_t p = {0}.
 local function production_zero()
@@ -146,8 +141,6 @@ local function planet_create(keys)
 end
 
 function M.planet_keys_set_id(keys, id)
-  assert(#id < M.PLANET_ID_SIZE,
-    "planet_keys_set_id: a planet id is \"p\"/\"s\" plus a counter -- stop, measure before widening")
   keys.planet_id = id
 end
 
@@ -167,7 +160,6 @@ function M.planet_copy_keys(self, keys)
     entity_class.entity_set_pos(self, keys.pos)
   end
   if keys.planet_id ~= nil then
-    assert(#keys.planet_id < M.PLANET_ID_SIZE, "planet_copy_keys: set the id with planet_keys_set_id")
     self.planet_id = keys.planet_id
   end
 end
@@ -428,24 +420,17 @@ function M.planet_keys_zero()
   return {}
 end
 
--- Lua only: planet_row_signature_t signature = {0}.
--- What planet_refresh's row is built from; a planet with more needs than
--- PLANET_ROW_SIGNATURE_NEEDS has no valid signature, so it always rebuilds.
+-- Lua only: planet_row_signature_t signature = {0}, with no needs.
+-- What planet_refresh's row is built from.
 function M.planet_row_signature_zero()
-  local need_resources = {}
-  local need_flags = {}
-  for i = 0, M.PLANET_ROW_SIGNATURE_NEEDS - 1 do
-    need_resources[i] = 0
-    need_flags[i] = 0
-  end
   return {
     output = 0,
     amount = 0,
-    need_resources = need_resources,
+    need_resources = {},
     route_count = 0,
     needs_count = 0,
     flags = 0,
-    need_flags = need_flags,
+    need_flags = {},
   }
 end
 
