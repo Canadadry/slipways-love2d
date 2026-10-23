@@ -43,10 +43,6 @@ M.SLIPWAY_SERVED_PLANETS_CAP = 90
 
 M.SLIPWAY_TRANSIT_DOTS_RESERVE = 24
 
-local function entity_id_none()
-  return nil
-end
-
 -- pointer_list_t list = {0}.
 local function list_zero()
   return { items = nil, count = 0, capacity = 0 }
@@ -193,7 +189,7 @@ function M.slipway_drag(self, mouse)
       entity_class.entity_clear_pos(self.point)
     end
     entity_class.entity_set_map_pos(self.point, vec.vec_div(point_pos, fixed.p8_fixed_from_int(128)))
-    self.end_ = entity_id_none()
+    self.end_ = nil
     self.end_is_point = 1
   end
 
@@ -430,16 +426,16 @@ local function slipway_create(keys)
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
   self.targeting.archetype = self.archetype.targeting
   self.fade_in_step = self.archetype.fade_in_step
-  self.start = entity_id_none()
+  self.start = nil
   self.transit_dots = list_zero()
   self.served_planets.count = 0
-  self.end_ = entity_id_none()
+  self.end_ = nil
   self.end_is_point = 0
   self.targeting.cost = self.archetype.targeting.cost
   self.targeting.has_cost = self.archetype.targeting.has_cost
   self.infraspace = 0
   require("game.probe").targeting_set_target(self.targeting, nil)
-  self.targeted_by = entity_id_none()
+  self.targeted_by = nil
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.is_dead = 0
   entity_class.entity_init_header(self.point, M.slipway_mouse_point_class_def)
@@ -486,7 +482,7 @@ end
 
 -- Lua only: slipway_keys_t keys = {0}.
 function M.slipway_keys_zero()
-  return { start = entity_id_none() }
+  return { start = nil }
 end
 
 return M

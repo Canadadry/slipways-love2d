@@ -35,12 +35,8 @@ local str = require("p8.str")
 
 local M = {}
 
-local function entity_id_none()
-  return nil
-end
-
 local function down_zero()
-  return { stop = 0, held = entity_id_none() }
+  return { stop = 0, held = nil }
 end
 
 -- layout_row_tuple_t tuple = {0}.
@@ -601,7 +597,7 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
       gfx_module.p8_fillp_transparent(graphics, 0xAAAA)
       gfx_module.p8_circfill(graphics, memory, screen_x, screen_y, radius, 2)
       gfx_module.p8_fillp_reset(graphics)
-      self.targeted_by = entity_id_none()
+      self.targeted_by = nil
     end
   end
 end

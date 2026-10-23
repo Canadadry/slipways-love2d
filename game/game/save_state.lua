@@ -15,7 +15,6 @@
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
 local background_module = require("game.background")
 local economy_score = require("game.economy_score")
@@ -994,7 +993,7 @@ end
 
 local function index_of(ids, count, id)
   for i = 0, count - 1 do
-    if entity_id_type.entity_id_equal(ids[i], id) ~= 0 then
+    if ids[i] == id then
       return i
     end
   end

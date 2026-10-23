@@ -24,10 +24,6 @@ local bit = require("bit")
 
 local M = {}
 
-local function entity_id_none()
-  return nil
-end
-
 local g_structure_icon_up = 0
 
 local g_cursor = vec.vec_make(0, 0)
@@ -131,7 +127,7 @@ function M.structure_icon_left_press(self)
   local id_num_str
   local keys = planet.planet_keys_zero()
   local held
-  local out = { stop = 0, held = entity_id_none() }
+  local out = { stop = 0, held = nil }
 
   assert(g_structure_icon_up ~= 0,
     "structure_icon_init() must run before structure_icon_left_press bumps the shared identifier counter")

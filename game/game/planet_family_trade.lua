@@ -28,12 +28,8 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
-local function entity_id_none()
-  return nil
-end
-
 local function down_zero()
-  return { stop = 0, held = entity_id_none() }
+  return { stop = 0, held = nil }
 end
 
 -- A trade_route_list_t assigned by value: a new header sharing the items, as the C copy shares

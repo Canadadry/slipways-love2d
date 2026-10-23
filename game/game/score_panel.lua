@@ -39,10 +39,6 @@ M.SCORE_PANEL_TEXT_CAP = 16
 local data_item = map_tables.map_tables_make_data_item
 local data_row = map_tables.map_tables_make_data_row
 
-local function entity_id_none()
-  return nil
-end
-
 -- data_item_t assigned into storage: every field of src written into dst.
 local function data_item_assign(dst, src)
   dst.text = src.text
@@ -63,7 +59,7 @@ local function data_items_zero(count)
 end
 
 local g_score_panel_up = 0
-local g_main_score_panel = entity_id_none()
+local g_main_score_panel = nil
 
 local function fixed_min(a, b)
   return (a < b) and a or b
@@ -329,7 +325,7 @@ local function score_panel_create()
     game_data.score_panel_archetype.state_time)
   self.archetype = game_data.score_panel_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
-  self.last_box = entity_id_none()
+  self.last_box = nil
   self.is_shown = 0
   self.has_is_shown = 0
   self.curtain = 0
@@ -356,7 +352,7 @@ function M.score_panel_init()
   g_score_panel_year_banner.keep_open = nil
 
   M.score_panel_set_init(nil)
-  g_main_score_panel = entity_id_none()
+  g_main_score_panel = nil
 
   score_panel_display.score_panel_display_init()
 end
@@ -365,7 +361,7 @@ function M.score_panel_shutdown()
   score_panel_display.score_panel_display_shutdown()
   g_score_panel_up = 0
   M.score_panel_set_init(nil)
-  g_main_score_panel = entity_id_none()
+  g_main_score_panel = nil
 end
 
 function M.score_panel_ready()

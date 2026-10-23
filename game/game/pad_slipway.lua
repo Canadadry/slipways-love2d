@@ -4,7 +4,6 @@
 --   pad_slipway_t: { start, target, phase, linked_before }, start and target entity ids (nil for none).
 local entity_class = require("engine.entity_class")
 local entity_id_list = require("engine.entity_id_list")
-local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local planet = require("game.planet")
 local planet_family_trade = require("game.planet_family_trade")
@@ -71,7 +70,7 @@ function M.pad_slipway_outcome(start, target, linked_before)
 end
 
 function M.pad_slipway_release(slipway, linked_before)
-  assert(slipway.phase == M.PAD_SLIPWAY_HELD and entity_id_type.entity_id_is_none(slipway.target) == 0,
+  assert(slipway.phase == M.PAD_SLIPWAY_HELD and slipway.target ~= nil,
     "pad_slipway_release: only a held slipway aimed at a target is released")
   slipway.linked_before = linked_before
   slipway.phase = M.PAD_SLIPWAY_RELEASED

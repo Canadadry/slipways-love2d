@@ -7,7 +7,6 @@
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id_list = require("engine.entity_id_list")
-local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local pad_direction = require("game.pad_direction")
@@ -23,10 +22,6 @@ local M = {}
 M.PAD_PANEL_ANY_LAYER = -32768
 
 local SCREEN_SPACE_LAYER = 10
-
-local function entity_id_none()
-  return nil
-end
 
 function M.pad_panel_box_open()
   local ui = ui_module.main_ui()
@@ -72,7 +67,7 @@ end
 local g_memo = {
   in_step = 0,
   known = 0,
-  key = { ui = entity_id_none(), economy = entity_id_none(), ephemerals_count = 0, generation = 0 },
+  key = { ui = nil, economy = nil, ephemerals_count = 0, generation = 0 },
   open = 0,
 }
 
@@ -96,13 +91,13 @@ function M.pad_panel_open()
     return panel_open_now(ui, economy)
   end
   local key = {
-    ui = ui ~= nil and ui.id or entity_id_none(),
-    economy = economy ~= nil and economy.id or entity_id_none(),
+    ui = ui ~= nil and ui.id or nil,
+    economy = economy ~= nil and economy.id or nil,
     ephemerals_count = ui ~= nil and ui.ephemerals.count or 0,
     generation = entity_registry.entity_registry_generation(),
   }
-  if g_memo.known == 0 or entity_id_type.entity_id_equal(g_memo.key.ui, key.ui) == 0 or
-    entity_id_type.entity_id_equal(g_memo.key.economy, key.economy) == 0 or
+  if g_memo.known == 0 or g_memo.key.ui ~= key.ui or
+    g_memo.key.economy ~= key.economy or
     g_memo.key.ephemerals_count ~= key.ephemerals_count or g_memo.key.generation ~= key.generation then
     g_memo.key = key
     g_memo.open = panel_open_now(ui, economy)

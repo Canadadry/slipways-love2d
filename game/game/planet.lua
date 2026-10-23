@@ -55,10 +55,6 @@ M.PLANET_HAS_INCOMING_ROUTES = bit.lshift(1, 4)
 M.PLANET_HAS_OUTGOING_ROUTES = bit.lshift(1, 5)
 M.PLANET_HAS_ID = bit.lshift(1, 6)
 
-local function entity_id_none()
-  return nil
-end
-
 -- production_t p = {0}.
 local function production_zero()
   return { has_resource = 0, resource = 0, amount = 0 }
@@ -160,7 +156,7 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.planet_type = nil
   self.layout_row = nil
   self.layout_row_signature = M.planet_row_signature_zero()
-  self.targeted_by = entity_id_none()
+  self.targeted_by = nil
   self.production_bonus = 0
   self.has_production_bonus = 0
   self.is_dead = 0

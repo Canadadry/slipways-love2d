@@ -45,10 +45,6 @@ M.UI_PAD_CROSSHAIR_COLOUR = 7
 M.SEND_TO_HOVERED_LEFT_PRESS = 0
 M.SEND_TO_HOVERED_ACCEPT_DROP = 1
 
-local function entity_id_none()
-  return nil
-end
-
 -- (entity_id_list_t){0}.
 local function entity_id_list_zero()
   return { items = nil, count = 0, capacity = 0 }
@@ -69,8 +65,8 @@ local MAIN_MOUSE_PLACEHOLDER = 1
 local MAIN_MOUSE_REAL = 2
 
 local g_main_mouse_state = MAIN_MOUSE_NONE
-local g_main_mouse = entity_id_none()
-local g_main_ui = entity_id_none()
+local g_main_mouse = nil
+local g_main_ui = nil
 
 function M.ui_panel_box()
   if g_ui_up ~= 0 then
@@ -182,12 +178,12 @@ local function ui_create()
   end
   self.hovered_by_layer.layer_count = M.UI_HOVER_LAYERS
   self.hovered_by_layer.written = 0
-  self.hovered = entity_id_none()
-  self.previous_hovered = entity_id_none()
-  self.left_held = entity_id_none()
-  self.pad_selection = entity_id_none()
+  self.hovered = nil
+  self.previous_hovered = nil
+  self.left_held = nil
+  self.pad_selection = nil
   self.pad_selection_frames = 0
-  self.pad_tab = entity_id_none()
+  self.pad_tab = nil
   self.pad_crosshair = 0
   entity.entity_construct(self)
   return self
@@ -203,7 +199,7 @@ end
 function M.ui_shutdown()
   g_ui_up = 0
   M.ui_set_main_mouse(nil)
-  g_main_ui = entity_id_none()
+  g_main_ui = nil
 end
 
 function M.main_mouse_placeholder_class()
@@ -313,10 +309,10 @@ end
 function M.ui_set_main_mouse(instance)
   if instance == nil then
     g_main_mouse_state = MAIN_MOUSE_NONE
-    g_main_mouse = entity_id_none()
+    g_main_mouse = nil
   elseif instance == M.g_main_mouse_placeholder then
     g_main_mouse_state = MAIN_MOUSE_PLACEHOLDER
-    g_main_mouse = entity_id_none()
+    g_main_mouse = nil
   else
     g_main_mouse_state = MAIN_MOUSE_REAL
     g_main_mouse = entity_id.entity_id_link(instance)
@@ -415,7 +411,7 @@ function M.ui_update_hover(self)
 
   self.hovered_by_layer.written = 0
   self.has_ = bit.bor(self.has_, M.UI_HAS_HOVERED_BY_LAYER)
-  self.hovered = entity_id_none()
+  self.hovered = nil
 
   mouse = ui_mouse_pos(self, M.main_mouse_typed())
 
@@ -521,7 +517,7 @@ function M.ui_handle_button(self, side)
     if held_inst.class.drop ~= nil then
       held_inst.class.drop(held_inst, target)
     end
-    self.left_held = entity_id_none()
+    self.left_held = nil
   end
 end
 
@@ -546,7 +542,7 @@ function M.ui_send_to_hovered(self, message, mouse, held, out_target, out_down)
       if more == 0 then
         break
       end
-      local kn = { stop = 0, held = entity_id_none() }
+      local kn = { stop = 0, held = nil }
 
       if message == M.SEND_TO_HOVERED_LEFT_PRESS then
         if h.class.left_press ~= nil then

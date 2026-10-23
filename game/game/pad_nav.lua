@@ -47,10 +47,6 @@ M.PAD_NAV_PLACEMENT_PRESSED = 1
 M.PAD_NAV_PLACEMENT_CARRYING = 2
 M.PAD_NAV_PLACEMENT_SUSPENDED = 3
 
-local function entity_id_none()
-  return nil
-end
-
 function M.pad_nav_panel_open()
   return pad_panel.pad_panel_open()
 end
@@ -245,7 +241,7 @@ local function reset_map_mode(nav)
   pad_jump.pad_jump_repeat_clear(nav.jump)
   nav.marker_frames = 0
   nav.placement = M.PAD_NAV_PLACEMENT_NONE
-  nav.suspended_carry = entity_id_none()
+  nav.suspended_carry = nil
   pad_slipway.pad_slipway_init(nav.slipway)
   pad_select.pad_select_init(nav.select)
 end
@@ -284,10 +280,10 @@ function M.pad_nav_init(nav, bindings)
   assert(bindings ~= nil, "pad_nav_init: the caller hands its compiled table, never NULL")
   create_sub_tables(nav)
   copy_bindings(nav, bindings)
-  nav.focus = entity_id_none()
+  nav.focus = nil
   pad_build.pad_build_init(nav.build)
   pad_cycle.pad_cycle_init(nav.cycle)
-  nav.game = entity_id_none()
+  nav.game = nil
   pad_jump.pad_jump_init(nav.jump)
   pad_back.pad_back_init(nav.back)
   reset_map_mode(nav)
@@ -502,7 +498,7 @@ end
 
 -- On a click's release frame probe_or_fold starts nothing: finish_step forces its press up.
 local function aim_mode_step(nav, pad_buttons, pressed, back_returns, release, still, select_tapped, played, shown)
-  nav.focus = entity_id_none()
+  nav.focus = nil
   nav.cursor_x = cint.div(vram.P8_SCREEN_WIDTH, 2)
   nav.cursor_y = cint.div(vram.P8_SCREEN_HEIGHT, 2)
   if still == 0 then
@@ -767,7 +763,7 @@ local function bar_or_cycle_step(nav, pad_buttons, pressed, release, played)
     panel_step(nav, pad_buttons, pressed, played)
     return
   end
-  nav.focus = entity_id_none()
+  nav.focus = nil
   if pad_build.pad_build_is_open(nav.build) ~= 0 then
     build_step(nav, pressed, release, played)
   end
@@ -807,7 +803,7 @@ local function cancel_point(nav)
 end
 
 local function placement_step(nav, pad_buttons, pressed, played)
-  nav.focus = entity_id_none()
+  nav.focus = nil
   nav.probe_or_fold_engaged = 0
   if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PLACEMENT,
       bindings_module.BINDINGS_ACTION_CANCEL_PLACEMENT) ~= 0 or M.pad_nav_panel_open() ~= 0 then
@@ -904,7 +900,7 @@ end
 
 local function jump_step(nav, pad_buttons, pressed, release, back_returns, select_tapped, played, shown)
   reset_aim_mode(nav)
-  nav.focus = entity_id_none()
+  nav.focus = nil
   seed_hovered(nav)
   if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_JUMP, bindings_module.BINDINGS_ACTION_ENTER_AIM) ~= 0 then
     enter_aim_mode(nav)
@@ -981,7 +977,7 @@ end
 
 local function slipway_step(nav, pad_buttons, pressed, back_returns, release, played, shown)
   reset_aim_mode(nav)
-  nav.focus = entity_id_none()
+  nav.focus = nil
   local start = M.pad_nav_slipway_start(nav)
   if start == nil or planet_module.planet_is_family(start) == 0 then
     drop_held_slipway()
@@ -1130,7 +1126,7 @@ local function resume_placement(nav)
   local suspended = placing_structure(entity_id.entity_get(nav.suspended_carry))
   if suspended == nil or probe.main_economy_typed() == nil then
     nav.placement = M.PAD_NAV_PLACEMENT_NONE
-    nav.suspended_carry = entity_id_none()
+    nav.suspended_carry = nil
     return 0
   end
   if menu.pause_menu_shown() ~= 0 then
@@ -1138,7 +1134,7 @@ local function resume_placement(nav)
   end
   ui_module.ui_set_left_held(ui_module.main_ui(), suspended)
   nav.placement = M.PAD_NAV_PLACEMENT_CARRYING
-  nav.suspended_carry = entity_id_none()
+  nav.suspended_carry = nil
   return 1
 end
 
@@ -1266,7 +1262,7 @@ local function run_step(nav, raw_buttons, played)
     pad_select.pad_select_step(nav.select, select_down, 0)
     pad_jump.pad_jump_repeat_clear(nav.jump)
     reset_aim_mode(nav)
-    nav.focus = entity_id_none()
+    nav.focus = nil
     finish_step(nav, release, nil, played)
     return
   end
@@ -1309,7 +1305,7 @@ local function run_step(nav, raw_buttons, played)
   -- The frame that opens or closes the bar or a cycle panel runs no other step, so one press never acts twice.
   if panels_changed ~= 0 or landed ~= 0 then
     reset_aim_mode(nav)
-    nav.focus = entity_id_none()
+    nav.focus = nil
     place_cursor(nav)
     if cancelled == CANCELLED_STRUCTURE then
       cancel_point(nav)
@@ -1318,7 +1314,7 @@ local function run_step(nav, raw_buttons, played)
     end
   elseif select == pad_select.PAD_SELECT_YEAR and select_ends_year(nav, played) ~= 0 then
     reset_aim_mode(nav)
-    nav.focus = entity_id_none()
+    nav.focus = nil
   elseif on_the_map(nav) ~= 0 then
     shown, repeat_kept = map_step(nav, pad_buttons, pressed, release, back_returns, select, year_release, played, shown,
       repeat_kept)

@@ -29,10 +29,6 @@ local M = {}
 
 M.BUTTON_HAS_SLIDE_TARGET = bit.lshift(1, 0)
 
-local function entity_id_none()
-  return nil
-end
-
 local function research_project_id_none()
   local none = research.RESEARCH_PROJECT_ID_NONE
   return { index = none.index, epoch = none.epoch }
@@ -117,7 +113,7 @@ local function button_create(keys)
   self.type_bias = 0
   self.has_type_bias = 0
   self.technology = nil
-  self.project_planet = entity_id_none()
+  self.project_planet = nil
   self.project = research_project_id_none()
   self.project_cost = 0
   self.has_project_cost = 0
@@ -413,7 +409,7 @@ end
 
 function M.button_left_press(self)
   local has_on_click = self ~= nil and self.on_click ~= nil
-  local out = { stop = 1, held = entity_id_none() }
+  local out = { stop = 1, held = nil }
 
   if has_on_click then
     self.on_click(self)
@@ -476,7 +472,7 @@ function M.modal_backdrop_new(keys)
 end
 
 function M.modal_backdrop_left_press(self)
-  local out = { stop = 1, held = entity_id_none() }
+  local out = { stop = 1, held = nil }
 
   if self == nil then
     return out
@@ -513,7 +509,7 @@ function M.button_keys_zero(keys)
   keys.has_type_bias = 0
   keys.type_bias = 0
   keys.technology = nil
-  keys.project_planet = entity_id_none()
+  keys.project_planet = nil
   keys.project = research_project_id_none()
   keys.has_project_cost = 0
   keys.project_cost = 0
@@ -541,7 +537,7 @@ function M.button_zero()
   b.type_bias = 0
   b.has_type_bias = 0
   b.technology = nil
-  b.project_planet = entity_id_none()
+  b.project_planet = nil
   b.project = research_project_id_none()
   b.project_cost = 0
   b.has_project_cost = 0

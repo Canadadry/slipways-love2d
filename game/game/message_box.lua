@@ -50,10 +50,6 @@ M.TOAST_TEXT_CAP = 16
 
 M.OPEN_BOX_DESCRIPTION_CAP = 17
 
-local function entity_id_none()
-  return nil
-end
-
 local function zero_vec()
   return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
 end
@@ -95,7 +91,7 @@ end
 
 local g_message_box_up = 0
 local g_toast_up = 0
-local g_shown_message_box = entity_id_none()
+local g_shown_message_box = nil
 
 function M.shown_message_box()
   return entity_id.entity_get(g_shown_message_box)
@@ -382,7 +378,7 @@ function M.toast_update(self)
   end
 
   toast_follow_source(self)
-  self.follow = entity_id_none()
+  self.follow = nil
   entity_class.entity_set_pos(self, vec.vec_add(entity_class.entity_pos(self), self.archetype.velocity))
 
   new_l = fixed.p8_fixed_add(self.fade, 0x00001999)
@@ -434,7 +430,7 @@ local function toast_create(keys)
   self.archetype = game_data.toast_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
   self.fade = self.archetype.fade
-  self.follow = entity_id_none()
+  self.follow = nil
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.is_dead = 0
   self.text = ""
@@ -589,7 +585,7 @@ function M.toast_keys_zero()
   return {
     has_pos = 0,
     pos = vec.vec_make(0, 0),
-    source = entity_id_none(),
+    source = nil,
     has_text = 0,
     text = "",
     color = 0,

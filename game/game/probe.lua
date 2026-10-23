@@ -33,17 +33,13 @@ local str = require("p8.str")
 
 local M = {}
 
-local function entity_id_none()
-  return nil
-end
-
 local g_probe_up = 0
 local MAIN_ECONOMY_NONE = 0
 local MAIN_ECONOMY_PLACEHOLDER = 1
 local MAIN_ECONOMY_REAL = 2
 
 local g_main_economy_state = MAIN_ECONOMY_NONE
-local g_main_economy = entity_id_none()
+local g_main_economy = nil
 
 M.main_economy_placeholder_class_def = {
   states = {},
@@ -164,7 +160,7 @@ end
 function M.targeting_set_target(self, target)
   local slipway = require("game.slipway")
   local wormhole = require("game.wormhole")
-  local value = { kind = targeting_module.TARGETING_TARGET_NONE, id = entity_id_none() }
+  local value = { kind = targeting_module.TARGETING_TARGET_NONE, id = nil }
 
   if target == M.g_targeting_track_target then
     value.kind = targeting_module.TARGETING_TARGET_TRACK_THROWAWAY
@@ -578,10 +574,10 @@ end
 function M.probe_set_main_economy(instance)
   if instance == nil then
     g_main_economy_state = MAIN_ECONOMY_NONE
-    g_main_economy = entity_id_none()
+    g_main_economy = nil
   elseif instance == M.g_main_economy_placeholder then
     g_main_economy_state = MAIN_ECONOMY_PLACEHOLDER
-    g_main_economy = entity_id_none()
+    g_main_economy = nil
   else
     g_main_economy_state = MAIN_ECONOMY_REAL
     g_main_economy = entity_id.entity_id_link(instance)

@@ -9,7 +9,6 @@
 -- fields whose two list tables are shared, as the C copies share their items.
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
-local entity_id_type = require("engine.entity_id_type")
 local value_list = require("engine.value_list")
 
 local M = {}
@@ -92,7 +91,7 @@ local function id_list_extended(list, extra)
   end
   if extra ~= nil then
     local id = entity_id.entity_id_of(extra)
-    assert(entity_id_type.entity_id_is_none(id) == 0,
+    assert(id ~= nil,
       "trade_extend: a route holds constructed planets and slipways only")
     entity_id_list.entity_id_list_add(out, id)
   end

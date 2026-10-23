@@ -10,7 +10,6 @@
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local exit_queue = require("engine.exit_queue")
 local game_data = require("game.game_data")
@@ -359,7 +358,7 @@ function M.entity_registry_set_layer(e, layer)
   e.has = bit.bor(e.has, entity_class.ENTITY_HAS_LAYER)
   e.layer = layer
   local new_key = layer_key(e)
-  if new_key == old_key or entity_id_type.entity_id_is_none(entity_id.entity_id_of(e)) ~= 0 then
+  if new_key == old_key or entity_id.entity_id_of(e) == nil then
     return
   end
   for i = 0, ENTITY_MESSAGE_COUNT - 1 do
