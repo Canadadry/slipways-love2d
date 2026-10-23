@@ -117,7 +117,7 @@ function M.layout_row_cell_row(row)
   end
   tuple.count = row.count
   for i = 0, row.count - 1 do
-    tuple.scalars[i] = tuple_scalar_of_item(row.items[i])
+    tuple.scalars[i] = tuple_scalar_of_item(row.items[i + 1])
   end
   return M.layout_row_cell_tuple(tuple)
 end
@@ -337,7 +337,7 @@ local function tooltip_line(item)
   end
   assert(item.row.draw_function == map_tables.DRAW_FUNCTION_NONE,
     "tooltip_line: a line's only named key is its color; a draw_function has no member -- stop, do not add one")
-  for i = 0, item.row.count - 1 do
+  for i = 1, item.row.count do
     M.layout_row_keys_append(keys, row_scalar_item(item.row.items[i]))
   end
   if item.row.color ~= nil then
@@ -352,7 +352,7 @@ local function tooltip_construct(self, row)
   -- A table even for no line: tooltip_draw_at() skips a nil `rows` but draws an empty tooltip's frame.
   self.rows = {}
   for i = 0, n - 1 do
-    self.rows[i] = tooltip_line(row.items[i])
+    self.rows[i] = tooltip_line(row.items[i + 1])
   end
   self.rows_count = n
 end
@@ -458,7 +458,7 @@ function M.layout_row_keys_of_row(row)
   assert(row.draw_function == map_tables.DRAW_FUNCTION_NONE and row.resource == nil,
     "layout_row_keys_of_row: a row passes positional items and a color; a draw_function or a resource has no member "
     .. "-- stop, do not add one")
-  for i = 0, row.count - 1 do
+  for i = 1, row.count do
     M.layout_row_keys_append(keys, M.layout_row_cell_item(row.items[i]))
   end
   if row.color ~= nil then

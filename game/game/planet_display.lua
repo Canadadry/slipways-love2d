@@ -205,7 +205,7 @@ local function need_row(need)
 end
 
 local gap_items = {
-  [0] = map_tables.map_tables_make_data_item({ is_false = true }),
+  map_tables.map_tables_make_data_item({ is_false = true }),
   map_tables.map_tables_make_data_item({ number = 1 }),
 }
 local gap = map_tables.map_tables_make_data_row({ count = 2, items = gap_items })

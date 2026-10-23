@@ -97,9 +97,9 @@ function M.help_screen_draw(gfx, mem, self, p)
   if gfx ~= nil and mem ~= nil then
     local items = {}
     local n = 0
-    local i = 0
+    local i = 1
 
-    while self ~= nil and self.archetype.rows ~= nil and i < self.archetype.rows.count do
+    while self ~= nil and self.archetype.rows ~= nil and i <= self.archetype.rows.count do
       items[n] = self.archetype.rows.items[i].row
       n = n + 1
       i = i + 1

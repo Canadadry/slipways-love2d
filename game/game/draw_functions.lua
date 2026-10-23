@@ -18,7 +18,7 @@ local function draw_functions_arg(e, i)
   if i > e.count then
     return nil
   end
-  item = e.items[i - 1]
+  item = e.items[i]
   assert(item.row == nil, "a row drawn by draw_functions holds no nested row")
   return item
 end

@@ -826,8 +826,9 @@ registry's buckets (live, per-message, per-tag) and the exit queue are plain
 lists and the draw meter's caches are 1-based, read up to their count; so are `game_data`'s integer
 sequences (`int_seq_at` reads `seq[i]`) and its lookup tables (planet types, difficulty options, menus,
 score rows, mood rows) and `planet_kinds`, and `map_tables`' lookup tables (resource codes and names,
-production tables and their values, project records, icon tooltips, technologies); the data rows' `items` stay
-0-based until the rest of the 1-based step. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
+production tables and their values, project records, icon tooltips, technologies), and every data row's `items`
+(data files and rows built at run time), read up to the row's count; the other C arrays stay 0-based until the rest
+of the 1-based step. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
 `%` is `cint.mod` (the dividend's sign); `math.floor` and Lua `%` appear only
 where the C floors. `(unsigned char)x` is `bit.band(x, 0xFF)`; a `bit`
 result above 2^31 − 1 is brought back to unsigned where it is compared or

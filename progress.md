@@ -64,7 +64,7 @@
   - [x] Chunk 2 — registry
   - [x] Chunk 3 — game_data sequences and lookups
   - [x] Chunk 4 — map_tables lookups
-  - [ ] Chunk 5 — data rows
+  - [x] Chunk 5 — data rows
   - [ ] Chunk 6 — layout values and image caches
   - [ ] Chunk 7 — message box, menus and panels
   - [ ] Chunk 8 — research, tech gate, economy and slipway lists

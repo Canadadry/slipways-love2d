@@ -4,7 +4,7 @@
 --   burst_keys_t: { planet, construct }, planet a planet_keys_t, construct a burst construct keys
 --     table of game_data or nil.
 --   entity_kind_t: { new_entity, record }, record the game_data kind record table.
---   planet_kinds: 0-indexed array of { class_name, kind }.
+--   planet_kinds: 1-based array of { class_name, kind }.
 --
 -- Include cycle: game.planet, game.planet_display, game.planet_trade and game.probe are required
 -- at load, since their methods fill the class tables; game.probe's targeting methods are held by

@@ -69,7 +69,7 @@ function M.score_panel_new_year(year)
 
   countdown_index = 3426 - fixed.p8_fixed_flr_int(year)
   if countdown_index >= 1 and countdown_index <= countdown_rows.count then
-    local item = countdown_rows.items[countdown_index - 1]
+    local item = countdown_rows.items[countdown_index]
 
     assert(item.row ~= nil or item.is_false, "score_panel_new_year: the countdown rows hold rows and false only")
     message = item.row
@@ -78,11 +78,11 @@ function M.score_panel_new_year(year)
   year_str = str.p8_tostr_fixed(year)
   year_banner.year = "year " .. year_str
 
-  data_item_assign(year_banner.second_items[0], data_item({ text = year_banner.year }))
+  data_item_assign(year_banner.second_items[1], data_item({ text = year_banner.year }))
 
   if message ~= nil then
     -- Past the copied banner row's two items: created here, never written into a missing slot.
-    year_banner.items[2] = data_item({ row = message })
+    year_banner.items[3] = data_item({ row = message })
     year_banner.row.count = 3
     g_score_panel_new_year_keep_open = 90
     year_banner.keep_open = score_panel_new_year_keep_open_method
@@ -96,7 +96,7 @@ function M.score_panel_new_year(year)
 
     keys.keep_open = year_banner.keep_open
     made = message_box.message_box_new(keys)
-    for i = 0, year_banner.row.count - 1 do
+    for i = 1, year_banner.row.count do
       if year_banner.row.items[i].row == year_banner.second then
         -- The cart's year boxes share the banner: a box still drawn when the next year opens shows the new year.
         message_box.message_box_add_shared_row(made, score_panel_year_banner_label_row)
@@ -155,14 +155,14 @@ local function score_panel_update_add_row(box, entry, context)
     return
   end
 
-  for index = 0, entry.row.count - 1 do
+  for index = 1, entry.row.count do
     values[index] = data_item({})
     data_item_assign(values[index], entry.row.items[index])
   end
 
   score_i = entry.score
 
-  values[2] = data_item({ text = score_panel_final_score_text(context.final_score, score_i) })
+  values[3] = data_item({ text = score_panel_final_score_text(context.final_score, score_i) })
 
   if score_i == 0 then
     local fm = require("game.probe").main_economy_typed()
@@ -180,17 +180,17 @@ local function score_panel_update_add_row(box, entry, context)
     end
     piece1 = str.p8_concat2(end_status_str, " (")
     piece2 = str.p8_concat2(piece1, px)
-    values[0] = data_item({ text = str.p8_concat2(piece2, ")") })
+    values[1] = data_item({ text = str.p8_concat2(piece2, ")") })
   end
 
   if score_i == 6 then
-    for index = 0, 4 do
-      local icon = (index + 1 <= fixed.p8_fixed_flr_int(context.final_score.tier)) and 56 or 57
+    for index = 1, 5 do
+      local icon = (index <= fixed.p8_fixed_flr_int(context.final_score.tier)) and 56 or 57
       values[index] = data_item({ number = icon })
     end
   end
 
-  for index = 0, 4 do
+  for index = 1, 5 do
     if values[index] ~= nil then
       layout.layout_row_keys_append(keys, layout.layout_row_cell_item(values[index]))
     end
@@ -205,7 +205,7 @@ local function score_panel_update_add_row(box, entry, context)
 end
 
 -- The function-local statics of score_panel_update: one row, the same object at every call.
-local back_items = { [0] = data_item({ number = 10 }), data_item({ number = 7 }) }
+local back_items = { data_item({ number = 10 }), data_item({ number = 7 }) }
 local back = data_row({ count = 2, items = back_items })
 
 function M.score_panel_update(self)

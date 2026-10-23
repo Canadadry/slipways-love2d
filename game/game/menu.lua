@@ -58,7 +58,7 @@ local function tech_tree_screen_row_on_click_method(self)
   end
 end
 
-local pair_items = { [0] = map_tables.map_tables_make_data_item({ number = 24 }),
+local pair_items = { map_tables.map_tables_make_data_item({ number = 24 }),
   map_tables.map_tables_make_data_item({ number = 5 }) }
 local pair = map_tables.map_tables_make_data_row({ count = 2, items = pair_items })
 
@@ -93,11 +93,11 @@ local function invented_lines(list)
   row.count = 0
   row.items = nil
   row.draw_function = map_tables.DRAW_FUNCTION_NONE
-  for i = 0, n - 1 do
+  for i = 1, n do
     items[i] = map_tables.map_tables_make_data_item({})
   end
-  for i = 0, n - 1 do
-    items[i].text = list[i + 1]
+  for i = 1, n do
+    items[i].text = list[i]
   end
   row.count = n
   row.items = items

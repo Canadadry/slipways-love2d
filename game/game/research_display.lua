@@ -3,7 +3,7 @@
 -- Shapes, with the C field names:
 --   available_projects_kept_t: { items, count }, items 0-indexed research project ids (numbers).
 --   research_project_tooltip_t: the table holding { outer, outer_item, inner,
---     inner_items }, data_row_t and data_item_t tables of map_tables, inner_items 0-indexed of 3;
+--     inner_items }, data_row_t and data_item_t tables of map_tables, inner_items of 3;
 --     each `items` field is the table it points to.
 --
 -- Include cycle: game.planet is required at call time (planet_is_family, planet_spacer).
@@ -79,11 +79,11 @@ function M.research_project_tooltip(self)
   jb.outer_item = map_tables.map_tables_make_data_item({})
   jb.inner = map_tables.map_tables_make_data_row({})
   jb.inner_items = {}
-  for i = 0, 2 do
+  for i = 1, 3 do
     jb.inner_items[i] = map_tables.map_tables_make_data_item({})
   end
-  jb.inner_items[0].text = research_project_tooltip_join(self)
-  jb.inner_items[1].number = 13
+  jb.inner_items[1].text = research_project_tooltip_join(self)
+  jb.inner_items[2].number = 13
   jb.inner.count = 2
   jb.inner.items = jb.inner_items
 
@@ -92,14 +92,14 @@ function M.research_project_tooltip(self)
     local resource_names_o = map_tables.resource_names_lookup(o_str)
 
     if resource_names_o ~= nil then
-      jb.inner_items[2].text = resource_names_o
+      jb.inner_items[3].text = resource_names_o
       jb.inner.count = 3
     end
   end
 
   jb.outer_item.row = jb.inner
   jb.outer.count = 1
-  jb.outer.items = { [0] = jb.outer_item }
+  jb.outer.items = { jb.outer_item }
   return jb.outer
 end
 
@@ -113,7 +113,7 @@ local function planet_resource_row_pair(first, width)
 end
 
 local tail_row_items = {
-  [0] = map_tables.map_tables_make_data_item({ is_false = true }),
+  map_tables.map_tables_make_data_item({ is_false = true }),
   map_tables.map_tables_make_data_item({ number = -4 }),
 }
 local tail_row = map_tables.map_tables_make_data_row({ count = 2, items = tail_row_items })

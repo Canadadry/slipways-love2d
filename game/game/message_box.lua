@@ -136,13 +136,13 @@ local function message_box_draw_article(gfx, mem, article)
     local argument = article.as.scalars.arguments[i]
 
     if argument.kind == M.MESSAGE_BOX_ARGUMENT_TEXT then
-      items[i] = map_tables.map_tables_make_data_item({ text = article.as.scalars.text })
+      items[i + 1] = map_tables.map_tables_make_data_item({ text = article.as.scalars.text })
     elseif argument.kind == M.MESSAGE_BOX_ARGUMENT_FALSE then
-      items[i] = map_tables.map_tables_make_data_item({ is_false = true })
+      items[i + 1] = map_tables.map_tables_make_data_item({ is_false = true })
     elseif argument.kind == M.MESSAGE_BOX_ARGUMENT_NIL then
-      items[i] = map_tables.map_tables_make_data_item({ is_nil = true })
+      items[i + 1] = map_tables.map_tables_make_data_item({ is_nil = true })
     else
-      items[i] = map_tables.map_tables_make_data_item({ is_fixed = true, fixed = argument.number })
+      items[i + 1] = map_tables.map_tables_make_data_item({ is_fixed = true, fixed = argument.number })
     end
   end
   row = map_tables.map_tables_make_data_row({
@@ -218,7 +218,7 @@ function M.message_box_add_row(self, row)
   article.as.scalars.count = row.count
   article.as.scalars.text = ""
   for i = 0, row.count - 1 do
-    local item = row.items[i]
+    local item = row.items[i + 1]
     local argument = { kind = M.MESSAGE_BOX_ARGUMENT_NUMBER, number = 0 }
 
     article.as.scalars.arguments[i] = argument

@@ -1,7 +1,7 @@
 -- Copy of src/game/game_data.h then src/game/game_data.c.
 --
 -- Shapes, with the C field names (a pointer is the table, NULL is nil, arrays
--- indexed from 1 except the data rows' items, still from 0):
+-- indexed from 1):
 --   int_seq_t: { count, items }.
 --   planet_types_entry_t: { name, sprite, weight, description, state }.
 --   galaxy_menu_entry_t: { pos_x, pos_y, layout_row }.
@@ -96,21 +96,21 @@ M.planet_types_table = {
   { name = "g", sprite = 96, weight = 0x40000, description = "gas giant", state = NONE },
 }
 
-M.galaxy_menu_1_layout_row_1_items = { [0] = data_item({ number = 15 }), data_item({ number = 7 }) }
+M.galaxy_menu_1_layout_row_1_items = { data_item({ number = 15 }), data_item({ number = 7 }) }
 M.galaxy_menu_1_layout_row_1 = data_row({ count = 2, items = M.galaxy_menu_1_layout_row_1_items })
-M.galaxy_menu_1_layout_row_items = { [0] = data_item({ row = M.galaxy_menu_1_layout_row_1 }) }
+M.galaxy_menu_1_layout_row_items = { data_item({ row = M.galaxy_menu_1_layout_row_1 }) }
 M.galaxy_menu_1_layout_row = data_row({ count = 1, items = M.galaxy_menu_1_layout_row_items })
-M.galaxy_menu_2_layout_row_1_items = { [0] = data_item({ number = 37 }), data_item({ number = 7 }) }
+M.galaxy_menu_2_layout_row_1_items = { data_item({ number = 37 }), data_item({ number = 7 }) }
 M.galaxy_menu_2_layout_row_1 = data_row({ count = 2, items = M.galaxy_menu_2_layout_row_1_items })
-M.galaxy_menu_2_layout_row_items = { [0] = data_item({ row = M.galaxy_menu_2_layout_row_1 }) }
+M.galaxy_menu_2_layout_row_items = { data_item({ row = M.galaxy_menu_2_layout_row_1 }) }
 M.galaxy_menu_2_layout_row = data_row({ count = 1, items = M.galaxy_menu_2_layout_row_items })
-M.galaxy_menu_3_layout_row_1_items = { [0] = data_item({ number = 25 }), data_item({ number = 7 }) }
+M.galaxy_menu_3_layout_row_1_items = { data_item({ number = 25 }), data_item({ number = 7 }) }
 M.galaxy_menu_3_layout_row_1 = data_row({ count = 2, items = M.galaxy_menu_3_layout_row_1_items })
-M.galaxy_menu_3_layout_row_items = { [0] = data_item({ row = M.galaxy_menu_3_layout_row_1 }) }
+M.galaxy_menu_3_layout_row_items = { data_item({ row = M.galaxy_menu_3_layout_row_1 }) }
 M.galaxy_menu_3_layout_row = data_row({ count = 1, items = M.galaxy_menu_3_layout_row_items })
-M.galaxy_menu_4_layout_row_1_items = { [0] = data_item({ number = 8 }), data_item({ number = 7 }) }
+M.galaxy_menu_4_layout_row_1_items = { data_item({ number = 8 }), data_item({ number = 7 }) }
 M.galaxy_menu_4_layout_row_1 = data_row({ count = 2, items = M.galaxy_menu_4_layout_row_1_items })
-M.galaxy_menu_4_layout_row_items = { [0] = data_item({ row = M.galaxy_menu_4_layout_row_1 }) }
+M.galaxy_menu_4_layout_row_items = { data_item({ row = M.galaxy_menu_4_layout_row_1 }) }
 M.galaxy_menu_4_layout_row = data_row({ count = 1, items = M.galaxy_menu_4_layout_row_items })
 
 M.galaxy_menu_table = {
@@ -120,13 +120,13 @@ M.galaxy_menu_table = {
   { pos_x = 0, pos_y = vram.P8_SCREEN_HEIGHT - 11, layout_row = M.galaxy_menu_4_layout_row },
 }
 
-M.pause_menu_1_layout_row_items = { [0] = data_item({ number = 31 }), data_item({ text = "restart     " }) }
+M.pause_menu_1_layout_row_items = { data_item({ number = 31 }), data_item({ text = "restart     " }) }
 M.pause_menu_1_layout_row = data_row({ count = 2, items = M.pause_menu_1_layout_row_items })
-M.pause_menu_2_layout_row_items = { [0] = data_item({ number = 42 }), data_item({ text = "toggle music" }) }
+M.pause_menu_2_layout_row_items = { data_item({ number = 42 }), data_item({ text = "toggle music" }) }
 M.pause_menu_2_layout_row = data_row({ count = 2, items = M.pause_menu_2_layout_row_items })
-M.pause_menu_3_layout_row_items = { [0] = data_item({ number = 40 }), data_item({ text = "toggle sfx  " }) }
+M.pause_menu_3_layout_row_items = { data_item({ number = 40 }), data_item({ text = "toggle sfx  " }) }
 M.pause_menu_3_layout_row = data_row({ count = 2, items = M.pause_menu_3_layout_row_items })
-M.pause_menu_4_layout_row_items = { [0] = data_item({ number = 26 }), data_item({ text = "how to play?" }) }
+M.pause_menu_4_layout_row_items = { data_item({ number = 26 }), data_item({ text = "how to play?" }) }
 M.pause_menu_4_layout_row = data_row({ count = 2, items = M.pause_menu_4_layout_row_items })
 
 M.pause_menu_table = {
@@ -136,20 +136,20 @@ M.pause_menu_table = {
   { layout_row = M.pause_menu_4_layout_row },
 }
 
-M.resume_layout_row_items = { [0] = data_item({ number = 31 }), data_item({ text = "resume      " }) }
+M.resume_layout_row_items = { data_item({ number = 31 }), data_item({ text = "resume      " }) }
 M.resume_layout_row = data_row({ count = 2, items = M.resume_layout_row_items })
 
 M.pause_menu_tail = {
   fixed_pos_x = 0, fixed_pos_y = vram.P8_SCREEN_HEIGHT - 21, row_step_x = 0, row_step_y = -11, back_color = 14,
 }
 
-M.difficulty_options_1_layout_row_items = { [0] = data_item({ number = 49 }), data_item({ text = "forgiving   " }) }
+M.difficulty_options_1_layout_row_items = { data_item({ number = 49 }), data_item({ text = "forgiving   " }) }
 M.difficulty_options_1_layout_row = data_row({ count = 2, items = M.difficulty_options_1_layout_row_items })
-M.difficulty_options_2_layout_row_items = { [0] = data_item({ number = 50 }), data_item({ text = "reasonable  " }) }
+M.difficulty_options_2_layout_row_items = { data_item({ number = 50 }), data_item({ text = "reasonable  " }) }
 M.difficulty_options_2_layout_row = data_row({ count = 2, items = M.difficulty_options_2_layout_row_items })
-M.difficulty_options_3_layout_row_items = { [0] = data_item({ number = 51 }), data_item({ text = "challenging " }) }
+M.difficulty_options_3_layout_row_items = { data_item({ number = 51 }), data_item({ text = "challenging " }) }
 M.difficulty_options_3_layout_row = data_row({ count = 2, items = M.difficulty_options_3_layout_row_items })
-M.difficulty_options_4_layout_row_items = { [0] = data_item({ number = 52 }), data_item({ text = "tough       " }) }
+M.difficulty_options_4_layout_row_items = { data_item({ number = 52 }), data_item({ text = "tough       " }) }
 M.difficulty_options_4_layout_row = data_row({ count = 2, items = M.difficulty_options_4_layout_row_items })
 
 M.difficulty_options_table = {
@@ -160,48 +160,48 @@ M.difficulty_options_table = {
 }
 
 M.score_rows_1_items = {
-  [0] = data_item({ number = HALF_HEIGHT - 38 }),
+  data_item({ number = HALF_HEIGHT - 38 }),
   data_item({ number = HALF_HEIGHT + 22 }),
   data_item({ number = 0 }),
 }
 M.score_rows_2_items = {
-  [0] = data_item({ number = HALF_HEIGHT - 13 }),
+  data_item({ number = HALF_HEIGHT - 13 }),
   data_item({ number = HALF_HEIGHT - 5 }),
   data_item({ number = 1 }),
 }
 M.score_rows_3_items = {
-  [0] = data_item({ number = HALF_HEIGHT + 12 }),
+  data_item({ number = HALF_HEIGHT + 12 }),
   data_item({ number = HALF_HEIGHT + 13 }),
   data_item({ number = 1 }),
 }
 M.score_rows_4_items = {
-  [0] = data_item({ number = HALF_HEIGHT - 40 }),
+  data_item({ number = HALF_HEIGHT - 40 }),
   data_item({ number = HALF_HEIGHT - 39 }),
   data_item({ number = 1 }),
 }
 M.score_rows_5_items = {
-  [0] = data_item({ number = HALF_HEIGHT - 31 }),
+  data_item({ number = HALF_HEIGHT - 31 }),
   data_item({ number = HALF_HEIGHT - 23 }),
   data_item({ number = 1 }),
 }
-M.score_rows_6_items = { [0] = data_item({ text = "" }) }
-M.score_rows_7_items = { [0] = data_item({ number = 55 }), data_item({ text = "planets:   " }) }
-M.score_rows_8_items = { [0] = data_item({ number = 19 }), data_item({ text = "population:" }) }
-M.score_rows_9_items = { [0] = data_item({ number = 24 }), data_item({ text = "technology:" }) }
-M.score_rows_10_1_items = { [0] = data_item({ number = 27 }), data_item({ number = 5 }) }
+M.score_rows_6_items = { data_item({ text = "" }) }
+M.score_rows_7_items = { data_item({ number = 55 }), data_item({ text = "planets:   " }) }
+M.score_rows_8_items = { data_item({ number = 19 }), data_item({ text = "population:" }) }
+M.score_rows_9_items = { data_item({ number = 24 }), data_item({ text = "technology:" }) }
+M.score_rows_10_1_items = { data_item({ number = 27 }), data_item({ number = 5 }) }
 M.score_rows_10_1 = data_row({ count = 2, items = M.score_rows_10_1_items })
-M.score_rows_10_2_items = { [0] = data_item({ is_false = true }), data_item({ number = 0 }) }
+M.score_rows_10_2_items = { data_item({ is_false = true }), data_item({ number = 0 }) }
 M.score_rows_10_2 = data_row({ count = 2, items = M.score_rows_10_2_items })
-M.score_rows_10_4_items = { [0] = data_item({ number = 25 }), data_item({ number = 5 }) }
+M.score_rows_10_4_items = { data_item({ number = 25 }), data_item({ number = 5 }) }
 M.score_rows_10_4 = data_row({ count = 2, items = M.score_rows_10_4_items })
 M.score_rows_10_items = {
-  [0] = data_item({ row = M.score_rows_10_1 }),
+  data_item({ row = M.score_rows_10_1 }),
   data_item({ row = M.score_rows_10_2 }),
   data_item({ is_false = true }),
   data_item({ row = M.score_rows_10_4 }),
   data_item({ text = "happiness" }),
 }
-M.score_rows_11_items = { [0] = data_item({ text = "total:" }), data_item({ text = "" }) }
+M.score_rows_11_items = { data_item({ text = "total:" }), data_item({ text = "" }) }
 
 local DRAW_BAR = map_tables.DRAW_FUNCTION_DRAW_BAR
 
@@ -244,10 +244,10 @@ M.score_rows_table = {
 M.planet_ring_colors_items = { 2, 3, 9, 12 }
 assert(#M.planet_ring_colors_items == M.PLANET_RING_COLORS_COUNT, "planet_ring_colors_count_matches")
 M.planet_ring_colors_seq = { count = M.PLANET_RING_COLORS_COUNT, items = M.planet_ring_colors_items }
-M.planet_mood_rows_1_items = { [0] = data_item({ text = "unhappy" }) }
-M.planet_mood_rows_2_items = { [0] = data_item({ text = "content" }) }
-M.planet_mood_rows_3_items = { [0] = data_item({ text = "prosperous" }) }
-M.planet_mood_rows_4_items = { [0] = data_item({ text = "rich" }) }
+M.planet_mood_rows_1_items = { data_item({ text = "unhappy" }) }
+M.planet_mood_rows_2_items = { data_item({ text = "content" }) }
+M.planet_mood_rows_3_items = { data_item({ text = "prosperous" }) }
+M.planet_mood_rows_4_items = { data_item({ text = "rich" }) }
 M.planet_mood_rows_rows = {
   data_row({ count = 1, items = M.planet_mood_rows_1_items, color = 8 }),
   data_row({ count = 1, items = M.planet_mood_rows_2_items, color = 3 }),
@@ -257,23 +257,23 @@ M.planet_mood_rows_rows = {
 M.planet_made_resources_items = { 12, 36, 24, 25 }
 M.planet_made_resources_seq = { count = 4, items = M.planet_made_resources_items }
 M.planet_spacer_items = {
-  [0] = data_item({ is_false = true }),
+  data_item({ is_false = true }),
   data_item({ number = 3 }),
   data_item({ number = 0 }),
   data_item({ number = -1 }),
 }
 M.planet_spacer_row = data_row({ count = 4, items = M.planet_spacer_items })
-M.structure_name_items = { [0] = data_item({ text = "laboratory" }) }
+M.structure_name_items = { data_item({ text = "laboratory" }) }
 M.structure_name_row = data_row({ count = 1, items = M.structure_name_items, color = 13 })
-M.trading_hub_name_items = { [0] = data_item({ text = "trading hub" }) }
+M.trading_hub_name_items = { data_item({ text = "trading hub" }) }
 M.trading_hub_name_row = data_row({ count = 1, items = M.trading_hub_name_items, color = 13 })
-M.processor_name_items = { [0] = data_item({ text = "processor" }) }
+M.processor_name_items = { data_item({ text = "processor" }) }
 M.processor_name_row = data_row({ count = 1, items = M.processor_name_items, color = 13 })
-M.ascension_name_items = { [0] = data_item({ text = "ascension nr" }) }
+M.ascension_name_items = { data_item({ text = "ascension nr" }) }
 M.ascension_name_row = data_row({ count = 1, items = M.ascension_name_items, color = 13 })
-M.protostar_name_items = { [0] = data_item({ text = "protostar" }) }
+M.protostar_name_items = { data_item({ text = "protostar" }) }
 M.protostar_name_row = data_row({ count = 1, items = M.protostar_name_items, color = 13 })
-M.synthesizer_name_items = { [0] = data_item({ text = "synthesizer" }) }
+M.synthesizer_name_items = { data_item({ text = "synthesizer" }) }
 M.synthesizer_name_row = data_row({ count = 1, items = M.synthesizer_name_items, color = 13 })
 M.structure_accepted_resources_items = { 28, 18, 20, 21, 22, 48 }
 M.structure_accepted_resources_seq = { count = 6, items = M.structure_accepted_resources_items }
@@ -306,7 +306,7 @@ M.wormhole_color_ramp_seq = { count = 9, items = M.wormhole_color_ramp_items }
 M.background_tile_choices_items = { 0, 0, 0, 72, 73, 74, 75, 88, 89, 90, 91, 88, 91, 89, 91 }
 M.background_tile_choices_seq = { count = 15, items = M.background_tile_choices_items }
 M.help_screen_rows_1_items = {
-  [0] = data_item({ number = 192 }),
+  data_item({ number = 192 }),
   data_item({ number = HALF_WIDTH - 64 }),
   data_item({ number = HALF_HEIGHT - 53 }),
   data_item({ number = 16 }),
@@ -316,7 +316,7 @@ M.help_screen_rows_1 = data_row({
   count = 5, items = M.help_screen_rows_1_items, draw_function = map_tables.DRAW_FUNCTION_SPR,
 })
 M.help_screen_rows_2_items = {
-  [0] = data_item({ number = 172 }),
+  data_item({ number = 172 }),
   data_item({ number = HALF_WIDTH - 44 }),
   data_item({ number = HALF_HEIGHT + 43 }),
   data_item({ number = 2 }),
@@ -326,7 +326,7 @@ M.help_screen_rows_2 = data_row({
   count = 5, items = M.help_screen_rows_2_items, draw_function = map_tables.DRAW_FUNCTION_SPR,
 })
 M.help_screen_rows_3_items = {
-  [0] = data_item({ text = "need help?" }),
+  data_item({ text = "need help?" }),
   data_item({ number = HALF_WIDTH - 24 }),
   data_item({ number = HALF_HEIGHT + 46 }),
   data_item({ number = 13 }),
@@ -335,7 +335,7 @@ M.help_screen_rows_3 = data_row({
   count = 4, items = M.help_screen_rows_3_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.help_screen_rows_4_items = {
-  [0] = data_item({ text = "slipways.net/help" }),
+  data_item({ text = "slipways.net/help" }),
   data_item({ number = HALF_WIDTH - 24 }),
   data_item({ number = HALF_HEIGHT + 52 }),
   data_item({ number = 5 }),
@@ -344,16 +344,16 @@ M.help_screen_rows_4 = data_row({
   count = 4, items = M.help_screen_rows_4_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.help_screen_rows_items = {
-  [0] = data_item({ row = M.help_screen_rows_1 }),
+  data_item({ row = M.help_screen_rows_1 }),
   data_item({ row = M.help_screen_rows_2 }),
   data_item({ row = M.help_screen_rows_3 }),
   data_item({ row = M.help_screen_rows_4 }),
 }
 M.help_screen_rows_row = data_row({ count = 4, items = M.help_screen_rows_items })
-M.research_project_row_tail_items = { [0] = data_item({ is_false = true }), data_item({ number = 2 }) }
+M.research_project_row_tail_items = { data_item({ is_false = true }), data_item({ number = 2 }) }
 M.research_project_row_tail_row = data_row({ count = 2, items = M.research_project_row_tail_items })
 M.score_panel_countdown_rows_1_items = {
-  [0] = data_item({ text = "last year!" }),
+  data_item({ text = "last year!" }),
   data_item({ number = HALF_WIDTH }),
   data_item({ number = HALF_HEIGHT - 16 }),
   data_item({ number = 9 }),
@@ -363,7 +363,7 @@ M.score_panel_countdown_rows_1 = data_row({
   count = 5, items = M.score_panel_countdown_rows_1_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_countdown_rows_2_items = {
-  [0] = data_item({ text = "2 years remain" }),
+  data_item({ text = "2 years remain" }),
   data_item({ number = HALF_WIDTH }),
   data_item({ number = HALF_HEIGHT - 16 }),
   data_item({ number = 2 }),
@@ -373,7 +373,7 @@ M.score_panel_countdown_rows_2 = data_row({
   count = 5, items = M.score_panel_countdown_rows_2_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_countdown_rows_5_items = {
-  [0] = data_item({ text = "5 years remain" }),
+  data_item({ text = "5 years remain" }),
   data_item({ number = HALF_WIDTH }),
   data_item({ number = HALF_HEIGHT - 16 }),
   data_item({ number = 2 }),
@@ -383,7 +383,7 @@ M.score_panel_countdown_rows_5 = data_row({
   count = 5, items = M.score_panel_countdown_rows_5_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_countdown_rows_items = {
-  [0] = data_item({ row = M.score_panel_countdown_rows_1 }),
+  data_item({ row = M.score_panel_countdown_rows_1 }),
   data_item({ row = M.score_panel_countdown_rows_2 }),
   data_item({ is_false = true }),
   data_item({ is_false = true }),
@@ -391,7 +391,7 @@ M.score_panel_countdown_rows_items = {
 }
 M.score_panel_countdown_rows_row = data_row({ count = 5, items = M.score_panel_countdown_rows_items })
 M.score_panel_frame_rows_1_items = {
-  [0] = data_item({ number = vram.P8_SCREEN_HEIGHT - 2 }),
+  data_item({ number = vram.P8_SCREEN_HEIGHT - 2 }),
   data_item({ number = vram.P8_SCREEN_HEIGHT - 1 }),
   data_item({ number = 1 }),
 }
@@ -399,7 +399,7 @@ M.score_panel_frame_rows_1 = data_row({
   count = 3, items = M.score_panel_frame_rows_1_items, draw_function = map_tables.DRAW_FUNCTION_DRAW_BAR,
 })
 M.score_panel_frame_rows_2_items = {
-  [0] = data_item({ number = 0 }),
+  data_item({ number = 0 }),
   data_item({ number = 1 }),
   data_item({ number = 1 }),
 }
@@ -407,7 +407,7 @@ M.score_panel_frame_rows_2 = data_row({
   count = 3, items = M.score_panel_frame_rows_2_items, draw_function = map_tables.DRAW_FUNCTION_DRAW_BAR,
 })
 M.score_panel_frame_rows_3_items = {
-  [0] = data_item({ number = 8 }),
+  data_item({ number = 8 }),
   data_item({ number = vram.P8_SCREEN_HEIGHT - 10 }),
   data_item({ number = 34 }),
 }
@@ -415,7 +415,7 @@ M.score_panel_frame_rows_3 = data_row({
   count = 3, items = M.score_panel_frame_rows_3_items, draw_function = map_tables.DRAW_FUNCTION_DRAW_HELP_FRAME,
 })
 M.score_panel_frame_rows_4_items = {
-  [0] = data_item({ number = 0 }),
+  data_item({ number = 0 }),
   data_item({ number = -3 }),
   data_item({ number = 26 }),
 }
@@ -423,7 +423,7 @@ M.score_panel_frame_rows_4 = data_row({
   count = 3, items = M.score_panel_frame_rows_4_items, draw_function = map_tables.DRAW_FUNCTION_DRAW_HELP_FRAME,
 })
 M.score_panel_frame_rows_5_items = {
-  [0] = data_item({ number = vram.P8_SCREEN_WIDTH - 47 }),
+  data_item({ number = vram.P8_SCREEN_WIDTH - 47 }),
   data_item({ number = -3 }),
   data_item({ number = vram.P8_SCREEN_WIDTH - 11 }),
 }
@@ -431,7 +431,7 @@ M.score_panel_frame_rows_5 = data_row({
   count = 3, items = M.score_panel_frame_rows_5_items, draw_function = map_tables.DRAW_FUNCTION_DRAW_HELP_FRAME,
 })
 M.score_panel_frame_rows_items = {
-  [0] = data_item({ row = M.score_panel_frame_rows_1 }),
+  data_item({ row = M.score_panel_frame_rows_1 }),
   data_item({ row = M.score_panel_frame_rows_2 }),
   data_item({ row = M.score_panel_frame_rows_3 }),
   data_item({ row = M.score_panel_frame_rows_4 }),
@@ -439,7 +439,7 @@ M.score_panel_frame_rows_items = {
 }
 M.score_panel_frame_rows_row = data_row({ count = 5, items = M.score_panel_frame_rows_items })
 M.score_panel_year_banner_1_items = {
-  [0] = data_item({ number = HALF_HEIGHT - 22 }),
+  data_item({ number = HALF_HEIGHT - 22 }),
   data_item({ number = HALF_HEIGHT - 21 }),
   data_item({ number = 1 }),
 }
@@ -447,7 +447,7 @@ M.score_panel_year_banner_1 = data_row({
   count = 3, items = M.score_panel_year_banner_1_items, draw_function = map_tables.DRAW_FUNCTION_DRAW_BAR,
 })
 M.score_panel_year_banner_2_items = {
-  [0] = data_item({ text = "" }),
+  data_item({ text = "" }),
   data_item({ number = HALF_WIDTH }),
   data_item({ number = HALF_HEIGHT - 24 }),
   data_item({ number = 6 }),
@@ -457,12 +457,12 @@ M.score_panel_year_banner_2 = data_row({
   count = 5, items = M.score_panel_year_banner_2_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_year_banner_items = {
-  [0] = data_item({ row = M.score_panel_year_banner_1 }),
+  data_item({ row = M.score_panel_year_banner_1 }),
   data_item({ row = M.score_panel_year_banner_2 }),
 }
 M.score_panel_year_banner_row = data_row({ count = 2, items = M.score_panel_year_banner_items })
 M.score_panel_readouts_1_items = {
-  [0] = data_item({ is_false = true }),
+  data_item({ is_false = true }),
   data_item({ number = 13 }),
   data_item({ number = vram.P8_SCREEN_HEIGHT - 7 }),
   data_item({ number = 9 }),
@@ -471,7 +471,7 @@ M.score_panel_readouts_1 = data_row({
   count = 4, items = M.score_panel_readouts_1_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_2_items = {
-  [0] = data_item({ is_false = true }),
+  data_item({ is_false = true }),
   data_item({ number = 37 }),
   data_item({ number = vram.P8_SCREEN_HEIGHT - 7 }),
   data_item({ number = 2 }),
@@ -480,7 +480,7 @@ M.score_panel_readouts_2 = data_row({
   count = 4, items = M.score_panel_readouts_2_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_3_items = {
-  [0] = data_item({ is_false = true }),
+  data_item({ is_false = true }),
   data_item({ number = 13 }),
   data_item({ number = 2 }),
   data_item({ number = 9 }),
@@ -489,7 +489,7 @@ M.score_panel_readouts_3 = data_row({
   count = 4, items = M.score_panel_readouts_3_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_4_items = {
-  [0] = data_item({ is_false = true }),
+  data_item({ is_false = true }),
   data_item({ number = 29 }),
   data_item({ number = 2 }),
   data_item({ number = 2 }),
@@ -498,7 +498,7 @@ M.score_panel_readouts_4 = data_row({
   count = 4, items = M.score_panel_readouts_4_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_5_items = {
-  [0] = data_item({ is_false = true }),
+  data_item({ is_false = true }),
   data_item({ number = HALF_WIDTH - 5 }),
   data_item({ number = 2 }),
   data_item({ number = 2 }),
@@ -507,7 +507,7 @@ M.score_panel_readouts_5 = data_row({
   count = 4, items = M.score_panel_readouts_5_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_6_items = {
-  [0] = data_item({ is_false = true }),
+  data_item({ is_false = true }),
   data_item({ number = vram.P8_SCREEN_WIDTH - 43 }),
   data_item({ number = 2 }),
   data_item({ number = 13 }),
@@ -516,7 +516,7 @@ M.score_panel_readouts_6 = data_row({
   count = 4, items = M.score_panel_readouts_6_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_7_items = {
-  [0] = data_item({ is_false = true }),
+  data_item({ is_false = true }),
   data_item({ number = vram.P8_SCREEN_WIDTH - 29 }),
   data_item({ number = 2 }),
   data_item({ number = 13 }),
@@ -525,7 +525,7 @@ M.score_panel_readouts_7 = data_row({
   count = 4, items = M.score_panel_readouts_7_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_items = {
-  [0] = data_item({ row = M.score_panel_readouts_1 }),
+  data_item({ row = M.score_panel_readouts_1 }),
   data_item({ row = M.score_panel_readouts_2 }),
   data_item({ row = M.score_panel_readouts_3 }),
   data_item({ row = M.score_panel_readouts_4 }),

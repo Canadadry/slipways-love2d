@@ -5,7 +5,8 @@
 --     until first set.
 --   score_panel_layout_block_t: the entity header plus { fixed_pos, row_step, back_color }.
 --   score_panel_readouts_t: { row, items, subs, sub_items, texts }; score_panel_year_banner_t: { row, items,
---     second, second_items, year, keep_open }. Arrays from 0, char arrays Lua strings ("" at zero).
+--     second, second_items, year, keep_open }. items, second_items and each sub_items[i] are row items, from 1;
+--     the other arrays from 0. Char arrays Lua strings ("" at zero).
 --
 -- score_panel_new_year_method, score_panel_update_method, score_panel_display_init and
 -- score_panel_display_shutdown are defined in game.score_panel_display, required at load: the class holds
@@ -58,8 +59,8 @@ local g_score_panel_readouts = {
 }
 for i = 0, 6 do
   g_score_panel_readouts.subs[i] = data_row({})
-  -- [0] is written by score_panel_refresh whatever the copied row's count: it must hold a table.
-  g_score_panel_readouts.sub_items[i] = { [0] = data_item({}) }
+  -- [1] is written by score_panel_refresh whatever the copied row's count: it must hold a table.
+  g_score_panel_readouts.sub_items[i] = { data_item({}) }
   g_score_panel_readouts.texts[i] = ""
 end
 
@@ -67,14 +68,14 @@ local g_score_panel_year_banner = {
   row = data_row({}),
   items = {},
   second = data_row({}),
-  -- [0] is written by score_panel_new_year whatever the copied row's count: it must hold a table.
-  second_items = { [0] = data_item({}) },
+  -- [1] is written by score_panel_new_year whatever the copied row's count: it must hold a table.
+  second_items = { data_item({}) },
   year = "",
   keep_open = nil,
 }
 
 local function score_panel_row_copy(dst, items, src)
-  for i = 0, src.count - 1 do
+  for i = 1, src.count do
     items[i] = data_item({})
     data_item_assign(items[i], src.items[i])
   end
@@ -234,7 +235,7 @@ function M.score_panel_refresh()
         readouts_state.texts[index] = readouts[index].text
         readouts[index].text = readouts_state.texts[index]
       end
-      data_item_assign(readouts_state.sub_items[index][0], readouts[index])
+      data_item_assign(readouts_state.sub_items[index][1], readouts[index])
     end
   end
 end
@@ -250,12 +251,12 @@ function M.score_panel_draw(gfx, mem, self)
   local n = 0
   local i
 
-  for k = 0, i_.count - 1 do
+  for k = 1, i_.count do
     combined[n] = i_.items[k].row
     n = n + 1
   end
-  i = 0
-  while readouts_state ~= nil and i < readouts_state.row.count do
+  i = 1
+  while readouts_state ~= nil and i <= readouts_state.row.count do
     combined[n] = readouts_state.row.items[i].row
     n = n + 1
     i = i + 1
@@ -311,14 +312,14 @@ function M.score_panel_init()
   score_panel_row_copy(g_score_panel_readouts.row, g_score_panel_readouts.items, game_data.score_panel_readouts_row)
   for i = 0, g_score_panel_readouts.row.count - 1 do
     score_panel_row_copy(g_score_panel_readouts.subs[i], g_score_panel_readouts.sub_items[i],
-      game_data.score_panel_readouts_row.items[i].row)
-    g_score_panel_readouts.items[i].row = g_score_panel_readouts.subs[i]
+      game_data.score_panel_readouts_row.items[i + 1].row)
+    g_score_panel_readouts.items[i + 1].row = g_score_panel_readouts.subs[i]
   end
   score_panel_row_copy(g_score_panel_year_banner.row, g_score_panel_year_banner.items,
     game_data.score_panel_year_banner_row)
   score_panel_row_copy(g_score_panel_year_banner.second, g_score_panel_year_banner.second_items,
-    game_data.score_panel_year_banner_row.items[1].row)
-  g_score_panel_year_banner.items[1].row = g_score_panel_year_banner.second
+    game_data.score_panel_year_banner_row.items[2].row)
+  g_score_panel_year_banner.items[2].row = g_score_panel_year_banner.second
   g_score_panel_year_banner.keep_open = nil
 
   M.score_panel_set_init(nil)
