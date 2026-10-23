@@ -24,7 +24,7 @@ local function copy_route(route)
 end
 
 -- A new { kind, number } table at every call.
-function M.trade_resource(self)
+function M.resource(self)
   if self == nil or self.resource == nil then
     return { kind = M.RESOURCE_NIL, number = 0 }
   end
@@ -40,28 +40,28 @@ function M.resource_equal(a, b)
   return a.kind == b.kind and (a.kind ~= M.RESOURCE_FIXED or a.number == b.number)
 end
 
-function M.trade_init()
-  M.trade_shutdown()
+function M.init()
+  M.shutdown()
   g_trade_up = true
 end
 
-function M.trade_shutdown()
+function M.shutdown()
   g_trade_up = false
 end
 
-function M.trade_ready()
+function M.ready()
   return g_trade_up
 end
 
 -- nil keys give a route with empty lists and no resource; the route shares the keys' lists.
-function M.trade_new(keys)
+function M.new(keys)
   if keys == nil then
     return route_value({}, {}, nil, false)
   end
   assert(keys.resource ~= nil or not keys.resource_is_bool,
-    "trade_new: an absent resource carries no kind")
+    "trade.new: an absent resource carries no kind")
   assert(not keys.resource_is_bool or keys.resource == 0 or keys.resource == 1,
-    "trade_new: a boolean key holds 0 or 1; trade_resource would read any other as a fixed")
+    "trade.new: a boolean key holds 0 or 1; trade.resource would read any other as a fixed")
   return route_value(keys.planets, keys.slipways, keys.resource, keys.resource_is_bool)
 end
 
@@ -74,15 +74,15 @@ local function id_list_extended(list, extra)
   if extra ~= nil then
     local id = entity_id.of(extra)
     assert(id ~= nil,
-      "trade_extend: a route holds constructed planets and slipways only")
+      "trade.extend: a route holds constructed planets and slipways only")
     out[#out + 1] = id
   end
   return out
 end
 
 -- The copy's id lists are new lists.
-function M.trade_copy(self)
-  assert(self ~= nil, "trade_copy: a route value is always there to copy")
+function M.copy(self)
+  assert(self ~= nil, "trade.copy: a route value is always there to copy")
   local copy = copy_route(self)
   copy.planets = id_list_extended(self.planets, nil)
   copy.slipways = id_list_extended(self.slipways, nil)
@@ -90,7 +90,7 @@ function M.trade_copy(self)
 end
 
 -- Returns found, out.
-function M.trade_last_planet(self, out)
+function M.last_planet(self, out)
   if self == nil or #self.planets == 0 then
     return false, out
   end
@@ -99,8 +99,8 @@ function M.trade_last_planet(self, out)
 end
 
 -- The new route's id lists are new lists; a nil node or slipway adds nothing.
-function M.trade_extend(self, node, slipway)
-  assert(self ~= nil, "trade_extend: a route value is always there to extend")
+function M.extend(self, node, slipway)
+  assert(self ~= nil, "trade.extend: a route value is always there to extend")
   local extended = route_value({}, {}, nil, false)
   extended.resource_is_bool = self.resource == nil or self.resource_is_bool
   extended.resource = self.resource or 0
@@ -109,18 +109,18 @@ function M.trade_extend(self, node, slipway)
   return extended
 end
 
-function M.trade_equal(l, r)
+function M.equal(l, r)
   if l == nil or r == nil or #l.planets == 0 or #r.planets == 0 then
     return false
   end
   if entity_id.resolve(l.planets[1]) ~= entity_id.resolve(r.planets[1]) then
     return false
   end
-  local l_found, l_last = M.trade_last_planet(l, nil)
+  local l_found, l_last = M.last_planet(l, nil)
   if not l_found then
     return false
   end
-  local r_found, r_last = M.trade_last_planet(r, nil)
+  local r_found, r_last = M.last_planet(r, nil)
   if not r_found then
     return false
   end
@@ -128,7 +128,7 @@ function M.trade_equal(l, r)
 end
 
 -- Stores a copy of the route; its id lists are shared, not copied.
-function M.trade_route_list_add(list, route)
+function M.route_list_add(list, route)
   assert(route ~= nil, "a trade route list holds routes")
   list[#list + 1] = copy_route(route)
 end

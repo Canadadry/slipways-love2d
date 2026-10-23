@@ -441,7 +441,7 @@ local function ui_is_held_class(cls)
   local slipway = require("game.slipway")
   local wormhole = require("game.wormhole")
 
-  return (cls == slipway.slipway_class() or cls == probe.probe_class() or cls == wormhole.wormhole_class() or
+  return (cls == slipway.class() or cls == probe.class() or cls == wormhole.class() or
     (cls.states[entity_class.STATE_SETTLED] ~= nil and cls ~= planet_family.protostar_class()))
 end
 

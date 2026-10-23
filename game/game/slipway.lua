@@ -1,5 +1,5 @@
--- Include cycle: game.slipway_display is required at load, since slipway_draw_method fills
--- slipway_class_def; slipway_display must reach this module at call time only. game.economy,
+-- Include cycle: game.slipway_display is required at load, since slipway_display.draw_method fills
+-- slipway.class_def; slipway_display must reach this module at call time only. game.economy,
 -- game.planet, game.probe and game.ui are required at call time, inside the functions that need
 -- them.
 local dispatch_context = require("engine.dispatch_context")
@@ -26,7 +26,7 @@ end
 
 local g_slipway_up = false
 
-M.slipway_too_far_class_def = {
+M.too_far_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
@@ -34,25 +34,25 @@ M.slipway_too_far_class_def = {
 }
 
 M.g_slipway_too_far = {}
-entity_class.init_header(M.g_slipway_too_far, M.slipway_too_far_class_def)
+entity_class.init_header(M.g_slipway_too_far, M.too_far_class_def)
 M.g_slipway_too_far.status_text = "-too far-"
 M.g_slipway_too_far.targeted_by = nil
 
-M.slipway_mouse_point_class_def = {
+M.mouse_point_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
   skip_draw_off_screen = false,
 }
 
-function M.slipway_end_map_pos(end_)
+function M.end_map_pos(end_)
   if end_ ~= nil then
     return entity_class.map_pos(end_)
   end
   return vec.make(fixed.from_int(0), fixed.from_int(0))
 end
 
-function M.slipway_end_pos(end_)
+function M.end_pos(end_)
   if end_ ~= nil then
     return entity_class.pos(end_)
   end
@@ -60,19 +60,19 @@ function M.slipway_end_pos(end_)
 end
 
 -- nil once the planet was flushed.
-function M.slipway_start(self)
+function M.start_node(self)
   return entity_id.get(self.start)
 end
 
 -- The planet, the slipway's own mouse point, or nil.
-function M.slipway_end(self)
+function M.end_node(self)
   if self.end_is_point then
     return self.point
   end
   return entity_id.get(self.end_)
 end
 
-function M.slipway_too_far()
+function M.too_far()
   return M.g_slipway_too_far
 end
 
@@ -87,8 +87,8 @@ end
 -- The start's infraspace, else the end's, and the layer that follows.
 local function slipway_inherit_infraspace(self)
   self.infraspace = nil
-  if not slipway_copy_infraspace(self, M.slipway_start(self)) then
-    slipway_copy_infraspace(self, M.slipway_end(self))
+  if not slipway_copy_infraspace(self, M.start_node(self)) then
+    slipway_copy_infraspace(self, M.end_node(self))
   end
   if self.infraspace ~= nil then
     entity_registry.set_layer(self, fixed.from_int(2))
@@ -98,10 +98,10 @@ local function slipway_inherit_infraspace(self)
 end
 
 -- Copies id; the caller keeps its own string.
-function M.slipway_served_planets_add(hg, id)
+function M.served_planets_add(hg, id)
   assert(id ~= nil,
-    "slipway_served_planets_add: a NULL identifier does not fit the member's type -- stop, do not widen the member")
-  if M.slipway_served_planets_has(hg, id) then
+    "slipway.served_planets_add: a NULL identifier does not fit the member's type -- stop, do not widen the member")
+  if M.served_planets_has(hg, id) then
     return
   end
   local n = hg.count + 1
@@ -109,7 +109,7 @@ function M.slipway_served_planets_add(hg, id)
   hg.count = n
 end
 
-function M.slipway_served_planets_has(hg, id)
+function M.served_planets_has(hg, id)
   if hg == nil or id == nil then
     return false
   end
@@ -121,7 +121,7 @@ function M.slipway_served_planets_has(hg, id)
   return false
 end
 
-function M.slipway_construct(self)
+function M.construct(self)
   if self == nil then
     return
   end
@@ -130,7 +130,7 @@ function M.slipway_construct(self)
   self.served_planets.count = 0
 end
 
-function M.slipway_drag(self, mouse)
+function M.drag(self, mouse)
   local probe = require("game.probe")
   local ui = require("game.ui")
   local ok
@@ -164,27 +164,27 @@ function M.slipway_drag(self, mouse)
   end
 
   self.targeting.cost = economy_formulas.economy_formulas_route_base_cost(
-    M.slipway_end_map_pos(M.slipway_start(self)), M.slipway_end_map_pos(M.slipway_end(self)))
+    M.end_map_pos(M.start_node(self)), M.end_map_pos(M.end_node(self)))
 
   slipway_inherit_infraspace(self)
 
-  probe.targeting_set_target(self.targeting, M.slipway_obstruction(self))
+  probe.targeting_set_target(self.targeting, M.obstruction(self))
   if probe.targeting_target(self.targeting) ~= nil then
-    probe.probe_link_target(probe.targeting_target(self.targeting), self)
+    probe.link_target(probe.targeting_target(self.targeting), self)
   end
 end
 
 -- Joins a built slipway to end as a confirmed drag would, without paying, advancing the clock,
 -- attaching either end or touching the fade.
-function M.slipway_connect(self, end_)
-  assert(self ~= nil and end_ ~= nil, "slipway_connect: a resumed slipway joins two saved nodes")
+function M.connect(self, end_)
+  assert(self ~= nil and end_ ~= nil, "slipway.connect: a resumed slipway joins two saved nodes")
   self.end_ = entity_id.link(end_)
   self.end_is_point = false
   slipway_inherit_infraspace(self)
   entity.set_state(self, entity_class.STATE_NORMAL)
 end
 
-function M.slipway_drop(self, end_planet)
+function M.drop(self, end_planet)
   local probe = require("game.probe")
   local refused
 
@@ -204,7 +204,7 @@ function M.slipway_drop(self, end_planet)
   self.end_is_point = false
 
   do
-    local qu = M.slipway_start(self)
+    local qu = M.start_node(self)
     local start_registered = qu ~= nil and qu.class.attach_slipway ~= nil
     local end_registered
     if start_registered then
@@ -215,7 +215,7 @@ function M.slipway_drop(self, end_planet)
       end_planet.class.attach_slipway(end_planet, self)
     end
     assert(start_registered and end_registered,
-      "slipway_drop: both endpoints must have attach_slipway, or the slipway never joins their slipways lists")
+      "slipway.drop: both endpoints must have attach_slipway, or the slipway never joins their slipways lists")
     require("game.economy").economy_advance_clock(probe.main_economy_typed(), fixed.from_int(1))
   end
 end
@@ -226,7 +226,7 @@ local function slipway_obstruction_node_predicate(e, ctx_ptr)
   if e == nil then
     return false
   end
-  return geom.near_segment(ctx.start_point, ctx.end_point, M.slipway_end_map_pos(e),
+  return geom.near_segment(ctx.start_point, ctx.end_point, M.end_map_pos(e),
     fixed.LIT(0x000000d1, 0.0032))
 end
 
@@ -237,16 +237,16 @@ local function slipway_obstruction_slipway_predicate(e, ctx_ptr)
   if e == nil then
     return false
   end
-  assert(e.class == M.slipway_class(), "the slipway tag holds slipways only")
+  assert(e.class == M.class(), "the slipway tag holds slipways only")
   sw = e
   if sw.infraspace ~= ctx.self_infraspace then
     return false
   end
-  return geom.segments_cross(ctx.start_point, ctx.end_point, M.slipway_end_map_pos(M.slipway_start(sw)),
-    M.slipway_end_map_pos(M.slipway_end(sw)))
+  return geom.segments_cross(ctx.start_point, ctx.end_point, M.end_map_pos(M.start_node(sw)),
+    M.end_map_pos(M.end_node(sw)))
 end
 
-function M.slipway_obstruction(self)
+function M.obstruction(self)
   local start_node
   local end_node
   local start_point
@@ -257,10 +257,10 @@ function M.slipway_obstruction(self)
     return nil
   end
 
-  start_node = M.slipway_start(self)
-  end_node = M.slipway_end(self)
-  start_point = M.slipway_end_map_pos(start_node)
-  end_point = M.slipway_end_map_pos(end_node)
+  start_node = M.start_node(self)
+  end_node = M.end_node(self)
+  start_point = M.end_map_pos(start_node)
+  end_point = M.end_map_pos(end_node)
 
   threshold = tech_gate.tech_gate_if_unlocked("space folding", fixed.LIT(0x00008000, 0.5),
     fixed.LIT(0x0001147a, 1.08))
@@ -280,9 +280,9 @@ function M.slipway_obstruction(self)
     if oe ~= nil then
       for i = 1, #oe do
         local w = entity_id.resolve(oe[i])
-        assert(w.class == M.slipway_class(),
+        assert(w.class == M.class(),
           "the start's slipways list holds slipways: only planet_trade.attach_slipway adds to it, and only slipways")
-        if M.slipway_other_end(w, start_node) == end_node then
+        if M.other_end(w, start_node) == end_node then
           return w
         end
       end
@@ -321,39 +321,39 @@ function M.slipway_obstruction(self)
   end
 end
 
-function M.slipway_other_end(self, planet_instance)
+function M.other_end(self, planet_instance)
   if self == nil then
     return nil
   end
 
   -- A nil end falls through to the start even when `planet_instance` is the start.
-  if planet_instance == M.slipway_start(self) and M.slipway_end(self) ~= nil then
-    return M.slipway_end(self)
+  if planet_instance == M.start_node(self) and M.end_node(self) ~= nil then
+    return M.end_node(self)
   end
-  return M.slipway_start(self)
+  return M.start_node(self)
 end
 
-function M.slipway_draw_overlay(self)
+function M.draw_overlay(self)
   if self == nil then
     return
   end
 
-  if M.slipway_start(self) ~= M.slipway_end(self) then
+  if M.start_node(self) ~= M.end_node(self) then
     require("game.probe").targeting_tooltip(dispatch_context.gfx(),
       dispatch_context.mem(), self)
   end
 end
 
 local function slipway_drag_method(self, mouse)
-  M.slipway_drag(self, mouse)
+  M.drag(self, mouse)
 end
 
 local function slipway_drop_method(self, dropped)
-  M.slipway_drop(self, dropped)
+  M.drop(self, dropped)
 end
 
 local function slipway_draw_overlay_method(self, screen_pos)
-  M.slipway_draw_overlay(self)
+  M.draw_overlay(self)
 end
 
 local function slipway_release_method(self)
@@ -364,8 +364,8 @@ local function slipway_is_endpoint_class(cls)
   return cls.states[entity_class.STATE_SETTLED] ~= nil or cls == require("game.planet").class()
 end
 
-M.slipway_class_def = {
-  draw = slipway_display.slipway_draw_method,
+M.class_def = {
+  draw = slipway_display.draw_method,
   draw_overlay = slipway_draw_overlay_method,
   drag = slipway_drag_method,
   drop = slipway_drop_method,
@@ -381,9 +381,9 @@ local function slipway_create(keys)
 
   self = {}
 
-  entity.init_instance(self, M.slipway_class_def, game_data.slipway_archetype.state,
+  entity.init_instance(self, M.class_def, game_data.slipway_archetype.state,
     game_data.slipway_archetype.state_time)
-  self.targeting = targeting_module.targeting_zero()
+  self.targeting = targeting_module.zero()
   self.served_planets = { count = 0, ids = {} }
   self.point = {}
   self.archetype = game_data.slipway_archetype
@@ -399,7 +399,7 @@ local function slipway_create(keys)
   require("game.probe").targeting_set_target(self.targeting, nil)
   self.targeted_by = nil
   self.is_dead = false
-  entity_class.init_header(self.point, M.slipway_mouse_point_class_def)
+  entity_class.init_header(self.point, M.mouse_point_class_def)
   entity_class.set_map_pos(self.point, vec.make(fixed.from_int(0), fixed.from_int(0)))
   if keys ~= nil and entity_id.get(keys.start) ~= nil then
     assert(slipway_is_endpoint_class(entity_id.get(keys.start).class),
@@ -407,41 +407,41 @@ local function slipway_create(keys)
         .. "does not fit the member's type -- stop, do not widen the member")
     self.start = keys.start
   end
-  M.slipway_construct(self)
+  M.construct(self)
   entity.construct(self)
   return self
 end
 
-function M.slipway_init()
-  M.slipway_shutdown()
+function M.init()
+  M.shutdown()
   g_slipway_up = true
 end
 
-function M.slipway_shutdown()
+function M.shutdown()
   g_slipway_up = false
 end
 
-function M.slipway_ready()
+function M.ready()
   return g_slipway_up
 end
 
-function M.slipway_class()
-  return M.slipway_class_def
+function M.class()
+  return M.class_def
 end
 
-function M.slipway_new(keys)
+function M.new(keys)
   return slipway_create(keys)
 end
 
-function M.slipway_too_far_class()
-  return M.slipway_too_far_class_def
+function M.too_far_class()
+  return M.too_far_class_def
 end
 
-function M.slipway_mouse_point_class()
-  return M.slipway_mouse_point_class_def
+function M.mouse_point_class()
+  return M.mouse_point_class_def
 end
 
-function M.slipway_keys_zero()
+function M.keys_zero()
   return { start = nil }
 end
 

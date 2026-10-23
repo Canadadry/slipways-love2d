@@ -410,7 +410,7 @@ local function held_slipway()
   if ui_module.main_ui() ~= nil then
     held = live(ui_module.ui_left_held(ui_module.main_ui()))
   end
-  if held ~= nil and held.class == slipway_module.slipway_class() then
+  if held ~= nil and held.class == slipway_module.class() then
     return held
   end
   return nil

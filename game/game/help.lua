@@ -113,8 +113,8 @@ M.help_screen_class_def = {
   hit_test = help_screen_hit_test_method,
   drag = probe.targeting_track_method,
   drop = probe.targeting_confirm_method,
-  spawn_particle = probe.probe_spawn_particle,
-  release = probe.probe_release_method,
+  spawn_particle = probe.spawn_particle,
+  release = probe.release_method,
   states = {},
   tags = entity_class.TAG(entity_class.TAG_PROBE),
   lineage = entity_class.LINEAGE(entity_class.LINEAGE_PROBE),
@@ -127,7 +127,7 @@ local function screen_create()
 
   assert(g_help_screen_up, "help_init() must run first")
   self = {}
-  probe.probe_init_instance(self, M.help_screen_class_def, game_data.help_screen_archetype)
+  probe.init_instance(self, M.help_screen_class_def, game_data.help_screen_archetype)
   hit_box = self.archetype.hit_box
   self.hit_box = { left = hit_box.left, top = hit_box.top, right = hit_box.right, bottom = hit_box.bottom }
   self.is_hovered = false
@@ -138,7 +138,7 @@ local function screen_create()
 end
 
 function M.help_init()
-  assert(probe.probe_ready(), "help_init() runs after probe_init()")
+  assert(probe.ready(), "help_init() runs after probe.init()")
 
   M.help_shutdown()
 

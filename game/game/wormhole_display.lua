@@ -1,5 +1,5 @@
--- Include cycle: game.wormhole requires this module at load (wormhole_draw_method fills
--- wormhole_class_def), so game.wormhole and game.probe (home of targeting_target) are required at
+-- Include cycle: game.wormhole requires this module at load (wormhole_display.draw_method fills
+-- wormhole.class_def), so game.wormhole and game.probe (home of targeting_target) are required at
 -- call time, inside the function that needs them.
 local dispatch_context = require("engine.dispatch_context")
 local entity_class = require("engine.entity_class")
@@ -10,7 +10,7 @@ local gfx_module = require("p8.gfx")
 
 local M = {}
 
-function M.wormhole_draw(graphics, memory, self, screen_pos)
+function M.draw(graphics, memory, self, screen_pos)
   local wormhole = require("game.wormhole")
   local probe = require("game.probe")
   local screen_x
@@ -50,7 +50,7 @@ function M.wormhole_draw(graphics, memory, self, screen_pos)
 
     for dt = 0, 8, 2 do
       if t > fixed.from_int(dt) then
-        local sr = wormhole.wormhole_reveal_radius(self, fixed.sub(t, fixed.from_int(dt)))
+        local sr = wormhole.reveal_radius(self, fixed.sub(t, fixed.from_int(dt)))
         local color = 0
 
         if has_color_ramp then
@@ -69,8 +69,8 @@ function M.wormhole_draw(graphics, memory, self, screen_pos)
   end
 end
 
-function M.wormhole_draw_method(self, screen_pos)
-  M.wormhole_draw(dispatch_context.gfx(), dispatch_context.mem(), self, screen_pos)
+function M.draw_method(self, screen_pos)
+  M.draw(dispatch_context.gfx(), dispatch_context.mem(), self, screen_pos)
 end
 
 return M

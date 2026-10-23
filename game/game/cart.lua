@@ -75,14 +75,14 @@ function M.cart_load()
   ui.ui_init()
 
   layout.init()
-  trade.trade_init()
+  trade.init()
 
   ui_button.button_init()
   ui_button.modal_backdrop_init()
   background.init()
   message_box.message_box_init()
   message_box.toast_init()
-  probe.probe_init()
+  probe.init()
   economy_module.economy_init()
 
   memory = dispatch_context.mem()
@@ -91,7 +91,7 @@ function M.cart_load()
   end
 
   planet.init()
-  slipway.slipway_init()
+  slipway.init()
   planet_family.init()
   assert(planet_family.structure_ready() and planet_family.burst_ready() and planet.ready(),
     "cart_load: structure and burst extend planet: planet.init() must run first")
@@ -99,11 +99,11 @@ function M.cart_load()
   assert(planet_family_trade.slipgate_ready() and planet_family_trade.synthesizer_ready()
       and planet_family.structure_ready() and planet_family.ascension_ready(),
     "cart_load: slipgate extends structure and synthesizer extends ascension: planet_family.init() must run first")
-  wormhole.wormhole_init()
+  wormhole.init()
 
   help.help_init()
-  assert(help.help_screen_ready() and probe.probe_ready(),
-    "cart_load: the help screen extends probe: probe_init() must run first")
+  assert(help.help_screen_ready() and probe.ready(),
+    "cart_load: the help screen extends probe: probe.init() must run first")
   score_panel.score_panel_init()
   structure_icon.structure_icon_init()
   menu.menu_init()
@@ -123,23 +123,23 @@ function M.cart_shutdown()
   score_panel.score_panel_shutdown()
   help.help_shutdown()
 
-  wormhole.wormhole_shutdown()
+  wormhole.shutdown()
   planet_family_trade.shutdown()
   planet_family.shutdown()
-  slipway.slipway_shutdown()
+  slipway.shutdown()
   planet.shutdown()
 
   data_init.shutdown()
 
   economy_module.economy_shutdown()
-  probe.probe_shutdown()
+  probe.shutdown()
   message_box.toast_shutdown()
   message_box.message_box_shutdown()
   background.shutdown()
   ui_button.modal_backdrop_shutdown()
   ui_button.button_shutdown()
 
-  trade.trade_shutdown()
+  trade.shutdown()
   layout.shutdown()
 
   ui.ui_shutdown()
@@ -185,7 +185,7 @@ function M.cart_init()
   end
   message_box.message_box_set_shown(nil)
 
-  if probe.main_economy_typed() ~= nil then probe.probe_set_main_economy(nil) end
+  if probe.main_economy_typed() ~= nil then probe.set_main_economy(nil) end
   score_panel.score_panel_set_main(nil)
 
   help.help_set_resume_game(title_resume_handler())
@@ -237,7 +237,7 @@ end
 local function start_interface()
   local kind_table = {}
 
-  probe.probe_set_main_economy(economy_module.economy_new())
+  probe.set_main_economy(economy_module.economy_new())
   score_panel.score_panel_set_main(score_panel.score_panel_new())
 
   if menu.pause_menu_open_box() ~= nil then
@@ -314,7 +314,7 @@ local function save_at_frame_end()
   if economy.end_status ~= nil then
     save_storage.save_storage_erase()
     economy.save_pending = false
-  elseif wormhole.wormhole_live_count() == 0 then
+  elseif wormhole.live_count() == 0 then
     save_state.save_state_capture(g_save_state)
     save_storage.save_storage_write(g_save_bytes, save_state.save_state_encode(g_save_state, g_save_bytes))
     economy.save_pending = false

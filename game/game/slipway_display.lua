@@ -1,5 +1,5 @@
--- Include cycle: game.slipway requires this module at load (slipway_draw_method fills
--- slipway_class_def), so game.slipway, game.planet and game.probe (home of targeting_target) are
+-- Include cycle: game.slipway requires this module at load (slipway_display.draw_method fills
+-- slipway.class_def), so game.slipway, game.planet and game.probe (home of targeting_target) are
 -- required at call time, inside the functions that need them.
 local dispatch_context = require("engine.dispatch_context")
 local entity_geom = require("engine.entity_geom")
@@ -21,7 +21,7 @@ local function to_int(x)
   return fixed.flr_int(x)
 end
 
-function M.slipway_spawn_transit_dot(self, f, t)
+function M.spawn_transit_dot(self, f, t)
   local slipway = require("game.slipway")
   local planet = require("game.planet")
   local t_id
@@ -34,15 +34,15 @@ function M.slipway_spawn_transit_dot(self, f, t)
     return
   end
 
-  -- The mouse point slipway_drag hangs the end on is not a planet.
+  -- The mouse point slipway.drag hangs the end on is not a planet.
   if t ~= nil and planet.is_family(t) then
     t_id = planet.id_or_null(t)
   else
     t_id = nil
   end
-  if slipway.slipway_served_planets_has(self.served_planets, t_id) then
-    local f_pos = slipway.slipway_end_pos(f)
-    local t_pos = slipway.slipway_end_pos(t)
+  if slipway.served_planets_has(self.served_planets, t_id) then
+    local f_pos = slipway.end_pos(f)
+    local t_pos = slipway.end_pos(t)
     local d = vec.sub(t_pos, f_pos)
     local v = vec.normalize(d)
     local dot = {}
@@ -55,12 +55,12 @@ function M.slipway_spawn_transit_dot(self, f, t)
   end
 end
 
-function M.slipway_line_ends(self)
+function M.line_ends(self)
   local slipway = require("game.slipway")
   local t = self.state_time
-  local start = vec.add(slipway.slipway_end_pos(slipway.slipway_start(self)),
+  local start = vec.add(slipway.end_pos(slipway.start_node(self)),
     vec.from_polar(fixed.LIT(0x00018000, 1.5), fixed.div(t, fixed.from_int(126))))
-  local end_ = vec.add(slipway.slipway_end_pos(slipway.slipway_end(self)),
+  local end_ = vec.add(slipway.end_pos(slipway.end_node(self)),
     vec.from_polar(fixed.LIT(0x00018000, 1.5), fixed.div(t, fixed.from_int(176))))
   return slipway_line_ends_make(start, end_)
 end
@@ -72,13 +72,13 @@ local function floored_far_from_the_wrap(p)
   return floored
 end
 
-function M.slipway_draw_line(gfx, mem, ends, l, h, s, c)
+function M.draw_line(gfx, mem, ends, l, h, s, c)
   local x1
   local y1
   local x2
   local y2
 
-  assert(s > 0, "slipway_draw_line only ascends: a zero step hangs, a negative one draws nothing")
+  assert(s > 0, "slipway_display.draw_line only ascends: a zero step hangs, a negative one draws nothing")
   assert(gfx ~= nil and mem ~= nil,
     "gfx.lines dereferences the graphics state and memory: neither may be NULL here")
 
@@ -112,7 +112,7 @@ function M.slipway_draw_line(gfx, mem, ends, l, h, s, c)
   end
 end
 
-function M.slipway_draw(graphics, memory, self)
+function M.draw(graphics, memory, self)
   local slipway = require("game.slipway")
   local probe = require("game.probe")
   local start_node
@@ -122,8 +122,8 @@ function M.slipway_draw(graphics, memory, self)
     return
   end
 
-  start_node = slipway.slipway_start(self)
-  end_node = slipway.slipway_end(self)
+  start_node = slipway.start_node(self)
+  end_node = slipway.end_node(self)
 
   if entity_geom.is_on_screen(start_node) or entity_geom.is_on_screen(end_node) then
     local fade_in_step = self.fade_in_step
@@ -161,9 +161,9 @@ function M.slipway_draw(graphics, memory, self)
     border_color = self.infraspace and fade_color or fixed.from_int(0)
     dot_color = self.infraspace and fixed.from_int(5) or fixed.from_int(13)
 
-    local ends = M.slipway_line_ends(self)
-    M.slipway_draw_line(graphics, memory, ends, -1, 2, 3, to_int(border_color))
-    M.slipway_draw_line(graphics, memory, ends, 0, 1, 1, to_int(line_color))
+    local ends = M.line_ends(self)
+    M.draw_line(graphics, memory, ends, -1, 2, 3, to_int(border_color))
+    M.draw_line(graphics, memory, ends, 0, 1, 1, to_int(line_color))
 
     do
       local ts = self.transit_dots
@@ -194,7 +194,7 @@ function M.slipway_draw(graphics, memory, self)
           end
         end
 
-        if not particle.particle_pixels_hidden() then
+        if not particle.pixels_hidden() then
           local x = to_int(new_pos.x)
           local y = to_int(new_pos.y)
           gfx_module.rectfill(graphics, memory, x, y, x + 1, y + 1, 0)
@@ -206,15 +206,15 @@ function M.slipway_draw(graphics, memory, self)
       end
     end
 
-    M.slipway_spawn_transit_dot(self, start_node, end_node)
-    M.slipway_spawn_transit_dot(self, end_node, start_node)
+    M.spawn_transit_dot(self, start_node, end_node)
+    M.spawn_transit_dot(self, end_node, start_node)
   end
 
   self.targeted_by = nil
 end
 
-function M.slipway_draw_method(self, screen_pos)
-  M.slipway_draw(dispatch_context.gfx(), dispatch_context.mem(), self)
+function M.draw_method(self, screen_pos)
+  M.draw(dispatch_context.gfx(), dispatch_context.mem(), self)
 end
 
 return M

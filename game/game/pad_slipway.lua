@@ -52,7 +52,7 @@ function M.pad_slipway_between(start, target)
     local slipway = entity_id.resolve(slipways[i])
     assert(not slipway.is_dead,
       "pad_slipway_between: a slipway dies only when its drop is refused, before it joins a planet's list")
-    if slipway_module.slipway_other_end(slipway, start) == target then
+    if slipway_module.other_end(slipway, start) == target then
       return slipway
     end
   end

@@ -44,8 +44,8 @@ function M.slipgate_accept_drop(self, s)
     return out
   end
 
-  start_not_self = not (s ~= nil and s.class == require("game.slipway").slipway_class()
-    and require("game.slipway").slipway_start(s) == self)
+  start_not_self = not (s ~= nil and s.class == require("game.slipway").class()
+    and require("game.slipway").start_node(s) == self)
 
   out.stop = start_not_self and M.slipgate_takes_slipway(self)
   return out
@@ -68,7 +68,7 @@ entity_class.init_header(M.slipgate_left_press_empty, M.slipgate_left_press_empt
 function M.slipgate_left_press(self)
   local accept_drop_result = down_zero()
   local slipway = require("game.slipway")
-  local keys = slipway.slipway_keys_zero()
+  local keys = slipway.keys_zero()
   local made
 
   if self == nil then
@@ -81,9 +81,9 @@ function M.slipgate_left_press(self)
     return accept_drop_result
   end
 
-  assert(slipway.slipway_ready(), "slipway_init() must run before slipgate_left_press builds a slipway")
+  assert(slipway.ready(), "slipway.init() must run before slipgate_left_press builds a slipway")
   keys.start = entity_id.link(self)
-  made = slipway.slipway_new(keys)
+  made = slipway.new(keys)
   accept_drop_result.held = entity_id.link(made)
   accept_drop_result.stop = made ~= nil
   return accept_drop_result
@@ -160,9 +160,9 @@ function M.slipgate_offer_trade(self, trade_offer)
       }
       local other
 
-      gf.route = trade.trade_extend(route, self, slipway)
-      assert(slipway.class == slipway_module.slipway_class(), "a slipgate's slipways list holds slipways only: planet_trade.attach_slipway adds to it")
-      other = slipway_module.slipway_other_end(slipway, self)
+      gf.route = trade.extend(route, self, slipway)
+      assert(slipway.class == slipway_module.class(), "a slipgate's slipways list holds slipways only: planet_trade.attach_slipway adds to it")
+      other = slipway_module.other_end(slipway, self)
       if other ~= nil and other.class.offer_trade ~= nil then
         other.class.offer_trade(other, gf)
       end
@@ -256,8 +256,8 @@ function M.synthesizer_attach_slipway(self, slipway)
 
   if self ~= nil and slipway ~= nil then
     local slipway_module = require("game.slipway")
-    assert(slipway.class == slipway_module.slipway_class(), "synthesizer_attach_slipway: the slipway is one slipway_drop registers")
-    other_end = slipway_module.slipway_other_end(slipway, self)
+    assert(slipway.class == slipway_module.class(), "synthesizer_attach_slipway: the slipway is one slipway.drop registers")
+    other_end = slipway_module.other_end(slipway, self)
   end
 
   if other_end ~= nil then
@@ -320,7 +320,7 @@ M.synthesizer_class_def = {
   drop = probe.targeting_confirm_method,
   attach_slipway = synthesizer_attach_slipway_method,
   offer_trade = planet_trade.offer_trade_method,
-  spawn_particle = probe.probe_spawn_particle,
+  spawn_particle = probe.spawn_particle,
   states = {
     [entity_class.STATE_VANISHING] = planet.update_vanishing_method,
     [entity_class.STATE_SETTLED] = planet_family.structure_update_settled_method,

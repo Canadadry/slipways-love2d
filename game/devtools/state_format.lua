@@ -214,7 +214,7 @@ local function write_slipways(sink)
   for i = 1, count_of(jc) do
     local s = jc[i]
     if not slipway_placed(s) then goto continue end
-    line_add(line, "slipway %s %s %s", id_of(slipway.slipway_start(s)), id_of(slipway.slipway_end(s)),
+    line_add(line, "slipway %s %s %s", id_of(slipway.start_node(s)), id_of(slipway.end_node(s)),
              s.infraspace and "infragate" or "normal")
     line_end(line)
     n = n + 1

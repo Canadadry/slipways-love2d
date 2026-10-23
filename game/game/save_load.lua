@@ -176,7 +176,7 @@ end
 -- A probe is only ever saved settled: a held one exists before the first
 -- action only, when nothing is pending.
 local function load_probe(saved)
-  local probe = probe_module.probe_new(nil)
+  local probe = probe_module.new(nil)
   entity.set_state(probe, entity_class.STATE_SETTLED)
   entity_class.set_pos(probe, vec_of(saved.pos))
   entity_class.set_map_pos(probe, vec_of(saved.map_pos))
@@ -185,12 +185,12 @@ end
 
 local function load_slipways(state, node_ids, out)
   for i = 1, state.slipway_count do
-    local keys = slipway_module.slipway_keys_zero()
+    local keys = slipway_module.keys_zero()
     local start = node_ids[state.slipways[i].start + 1]
     local slipway
     keys.start = start
-    slipway = slipway_module.slipway_new(keys)
-    slipway_module.slipway_connect(slipway, entity_id.get(node_ids[state.slipways[i].end_ + 1]))
+    slipway = slipway_module.new(keys)
+    slipway_module.connect(slipway, entity_id.get(node_ids[state.slipways[i].end_ + 1]))
     slipway.state_time = state.slipways[i].state_time
     out[i] = entity_id.link(slipway)
   end
@@ -257,8 +257,8 @@ local function load_outgoing_routes(state, node_ids, slipway_ids)
       keys.slipways = route_id_list(state, saved.first_slipway, saved.slipway_count, slipway_ids)
       keys.resource_is_bool = saved.resource_is_bool ~= 0
       keys.resource = saved.resource
-      route = trade.trade_new(keys)
-      trade.trade_route_list_add(planet.outgoing_routes, route)
+      route = trade.new(keys)
+      trade.route_list_add(planet.outgoing_routes, route)
     end
     ::continue::
   end

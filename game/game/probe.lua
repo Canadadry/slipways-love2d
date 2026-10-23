@@ -1,5 +1,5 @@
 -- Include cycle: game.particle is required at load, since emitter_update_method fills
--- probe_class_def; particle never requires this module. game.economy, game.planet,
+-- probe.class_def; particle never requires this module. game.economy, game.planet,
 -- game.slipway, game.ui and game.wormhole are required at call time, inside the functions that need
 -- them. planet_family and wormhole hold this module's methods by identity, so it requires neither.
 local bit = require("bit")
@@ -42,7 +42,7 @@ M.g_main_economy_placeholder = {}
 entity_class.init_header(M.g_main_economy_placeholder, M.main_economy_placeholder_class_def)
 
 local function targeting_track_target_is_holder_class(cls)
-  return cls.drag == M.targeting_track_method or cls == require("game.wormhole").wormhole_class()
+  return cls.drag == M.targeting_track_method or cls == require("game.wormhole").class()
 end
 
 M.targeting_track_target_class_def = {
@@ -70,11 +70,11 @@ local function targeting_track_slipway_predicate(e, ctx_ptr)
   if e == nil then
     return false
   end
-  assert(e.class == slipway.slipway_class(), "the slipway tag holds slipways only")
+  assert(e.class == slipway.class(), "the slipway tag holds slipways only")
   sw = e
 
-  start_p = slipway.slipway_end_map_pos(slipway.slipway_start(sw))
-  end_p = slipway.slipway_end_map_pos(slipway.slipway_end(sw))
+  start_p = slipway.end_map_pos(slipway.start_node(sw))
+  end_p = slipway.end_map_pos(slipway.end_node(sw))
 
   return geom.near_segment(start_p, end_p, ctx.self_map_pos, fixed.LIT(0x000000d1, 0.0032))
 end
@@ -90,40 +90,40 @@ end
 
 local function probe_is_target_class(cls)
   return (cls.states[entity_class.STATE_SETTLED] ~= nil or cls == require("game.planet").class() or
-    cls == require("game.slipway").slipway_class() or cls == M.targeting_track_target_class())
+    cls == require("game.slipway").class() or cls == M.targeting_track_target_class())
 end
 
-function M.probe_link_target(et, self)
+function M.link_target(et, self)
   local planet = require("game.planet")
   local slipway = require("game.slipway")
   local wormhole = require("game.wormhole")
 
   if planet.is_family(et) then
-    assert(self.class.drag == M.targeting_track_method or self.class == slipway.slipway_class(),
-      "probe_link_target: a planet's targeted_by takes NULL, a host whose drag is targeting_track_method "
+    assert(self.class.drag == M.targeting_track_method or self.class == slipway.class(),
+      "probe.link_target: a planet's targeted_by takes NULL, a host whose drag is targeting_track_method "
         .. "or a slipway, nothing else -- stop, do not widen the member")
     et.targeted_by = entity_id.link(self)
     return
   end
-  if et.class == slipway.slipway_class() then
-    assert(self.class.drag == M.targeting_track_method or self.class == slipway.slipway_class() or
-      self.class == wormhole.wormhole_class(),
-      "probe_link_target: a slipway's targeted_by takes NULL, a host whose drag is targeting_track_method, "
+  if et.class == slipway.class() then
+    assert(self.class.drag == M.targeting_track_method or self.class == slipway.class() or
+      self.class == wormhole.class(),
+      "probe.link_target: a slipway's targeted_by takes NULL, a host whose drag is targeting_track_method, "
         .. "a wormhole or another slipway, nothing else -- stop")
     et.targeted_by = entity_id.link(self)
     return
   end
-  if et.class == slipway.slipway_too_far_class() then
-    assert(self.class == slipway.slipway_class(),
-      "probe_link_target: the too-far slipway struct's targeted_by takes NULL or a slipway, nothing else "
+  if et.class == slipway.too_far_class() then
+    assert(self.class == slipway.class(),
+      "probe.link_target: the too-far slipway struct's targeted_by takes NULL or a slipway, nothing else "
         .. "-- stop, do not widen the member")
     et.targeted_by = entity_id.link(self)
     return
   end
   assert(et == M.g_targeting_track_target,
-    "probe_link_target: the target is a planet, a slipway or the static throwaway struct, nothing else")
+    "probe.link_target: the target is a planet, a slipway or the static throwaway struct, nothing else")
   assert(targeting_track_target_is_holder_class(self.class),
-    "probe_link_target: the throwaway target's targeted_by takes NULL, a host whose drag is "
+    "probe.link_target: the throwaway target's targeted_by takes NULL, a host whose drag is "
       .. "targeting_track_method or a wormhole, nothing else -- stop, do not widen the member")
   M.g_targeting_track_target.targeted_by = entity_id.link(self)
 end
@@ -131,14 +131,14 @@ end
 function M.targeting_target(self)
   local kind = self.target.kind
 
-  if kind == targeting_module.TARGETING_TARGET_ENTITY then
+  if kind == targeting_module.TARGET_ENTITY then
     return entity_id.get(self.target.id)
-  elseif kind == targeting_module.TARGETING_TARGET_TRACK_THROWAWAY then
+  elseif kind == targeting_module.TARGET_TRACK_THROWAWAY then
     return M.g_targeting_track_target
-  elseif kind == targeting_module.TARGETING_TARGET_SLIPWAY_TOO_FAR then
-    return require("game.slipway").slipway_too_far()
-  elseif kind == targeting_module.TARGETING_TARGET_WORMHOLE_TOO_FAR then
-    return require("game.wormhole").wormhole_too_far_target_wrapper()
+  elseif kind == targeting_module.TARGET_SLIPWAY_TOO_FAR then
+    return require("game.slipway").too_far()
+  elseif kind == targeting_module.TARGET_WORMHOLE_TOO_FAR then
+    return require("game.wormhole").too_far_target_wrapper()
   end
   return nil
 end
@@ -146,16 +146,16 @@ end
 function M.targeting_set_target(self, target)
   local slipway = require("game.slipway")
   local wormhole = require("game.wormhole")
-  local value = { kind = targeting_module.TARGETING_TARGET_NONE, id = nil }
+  local value = { kind = targeting_module.TARGET_NONE, id = nil }
 
   if target == M.g_targeting_track_target then
-    value.kind = targeting_module.TARGETING_TARGET_TRACK_THROWAWAY
-  elseif target == slipway.slipway_too_far() then
-    value.kind = targeting_module.TARGETING_TARGET_SLIPWAY_TOO_FAR
-  elseif target == wormhole.wormhole_too_far_target_wrapper() then
-    value.kind = targeting_module.TARGETING_TARGET_WORMHOLE_TOO_FAR
+    value.kind = targeting_module.TARGET_TRACK_THROWAWAY
+  elseif target == slipway.too_far() then
+    value.kind = targeting_module.TARGET_SLIPWAY_TOO_FAR
+  elseif target == wormhole.too_far_target_wrapper() then
+    value.kind = targeting_module.TARGET_WORMHOLE_TOO_FAR
   elseif target ~= nil then
-    value.kind = targeting_module.TARGETING_TARGET_ENTITY
+    value.kind = targeting_module.TARGET_ENTITY
     value.id = entity_id.link(target)
   end
   self.target = value
@@ -170,10 +170,10 @@ function M.targeting_of(e)
   if planet_module.is_family(e) then
     return e.targeting
   end
-  if e.class == require("game.slipway").slipway_class() then
+  if e.class == require("game.slipway").class() then
     return e.targeting
   end
-  if e.class == require("game.wormhole").wormhole_class() then
+  if e.class == require("game.wormhole").class() then
     return e.targeting
   end
   return nil
@@ -196,7 +196,7 @@ function M.targeting_track(self, mouse)
   mouse_world_vec = entity_class.mouse_pos_world(mouse)
   p_vec = vec.div(mouse_world_vec, fixed.from_int(128))
   assert(bit.band(self.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_PROBE)) ~= 0 or
-    require("game.planet").is_family(self) or self.class == require("game.wormhole").wormhole_class(),
+    require("game.planet").is_family(self) or self.class == require("game.wormhole").class(),
     "targeting_track: a host neither a probe, of the planet family nor a wormhole, none of whose drag runs it -- stop")
   if entity_class.mouse_pos_has_world(mouse) then
     entity_class.set_pos(self, mouse_world_vec)
@@ -245,7 +245,7 @@ function M.targeting_track(self, mouse)
   M.targeting_set_target(targeting, target)
 
   if M.targeting_target(targeting) ~= nil then
-    M.probe_link_target(M.targeting_target(targeting), self)
+    M.link_target(M.targeting_target(targeting), self)
   end
 end
 
@@ -258,10 +258,10 @@ local function probe_target_status_text(et)
   local slipway = require("game.slipway")
   local wormhole = require("game.wormhole")
 
-  if et.class == wormhole.wormhole_too_far_target_class() then
+  if et.class == wormhole.too_far_target_class() then
     return et.status_text
   end
-  if et.class == slipway.slipway_too_far_class() then
+  if et.class == slipway.too_far_class() then
     return et.status_text
   end
   return nil
@@ -385,7 +385,7 @@ function M.targeting_confirm_method(self, dropped)
   M.targeting_confirm(self)
 end
 
-function M.probe_spawn_particle(self)
+function M.spawn_particle(self)
   local emitter = nil
   local angle_slices, state_time, base_radius, speed_factor, lifetime = 0, 0, 0, 0, 0
   local pk = false
@@ -395,7 +395,7 @@ function M.probe_spawn_particle(self)
 
   if self ~= nil then
     emitter = particle_module.emitter_of(self)
-    assert(emitter ~= nil, "probe_spawn_particle: a class that carries no particle emitter spawns nothing -- stop")
+    assert(emitter ~= nil, "probe.spawn_particle: a class that carries no particle emitter spawns nothing -- stop")
     angle_slices = emitter.angle_slices
     state_time = self.state_time
     base_radius = emitter.base_radius
@@ -418,7 +418,7 @@ function M.probe_spawn_particle(self)
     v = vec.perpendicular(v)
   end
 
-  particle = particle_module.particle_take()
+  particle = particle_module.take()
   particle.pos = p
   particle.velocity = v
   particle.life = lifetime
@@ -426,27 +426,27 @@ function M.probe_spawn_particle(self)
   return particle
 end
 
-function M.probe_release_method(self)
+function M.release_method(self)
   particle_module.emitter_release_particles(particle_module.emitter_of(self))
 end
 
-M.probe_class_def = {
+M.class_def = {
   draw = particle_module.emitter_update_method,
   draw_overlay = M.targeting_tooltip_method,
   drag = M.targeting_track_method,
   drop = M.targeting_confirm_method,
-  spawn_particle = M.probe_spawn_particle,
-  release = M.probe_release_method,
+  spawn_particle = M.spawn_particle,
+  release = M.release_method,
   states = {},
   tags = entity_class.TAG(entity_class.TAG_PROBE),
   lineage = entity_class.LINEAGE(entity_class.LINEAGE_PROBE),
   skip_draw_off_screen = false,
 }
 
-function M.probe_init_instance(self, cls, archetype)
+function M.init_instance(self, cls, archetype)
   entity.init_instance(self, cls, archetype.state, archetype.state_time)
   self.emitter = particle_module.emitter_zero()
-  self.targeting = targeting_module.targeting_zero()
+  self.targeting = targeting_module.zero()
   self.archetype = archetype
   entity_registry.set_layer(self, self.archetype.layer)
   self.fold_anchor = self.archetype.fold_anchor
@@ -471,9 +471,9 @@ end
 local function probe_create(keys)
   local self
 
-  assert(g_probe_up, "probe_init() must run first")
+  assert(g_probe_up, "probe.init() must run first")
   self = {}
-  M.probe_init_instance(self, M.probe_class_def, game_data.probe_archetype)
+  M.init_instance(self, M.class_def, game_data.probe_archetype)
   if keys ~= nil then
     self.state_time = keys.state_time
     if keys.angle_slices ~= nil then
@@ -491,30 +491,30 @@ local function probe_create(keys)
   return self
 end
 
-function M.probe_init()
-  M.probe_shutdown()
+function M.init()
+  M.shutdown()
 
   g_probe_up = true
 
   M.g_main_economy_placeholder.research_points = nil
   M.g_main_economy_placeholder.credits = nil
-  M.probe_set_main_economy(M.g_main_economy_placeholder)
+  M.set_main_economy(M.g_main_economy_placeholder)
 end
 
-function M.probe_shutdown()
+function M.shutdown()
   g_probe_up = false
-  M.probe_set_main_economy(nil)
+  M.set_main_economy(nil)
 end
 
-function M.probe_ready()
+function M.ready()
   return g_probe_up
 end
 
-function M.probe_class()
-  return M.probe_class_def
+function M.class()
+  return M.class_def
 end
 
-function M.probe_new(keys)
+function M.new(keys)
   return probe_create(keys)
 end
 
@@ -549,7 +549,7 @@ function M.main_economy_placeholder()
   return nil
 end
 
-function M.probe_set_main_economy(instance)
+function M.set_main_economy(instance)
   if instance == nil then
     g_main_economy_state = MAIN_ECONOMY_NONE
     g_main_economy = nil

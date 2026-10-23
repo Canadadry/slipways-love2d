@@ -56,7 +56,7 @@ M.structure_class_def = {
 
 function M.structure_init_instance(self, cls, archetype)
   planet.init_instance(self, cls, archetype)
-  self.targeting = targeting.targeting_zero()
+  self.targeting = targeting.zero()
   self.targeting.archetype = self.archetype.targeting
   self.targeting.cost = self.archetype.targeting.cost
   self.sprite = self.archetype.sprite
@@ -214,7 +214,7 @@ M.ascension_class_def = {
   drop = probe.targeting_confirm_method,
   attach_slipway = planet_trade.attach_slipway_method,
   offer_trade = planet_trade.offer_trade_method,
-  spawn_particle = probe.probe_spawn_particle,
+  spawn_particle = probe.spawn_particle,
   states = {
     [entity_class.STATE_VANISHING] = planet.update_vanishing_method,
     [entity_class.STATE_SETTLED] = M.structure_update_settled_method,
@@ -281,7 +281,7 @@ M.protostar_class_def = {
   drop = probe.targeting_confirm_method,
   attach_slipway = planet_trade.attach_slipway_method,
   offer_trade = planet_trade.offer_trade_method,
-  spawn_particle = probe.probe_spawn_particle,
+  spawn_particle = probe.spawn_particle,
   states = {
     [entity_class.STATE_VANISHING] = planet.update_vanishing_method,
     [entity_class.STATE_SETTLED] = M.structure_update_settled_method,
@@ -346,7 +346,7 @@ function M.burst_spawn_particle(self_ptr)
   v = vec.mul(p, ms)
   a = vec.mul(p, iu)
 
-  particle = require("game.particle").particle_take()
+  particle = require("game.particle").take()
   particle.pos = p
   particle.velocity = v
   particle.acceleration = a
@@ -392,7 +392,7 @@ function M.burst_draw(graphics, memory, self, screen_pos)
       if found then
         color = trail_color
       end
-      if not particle.particle_pixels_hidden() then
+      if not particle.pixels_hidden() then
         gfx_module.circ(graphics, memory, screen_x, screen_y, fixed.flr_int(vec.length(pt.pos)), color)
       end
     end

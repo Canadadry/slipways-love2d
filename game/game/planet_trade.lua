@@ -42,7 +42,7 @@ local function contains_trade(list, v)
     return false
   end
   for i = 1, #list do
-    if trade.trade_equal(list[i], v) then
+    if trade.equal(list[i], v) then
       return true
     end
   end
@@ -56,8 +56,8 @@ local function planet_rebuild_trades_attach_slipway_closure(self, a)
   if not contains_trade(self.accepted_routes, a) then
     local kept
 
-    kept = trade.trade_copy(a)
-    trade.trade_route_list_add(self.accepted_routes, kept)
+    kept = trade.copy(a)
+    trade.route_list_add(self.accepted_routes, kept)
     self.amount = fixed.sub(self.amount, fixed.from_int(1))
   end
 end
@@ -75,8 +75,8 @@ function M.attach_slipway(self, slipway)
 
   if slipway ~= nil then
     local slipway_module = require("game.slipway")
-    assert(slipway.class == slipway_module.slipway_class(), "planet_trade.attach_slipway: the slipway is one slipway_drop registers")
-    other = slipway_module.slipway_other_end(slipway, self)
+    assert(slipway.class == slipway_module.class(), "planet_trade.attach_slipway: the slipway is one slipway.drop registers")
+    other = slipway_module.other_end(slipway, self)
   end
   if other ~= nil then
     assert(planet.is_family(other), "planet_trade.attach_slipway: the other end of a registered slipway is a planet")
@@ -102,7 +102,7 @@ function M.offer_trade(self, trade_offer)
     return
   end
   route = trade_offer.route
-  t_resource = trade.trade_resource(route)
+  t_resource = trade.resource(route)
 
   found, resource = map_tables.resource_code_lookup("e", resource)
   if found then
@@ -171,7 +171,7 @@ function M.offer_trade(self, trade_offer)
 
     if trade.resource_equal(t_resource, resource_val)
       and not (any_resource ~= nil and trade.resource_equal(resource_val, any_resource)) then
-      local extended = trade.trade_extend(route, self, nil)
+      local extended = trade.extend(route, self, nil)
       if trade_offer.accept ~= nil then
         trade_offer.accept(trade_offer, extended)
       end
@@ -214,7 +214,7 @@ function M.rebuild_trades(self)
     keys.planets = { self_id }
     keys.slipways = { entity_id.of(w) }
 
-    lw.route = trade.trade_new(keys)
+    lw.route = trade.new(keys)
     -- Recomputed each iteration: an earlier offer's accept may have grown the outgoing routes.
     lw.amount = fixed.sub(amount, fixed.from_int(#self.outgoing_routes))
     lw.accept = planet_rebuild_trades_attach_slipway_closure
@@ -223,8 +223,8 @@ function M.rebuild_trades(self)
       break
     end
 
-    assert(w.class == slipway.slipway_class(), "a planet's slipways list holds slipways only: planet_trade.attach_slipway adds to it")
-    other = slipway.slipway_other_end(w, self)
+    assert(w.class == slipway.class(), "a planet's slipways list holds slipways only: planet_trade.attach_slipway adds to it")
+    other = slipway.other_end(w, self)
     -- The outgoing routes keep their old contents until the offer returns.
     if other ~= nil and other.class.offer_trade ~= nil then
       lw.accepted_routes = route_list_copy(self.outgoing_routes)

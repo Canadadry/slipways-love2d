@@ -118,7 +118,7 @@ inputs of the old file but f31 (plan 12 step 7).
   f310: X on s2.
 - The crossed planet: f312, f314: Up, Up: the aim on p47 (known, the
   colour-8 label), then on p23, 57 px from s2, whose line passes 6 px
-  from p47: slipway_obstruction makes p47 the target, the line is colour
+  from p47: slipway.obstruction makes p47 the target, the line is colour
   2 and p47 gets the dithered colour-2 disc (112 colour-2 pixels round
   p47 at f315-317, none at f313). f318: circle: the slipway dropped with
   no target, nothing built or charged, jump mode on s2 (camera 176 209).

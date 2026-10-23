@@ -362,7 +362,7 @@ function M.accept_drop(self, s)
   if self.state ~= entity_class.STATE_SETTLED then
     return out
   end
-  if s ~= nil and s.class == slipway.slipway_class() and slipway.slipway_start(s) == self then
+  if s ~= nil and s.class == slipway.class() and slipway.start_node(s) == self then
     M.inspection_panel(self)
     return out
   end
@@ -613,12 +613,12 @@ function M.left_press(self)
   end
   if self.state == entity_class.STATE_SETTLED then
     local slipway = require("game.slipway")
-    local keys = slipway.slipway_keys_zero()
+    local keys = slipway.keys_zero()
     local made
 
-    assert(slipway.slipway_ready(), "slipway_init() must run before planet_display.left_press builds a slipway")
+    assert(slipway.ready(), "slipway.init() must run before planet_display.left_press builds a slipway")
     keys.start = entity_id.link(self)
-    made = slipway.slipway_new(keys)
+    made = slipway.new(keys)
     out.held = entity_id.link(made)
     out.stop = made ~= nil
   end

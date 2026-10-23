@@ -884,7 +884,7 @@ its count. The only fixed lengths left are those of data tables and the
 save format's ranges (`docs/save-format.md`). `is_dead` is on every entity. A
 zero constructor other modules use is exported by the module owning the
 struct (`button_zero` in `ui_button`, `emitter_zero` in `particle`,
-`targeting_zero` in `targeting`); a module needing one its owner does not
+`targeting.zero` in `targeting`); a module needing one its owner does not
 export keeps a local one. A C `int *` context is
 a `{ value = 0 }` table. A by-value `p8_graphics_t` is a local
 `graphics_copy` of its five fields. An out-parameter is an input argument

@@ -111,7 +111,7 @@ function M.economy_score_trade_income(entity)
     for i = 1, #outgoing do
       local found
       local partner
-      found, partner = trade.trade_last_planet(outgoing[i], partner)
+      found, partner = trade.last_planet(outgoing[i], partner)
       if found then
         local oz
         assert(planet_module.is_family(partner), "economy_score_trade_income: a trade leads to a planet")

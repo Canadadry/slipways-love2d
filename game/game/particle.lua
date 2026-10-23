@@ -19,11 +19,11 @@ local g_pixels_hidden = false
 -- Off by default; only devtools turns it on. Hides the pixels of emitter
 -- particles, burst rings and transit dots, and nothing else: their state and
 -- every random draw are unchanged.
-function M.particle_hide_pixels(hidden)
+function M.hide_pixels(hidden)
   g_pixels_hidden = hidden
 end
 
-function M.particle_pixels_hidden()
+function M.pixels_hidden()
   return g_pixels_hidden
 end
 
@@ -44,7 +44,7 @@ local function particle_to_int(x)
 end
 
 -- A particle: { pos, velocity, acceleration, life }, acceleration nil when it has none.
-function M.particle_take()
+function M.take()
   return {}
 end
 

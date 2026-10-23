@@ -150,7 +150,7 @@ function M.structure_icon_draw(gfx, mem, self, p)
 
   if self.is_hovered then
     if structure_icon_own_kind(self) ~= nil then
-      local pb = targeting.targeting_zero()
+      local pb = targeting.zero()
       pb.archetype = game_data.targeting_archetype_none
 
       pb.cost = view.cost

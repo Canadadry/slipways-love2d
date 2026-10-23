@@ -72,22 +72,22 @@ local function rebuild_incoming_routes_route_visit(entity, context)
           "rebuild_incoming_routes_route_visit: a trade's planets list holds planets only")
         local planet = planet_val
         if planet.planet_id ~= nil then
-          assert(w_val.class == slipway.slipway_class(),
+          assert(w_val.class == slipway.class(),
             "rebuild_incoming_routes_route_visit: a trade's slipways list holds slipways only")
           local w = w_val
-          slipway.slipway_served_planets_add(w.served_planets, planet.planet_id)
+          slipway.served_planets_add(w.served_planets, planet.planet_id)
         end
       end
     end
 
-    found, to_val = trade.trade_last_planet(route, to_val)
+    found, to_val = trade.last_planet(route, to_val)
     if found then
       local dest
 
       assert(planet_module.is_family(to_val), "rebuild_incoming_routes_route_visit: a trade leads to a planet")
       dest = to_val
       if dest.incoming_routes ~= nil then
-        trade.trade_route_list_add(dest.incoming_routes, route)
+        trade.route_list_add(dest.incoming_routes, route)
       end
     end
   end
@@ -203,7 +203,7 @@ function M.economy_tiers_compute_tier(entity)
         if incoming_routes ~= nil then
           for j = 1, #incoming_routes do
             local im = incoming_routes[j]
-            if im.resource ~= nil and trade.resource_equal(trade.trade_resource(im), resource_val) then
+            if im.resource ~= nil and trade.resource_equal(trade.resource(im), resource_val) then
               gc = gc + 1
             end
           end

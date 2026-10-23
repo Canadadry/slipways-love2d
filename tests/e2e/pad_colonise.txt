@@ -168,12 +168,12 @@ f371 (step 8).
   jump mode on p47, the target nearest the centre, the edge scroll
   bringing it inside by f347. f347: X on p47: the slipway pressed out of
   it. f348-370: idle, the slipway aimed at its start. f371: Up (2
-  frames earlier than the step 7 file's, so `slipway_spawn_transit_dot`
+  frames earlier than the step 7 file's, so `slipway_display.spawn_transit_dot`
   still runs once with the cursor point as the line's end, no planet id
   and no dot): the aim on p25, 22 px above the screen, under the score button
   (x63-71); the edge scroll brings it down 8 px a frame. On f372-373 the
   cursor, on p25's screen point, is on the HUD row (y -8, then 0): the
-  ui hovers the button, not p25, so slipway_drag hangs the line's end
+  ui hovers the button, not p25, so slipway.drag hangs the line's end
   on the cursor point, the line drawn up to the HUD; from f374 the end
   is p25 again (already linked: refused feedback). f380: circle: the
   slipway dropped with no target, nothing built or charged, jump mode on

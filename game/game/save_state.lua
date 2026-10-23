@@ -946,7 +946,7 @@ end
 local function capture_probe(out)
   for i = 1, tagged_count(entity_class.TAG_PROBE) do
     local e = tagged_at(entity_class.TAG_PROBE, i)
-    if e.class ~= probe.probe_class() or e.is_dead or e.state ~= entity_class.STATE_SETTLED then
+    if e.class ~= probe.class() or e.is_dead or e.state ~= entity_class.STATE_SETTLED then
       goto continue
     end
     out.probe = {

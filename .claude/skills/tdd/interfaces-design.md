@@ -34,7 +34,7 @@ Good interfaces make testing natural. Functions marked real are in `game/`; the 
    -- Allows an impossible state: the end's table outlives the end's death
    self.end_ = end_
 
-   -- A checked id (real code, slipway_connect): entity_id.get returns nil once end_ is dead
+   -- A checked id (real code, slipway.connect): entity_id.get returns nil once end_ is dead
    self.end_ = entity_id.link(end_)
    ```
 
@@ -58,8 +58,8 @@ Good interfaces make testing natural. Functions marked real are in `game/`; the 
    Every public function asserts what it requires, so invalid input fails at the call site, not three frames later.
 
    ```lua
-   function M.slipway_connect(self, end_)
-     assert(self ~= nil and end_ ~= nil, "slipway_connect: a resumed slipway joins two saved nodes")
+   function M.connect(self, end_)
+     assert(self ~= nil and end_ ~= nil, "slipway.connect: a resumed slipway joins two saved nodes")
      -- ...
    end
    ```

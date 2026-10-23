@@ -1,5 +1,5 @@
 -- Include cycle: game.wormhole_display and game.probe are required at load, since
--- wormhole_draw_method and targeting_tooltip_method fill wormhole_class_def; both must reach this
+-- wormhole_display.draw_method and targeting_tooltip_method fill wormhole.class_def; both must reach this
 -- module at call time only. game.planet is required at call time, inside the function that needs it.
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -18,7 +18,7 @@ local M = {}
 
 local g_wormhole_up = false
 
-M.wormhole_too_far_target_class_def = {
+M.too_far_target_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
@@ -26,7 +26,7 @@ M.wormhole_too_far_target_class_def = {
 }
 
 M.g_wormhole_too_far_target_wrapper = {}
-entity_class.init_header(M.g_wormhole_too_far_target_wrapper, M.wormhole_too_far_target_class_def)
+entity_class.init_header(M.g_wormhole_too_far_target_wrapper, M.too_far_target_class_def)
 M.g_wormhole_too_far_target_wrapper.status_text = game_data.wormhole_too_far_target_status_text
 
 local function wormhole_is_anchor(p)
@@ -45,7 +45,7 @@ local function wormhole_anchor_count()
   return n
 end
 
-function M.wormhole_construct(self)
+function M.construct(self)
   local ox
   local live
   local n
@@ -69,7 +69,7 @@ function M.wormhole_construct(self)
   assert(#ox == n)
 end
 
-function M.wormhole_drag(self, mouse)
+function M.drag(self, mouse)
   local p_vec
   local nearest = nil
   local nq
@@ -88,15 +88,15 @@ function M.wormhole_drag(self, mouse)
     fixed.LIT(0x0000451e, 0.27))
 
   if nq > threshold then
-    probe.targeting_set_target(self.targeting, M.wormhole_too_far_target_wrapper())
+    probe.targeting_set_target(self.targeting, M.too_far_target_wrapper())
   end
 end
 
 local function wormhole_drag_method(self, mouse)
-  M.wormhole_drag(self, mouse)
+  M.drag(self, mouse)
 end
 
-function M.wormhole_update_placing(self, t)
+function M.update_placing(self, t)
   local threshold
   local one
   local reach
@@ -126,10 +126,10 @@ function M.wormhole_update_placing(self, t)
 end
 
 local function wormhole_update_placing_method(self, t)
-  M.wormhole_update_placing(self, t)
+  M.update_placing(self, t)
 end
 
-function M.wormhole_drop(self)
+function M.drop(self)
   local t
   local result
 
@@ -150,10 +150,10 @@ function M.wormhole_drop(self)
 end
 
 local function wormhole_drop_method(self, dropped)
-  M.wormhole_drop(self)
+  M.drop(self)
 end
 
-function M.wormhole_update_unfolding(self, t)
+function M.update_unfolding(self, t)
   local planet = require("game.planet")
   local sr
   local self_p
@@ -163,7 +163,7 @@ function M.wormhole_update_unfolding(self, t)
     return
   end
 
-  sr = fixed.add(fixed.div(M.wormhole_reveal_radius(self, t), fixed.from_int(128)),
+  sr = fixed.add(fixed.div(M.reveal_radius(self, t), fixed.from_int(128)),
     fixed.LIT(0x000007ef, 0.031))
 
   self_p = entity_class.map_pos(self)
@@ -174,7 +174,7 @@ function M.wormhole_update_unfolding(self, t)
       local pt
 
       if e ~= nil then
-        assert(planet.is_family(e), "wormhole_update_unfolding: the planet tag holds planets only")
+        assert(planet.is_family(e), "wormhole.update_unfolding: the planet tag holds planets only")
         pt = e
 
         if pt.state == entity_class.STATE_UNKNOWN then
@@ -192,10 +192,10 @@ function M.wormhole_update_unfolding(self, t)
 end
 
 local function wormhole_update_unfolding_method(self, t)
-  M.wormhole_update_unfolding(self, t)
+  M.update_unfolding(self, t)
 end
 
-function M.wormhole_reveal_radius(self, t)
+function M.reveal_radius(self, t)
   local sq = fixed.sqrt(fixed.div(t, fixed.from_int(15)))
   local one = fixed.from_int(1)
   local min_val
@@ -212,10 +212,10 @@ function M.wormhole_reveal_radius(self, t)
   return fixed.mul(min_val, oi)
 end
 
-M.wormhole_class_def = {
-  draw = wormhole_display.wormhole_draw_method,
+M.class_def = {
+  draw = wormhole_display.draw_method,
   draw_overlay = probe.targeting_tooltip_method,
-  -- Not targeting_track_method: wormhole_drag adds the nearest-anchor search and the too-far target.
+  -- Not targeting_track_method: wormhole.drag adds the nearest-anchor search and the too-far target.
   drag = wormhole_drag_method,
   drop = wormhole_drop_method,
   states = {
@@ -232,9 +232,9 @@ local function wormhole_create()
 
   self = {}
 
-  entity.init_instance(self, M.wormhole_class_def, game_data.wormhole_archetype.state,
+  entity.init_instance(self, M.class_def, game_data.wormhole_archetype.state,
     game_data.wormhole_archetype.state_time)
-  self.targeting = targeting_module.targeting_zero()
+  self.targeting = targeting_module.zero()
   self.archetype = game_data.wormhole_archetype
   entity_registry.set_layer(self, self.archetype.layer)
   self.targeting.archetype = self.archetype.targeting
@@ -244,35 +244,35 @@ local function wormhole_create()
   probe.targeting_set_target(self.targeting, nil)
   self.anchor = nil
   self.is_dead = false
-  M.wormhole_construct(self)
+  M.construct(self)
   entity.construct(self)
   return self
 end
 
-function M.wormhole_init()
-  M.wormhole_shutdown()
+function M.init()
+  M.shutdown()
   g_wormhole_up = true
 end
 
-function M.wormhole_shutdown()
+function M.shutdown()
   g_wormhole_up = false
 end
 
-function M.wormhole_ready()
+function M.ready()
   return g_wormhole_up
 end
 
-function M.wormhole_class()
-  return M.wormhole_class_def
+function M.class()
+  return M.class_def
 end
 
-function M.wormhole_new()
+function M.new()
   return wormhole_create()
 end
 
 -- The entities in the wormhole tag list, a dying one included until the exit queue flushes; 0 when
 -- the list does not exist.
-function M.wormhole_live_count()
+function M.live_count()
   local wormholes = entity_registry.entities_by_tag(entity_class.TAG_WORMHOLE)
   if wormholes ~= nil then
     return #wormholes
@@ -280,12 +280,12 @@ function M.wormhole_live_count()
   return 0
 end
 
-function M.wormhole_too_far_target_wrapper()
+function M.too_far_target_wrapper()
   return M.g_wormhole_too_far_target_wrapper
 end
 
-function M.wormhole_too_far_target_class()
-  return M.wormhole_too_far_target_class_def
+function M.too_far_target_class()
+  return M.too_far_target_class_def
 end
 
 return M

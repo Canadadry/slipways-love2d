@@ -204,11 +204,11 @@ function M.left_press(self)
   count = (g_tag ~= nil) and #g_tag or 0
   if count > 0 then
     local wormhole = require("game.wormhole")
-    assert(wormhole.wormhole_ready(),
-      "wormhole_init() must run before background.left_press builds a wormhole")
-    made = wormhole.wormhole_new()
+    assert(wormhole.ready(),
+      "wormhole.init() must run before background.left_press builds a wormhole")
+    made = wormhole.new()
   else
-    made = require("game.probe").probe_new(nil)
+    made = require("game.probe").new(nil)
   end
   out.stop = made ~= nil
   out.held = entity_id.link(made)
