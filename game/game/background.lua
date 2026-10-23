@@ -14,7 +14,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_registry = require("engine.entity_registry")
-local frame_zone = require("engine.frame_zone")
 local game_zone = require("engine.game_zone")
 local game_data = require("game.game_data")
 local gen = require("game.gen")
@@ -130,7 +129,7 @@ function M.background_construct(memory, self)
     row_values_set[x] = 0
   end
 
-  walk = gen.random_walk_new(frame_zone.frame_zone(), fixed.P8_FIXED_LIT(0x00001999, 0.1), fixed.p8_fixed_from_int(0))
+  walk = gen.random_walk_new(nil, fixed.P8_FIXED_LIT(0x00001999, 0.1), fixed.p8_fixed_from_int(0))
 
   for y = 0, 31 do
     for x = 0, 31 do

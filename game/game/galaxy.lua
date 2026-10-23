@@ -5,7 +5,6 @@
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_registry = require("engine.entity_registry")
-local frame_zone = require("engine.frame_zone")
 local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local gen = require("game.gen")
@@ -40,8 +39,8 @@ function M.galaxy_populate(planet_count)
     until entity_geom.entity_geom_any_within(p_vec, entity_registry.entities_by_tag(entity_class.TAG_PLANET),
       threshold) == 0
 
-    id_num_str = str.p8_tostr_fixed(frame_zone.frame_zone(), planet_id)
-    planet.planet_keys_set_id(keys, str.p8_concat2(frame_zone.frame_zone(), "p", id_num_str))
+    id_num_str = str.p8_tostr_fixed(nil, planet_id)
+    planet.planet_keys_set_id(keys, str.p8_concat2(nil, "p", id_num_str))
     keys.map_pos = p_vec
     keys.has_map_pos = 1
     keys.pos = vec.vec_mul(p_vec, fixed.p8_fixed_from_int(M.GALAXY_MAP_SCALE))

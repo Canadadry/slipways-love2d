@@ -14,7 +14,6 @@ local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
-local frame_zone = require("engine.frame_zone")
 local game_zone = require("engine.game_zone")
 local pointer_list = require("engine.pointer_list")
 local economy_formulas = require("game.economy_formulas")
@@ -252,7 +251,7 @@ function M.economy_spend(self, jt)
   if jt ~= fixed.p8_fixed_from_int(0) then
     local color = 0
     local text
-    text, color = collect.collect_format_signed(frame_zone.frame_zone(), fixed.p8_fixed_neg(jt), 10, "$", color)
+    text, color = collect.collect_format_signed(nil, fixed.p8_fixed_neg(jt), 10, "$", color)
     message_box.toast_keys_set_text(keys, text)
     keys.color = fixed.p8_fixed_from_int(color)
     message_box.toast_new(keys)

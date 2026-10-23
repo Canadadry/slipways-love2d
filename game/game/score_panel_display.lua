@@ -7,7 +7,6 @@
 -- Include cycle: game.score_panel requires this module at load (its class holds the two methods), so
 -- game.score_panel is required here at call time.
 local entity_registry = require("engine.entity_registry")
-local frame_zone = require("engine.frame_zone")
 local vec = require("engine.vec")
 local economy_score = require("game.economy_score")
 local game_data = require("game.game_data")
@@ -76,7 +75,7 @@ function M.score_panel_new_year(year)
     message = item.row
   end
 
-  year_str = str.p8_tostr_fixed(frame_zone.frame_zone(), year)
+  year_str = str.p8_tostr_fixed(nil, year)
   assert(#"year " + #year_str <= score_panel.SCORE_PANEL_TEXT_CAP,
     "score_panel_new_year: a year is at most a 5-digit integer")
   year_banner.year = "year " .. year_str
@@ -133,19 +132,19 @@ end
 
 local function score_panel_final_score_text(s, i)
   if i == 1 then
-    return str.p8_tostr_fixed(frame_zone.frame_zone(), s.development)
+    return str.p8_tostr_fixed(nil, s.development)
   elseif i == 2 then
-    return str.p8_tostr_fixed(frame_zone.frame_zone(), s.population)
+    return str.p8_tostr_fixed(nil, s.population)
   elseif i == 3 then
-    return str.p8_tostr_fixed(frame_zone.frame_zone(), s.technology)
+    return str.p8_tostr_fixed(nil, s.technology)
   elseif i == 4 then
-    return economy_score.economy_score_percent_text(frame_zone.frame_zone(), s.happiness)
+    return economy_score.economy_score_percent_text(nil, s.happiness)
   elseif i == 5 then
-    return str.p8_tostr_fixed(frame_zone.frame_zone(), s.total)
+    return str.p8_tostr_fixed(nil, s.total)
   elseif i == 6 then
-    return str.p8_tostr_fixed(frame_zone.frame_zone(), s.tier)
+    return str.p8_tostr_fixed(nil, s.tier)
   end
-  return str.p8_concat2(frame_zone.frame_zone(), "", "")
+  return str.p8_concat2(nil, "", "")
 end
 
 local function score_panel_update_add_row(box, entry, context)
@@ -190,9 +189,9 @@ local function score_panel_update_add_row(box, entry, context)
     if dk ~= nil and dk.name ~= nil then
       px = dk.name
     end
-    piece1 = str.p8_concat2(frame_zone.frame_zone(), end_status_str, " (")
-    piece2 = str.p8_concat2(frame_zone.frame_zone(), piece1, px)
-    values[0] = data_item({ text = str.p8_concat2(frame_zone.frame_zone(), piece2, ")") })
+    piece1 = str.p8_concat2(nil, end_status_str, " (")
+    piece2 = str.p8_concat2(nil, piece1, px)
+    values[0] = data_item({ text = str.p8_concat2(nil, piece2, ")") })
     has_value[0] = 1
   end
 

@@ -2,7 +2,7 @@
 --
 -- Shapes, with the C field names:
 --   available_projects_kept_t: { items, count }, items 0-indexed new research_project_id_t tables.
---   research_project_tooltip_t: the frame-zone block holding { outer, outer_item, inner,
+--   research_project_tooltip_t: the table holding { outer, outer_item, inner,
 --     inner_items }, data_row_t and data_item_t tables of map_tables, inner_items 0-indexed of 3;
 --     each `items` field is the table it points to.
 --
@@ -10,7 +10,6 @@
 --
 -- layout_row_tuple_t zeroes are local.
 local allocator = require("engine.allocator")
-local frame_zone = require("engine.frame_zone")
 local pointer_list = require("engine.pointer_list")
 local layout = require("game.layout")
 local map_tables = require("game.map_tables")
@@ -40,7 +39,7 @@ local function research_project_tooltip_join(self)
   local i_list
   local capacity = 16
   local length = 0
-  local block = allocator.allocator_alloc(frame_zone.frame_zone(), capacity)
+  local block = allocator.allocator_alloc(nil, capacity)
   local names = ""
   local first = 1
   local iter
@@ -65,7 +64,7 @@ local function research_project_tooltip_join(self)
       qe = research.need_resource(entry)
     end
     if qe.kind == trade.RESOURCE_FIXED then
-      num_str = str.p8_tostr_fixed(frame_zone.frame_zone(), qe.number)
+      num_str = str.p8_tostr_fixed(nil, qe.number)
     else
       num_str = nil
     end
@@ -83,7 +82,7 @@ local function research_project_tooltip_join(self)
     if length + add_len + 1 > capacity then
       local new_cap = (length + add_len + 1) * 2
 
-      block = allocator.allocator_grow(frame_zone.frame_zone(), block, capacity, new_cap)
+      block = allocator.allocator_grow(nil, block, capacity, new_cap)
       capacity = new_cap
     end
     if first == 0 then
@@ -108,7 +107,7 @@ function M.research_project_tooltip(self)
     return nil
   end
 
-  jb = allocator.allocator_alloc(frame_zone.frame_zone(), SIZEOF.research_project_tooltip_t)
+  jb = allocator.allocator_alloc(nil, SIZEOF.research_project_tooltip_t)
   jb.outer = map_tables.map_tables_make_data_row({})
   jb.outer_item = map_tables.map_tables_make_data_item({})
   jb.inner = map_tables.map_tables_make_data_row({})
@@ -122,7 +121,7 @@ function M.research_project_tooltip(self)
   jb.inner.items = jb.inner_items
 
   if self.has_output ~= 0 then
-    local o_str = str.p8_tostr_fixed(frame_zone.frame_zone(), self.output)
+    local o_str = str.p8_tostr_fixed(nil, self.output)
     local resource_names_o = map_tables.resource_names_lookup(o_str)
 
     if resource_names_o ~= nil then
@@ -240,7 +239,7 @@ local function planet_resource_row_keys(inputs, has_output, output, amount, used
   end
 
   if amount > fixed.p8_fixed_from_int(5) then
-    local amount_text = str.p8_tostr_fixed(frame_zone.frame_zone(), amount)
+    local amount_text = str.p8_tostr_fixed(nil, amount)
 
     layout.layout_row_keys_append(keys, layout.layout_row_cell_string(amount_text))
     layout.layout_row_keys_append(keys, layout.layout_row_cell_row(tail_row))

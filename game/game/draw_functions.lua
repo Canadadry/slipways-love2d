@@ -1,7 +1,6 @@
 -- Copy of src/game/draw_functions.h then src/game/draw_functions.c.
 -- A draw_functions_fn_t is a Lua function taking the data_row_t; draw_functions_by_id is
 -- 0-indexed by the DRAW_FUNCTION_* constants of map_tables, [DRAW_FUNCTION_NONE] absent.
-local frame_zone = require("engine.frame_zone")
 local hud = require("game.hud")
 local map_tables = require("game.map_tables")
 local fixed = require("p8.fixed")
@@ -63,7 +62,7 @@ local function print_outlined_with(e, print)
   local a1 = draw_functions_arg(e, 1)
   local owned = nil
   if is_number(e, 1) ~= 0 then
-    owned = str.p8_tostr_fixed(frame_zone.frame_zone(), number(e, 1))
+    owned = str.p8_tostr_fixed(nil, number(e, 1))
   end
   local t
   if a1 ~= nil and a1.text ~= nil then

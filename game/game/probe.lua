@@ -21,7 +21,6 @@ local entity_id = require("engine.entity_id")
 local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
-local frame_zone = require("engine.frame_zone")
 local geom = require("engine.geom")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
@@ -321,7 +320,7 @@ function M.targeting_tooltip_show(gfx, mem, state, pb)
       end
     end
   elseif pb.has_cost ~= 0 then
-    display = str.p8_concat2(frame_zone.frame_zone(), str.p8_tostr_fixed(frame_zone.frame_zone(), pb.cost), "$")
+    display = str.p8_concat2(nil, str.p8_tostr_fixed(nil, pb.cost), "$")
   end
 
   if gfx ~= nil and mem ~= nil then

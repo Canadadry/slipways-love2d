@@ -12,7 +12,6 @@ local allocator = require("engine.allocator")
 local entity_class = require("engine.entity_class")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
-local frame_zone = require("engine.frame_zone")
 local economy_formulas = require("game.economy_formulas")
 local main_economy = require("game.main_economy")
 local game_data = require("game.game_data")
@@ -99,7 +98,7 @@ end
 
 function M.economy_score_colony_upkeep()
   local planet_list = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
-  local filtered = entity_list.entity_list_filter(frame_zone.frame_zone(), planet_list, colony_upkeep_predicate, nil)
+  local filtered = entity_list.entity_list_filter(nil, planet_list, colony_upkeep_predicate, nil)
   local mu = filtered.count
   local result
   result = fixed.p8_fixed_mul(fixed.P8_FIXED_LIT(0x00002e14, 0.18), fixed.p8_fixed_from_int(mu * mu))

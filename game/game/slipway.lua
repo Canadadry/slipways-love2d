@@ -28,7 +28,6 @@ local entity_id_list = require("engine.entity_id_list")
 local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
-local frame_zone = require("engine.frame_zone")
 local geom = require("engine.geom")
 local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
@@ -349,11 +348,11 @@ function M.slipway_obstruction(self)
     slipway_ctx.self_has_infraspace = entity_class.entity_has(self, entity_class.ENTITY_HAS_INFRASPACE)
     slipway_ctx.self_infraspace = self.infraspace
 
-    part1 = entity_list.entity_list_filter(frame_zone.frame_zone(),
+    part1 = entity_list.entity_list_filter(nil,
       entity_registry.entities_by_tag(entity_class.TAG_NODE), slipway_obstruction_node_predicate, node_ctx)
-    part2 = entity_list.entity_list_filter(frame_zone.frame_zone(),
+    part2 = entity_list.entity_list_filter(nil,
       entity_registry.entities_by_tag(entity_class.TAG_SLIPWAY), slipway_obstruction_slipway_predicate, slipway_ctx)
-    ds = entity_list.entity_list_concat(frame_zone.frame_zone(), part1, part2)
+    ds = entity_list.entity_list_concat(nil, part1, part2)
 
     if ds.count > 0 then
       result = ds.items[0]

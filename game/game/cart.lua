@@ -8,7 +8,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_registry = require("engine.entity_registry")
 local exit_queue = require("engine.exit_queue")
-local frame_zone = require("engine.frame_zone")
 local game_zone = require("engine.game_zone")
 local background = require("game.background")
 local button_image = require("game.button_image")
@@ -367,7 +366,6 @@ function M.cart_update60()
     return
   end
   if g_loading_frame == loading_screen.LOADING_SCREEN_FRAMES then
-    frame_zone.frame_zone_reset()
     M.cart_flush_exit_queue()
     if g_has_requested_option ~= 0 then
       M.cart_start_game(g_requested_option)
@@ -378,7 +376,6 @@ function M.cart_update60()
     if g_save_cut == 0 then save_at_frame_end() end
     return
   end
-  frame_zone.frame_zone_reset()
   M.cart_flush_exit_queue()
   bootstrap.update_entities()
   ui.ui_update(dispatch_context.dispatch_context_mem(), ui.main_ui())

@@ -13,7 +13,6 @@ local collect = require("engine.collect")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
-local frame_zone = require("engine.frame_zone")
 local game_zone = require("engine.game_zone")
 local pointer_list = require("engine.pointer_list")
 local game_data = require("game.game_data")
@@ -166,7 +165,7 @@ function M.planet_offer_trade(self, trade_offer)
       local fresh = research.need_new(game_zone.game_zone(), bonus_resource)
       local prefix = {}
 
-      pointer_list.pointer_list_init(prefix, frame_zone.frame_zone())
+      pointer_list.pointer_list_init(prefix, nil)
       pointer_list.pointer_list_add(prefix, fresh)
       pointer_list_assign(self.needs, collect.collect_concat_pointer_list(game_zone.game_zone(), prefix, needs))
     end
@@ -208,7 +207,7 @@ function M.planet_offer_trade(self, trade_offer)
 
     if trade.resource_equal(t_resource, resource_val) ~= 0
       and not (has_any_resource ~= 0 and trade.resource_equal(resource_val, any_resource) ~= 0) then
-      local extended = trade.trade_extend(frame_zone.frame_zone(), route, self, nil)
+      local extended = trade.trade_extend(nil, route, self, nil)
       if trade_offer.accept ~= nil then
         trade_offer.accept(trade_offer, extended)
       end
@@ -226,7 +225,6 @@ function M.planet_rebuild_trades(self)
   local amount = fixed.p8_fixed_from_int(0)
   local iter
   local w
-  local offers
 
   if self == nil then
     return nil
@@ -246,7 +244,6 @@ function M.planet_rebuild_trades(self)
     amount = kw.amount
   end
 
-  offers = frame_zone.frame_zone_mark()
   iter = entity_id_list.entity_id_list_all(self.slipways)
   while true do
     local more
@@ -262,9 +259,9 @@ function M.planet_rebuild_trades(self)
     -- its own list headers.
     keys.planets = {}
     keys.slipways = {}
-    entity_id_list.entity_id_list_init(keys.planets, frame_zone.frame_zone())
+    entity_id_list.entity_id_list_init(keys.planets, nil)
     entity_id_list.entity_id_list_add(keys.planets, entity_id.entity_id_of(self))
-    entity_id_list.entity_id_list_init(keys.slipways, frame_zone.frame_zone())
+    entity_id_list.entity_id_list_init(keys.slipways, nil)
     entity_id_list.entity_id_list_add(keys.slipways, entity_id.entity_id_of(w))
 
     lw.route = trade.trade_new(keys)
@@ -286,7 +283,6 @@ function M.planet_rebuild_trades(self)
     end
   end
 
-  frame_zone.frame_zone_rewind(offers)
   return self.outgoing_routes
 end
 

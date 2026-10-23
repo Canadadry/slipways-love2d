@@ -19,7 +19,6 @@ local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
-local frame_zone = require("engine.frame_zone")
 local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local draw_functions = require("game.draw_functions")
@@ -224,10 +223,10 @@ function M.score_panel_refresh()
     end
   end
 
-  text, income_color = collect.collect_format_signed(frame_zone.frame_zone(), main_economy_income, 0, nil, income_color)
+  text, income_color = collect.collect_format_signed(nil, main_economy_income, 0, nil, income_color)
 
-  credits_str = str.p8_tostr_fixed(frame_zone.frame_zone(), main_economy_credits)
-  readouts[0] = data_item({ text = str.p8_concat2(frame_zone.frame_zone(), credits_str, "$") })
+  credits_str = str.p8_tostr_fixed(nil, main_economy_credits)
+  readouts[0] = data_item({ text = str.p8_concat2(nil, credits_str, "$") })
 
   readouts[1] = data_item({ text = text })
 
@@ -243,12 +242,12 @@ function M.score_panel_refresh()
         fixed.p8_fixed_from_int(resource_index), production_val)
     end
     production_text =
-      str.p8_tostr_fixed(frame_zone.frame_zone(), fixed.p8_fixed_add(production_val, fixed.p8_fixed_from_int(1)))
-    readouts[3] = data_item({ text = str.p8_concat2(frame_zone.frame_zone(), "+", production_text) })
+      str.p8_tostr_fixed(nil, fixed.p8_fixed_add(production_val, fixed.p8_fixed_from_int(1)))
+    readouts[3] = data_item({ text = str.p8_concat2(nil, "+", production_text) })
   end
 
-  happiness_str = str.p8_tostr_fixed(frame_zone.frame_zone(), main_economy_happiness)
-  readouts[4] = data_item({ text = str.p8_concat2(frame_zone.frame_zone(), happiness_str, "%") })
+  happiness_str = str.p8_tostr_fixed(nil, main_economy_happiness)
+  readouts[4] = data_item({ text = str.p8_concat2(nil, happiness_str, "%") })
 
   do
     local lo = fixed.p8_fixed_flr_int(main_economy_year_ticks)

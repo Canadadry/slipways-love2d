@@ -11,7 +11,6 @@ local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
-local frame_zone = require("engine.frame_zone")
 local geom = require("engine.geom")
 local vec = require("engine.vec")
 local background = require("game.background")
@@ -452,7 +451,7 @@ end
 local edge_scroll
 
 local function live_candidates()
-  return pad_jump.pad_jump_candidates(frame_zone.frame_zone(), entity_registry.entities_by_tag(entity_class.TAG_NODE))
+  return pad_jump.pad_jump_candidates(nil, entity_registry.entities_by_tag(entity_class.TAG_NODE))
 end
 
 local function back_to_jump_mode(nav, e)
@@ -1030,7 +1029,7 @@ local function slipway_step(nav, pad_buttons, pressed, back_returns, release, pl
   end
   if direction ~= pad_direction.PAD_DIRECTION_NONE and build_on_target == 0 then
     local candidates = live_candidates()
-    local targets = pad_slipway.pad_slipway_candidates(frame_zone.frame_zone(), candidates, start)
+    local targets = pad_slipway.pad_slipway_candidates(nil, candidates, start)
     local origin = start
     if target ~= nil then
       origin = target

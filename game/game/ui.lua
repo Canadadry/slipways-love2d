@@ -21,7 +21,6 @@ local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
 local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
-local frame_zone = require("engine.frame_zone")
 local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
@@ -422,7 +421,6 @@ function M.ui_update_hover(self)
   local hit_test_bucket
   local previous
   local hovered = nil
-  local zone = nil
 
   if self == nil then
     return
@@ -446,10 +444,7 @@ function M.ui_update_hover(self)
         assert(fa >= 0 and fa < M.UI_HOVER_LAYERS,
           "ui_update_hover: a hovered entity's layer outside 0..15, the layers ui_send_to_hovered walks -- stop, do not widen")
         if bit.band(self.hovered_by_layer.written, bit.lshift(1, fa)) == 0 then
-          if zone == nil then
-            zone = frame_zone.frame_zone()
-          end
-          entity_id_list.entity_id_list_init(self.hovered_by_layer.layers[fa], zone)
+          entity_id_list.entity_id_list_init(self.hovered_by_layer.layers[fa], nil)
           self.hovered_by_layer.written = bit.band(bit.bor(self.hovered_by_layer.written, bit.lshift(1, fa)), 0xFFFF)
         end
         entity_id_list.entity_id_list_add(self.hovered_by_layer.layers[fa], entity_id.entity_id_link(e))
