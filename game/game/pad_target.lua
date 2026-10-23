@@ -13,12 +13,12 @@ M.PAD_TARGET_PERPENDICULAR_WEIGHT = 2
 
 function M.pad_target_is_candidate(e)
   return (e ~= nil and not e.is_dead and planet.planet_is_family(e) and
-    (e.state == entity_class.ENTITY_STATE_KNOWN or e.state == entity_class.ENTITY_STATE_SETTLED)) and 1 or 0
+    (e.state == entity_class.ENTITY_STATE_KNOWN or e.state == entity_class.ENTITY_STATE_SETTLED))
 end
 
 local function is_direction(direction)
-  return (direction == pad_direction.PAD_DIRECTION_UP or direction == pad_direction.PAD_DIRECTION_DOWN or
-    direction == pad_direction.PAD_DIRECTION_LEFT or direction == pad_direction.PAD_DIRECTION_RIGHT) and 1 or 0
+  return direction == pad_direction.PAD_DIRECTION_UP or direction == pad_direction.PAD_DIRECTION_DOWN or
+    direction == pad_direction.PAD_DIRECTION_LEFT or direction == pad_direction.PAD_DIRECTION_RIGHT
 end
 
 local function offset_in(direction, from, to)
@@ -35,7 +35,7 @@ local function offset_in(direction, from, to)
 end
 
 function M.pad_target_pick(origin, direction, candidates)
-  assert(is_direction(direction) ~= 0,
+  assert(is_direction(direction),
     "pad_target_pick: the direction is exactly one of PAD_DIRECTION_UP, DOWN, LEFT or RIGHT")
   assert(origin ~= nil and entity_class.entity_has_map_pos(origin),
     "pad_target_pick: the origin is an entity with a map position")

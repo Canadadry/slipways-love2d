@@ -12,16 +12,16 @@ local M = {}
 local INT_MAX = 2147483647
 
 function M.pad_build_init(b)
-  b.open = 0
+  b.open = false
   b.icon = nil
 end
 
 function M.pad_build_open(b)
-  b.open = 1
+  b.open = true
 end
 
 function M.pad_build_close(b)
-  b.open = 0
+  b.open = false
 end
 
 function M.pad_build_is_open(b)

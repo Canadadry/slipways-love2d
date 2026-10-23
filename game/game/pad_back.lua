@@ -19,7 +19,7 @@ end
 
 function M.pad_back_target(back, hovered)
   local e = entity_id.entity_get(back.last_acted)
-  if pad_target.pad_target_is_candidate(e) ~= 0 and e ~= hovered then
+  if pad_target.pad_target_is_candidate(e) and e ~= hovered then
     return e
   end
   return nil

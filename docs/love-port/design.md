@@ -875,10 +875,20 @@ An id list is read through `entity_id_resolve`, which asserts the id is
 alive. A walk whose body may change its list walks a copy and says so.
 Strings are Lua strings, compared with `==`.
 
-**Truth values.** A C int predicate returns 1 or 0, never a Lua boolean;
-`if (x)` on an int is `if x ~= 0`, `!x` is `x == 0` as a test and
-`(x == 0) and 1 or 0` as a value, a comparison used as a value is
-`(c) and 1 or 0`, and a pointer test is `p ~= nil`. `c ? a : b` is
+**Truth values.** Predicates and truth-valued fields are Lua booleans. A
+predicate returns exactly `true` or `false`, never `nil` or one of its
+operands: a comparison is returned as is, a presence test is `p ~= nil`, and
+a lookup returns its boolean `found` before its value (`found, out`). A
+truth-valued field holds `true`, `false` or `nil`, and `nil` reads as false.
+Tests are `if x then` and `if not x then`, never `x == false` or
+`x == true`; a counter adds one under `if c then`. `0` and `1` stand for a
+truth value only at a format boundary, converted at that site: the save
+record mirrors its bytes, so its flag fields stay `0`/`1` numbers (and
+`fold_anchor`, `infraspace` the cart's `0x10000` or `0`), written by the save
+builder with `(c) and 1 or 0` and read back by the loader with `x ~= 0`; the
+state dump's `visible` column and the draw cost model's `fillp_transparent`
+key bit build their `1`/`0` the same way. Numbers that are data (counts, bit masks, colors, fixed-point
+values, divisors) keep their `== 0` and `~= 0` tests. `c ? a : b` is
 `(c) and a or b` only when `a` is never `nil` or `false`; a ternary between
 two function pointers is an `if`/`else`.
 

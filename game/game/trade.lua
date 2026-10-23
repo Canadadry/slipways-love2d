@@ -34,9 +34,9 @@ function M.trade_resource(self)
   if self == nil or self.resource == nil then
     return { kind = M.RESOURCE_NIL, number = 0 }
   end
-  assert(not (self.resource_is_bool ~= 0 and self.resource ~= 0),
+  assert(not (self.resource_is_bool and self.resource ~= 0),
     "no route of src/ holds true: resource_t has no kind for it")
-  if self.resource_is_bool ~= 0 then
+  if self.resource_is_bool then
     return { kind = M.RESOURCE_FALSE, number = 0 }
   end
   return { kind = M.RESOURCE_FIXED, number = self.resource }
@@ -62,11 +62,11 @@ end
 -- nil keys give a route with empty lists and no resource; the route shares the keys' lists.
 function M.trade_new(keys)
   if keys == nil then
-    return route_value({}, {}, nil, 0)
+    return route_value({}, {}, nil, false)
   end
-  assert(keys.resource ~= nil or keys.resource_is_bool == 0,
+  assert(keys.resource ~= nil or not keys.resource_is_bool,
     "trade_new: an absent resource carries no kind")
-  assert(keys.resource_is_bool == 0 or keys.resource == 0 or keys.resource == 1,
+  assert(not keys.resource_is_bool or keys.resource == 0 or keys.resource == 1,
     "trade_new: a boolean key holds 0 or 1; trade_resource would read any other as a fixed")
   return route_value(keys.planets, keys.slipways, keys.resource, keys.resource_is_bool)
 end
@@ -107,8 +107,8 @@ end
 -- The new route's id lists are new lists; a nil node or slipway adds nothing.
 function M.trade_extend(self, node, slipway)
   assert(self ~= nil, "trade_extend: a route value is always there to extend")
-  local extended = route_value({}, {}, nil, 0)
-  extended.resource_is_bool = (self.resource ~= nil) and self.resource_is_bool or 1
+  local extended = route_value({}, {}, nil, false)
+  extended.resource_is_bool = self.resource == nil or self.resource_is_bool
   extended.resource = self.resource or 0
   extended.planets = id_list_extended(self.planets, node)
   extended.slipways = id_list_extended(self.slipways, slipway)

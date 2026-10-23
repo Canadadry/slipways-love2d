@@ -23,15 +23,15 @@ function M.pad_slipway_init(slipway)
   slipway.start = nil
   slipway.target = nil
   slipway.phase = M.PAD_SLIPWAY_NONE
-  slipway.linked_before = 0
+  slipway.linked_before = false
 end
 
 function M.pad_slipway_can_start(e)
   if e == nil or e.is_dead or not planet.planet_is_family(e) or e.state ~= entity_class.ENTITY_STATE_SETTLED then
-    return 0
+    return false
   end
-  return (bit.band(e.class.tags, entity_class.TAG(entity_class.TAG_SLIPGATE)) == 0 or
-    planet_family_trade.slipgate_takes_slipway(e)) and 1 or 0
+  return bit.band(e.class.tags, entity_class.TAG(entity_class.TAG_SLIPGATE)) == 0 or
+    planet_family_trade.slipgate_takes_slipway(e)
 end
 
 -- An empty array for a nil list.
@@ -63,7 +63,7 @@ function M.pad_slipway_between(start, target)
 end
 
 function M.pad_slipway_outcome(start, target, linked_before)
-  if linked_before ~= 0 or target == nil then
+  if linked_before or target == nil then
     return M.PAD_SLIPWAY_REFUSED
   end
   return M.pad_slipway_between(start, target) ~= nil and M.PAD_SLIPWAY_BUILT or M.PAD_SLIPWAY_REFUSED

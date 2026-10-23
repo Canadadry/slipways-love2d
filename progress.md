@@ -58,4 +58,4 @@
   - [x] Chunk 6 — economy, research, targeting
   - [x] Chunk 7 — UI
   - [x] Chunk 8 — input, cart and save
-  - [ ] Chunk 9 — pad layer, docs, full check
+  - [x] Chunk 9 — pad layer, docs, full check

@@ -25,7 +25,7 @@ local SCREEN_SPACE_LAYER = 10
 
 function M.pad_panel_box_open()
   local ui = ui_module.main_ui()
-  return (ui ~= nil and #ui.ephemerals > 0) and 1 or 0
+  return ui ~= nil and #ui.ephemerals > 0
 end
 
 local function mouse_at(x, y)
@@ -43,7 +43,7 @@ function M.pad_panel_entity_under(x, y, above, accept)
   for i = 1, #bucket do
     local e = bucket[i]
     if not e.is_dead and (above == M.PAD_PANEL_ANY_LAYER or fixed.p8_fixed_flr_int(e.layer) > above) and
-      accept(e) ~= 0 and e.class.hit_test ~= nil and e.class.hit_test(e, mouse) then
+      accept(e) and e.class.hit_test ~= nil and e.class.hit_test(e, mouse) then
       return e
     end
   end
@@ -51,43 +51,43 @@ function M.pad_panel_entity_under(x, y, above, accept)
 end
 
 local function is_modal_backdrop(e)
-  return (e.class == ui_button.modal_backdrop_class()) and 1 or 0
+  return e.class == ui_button.modal_backdrop_class()
 end
 
 local function panel_open_now(ui, economy)
   if ui == nil then
-    return 0
+    return false
   end
   assert(ui_button.modal_backdrop_class().hit_test == entity_registry.entity_registry_hit_test_always,
     "pad_panel_open: the backdrop is found at (0, 0) only because its hit test always holds")
-  return (economy == nil or #ui.ephemerals > 0 or
-    M.pad_panel_entity_under(0, 0, M.PAD_PANEL_ANY_LAYER, is_modal_backdrop) ~= nil) and 1 or 0
+  return economy == nil or #ui.ephemerals > 0 or
+    M.pad_panel_entity_under(0, 0, M.PAD_PANEL_ANY_LAYER, is_modal_backdrop) ~= nil
 end
 
 local g_memo = {
-  in_step = 0,
-  known = 0,
+  in_step = false,
+  known = false,
   key = { ui = nil, economy = nil, ephemerals_count = 0, generation = 0 },
-  open = 0,
+  open = false,
 }
 
 -- Inside the pair, pad_panel_open reuses its answer while the ui, the economy, the box's ephemerals count and
 -- the registered set are unchanged; a backdrop's is_dead is not watched, nothing writes it inside a pad step.
 function M.pad_panel_step_begin()
-  assert(g_memo.in_step == 0, "pad_panel_step_begin: a pad step is already open")
-  g_memo.in_step = 1
-  g_memo.known = 0
+  assert(not g_memo.in_step, "pad_panel_step_begin: a pad step is already open")
+  g_memo.in_step = true
+  g_memo.known = false
 end
 
 function M.pad_panel_step_end()
-  assert(g_memo.in_step ~= 0, "pad_panel_step_end: no pad step is open")
-  g_memo.in_step = 0
+  assert(g_memo.in_step, "pad_panel_step_end: no pad step is open")
+  g_memo.in_step = false
 end
 
 function M.pad_panel_open()
   local ui = ui_module.main_ui()
   local economy = probe.main_economy_typed()
-  if g_memo.in_step == 0 then
+  if not g_memo.in_step then
     return panel_open_now(ui, economy)
   end
   local key = {
@@ -96,12 +96,12 @@ function M.pad_panel_open()
     ephemerals_count = ui ~= nil and #ui.ephemerals or 0,
     generation = entity_registry.entity_registry_generation(),
   }
-  if g_memo.known == 0 or g_memo.key.ui ~= key.ui or
+  if not g_memo.known or g_memo.key.ui ~= key.ui or
     g_memo.key.economy ~= key.economy or
     g_memo.key.ephemerals_count ~= key.ephemerals_count or g_memo.key.generation ~= key.generation then
     g_memo.key = key
     g_memo.open = panel_open_now(ui, economy)
-    g_memo.known = 1
+    g_memo.known = true
   end
   return g_memo.open
 end
@@ -113,7 +113,7 @@ local function candidates_all()
 end
 
 function M.pad_panel_is_candidate(e)
-  return (e.class.left_press ~= nil and e.layer ~= nil) and 1 or 0
+  return e.class.left_press ~= nil and e.layer ~= nil
 end
 
 local function candidates_next(it)
@@ -123,7 +123,7 @@ local function candidates_next(it)
   end
   while true do
     local e
-    if it.from_ephemerals ~= 0 then
+    if it.from_ephemerals then
       if it.index > #ui.ephemerals then
         return nil
       end
@@ -137,7 +137,7 @@ local function candidates_next(it)
       e = bucket[it.index]
       it.index = it.index + 1
     end
-    if M.pad_panel_is_candidate(e) ~= 0 then
+    if M.pad_panel_is_candidate(e) then
       return e
     end
   end
@@ -158,13 +158,13 @@ local function top_layer()
 end
 
 local function is_item_on(e, layer)
-  return (M.pad_panel_is_candidate(e) ~= 0 and fixed.p8_fixed_flr_int(e.layer) == layer and
-    e.hit_box ~= nil) and 1 or 0
+  return M.pad_panel_is_candidate(e) and fixed.p8_fixed_flr_int(e.layer) == layer and
+    e.hit_box ~= nil
 end
 
 function M.pad_panel_is_item(e)
-  if e == nil or M.pad_panel_open() == 0 then
-    return 0
+  if e == nil or not M.pad_panel_open() then
+    return false
   end
   local layer = top_layer()
   local it = candidates_all()
@@ -175,18 +175,18 @@ function M.pad_panel_is_item(e)
     end
     candidate = candidates_next(it)
   end
-  return 0
+  return false
 end
 
 function M.pad_panel_first_item()
-  if M.pad_panel_open() == 0 then
+  if not M.pad_panel_open() then
     return nil
   end
   local layer = top_layer()
   local it = candidates_all()
   local e = candidates_next(it)
   while e ~= nil do
-    if is_item_on(e, layer) ~= 0 then
+    if is_item_on(e, layer) then
       return e
     end
     e = candidates_next(it)
@@ -237,8 +237,8 @@ function M.pad_panel_focus_point(e, x, y)
 end
 
 local function is_direction(direction)
-  return (direction == pad_direction.PAD_DIRECTION_UP or direction == pad_direction.PAD_DIRECTION_DOWN or
-    direction == pad_direction.PAD_DIRECTION_LEFT or direction == pad_direction.PAD_DIRECTION_RIGHT) and 1 or 0
+  return direction == pad_direction.PAD_DIRECTION_UP or direction == pad_direction.PAD_DIRECTION_DOWN or
+    direction == pad_direction.PAD_DIRECTION_LEFT or direction == pad_direction.PAD_DIRECTION_RIGHT
 end
 
 local function absolute(value)
@@ -276,7 +276,7 @@ local function neighbor_score(item, candidate, direction)
 end
 
 function M.pad_panel_neighbor(item, direction)
-  assert(is_direction(direction) ~= 0,
+  assert(is_direction(direction),
     "pad_panel_neighbor: the direction is exactly one of PAD_DIRECTION_UP, DOWN, LEFT or RIGHT")
   local layer = top_layer()
   local it = candidates_all()
@@ -284,7 +284,7 @@ function M.pad_panel_neighbor(item, direction)
   local best_score = -1
   local e = candidates_next(it)
   while e ~= nil do
-    if e ~= item and is_item_on(e, layer) ~= 0 then
+    if e ~= item and is_item_on(e, layer) then
       local score = neighbor_score(item, e, direction)
       if score >= 0 and (best == nil or score < best_score) then
         best = e
@@ -297,7 +297,7 @@ function M.pad_panel_neighbor(item, direction)
 end
 
 function M.pad_panel_step(focus, choose_held, direction, x, y, mouse_buttons)
-  local at = M.pad_panel_is_item(focus) ~= 0 and focus or M.pad_panel_first_item()
+  local at = M.pad_panel_is_item(focus) and focus or M.pad_panel_first_item()
   if at ~= nil and direction ~= pad_direction.PAD_DIRECTION_NONE then
     local next_item = M.pad_panel_neighbor(at, direction)
     if next_item ~= nil then
@@ -308,7 +308,7 @@ function M.pad_panel_step(focus, choose_held, direction, x, y, mouse_buttons)
     x, y = M.pad_panel_focus_point(at, x, y)
   end
   -- With no focus the cursor still sits on the last point: on the score panel a press there closes it.
-  mouse_buttons = (at ~= nil and choose_held ~= 0) and input.P8_MOUSE_LEFT or 0
+  mouse_buttons = (at ~= nil and choose_held) and input.P8_MOUSE_LEFT or 0
   return at, x, y, mouse_buttons
 end
 

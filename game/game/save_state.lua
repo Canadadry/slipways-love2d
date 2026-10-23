@@ -1093,7 +1093,7 @@ local function capture_node_links(out, node, planet, ids)
       out.route_count = out.route_count + 1
       saved.first_planet, saved.planet_count = add_route_indices(out, route.planets, ids.nodes, ids.node_count)
       saved.first_slipway, saved.slipway_count = add_route_indices(out, route.slipways, ids.slipways, ids.slipway_count)
-      saved.resource_is_bool = (route.resource_is_bool ~= 0) and 1 or 0
+      saved.resource_is_bool = route.resource_is_bool and 1 or 0
       saved.resource = route.resource
     end
     node.route_count = count

@@ -10,7 +10,7 @@ M.PAD_CYCLE_SCORE = 2
 
 function M.pad_cycle_init(cycle)
   cycle.panel = M.PAD_CYCLE_CLOSED
-  cycle.landing_due = 0
+  cycle.landing_due = false
 end
 
 function M.pad_cycle_panel(cycle)
@@ -23,11 +23,11 @@ end
 
 function M.pad_cycle_set(cycle, panel)
   cycle.panel = panel
-  cycle.landing_due = (panel ~= M.PAD_CYCLE_CLOSED) and 1 or 0
+  cycle.landing_due = panel ~= M.PAD_CYCLE_CLOSED
 end
 
 function M.pad_cycle_landed(cycle)
-  cycle.landing_due = 0
+  cycle.landing_due = false
 end
 
 function M.pad_cycle_next(panel)

@@ -26,7 +26,7 @@ M.PAD_JUMP_DIRECTIONS = 4
 
 function M.pad_jump_init(jump)
   jump.hovered = nil
-  jump.seeded = 0
+  jump.seeded = false
   jump.repeat_direction = pad_direction.PAD_DIRECTION_NONE
   jump.repeat_frames = 0
 end
@@ -37,17 +37,17 @@ end
 
 function M.pad_jump_hovered(jump)
   local hovered = entity_id.entity_get(jump.hovered)
-  return pad_target.pad_target_is_candidate(hovered) ~= 0 and hovered or nil
+  return pad_target.pad_target_is_candidate(hovered) and hovered or nil
 end
 
 function M.pad_jump_hover_seeded(jump, e)
   M.pad_jump_hover(jump, e)
-  jump.seeded = bit.bor(jump.seeded, (e ~= nil) and 1 or 0)
+  jump.seeded = jump.seeded or e ~= nil
 end
 
 function M.pad_jump_reseed(jump, candidates, centre_x, centre_y)
   local picked
-  if jump.seeded ~= 0 then
+  if jump.seeded then
     picked = M.pad_jump_nearest(centre_x, centre_y, candidates)
   else
     picked = M.pad_jump_seed(candidates, centre_x, centre_y)
@@ -124,7 +124,7 @@ local inner_top = M.PAD_JUMP_SCROLL_MARGIN
 local inner_bottom = vram.P8_SCREEN_HEIGHT - 1 - M.PAD_JUMP_SCROLL_MARGIN_BOTTOM
 
 function M.pad_jump_inside(x, y)
-  return (x >= inner_left and x <= inner_right and y >= inner_top and y <= inner_bottom) and 1 or 0
+  return x >= inner_left and x <= inner_right and y >= inner_top and y <= inner_bottom
 end
 
 local function shift_into(value, low, high)
@@ -172,7 +172,7 @@ function M.pad_jump_nearest(x, y, candidates)
 end
 
 local function is_colony(e)
-  return (e.class == planet.planet_class() and e.state == entity_class.ENTITY_STATE_SETTLED) and 1 or 0
+  return e.class == planet.planet_class() and e.state == entity_class.ENTITY_STATE_SETTLED
 end
 
 function M.pad_jump_seed(candidates, centre_x, centre_y)
@@ -180,7 +180,7 @@ function M.pad_jump_seed(candidates, centre_x, centre_y)
     return nil
   end
   for i = 1, #candidates do
-    if is_colony(candidates[i]) ~= 0 then
+    if is_colony(candidates[i]) then
       return candidates[i]
     end
   end
@@ -194,7 +194,7 @@ function M.pad_jump_candidates(nodes)
     return candidates
   end
   for i = 1, #nodes do
-    if pad_target.pad_target_is_candidate(nodes[i]) ~= 0 then
+    if pad_target.pad_target_is_candidate(nodes[i]) then
       candidates[#candidates + 1] = nodes[i]
     end
   end
@@ -203,14 +203,14 @@ end
 
 function M.pad_jump_any_candidate(nodes)
   if nodes == nil then
-    return 0
+    return false
   end
   for i = 1, #nodes do
-    if pad_target.pad_target_is_candidate(nodes[i]) ~= 0 then
-      return 1
+    if pad_target.pad_target_is_candidate(nodes[i]) then
+      return true
     end
   end
-  return 0
+  return false
 end
 
 return M

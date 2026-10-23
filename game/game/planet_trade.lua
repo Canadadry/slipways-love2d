@@ -22,7 +22,7 @@ local function trade_keys_zero()
   return {
     planets = { items = nil, count = 0, capacity = 0 },
     slipways = { items = nil, count = 0, capacity = 0 },
-    resource_is_bool = 0,
+    resource_is_bool = false,
   }
 end
 

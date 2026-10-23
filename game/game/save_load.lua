@@ -252,11 +252,11 @@ local function load_outgoing_routes(state, node_ids, slipway_ids)
     end
     for k = 0, node.route_count - 1 do
       local saved = state.routes[node.first_route + k]
-      local keys = { planets = nil, slipways = nil, resource = nil, resource_is_bool = 0 }
+      local keys = { planets = nil, slipways = nil, resource = nil, resource_is_bool = false }
       local route
       keys.planets = route_id_list(state, saved.first_planet, saved.planet_count, node_ids)
       keys.slipways = route_id_list(state, saved.first_slipway, saved.slipway_count, slipway_ids)
-      keys.resource_is_bool = saved.resource_is_bool
+      keys.resource_is_bool = saved.resource_is_bool ~= 0
       keys.resource = saved.resource
       route = trade.trade_new(keys)
       trade.trade_route_list_add(planet.outgoing_routes, route)

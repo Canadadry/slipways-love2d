@@ -20,7 +20,7 @@ local INT_MAX = 2147483647
 
 function M.pad_select_init(s)
   s.held_frames = 0
-  s.fired = 0
+  s.fired = false
   s.chain_frames = 0
 end
 
@@ -29,25 +29,25 @@ function M.pad_select_step(s, down, allowed)
   if chain_open then
     s.chain_frames = s.chain_frames - 1
   end
-  if allowed == 0 then
+  if not allowed then
     s.held_frames = 0
     s.fired = down
     return M.PAD_SELECT_NONE
   end
-  if down == 0 then
-    local tap = s.held_frames > 0 and s.fired == 0 and s.held_frames <= M.PAD_SELECT_TAP_FRAMES
+  if not down then
+    local tap = s.held_frames > 0 and not s.fired and s.held_frames <= M.PAD_SELECT_TAP_FRAMES
     s.held_frames = 0
-    s.fired = 0
+    s.fired = false
     return tap and M.PAD_SELECT_TAP or M.PAD_SELECT_NONE
   end
-  if s.fired ~= 0 and s.held_frames == 0 then
+  if s.fired and s.held_frames == 0 then
     return M.PAD_SELECT_NONE
   end
   if s.held_frames < INT_MAX then
     s.held_frames = s.held_frames + 1
   end
-  if s.fired == 0 and (s.held_frames == M.PAD_SELECT_HOLD_FRAMES or (s.held_frames == 1 and chain_open)) then
-    s.fired = 1
+  if not s.fired and (s.held_frames == M.PAD_SELECT_HOLD_FRAMES or (s.held_frames == 1 and chain_open)) then
+    s.fired = true
     return M.PAD_SELECT_YEAR
   end
   return M.PAD_SELECT_NONE
@@ -58,27 +58,27 @@ function M.pad_select_year_ended(s)
 end
 
 function M.pad_select_year_just_ended(s)
-  return (s.chain_frames == M.PAD_SELECT_CHAIN_FRAMES) and 1 or 0
+  return s.chain_frames == M.PAD_SELECT_CHAIN_FRAMES
 end
 
 local function need_is_unmet(need)
-  return (need == nil or need.satisfied == nil or need.satisfied == 0) and 1 or 0
+  return need == nil or need.satisfied == nil or need.satisfied == 0
 end
 
 function M.pad_select_needs_attention(e)
-  if pad_target.pad_target_is_candidate(e) == 0 or e.state ~= entity_class.ENTITY_STATE_SETTLED then
-    return 0
+  if not pad_target.pad_target_is_candidate(e) or e.state ~= entity_class.ENTITY_STATE_SETTLED then
+    return false
   end
   local planet = e
   if planet.needs == nil then
-    return 0
+    return false
   end
   for i = 1, #planet.needs do
-    if need_is_unmet(planet.needs[i]) ~= 0 then
-      return 1
+    if need_is_unmet(planet.needs[i]) then
+      return true
     end
   end
-  return 0
+  return false
 end
 
 function M.pad_select_next(candidates, current)
@@ -95,7 +95,7 @@ function M.pad_select_next(candidates, current)
   end
   for step = 1, #candidates do
     local e = candidates[cint.mod(start + step, #candidates) + 1]
-    if M.pad_select_needs_attention(e) ~= 0 then
+    if M.pad_select_needs_attention(e) then
       return e
     end
   end
