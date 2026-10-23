@@ -163,7 +163,6 @@ function M.slipgate_offer_trade(self, trade_offer)
       gf.route = trade.trade_extend(route, self, slipway)
       assert(slipway.class == slipway_module.slipway_class(), "a slipgate's slipways list holds slipways only: planet_attach_slipway adds to it")
       other = slipway_module.slipway_other_end(slipway, self)
-      -- The copy is on the stack: no offer_trade method may store its offer.
       if other ~= nil and other.class.offer_trade ~= nil then
         other.class.offer_trade(other, gf)
       end

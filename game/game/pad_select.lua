@@ -1,7 +1,3 @@
--- Copy of src/game/pad_select.h then src/game/pad_select.c.
---
--- Shapes, with the C field names:
---   pad_select_t: { held_frames, fired, chain_frames }.
 local entity_class = require("engine.entity_class")
 local pad_target = require("game.pad_target")
 local cint = require("p8.cint")

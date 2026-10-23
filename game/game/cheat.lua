@@ -1,7 +1,3 @@
--- Copy of src/game/cheat.h then src/game/cheat.c.
---
--- Shapes, with the C field names:
---   cheat_t: { previous_first, previous_second, chords }.
 local probe = require("game.probe")
 local fixed = require("p8.fixed")
 local input = require("p8.input")

@@ -1,9 +1,3 @@
--- Copy of src/game/pad_panel.h then src/game/pad_panel.c.
---
--- Shapes, with the C field names:
---   candidate_iter_t: { from_ephemerals, index }; candidates_next advances index in place.
---   panel_key_t: { ui, economy, ephemerals_count, generation }, ui and economy entity ids (nil for none).
---   box_t: { left, top, right, bottom }; mouse_pos_t: { world, screen, has }; both by value.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
@@ -116,6 +110,7 @@ function M.pad_panel_is_candidate(e)
   return e.class.left_press ~= nil and e.layer ~= nil
 end
 
+-- Advances it.index in place.
 local function candidates_next(it)
   local ui = ui_module.main_ui()
   if ui == nil then
@@ -194,6 +189,7 @@ function M.pad_panel_first_item()
   return nil
 end
 
+-- Returns a new box on each call.
 local function box_at(e, origin)
   if fixed.p8_fixed_flr_int(e.layer) < SCREEN_SPACE_LAYER then
     local camera = scroll.main_camera_typed()

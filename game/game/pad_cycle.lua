@@ -1,7 +1,3 @@
--- Copy of src/game/pad_cycle.h then src/game/pad_cycle.c.
---
--- Shapes, with the C field names:
---   pad_cycle_t: { panel, landing_due }.
 local M = {}
 
 M.PAD_CYCLE_CLOSED = 0

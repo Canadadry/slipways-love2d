@@ -1,12 +1,9 @@
--- Copy of src/game/pad_back.h then src/game/pad_back.c.
---
--- Shapes, with the C field names:
---   pad_back_t: { last_acted }, an entity id (nil for none).
 local entity_id = require("engine.entity_id")
 local pad_target = require("game.pad_target")
 
 local M = {}
 
+-- last_acted is an entity id, nil for none.
 function M.pad_back_init(back)
   back.last_acted = nil
 end

@@ -1,22 +1,15 @@
--- Copy of src/game/save_state.h then src/game/save_state.c.
---
--- Shapes, with the C field names:
---   A byte buffer is a 1-based array of integers 0 .. 255, like a Lua string's bytes, owned and
---     filled in place as the C's.
---   cursor_t: { position, end_, failed }: position is that of the next byte, end_ that of the last
---     readable one, so a record's byte count is the writer's position - 1.
---   save_vec_t: { x, y }; save_need_t: { resource }, nil when absent. A save_route_t's resource
---     is nil when absent too, and so is save_state_t's probe { pos, map_pos, fold_anchor }; the
---     flag bytes are written from presence.
---   save_state_t: { difficulty, economy, rnd_state, background_seed, type_picker, vanish_walk,
---     structure_id_counter, probe, camera_map_pos, node_count, nodes, slipway_count,
---     slipways, route_count, routes, route_index_count, route_indices, node_slipway_count,
---     node_slipways }, every array 1-based; first_route, first_slipway and first_planet are
---     positions in their pool, a slice being pool[first .. first + count - 1]. memset leaves
---     nodes, slipways, routes, route_indices and node_slipways empty: an element is created at
---     its C zero value when the C first writes into it, and nothing reads one past its count.
---   save_node_t.planet_id is a Lua string; u32 values (rnd_state, background_seed, the CRC) are
---     unsigned 0 .. 2^32-1, i32 values the signed raw value.
+-- A byte buffer is a 1-based array of integers 0 .. 255, like a Lua string's bytes, owned by the
+-- caller and filled in place.
+-- A cursor's position is that of the next byte, end_ that of the last readable one, so a
+-- record's byte count is the writer's position - 1.
+-- A need's resource and a route's are nil when absent, and so is the state's probe
+-- { pos, map_pos, fold_anchor }; the flag bytes are written from presence.
+-- Every array of a state is 1-based; first_route, first_slipway and first_planet are positions
+-- in their pool, a slice being pool[first .. first + count - 1]. save_state_zero leaves nodes,
+-- slipways, routes, route_indices and node_slipways empty: an element is created at its zero
+-- value when first written, and nothing reads one past its count.
+-- u32 values (rnd_state, background_seed, the CRC) are numbers in 0 .. 2^32 - 1, i32 values
+-- the signed raw value.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
@@ -78,8 +71,8 @@ M.SAVE_NODE_KNOWN_FLAGS = bit.lshift(1, 11) - 1
 -- terraform leaves on the old type. The route and slipway
 -- slices index the state's pools.
 -- Both route slices are positions in route_indices, which holds node ranks, then slipway ranks.
--- Every fixed-point value is its raw 16.16 int32_t; every other reference is
--- a 0-based rank, except difficulty (its difficulty_options_table position).
+-- Every fixed-point value is its raw 16.16 value, a signed 32-bit integer; every
+-- other reference is a 0-based rank, except difficulty (its difficulty_options_table position).
 
 local MAGIC_LENGTH = 4
 local NODE_PLANET_ID_LENGTH = 8
@@ -101,7 +94,7 @@ local function zero_array(count)
   return array
 end
 
--- Lua only: memset(out, 0, sizeof *out) on a save_state_t.
+-- Resets every field of out in place, probe to nil.
 local function save_state_zero(out)
   out.difficulty = 0
   out.economy = {
@@ -140,7 +133,6 @@ local function save_state_zero(out)
   out.node_slipways = {}
 end
 
--- Lua only: a save_node_t at its C zero value.
 local function save_node_zero()
   local needs = {}
   for i = 1, M.SAVE_STATE_NEEDS_CAP do
@@ -171,7 +163,6 @@ local function save_node_zero()
   }
 end
 
--- Lua only: a save_route_t at its C zero value.
 local function save_route_zero()
   return {
     first_planet = 1,
@@ -182,7 +173,6 @@ local function save_route_zero()
   }
 end
 
--- Lua only: a save_slipway_t at its C zero value.
 local function save_slipway_zero()
   return { start = 0, end_ = 0, state_time = 0 }
 end
@@ -868,7 +858,7 @@ local function difficulty_index()
   return 0
 end
 
--- Lua only: invented tech name -> its technologies_table position; the disk rank is position - 1.
+-- Invented tech name -> its technologies_table position; the disk rank is position - 1.
 local function technology_index(name)
   for i = 1, map_tables.TECHNOLOGIES_COUNT do
     if map_tables.technologies_table[i].name == name then
@@ -879,7 +869,7 @@ local function technology_index(name)
   return 0
 end
 
--- Lua only: planet_types_table entry -> its position, the 1-based planet_type on disk.
+-- planet_types_table entry -> its position, the 1-based planet_type on disk.
 local planet_type_index_of = {}
 for i = 1, game_data.PLANET_TYPES_COUNT do
   planet_type_index_of[game_data.planet_types_table[i]] = i
@@ -891,8 +881,8 @@ local function planet_type_index(type)
   return planet_type_index_of[type]
 end
 
--- The 1-based planet_types_table entry that owns the description pointer
--- (the current type first, terraform leaves the old one's); 0 for NULL.
+-- The 1-based planet_types_table entry that owns the planet's description
+-- (the current type first, terraform leaves the old one's); 0 for none.
 local function description_type_index(planet)
   if planet.description == nil then
     return 0
@@ -1082,7 +1072,7 @@ local function capture_node_fields(node, planet)
   end
 end
 
--- Returns first, then the C's *added.
+-- Returns first, then the number of indices added.
 local function add_route_indices(out, list, ids, count)
   local first = out.route_index_count + 1
   assert(#list <= 0xFF and out.route_index_count + #list <= M.SAVE_STATE_ROUTE_INDICES_CAP)
@@ -1191,7 +1181,6 @@ function M.save_state_capture(out)
   capture_world(out, ids)
 end
 
--- Lua only: the cart's static save_state_t starts at its C zero through this.
 M.save_state_zero = save_state_zero
 
 return M

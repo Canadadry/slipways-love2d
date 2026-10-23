@@ -1,7 +1,3 @@
--- Copy of src/game/pad_jump.h then src/game/pad_jump.c.
---
--- Shapes, with the C field names:
---   pad_jump_t: { hovered, seeded, repeat_direction, repeat_frames }, hovered an entity id (nil for none).
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local bindings_module = require("game.bindings")
@@ -23,6 +19,7 @@ M.PAD_JUMP_SCROLL_SPEED = 8
 
 M.PAD_JUMP_DIRECTIONS = 4
 
+-- hovered is an entity id, nil for none.
 function M.pad_jump_init(jump)
   jump.hovered = nil
   jump.seeded = false

@@ -77,4 +77,4 @@
   - [x] Chunk 4 — planets, slipways, wormholes, trade
   - [x] Chunk 5 — economy, research, probes
   - [x] Chunk 6 — UI
-  - [ ] Chunk 7 — input, cart, save, pad, docs, full check
+  - [x] Chunk 7 — input, cart, save, pad, docs, full check

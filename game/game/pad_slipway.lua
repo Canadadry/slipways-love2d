@@ -1,7 +1,3 @@
--- Copy of src/game/pad_slipway.h then src/game/pad_slipway.c.
---
--- Shapes, with the C field names:
---   pad_slipway_t: { start, target, phase, linked_before }, start and target entity ids (nil for none).
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local planet = require("game.planet")
@@ -19,6 +15,7 @@ M.PAD_SLIPWAY_RELEASED = 3
 M.PAD_SLIPWAY_REFUSED = 0
 M.PAD_SLIPWAY_BUILT = 1
 
+-- start and target are entity ids, nil for none.
 function M.pad_slipway_init(slipway)
   slipway.start = nil
   slipway.target = nil

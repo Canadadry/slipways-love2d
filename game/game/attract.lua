@@ -1,6 +1,3 @@
--- Copy of src/game/attract.h then src/game/attract.c.
---
--- An attract_t is the caller's table { attract_after, idle_frames, phase, demo_frame }, filled by attract_init.
 local demo_data = require("game.demo_data")
 local save_state = require("game.save_state")
 

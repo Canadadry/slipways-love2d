@@ -1,16 +1,9 @@
--- Copy of src/game/bindings.h then src/game/bindings.c.
--- Not ported: bindings_compiled (defined only in the replay tool's
--- tmp/bindings/default.c) and bindings_compiled_personal (plan 0's note).
--- bindings_default is the generated module game.bindings_default.
---
--- Shapes, with the C field names:
---   bindings_t: { masks }, masks[mode][action] by BINDINGS_MODE_* and
---     BINDINGS_ACTION_*, every entry present, zeros included.
---   bindings_error_t: { line, text }, text a Lua string.
--- A C pointer into a parsed text is a 1-based position in the Lua string; a
--- range [start, end_) excludes end_; a position past the text reads 0.
--- fail, parse_line and bindings_parse keep the C parameter name error, which
--- shadows Lua's error there: raise through fatal.p8_fatal, never error().
+-- A bindings table is { masks }, masks[mode][action] by BINDINGS_MODE_* and
+-- BINDINGS_ACTION_*, every entry present, zeros included; a parse error is
+-- { line, text }. A range [start, end_) of a parsed text excludes end_; a
+-- position past the text reads 0.
+-- The parameter error of fail, parse_line and bindings_parse shadows Lua's
+-- error there: raise through fatal.p8_fatal, never error().
 local bit_module = require("bit")
 local input = require("p8.input")
 
@@ -95,7 +88,7 @@ local MAP_SHORTCUTS = {
 }
 
 -- One row of mode_actions: true for each action of the groups and the listed
--- actions, false for every other action, as the C's designated initializers.
+-- actions, false for every other action.
 local function mode_actions_row(groups, ...)
   local row = {}
   for action = 1, M.BINDINGS_ACTION_COUNT do
@@ -136,8 +129,7 @@ local function byte_at(s, position)
   return string.byte(s, position) or 0
 end
 
--- memchr(s + start - 1, c, length): the position of byte c in
--- [start, start + length), or nil.
+-- The position of byte c in [start, start + length), or nil.
 local function memchr(s, start, c, length)
   local found = string.find(s, c, start, true)
   if found ~= nil and found < start + length then
@@ -157,8 +149,8 @@ local function new_masks()
   return masks
 end
 
--- Returns the number, then the position where its digits stop (the C's
--- *end): 0 and position 1 when text does not start with 1 to 12.
+-- Returns the number, then the position where its digits stop: 0 and
+-- position 1 when text does not start with 1 to 12.
 function M.bindings_read_button_number(text)
   assert(text ~= nil, "bindings_read_button_number needs a text")
   local end_ = 1
@@ -318,7 +310,7 @@ local function parse_line(file_name, line_number, text, start, end_, out, given_
   return true
 end
 
--- text_end is the C's line + strlen(line): a NUL byte ends the text.
+-- A NUL byte ends the text.
 function M.bindings_parse(file_name, text, out, error)
   assert(file_name ~= nil and text ~= nil and out ~= nil and error ~= nil, "bindings_parse: NULL argument")
   out.masks = new_masks()

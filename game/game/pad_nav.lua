@@ -1,11 +1,3 @@
--- Copy of src/game/pad_nav.h then src/game/pad_nav.c.
---
--- Shapes, with the C field names:
---   pad_nav_t: { focus, build, cycle, placement, suspended_carry, pause_due, pause_choose_row_armed,
---     menu_choose_row_armed, map_mode, marker_frames, release_pending, previous_pad, chord_held, left_was_down,
---     cursor_x, cursor_y, held_frames, probe_or_fold_engaged, game, jump, slipway, back, select, bindings };
---     focus, suspended_carry and game entity ids (nil for none), held_frames indexed by pad_jump_direction's index. pad_nav_init creates the sub-tables
---     only when absent and fills bindings.masks in place, so a re-init keeps their identity as the C struct does.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
@@ -276,6 +268,9 @@ local function create_sub_tables(nav)
   end
 end
 
+-- focus, suspended_carry and game are entity ids, nil for none; held_frames is indexed by
+-- pad_jump_direction's index. The sub-tables are created only when absent and bindings.masks
+-- is filled in place, so a re-init keeps their identity.
 function M.pad_nav_init(nav, bindings)
   assert(bindings ~= nil, "pad_nav_init: the caller hands its compiled table, never NULL")
   create_sub_tables(nav)
@@ -373,7 +368,7 @@ local function panel_step(nav, pad_buttons, pressed, played)
   nav.focus = entity_id.entity_id_link(at)
 end
 
--- Keep in step with pad_panel.c's box_at for layers under 10: world point minus the camera, floored.
+-- Keep in step with pad_panel's box_at for layers under 10: world point minus the camera, floored.
 local function screen_point(e, x, y)
   local at = entity_class.entity_pos(e)
   local camera = scroll.main_camera_typed()

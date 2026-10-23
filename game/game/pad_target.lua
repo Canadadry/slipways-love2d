@@ -1,7 +1,3 @@
--- Copy of src/game/pad_target.h then src/game/pad_target.c.
---
--- Shapes, with the C field names:
---   offset_t: { along, perpendicular }, by value: a new table each time.
 local entity_class = require("engine.entity_class")
 local pad_direction = require("game.pad_direction")
 local planet = require("game.planet")
@@ -21,6 +17,7 @@ local function is_direction(direction)
     direction == pad_direction.PAD_DIRECTION_LEFT or direction == pad_direction.PAD_DIRECTION_RIGHT
 end
 
+-- Returns a new { along, perpendicular } table on each call.
 local function offset_in(direction, from, to)
   local dx = fixed.p8_fixed_sub(to.x, from.x)
   local dy = fixed.p8_fixed_sub(to.y, from.y)

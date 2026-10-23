@@ -1,4 +1,3 @@
--- Copy of src/game/pad_direction.h, which has no .c: its enum as fields.
 local M = {}
 
 M.PAD_DIRECTION_NONE = 0

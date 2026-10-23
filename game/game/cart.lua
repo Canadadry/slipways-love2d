@@ -1,5 +1,3 @@
--- Copy of src/game/cart.h then src/game/cart.c.
---
 -- Help and the score panel receive cart_request_start_game and cart_init_method at cart_load time,
 -- never by require: no game module requires the cart, so it requires everything at load.
 local bootstrap = require("engine.bootstrap")

@@ -1,4 +1,4 @@
--- Lua only: the storage backend of src/game/save_storage.h, over love.filesystem.
+-- The save's storage backend, over love.filesystem.
 --
 -- One opaque record of at most SAVE_STATE_MAX_BYTES bytes in save.bin, never decoded here; a
 -- byte buffer is a 1-based array of integers 0 .. 255, byte i of the file at position i. The

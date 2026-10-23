@@ -1,5 +1,3 @@
--- Copy of src/game/save_load.h then src/game/save_load.c.
---
 -- Every state came out of a save_state_decode that returned true: nothing is validated again.
 -- node_constructors is keyed by the SAVE_NODE_* kind, a disk code from 0. node_ids and
 -- slipway_ids are 1-based by save position and hold new tables from entity_id_link; a saved
