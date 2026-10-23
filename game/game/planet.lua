@@ -54,7 +54,7 @@ local g_planet_vanish_roll = nil
 local g_planet_production_shared = production_zero()
 
 function M.planet_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse)
+  return entity_geom.contains_cursor(self, mouse)
 end
 
 function M.planet_new_year_method(self, year)
@@ -80,7 +80,7 @@ M.planet_class_def = {
   accept_drop = planet_display.planet_accept_drop_method,
   attach_slipway = planet_trade.planet_attach_slipway_method,
   offer_trade = planet_trade.planet_offer_trade_method,
-  states = { [entity_class.ENTITY_STATE_VANISHING] = M.planet_update_vanishing_method },
+  states = { [entity_class.STATE_VANISHING] = M.planet_update_vanishing_method },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_PLANET), entity_class.TAG(entity_class.TAG_NODE)),
   lineage = entity_class.LINEAGE(entity_class.LINEAGE_PLANET),
 }
@@ -89,9 +89,9 @@ M.planet_class_def = {
 -- development_tier, production, targeting and emitter are nil when the planet has none.
 function M.planet_init_instance(self, instance_class, archetype)
   assert(g_planet_up, "planet_init() must run first")
-  entity.entity_init_instance(self, instance_class, archetype.state, archetype.state_time)
+  entity.init_instance(self, instance_class, archetype.state, archetype.state_time)
   self.archetype = archetype
-  entity_registry.entity_registry_set_layer(self, self.archetype.layer)
+  entity_registry.set_layer(self, self.archetype.layer)
   do
     local hit_box = self.archetype.hit_box
     self.hit_box = { left = hit_box.left, top = hit_box.top, right = hit_box.right, bottom = hit_box.bottom }
@@ -117,7 +117,7 @@ local function planet_create(keys)
   M.planet_init_instance(self, M.planet_class_def, game_data.planet_archetype)
   M.planet_copy_keys(self, keys)
   M.planet_construct(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -135,10 +135,10 @@ function M.planet_copy_keys(self, keys)
     return
   end
   if keys.map_pos ~= nil then
-    entity_class.entity_set_map_pos(self, keys.map_pos)
+    entity_class.set_map_pos(self, keys.map_pos)
   end
   if keys.pos ~= nil then
-    entity_class.entity_set_pos(self, keys.pos)
+    entity_class.set_pos(self, keys.pos)
   end
   if keys.planet_id ~= nil then
     self.planet_id = keys.planet_id
@@ -297,7 +297,7 @@ function M.planet_is_colonized(self)
   if not self.archetype.is_planet then
     return false
   end
-  return self.state == entity_class.ENTITY_STATE_SETTLED
+  return self.state == entity_class.STATE_SETTLED
 end
 
 function M.planet_restart_shake(self)
@@ -338,10 +338,10 @@ function M.planet_roll_type(self)
   self.planet_type = nk
   self.description = (nk ~= nil) and nk.description or nil
 
-  if nk ~= nil and nk.state ~= entity_class.ENTITY_STATE_NONE then
-    entity.entity_set_state(self, nk.state)
+  if nk ~= nil and nk.state ~= entity_class.STATE_NONE then
+    entity.set_state(self, nk.state)
   else
-    entity.entity_set_state(self, entity_class.ENTITY_STATE_KNOWN)
+    entity.set_state(self, entity_class.STATE_KNOWN)
   end
   M.planet_restart_shake(self)
 end
@@ -353,7 +353,7 @@ function M.planet_new_year(self)
   if self.net_income == nil or self.net_income == fixed.from_int(0) then
     return
   end
-  if not entity_geom.entity_geom_is_on_screen(self) then
+  if not entity_geom.is_on_screen(self) then
     return
   end
   do
@@ -362,7 +362,7 @@ function M.planet_new_year(self)
     local color = 0
     local text
 
-    keys.source = entity_id.entity_id_link(self)
+    keys.source = entity_id.link(self)
     text, color = economy_formulas.economy_formulas_format_signed(self.net_income, 10, "$", color)
     message_box.toast_keys_set_text(keys, text)
     keys.color = fixed.from_int(color)

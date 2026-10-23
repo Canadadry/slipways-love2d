@@ -19,7 +19,7 @@ local str = require("p8.str")
 local M = {}
 
 local function vec_copy(v)
-  return vec.vec_make(v.x, v.y)
+  return vec.make(v.x, v.y)
 end
 
 local function modal_backdrop_keys_zero()
@@ -29,7 +29,7 @@ end
 local g_menu_up = false
 local g_galaxy_menu_pos = {}
 for i = 1, game_data.GALAXY_MENU_COUNT do
-  g_galaxy_menu_pos[i] = vec.vec_make(0, 0)
+  g_galaxy_menu_pos[i] = vec.make(0, 0)
 end
 
 local galaxy_menu_button4_on_click_method
@@ -43,7 +43,7 @@ M.pause_menu_open_box_class_def = {
 
 -- An entity header plus { fixed_pos, row_step, back_color }, each nil while the menu is down.
 M.g_pause_menu_open_box = {}
-entity_class.entity_init_header(M.g_pause_menu_open_box, M.pause_menu_open_box_class_def)
+entity_class.init_header(M.g_pause_menu_open_box, M.pause_menu_open_box_class_def)
 
 local function tech_tree_screen_row_on_click_method(self)
   if self == nil then
@@ -298,7 +298,7 @@ end
 -- The live HUD button whose on_click is galaxy_menu_on_click(i); nil when there is none.
 function M.galaxy_menu_find_button(i)
   local on_click = M.galaxy_menu_on_click(i)
-  local bucket = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_HIT_TEST)
+  local bucket = entity_registry.entities_by_message(entity_registry.MESSAGE_HIT_TEST)
   for k = 1, #bucket do
     local e = bucket[k]
     if not e.is_dead and e.class == ui_button.button_class() and e.on_click == on_click then
@@ -327,7 +327,7 @@ function M.pause_menu_shown()
   end
   local ephemerals = ui.ephemerals
   for i = 1, #ephemerals do
-    local e = entity_id.entity_id_resolve(ephemerals[i])
+    local e = entity_id.resolve(ephemerals[i])
     if e.class == ui_button.button_class() and e.on_click == pause_menu_row2_on_click_method then
       return true
     end
@@ -339,12 +339,12 @@ function M.menu_init()
   M.menu_shutdown()
 
   for i = 1, game_data.GALAXY_MENU_COUNT do
-    g_galaxy_menu_pos[i] = vec.vec_make(fixed.from_int(game_data.galaxy_menu_table[i].pos_x),
+    g_galaxy_menu_pos[i] = vec.make(fixed.from_int(game_data.galaxy_menu_table[i].pos_x),
       fixed.from_int(game_data.galaxy_menu_table[i].pos_y))
   end
-  M.g_pause_menu_open_box.fixed_pos = vec.vec_make(fixed.from_int(game_data.pause_menu_tail.fixed_pos_x),
+  M.g_pause_menu_open_box.fixed_pos = vec.make(fixed.from_int(game_data.pause_menu_tail.fixed_pos_x),
     fixed.from_int(game_data.pause_menu_tail.fixed_pos_y))
-  M.g_pause_menu_open_box.row_step = vec.vec_make(fixed.from_int(game_data.pause_menu_tail.row_step_x),
+  M.g_pause_menu_open_box.row_step = vec.make(fixed.from_int(game_data.pause_menu_tail.row_step_x),
     fixed.from_int(game_data.pause_menu_tail.row_step_y))
   M.g_pause_menu_open_box.back_color = fixed.from_int(game_data.pause_menu_tail.back_color)
   g_menu_up = true

@@ -43,9 +43,9 @@ function M.structure_icon_kind_view(self)
   local kind = structure_icon_own_kind(self)
   local view = {}
 
-  entity_class.entity_init_header(view, M.structure_icon_kind_view_class_def)
+  entity_class.init_header(view, M.structure_icon_kind_view_class_def)
   view.required_tech = nil
-  view.state = entity_class.ENTITY_STATE_NONE
+  view.state = entity_class.STATE_NONE
   if kind ~= nil then
     view.required_tech = kind.record.required_tech
     view.sprite = kind.record.sprite
@@ -79,14 +79,14 @@ function M.structure_icon_refresh(self)
   assert(g_structure_icon_up, "structure_icon_init() must run before structure_icon_refresh moves the shared cursor")
 
   if g_cursor ~= nil then
-    entity_class.entity_set_pos(self, g_cursor)
+    entity_class.set_pos(self, g_cursor)
   else
-    entity_class.entity_clear_pos(self)
+    entity_class.clear_pos(self)
   end
   self.is_revealed = true
 
-  M.structure_icon_set_cursor(vec.vec_sub(M.structure_icon_cursor(),
-    vec.vec_make(fixed.from_int(10), fixed.from_int(0))))
+  M.structure_icon_set_cursor(vec.sub(M.structure_icon_cursor(),
+    vec.make(fixed.from_int(10), fixed.from_int(0))))
 end
 
 function M.structure_icon_is_revealed(e)
@@ -123,7 +123,7 @@ function M.structure_icon_left_press(self)
   id_num_str = str.tostr_fixed(new_id)
   planet.planet_keys_set_id(keys, str.concat2("s", id_num_str))
   held = entity_kind.new_entity(keys)
-  out.held = entity_id.entity_id_link(held)
+  out.held = entity_id.link(held)
   out.stop = held ~= nil
   return out
 end
@@ -166,12 +166,12 @@ function M.structure_icon_draw(gfx, mem, self, p)
 end
 
 local function structure_icon_draw_method(self, screen_pos)
-  M.structure_icon_draw(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self,
+  M.structure_icon_draw(dispatch_context.gfx(), dispatch_context.mem(), self,
     screen_pos)
 end
 
 local function structure_icon_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse)
+  return entity_geom.contains_cursor(self, mouse)
 end
 
 M.structure_icon_class_def = {
@@ -192,12 +192,12 @@ local function structure_icon_create(keys)
   local hit_box
 
   assert(g_structure_icon_up, "structure_icon_init() must run before a structure icon is created")
-  entity.entity_init_instance(self, M.structure_icon_class_def, archetype.state, archetype.state_time)
+  entity.init_instance(self, M.structure_icon_class_def, archetype.state, archetype.state_time)
   self.archetype = archetype
-  entity_registry.entity_registry_set_layer(self, self.archetype.layer)
+  entity_registry.set_layer(self, self.archetype.layer)
   hit_box = self.archetype.hit_box
   self.hit_box = { left = hit_box.left, top = hit_box.top, right = hit_box.right, bottom = hit_box.bottom }
-  entity_class.entity_set_pos(self, self.archetype.pos)
+  entity_class.set_pos(self, self.archetype.pos)
   self.kind = nil
   self.tooltip = nil
   self.is_hovered = false
@@ -205,7 +205,7 @@ local function structure_icon_create(keys)
     self.kind = keys.kind
     self.tooltip = keys.tooltip
   end
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -246,9 +246,9 @@ end
 -- Zero while the cursor is absent.
 function M.structure_icon_cursor()
   if g_cursor ~= nil then
-    return vec.vec_make(g_cursor.x, g_cursor.y)
+    return vec.make(g_cursor.x, g_cursor.y)
   end
-  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
+  return vec.make(fixed.from_int(0), fixed.from_int(0))
 end
 
 function M.structure_icon_set_id_counter(id)
@@ -265,7 +265,7 @@ function M.structure_icon_id_counter(out)
 end
 
 function M.structure_icon_set_cursor(cursor)
-  g_cursor = vec.vec_make(cursor.x, cursor.y)
+  g_cursor = vec.make(cursor.x, cursor.y)
 end
 
 return M

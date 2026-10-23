@@ -27,7 +27,7 @@ local function background_to_int(x)
 end
 
 local function background_draw_method(self, screen_pos)
-  M.background_draw(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self)
+  M.background_draw(dispatch_context.gfx(), dispatch_context.mem(), self)
 end
 
 local function background_left_press_method(self, mouse)
@@ -36,7 +36,7 @@ end
 
 M.background_class_def = {
   draw = background_draw_method,
-  hit_test = entity_registry.entity_registry_hit_test_always,
+  hit_test = entity_registry.hit_test_always,
   left_press = background_left_press_method,
   states = {},
   tags = 0,
@@ -47,14 +47,14 @@ M.background_class_def = {
 local function background_create()
   local self = {}
 
-  entity.entity_init_instance(self, M.background_class_def, game_data.background_archetype.state,
+  entity.init_instance(self, M.background_class_def, game_data.background_archetype.state,
     game_data.background_archetype.state_time)
   self.archetype = game_data.background_archetype
-  entity_registry.entity_registry_set_layer(self, self.archetype.layer)
+  entity_registry.set_layer(self, self.archetype.layer)
   self.is_hovered = false
   self.seed = fixed.rnd_state()
-  M.background_construct(dispatch_context.dispatch_context_mem(), self)
-  entity.entity_construct(self)
+  M.background_construct(dispatch_context.mem(), self)
+  entity.construct(self)
   return self
 end
 
@@ -211,7 +211,7 @@ function M.background_left_press(self)
     made = require("game.probe").probe_new(nil)
   end
   out.stop = made ~= nil
-  out.held = entity_id.entity_id_link(made)
+  out.held = entity_id.link(made)
   return out
 end
 

@@ -197,7 +197,7 @@ local function score_panel_update_add_row(box, entry, context)
   end
   keys.score = fixed.from_int(score_i)
   message_box.message_box_add_layout_row(box, keys,
-    entry.pos_x and vec.vec_make(fixed.from_int(entry.pos_x), fixed.from_int(entry.pos_y)),
+    entry.pos_x and vec.make(fixed.from_int(entry.pos_x), fixed.from_int(entry.pos_y)),
     fixed.LIT(0x00008000, 0.5))
 end
 
@@ -214,9 +214,9 @@ function M.score_panel_update(self)
     local toggle_keys = ui_button.button_keys_zero({})
     local made1
     local made2
-    local first_line_pos = vec.vec_make(fixed.from_int(cint.div(vram.SCREEN_WIDTH, 2) - 13),
+    local first_line_pos = vec.make(fixed.from_int(cint.div(vram.SCREEN_WIDTH, 2) - 13),
       fixed.from_int(cint.div(vram.SCREEN_HEIGHT, 2) + 36))
-    local second_line_pos = vec.vec_make(fixed.from_int(cint.div(vram.SCREEN_WIDTH, 2) - 25),
+    local second_line_pos = vec.make(fixed.from_int(cint.div(vram.SCREEN_WIDTH, 2) - 25),
       fixed.from_int(cint.div(vram.SCREEN_HEIGHT, 2) + 36))
 
     ui_button.modal_backdrop_new(nil)
@@ -236,7 +236,7 @@ function M.score_panel_update(self)
     if self ~= nil then
       self.is_shown = true
       self.curtain = 0
-      entity_registry.entity_registry_set_layer(self, fixed.from_int(13))
+      entity_registry.set_layer(self, fixed.from_int(13))
     end
   end
 

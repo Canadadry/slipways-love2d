@@ -46,8 +46,8 @@ M.structure_class_def = {
   attach_slipway = planet_trade.planet_attach_slipway_method,
   offer_trade = planet_trade.planet_offer_trade_method,
   states = {
-    [entity_class.ENTITY_STATE_VANISHING] = planet.planet_update_vanishing_method,
-    [entity_class.ENTITY_STATE_SETTLED] = M.structure_update_settled_method,
+    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_SETTLED] = M.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_STRUCTURE), entity_class.TAG(entity_class.TAG_PLANET),
     entity_class.TAG(entity_class.TAG_NODE)),
@@ -73,7 +73,7 @@ local function structure_create(keys)
     .. "-- stop, do not add one")
   planet.planet_copy_keys(self, keys)
   planet.planet_construct(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -98,10 +98,10 @@ end
 
 -- True when e is settled and its settled update calls planet_bob.
 function M.planet_family_bobs(e)
-  if e == nil or e.state ~= entity_class.ENTITY_STATE_SETTLED or e.class == nil then
+  if e == nil or e.state ~= entity_class.STATE_SETTLED or e.class == nil then
     return false
   end
-  local settled = e.class.states[entity_class.ENTITY_STATE_SETTLED]
+  local settled = e.class.states[entity_class.STATE_SETTLED]
   return settled == M.structure_update_settled_method or settled == trading_hub_update_settled_method
 end
 
@@ -120,8 +120,8 @@ M.trading_hub_class_def = {
   attach_slipway = planet_trade.planet_attach_slipway_method,
   offer_trade = planet_trade.planet_offer_trade_method,
   states = {
-    [entity_class.ENTITY_STATE_VANISHING] = planet.planet_update_vanishing_method,
-    [entity_class.ENTITY_STATE_SETTLED] = trading_hub_update_settled_method,
+    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_SETTLED] = trading_hub_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_PLANET), entity_class.TAG(entity_class.TAG_NODE)),
   lineage = bit.bor(entity_class.LINEAGE(entity_class.LINEAGE_PLANET), entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE),
@@ -139,7 +139,7 @@ local function trading_hub_create(keys)
     .. "-- stop, do not add one")
   planet.planet_copy_keys(self, keys)
   planet.planet_construct(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -158,8 +158,8 @@ M.processor_class_def = {
   attach_slipway = planet_trade.planet_attach_slipway_method,
   offer_trade = planet_trade.planet_offer_trade_method,
   states = {
-    [entity_class.ENTITY_STATE_VANISHING] = planet.planet_update_vanishing_method,
-    [entity_class.ENTITY_STATE_SETTLED] = M.structure_update_settled_method,
+    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_SETTLED] = M.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_PLANET), entity_class.TAG(entity_class.TAG_NODE)),
   lineage = bit.bor(entity_class.LINEAGE(entity_class.LINEAGE_PLANET), entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)),
@@ -175,7 +175,7 @@ local function processor_create(keys)
     .. "-- stop, do not add one")
   planet.planet_copy_keys(self, keys)
   planet.planet_construct(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -190,7 +190,7 @@ function M.ascension_draw(gfx, mem, self, p)
 end
 
 function M.ascension_draw_method(self, screen_pos)
-  M.ascension_draw(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self, screen_pos)
+  M.ascension_draw(dispatch_context.gfx(), dispatch_context.mem(), self, screen_pos)
 end
 
 function M.ascension_release_method(self)
@@ -216,8 +216,8 @@ M.ascension_class_def = {
   offer_trade = planet_trade.planet_offer_trade_method,
   spawn_particle = probe.probe_spawn_particle,
   states = {
-    [entity_class.ENTITY_STATE_VANISHING] = planet.planet_update_vanishing_method,
-    [entity_class.ENTITY_STATE_SETTLED] = M.structure_update_settled_method,
+    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_SETTLED] = M.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_ASCENSION), entity_class.TAG(entity_class.TAG_PLANET),
     entity_class.TAG(entity_class.TAG_NODE)),
@@ -249,7 +249,7 @@ local function ascension_create(keys)
   planet.planet_copy_keys(self, keys)
   require("game.particle").emitter_init(self)
   planet.planet_construct(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -261,7 +261,7 @@ function M.protostar_construct(self)
     return
   end
 
-  keys.planet.pos = vec.vec_add(entity_class.entity_pos(self), self.archetype.spawn_offset)
+  keys.planet.pos = vec.add(entity_class.pos(self), self.archetype.spawn_offset)
   keys.construct = game_data.protostar_burst_construct_keys
 
   spawned = M.burst_new(keys)
@@ -283,8 +283,8 @@ M.protostar_class_def = {
   offer_trade = planet_trade.planet_offer_trade_method,
   spawn_particle = probe.probe_spawn_particle,
   states = {
-    [entity_class.ENTITY_STATE_VANISHING] = planet.planet_update_vanishing_method,
-    [entity_class.ENTITY_STATE_SETTLED] = M.structure_update_settled_method,
+    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_SETTLED] = M.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_PLANET), entity_class.TAG(entity_class.TAG_NODE)),
   lineage = bit.bor(entity_class.LINEAGE(entity_class.LINEAGE_PLANET), entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)),
@@ -299,7 +299,7 @@ local function protostar_create(keys)
   M.protostar_construct(self)
   require("game.particle").emitter_init(self)
   planet.planet_construct(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -337,14 +337,14 @@ function M.burst_spawn_particle(self_ptr)
     qd = fixed.mul(fixed.flr(fixed.div(qd, fixed.LIT(0x00008000, 0.5))),
       fixed.LIT(0x00008000, 0.5))
   end
-  p = vec.vec_from_polar(qd, visual_random.visual_random_draw_one())
+  p = vec.from_polar(qd, visual_random.visual_random_draw_one())
 
   ms = self.speed
   iu = self.acceleration_factor
   py = self.emitter.speed_factor
 
-  v = vec.vec_mul(p, ms)
-  a = vec.vec_mul(p, iu)
+  v = vec.mul(p, ms)
+  a = vec.mul(p, iu)
 
   particle = require("game.particle").particle_take()
   particle.pos = p
@@ -393,7 +393,7 @@ function M.burst_draw(graphics, memory, self, screen_pos)
         color = trail_color
       end
       if not particle.particle_pixels_hidden() then
-        gfx_module.circ(graphics, memory, screen_x, screen_y, fixed.flr_int(vec.vec_length(pt.pos)), color)
+        gfx_module.circ(graphics, memory, screen_x, screen_y, fixed.flr_int(vec.length(pt.pos)), color)
       end
     end
 
@@ -406,7 +406,7 @@ function M.burst_draw(graphics, memory, self, screen_pos)
 end
 
 local function burst_draw_method(self, screen_pos)
-  M.burst_draw(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self, screen_pos)
+  M.burst_draw(dispatch_context.gfx(), dispatch_context.mem(), self, screen_pos)
 end
 
 local function burst_release_method(self)
@@ -425,7 +425,7 @@ M.burst_class_def = {
   attach_slipway = planet_trade.planet_attach_slipway_method,
   offer_trade = planet_trade.planet_offer_trade_method,
   spawn_particle = M.burst_spawn_particle,
-  states = { [entity_class.ENTITY_STATE_VANISHING] = planet.planet_update_vanishing_method },
+  states = { [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method },
   tags = 0,
   lineage = entity_class.LINEAGE(entity_class.LINEAGE_PLANET),
 }
@@ -461,7 +461,7 @@ local function burst_create(keys)
   end
   M.burst_construct(self)
   planet.planet_construct_in(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -598,8 +598,8 @@ local function burst_kind_new(keys)
   end
   burst_keys.planet = {
     planet_id = keys.planet_id,
-    map_pos = keys.map_pos and vec.vec_make(keys.map_pos.x, keys.map_pos.y),
-    pos = keys.pos and vec.vec_make(keys.pos.x, keys.pos.y),
+    map_pos = keys.map_pos and vec.make(keys.map_pos.x, keys.map_pos.y),
+    pos = keys.pos and vec.make(keys.pos.x, keys.pos.y),
   }
   burst_keys.construct = nil
   return burst_create(burst_keys)

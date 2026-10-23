@@ -3,54 +3,54 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
-function M.vec_make(x, y)
+function M.make(x, y)
   local result = { x = x, y = y }
   return result
 end
 
-function M.vec_add(a, b)
-  return M.vec_make(fixed.add(a.x, b.x), fixed.add(a.y, b.y))
+function M.add(a, b)
+  return M.make(fixed.add(a.x, b.x), fixed.add(a.y, b.y))
 end
 
-function M.vec_sub(a, b)
-  return M.vec_make(fixed.sub(a.x, b.x), fixed.sub(a.y, b.y))
+function M.sub(a, b)
+  return M.make(fixed.sub(a.x, b.x), fixed.sub(a.y, b.y))
 end
 
-function M.vec_mul(v, m)
-  return M.vec_make(fixed.mul(v.x, m), fixed.mul(v.y, m))
+function M.mul(v, m)
+  return M.make(fixed.mul(v.x, m), fixed.mul(v.y, m))
 end
 
-function M.vec_neg(v)
-  return M.vec_make(fixed.neg(v.x), fixed.neg(v.y))
+function M.neg(v)
+  return M.make(fixed.neg(v.x), fixed.neg(v.y))
 end
 
-function M.vec_dot(a, b)
+function M.dot(a, b)
   return fixed.add(fixed.mul(a.x, b.x), fixed.mul(a.y, b.y))
 end
 
-function M.vec_length_squared(v)
-  return M.vec_dot(v, v)
+function M.length_squared(v)
+  return M.dot(v, v)
 end
 
-function M.vec_perpendicular(v)
-  return M.vec_make(fixed.neg(v.y), v.x)
+function M.perpendicular(v)
+  return M.make(fixed.neg(v.y), v.x)
 end
 
-function M.vec_div(v, d)
-  return M.vec_make(fixed.div(v.x, d), fixed.div(v.y, d))
+function M.div(v, d)
+  return M.make(fixed.div(v.x, d), fixed.div(v.y, d))
 end
 
-function M.vec_length(v)
-  return fixed.sqrt(M.vec_length_squared(v))
+function M.length(v)
+  return fixed.sqrt(M.length_squared(v))
 end
 
-function M.vec_normalize(v)
-  return M.vec_div(v, M.vec_length(v))
+function M.normalize(v)
+  return M.div(v, M.length(v))
 end
 
-function M.vec_from_polar(fy, lx)
-  local unit = M.vec_make(fixed.cos(lx), fixed.sin(lx))
-  return M.vec_mul(unit, fy)
+function M.from_polar(fy, lx)
+  local unit = M.make(fixed.cos(lx), fixed.sin(lx))
+  return M.mul(unit, fy)
 end
 
 return M

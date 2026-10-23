@@ -24,16 +24,16 @@ end
 
 local function mouse_at(x, y)
   local camera = scroll.main_camera_typed()
-  local mouse = { world = vec.vec_make(0, 0), screen = vec.vec_make(0, 0), has = 0 }
-  mouse.screen = vec.vec_make(fixed.from_int(x), fixed.from_int(y))
-  mouse.world = camera ~= nil and vec.vec_add(mouse.screen, entity_class.entity_pos(camera)) or mouse.screen
+  local mouse = { world = vec.make(0, 0), screen = vec.make(0, 0), has = 0 }
+  mouse.screen = vec.make(fixed.from_int(x), fixed.from_int(y))
+  mouse.world = camera ~= nil and vec.add(mouse.screen, entity_class.pos(camera)) or mouse.screen
   mouse.has = bit.bor(entity_class.MOUSE_POS_HAS_SCREEN, entity_class.MOUSE_POS_HAS_WORLD)
   return mouse
 end
 
 function M.pad_panel_entity_under(x, y, above, accept)
   local mouse = mouse_at(x, y)
-  local bucket = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_HIT_TEST)
+  local bucket = entity_registry.entities_by_message(entity_registry.MESSAGE_HIT_TEST)
   for i = 1, #bucket do
     local e = bucket[i]
     if not e.is_dead and (above == M.PAD_PANEL_ANY_LAYER or fixed.flr_int(e.layer) > above) and
@@ -52,7 +52,7 @@ local function panel_open_now(ui, economy)
   if ui == nil then
     return false
   end
-  assert(ui_button.modal_backdrop_class().hit_test == entity_registry.entity_registry_hit_test_always,
+  assert(ui_button.modal_backdrop_class().hit_test == entity_registry.hit_test_always,
     "pad_panel_open: the backdrop is found at (0, 0) only because its hit test always holds")
   return economy == nil or #ui.ephemerals > 0 or
     M.pad_panel_entity_under(0, 0, M.PAD_PANEL_ANY_LAYER, is_modal_backdrop) ~= nil
@@ -88,7 +88,7 @@ function M.pad_panel_open()
     ui = ui ~= nil and ui.id or nil,
     economy = economy ~= nil and economy.id or nil,
     ephemerals_count = ui ~= nil and #ui.ephemerals or 0,
-    generation = entity_registry.entity_registry_generation(),
+    generation = entity_registry.generation(),
   }
   if not g_memo.known or g_memo.key.ui ~= key.ui or
     g_memo.key.economy ~= key.economy or
@@ -122,10 +122,10 @@ local function candidates_next(it)
       if it.index > #ui.ephemerals then
         return nil
       end
-      e = entity_id.entity_id_resolve(ui.ephemerals[it.index])
+      e = entity_id.resolve(ui.ephemerals[it.index])
       it.index = it.index + 1
     else
-      local bucket = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_HIT_TEST)
+      local bucket = entity_registry.entities_by_message(entity_registry.MESSAGE_HIT_TEST)
       if it.index > #bucket then
         return nil
       end
@@ -194,7 +194,7 @@ local function box_at(e, origin)
   if fixed.flr_int(e.layer) < SCREEN_SPACE_LAYER then
     local camera = scroll.main_camera_typed()
     if camera ~= nil then
-      origin = vec.vec_sub(origin, entity_class.entity_pos(camera))
+      origin = vec.sub(origin, entity_class.pos(camera))
     end
   end
   local box = {
@@ -207,14 +207,14 @@ local function box_at(e, origin)
 end
 
 local function screen_box(e)
-  return box_at(e, entity_class.entity_pos(e))
+  return box_at(e, entity_class.pos(e))
 end
 
 -- A box row still sliding in is judged where it comes to rest, or a Down on its first frames skips a row.
 local function rest_box(e)
   local button = e.class == ui_button.button_class() and e or nil
   return box_at(e, (button ~= nil and button.slide_target ~= nil) and button.slide_target or
-    entity_class.entity_pos(e))
+    entity_class.pos(e))
 end
 
 local function middle(low, high)

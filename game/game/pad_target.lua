@@ -9,7 +9,7 @@ M.PAD_TARGET_PERPENDICULAR_WEIGHT = 2
 
 function M.pad_target_is_candidate(e)
   return (e ~= nil and not e.is_dead and planet.planet_is_family(e) and
-    (e.state == entity_class.ENTITY_STATE_KNOWN or e.state == entity_class.ENTITY_STATE_SETTLED))
+    (e.state == entity_class.STATE_KNOWN or e.state == entity_class.STATE_SETTLED))
 end
 
 local function is_direction(direction)
@@ -34,12 +34,12 @@ end
 function M.pad_target_pick(origin, direction, candidates)
   assert(is_direction(direction),
     "pad_target_pick: the direction is exactly one of PAD_DIRECTION_UP, DOWN, LEFT or RIGHT")
-  assert(origin ~= nil and entity_class.entity_has_map_pos(origin),
+  assert(origin ~= nil and entity_class.has_map_pos(origin),
     "pad_target_pick: the origin is an entity with a map position")
   if candidates == nil then
     return nil
   end
-  local from = entity_class.entity_map_pos(origin)
+  local from = entity_class.map_pos(origin)
   local best = nil
   local best_offset = { along = 0, perpendicular = 0 }
   local best_score = 0
@@ -48,10 +48,10 @@ function M.pad_target_pick(origin, direction, candidates)
     if e == origin then
       goto continue
     end
-    assert(e ~= nil and entity_class.entity_has_map_pos(e),
+    assert(e ~= nil and entity_class.has_map_pos(e),
       "pad_target_pick: every candidate is an entity with a map position")
     do
-      local offset = offset_in(direction, from, entity_class.entity_map_pos(e))
+      local offset = offset_in(direction, from, entity_class.map_pos(e))
       if offset.along <= 0 or offset.perpendicular > offset.along then
         goto continue
       end

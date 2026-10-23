@@ -26,7 +26,7 @@ M.wormhole_too_far_target_class_def = {
 }
 
 M.g_wormhole_too_far_target_wrapper = {}
-entity_class.entity_init_header(M.g_wormhole_too_far_target_wrapper, M.wormhole_too_far_target_class_def)
+entity_class.init_header(M.g_wormhole_too_far_target_wrapper, M.wormhole_too_far_target_class_def)
 M.g_wormhole_too_far_target_wrapper.status_text = game_data.wormhole_too_far_target_status_text
 
 local function wormhole_is_anchor(p)
@@ -63,7 +63,7 @@ function M.wormhole_construct(self)
   for i = 1, #live do
     local p = live[i]
     if wormhole_is_anchor(p) then
-      ox[#ox + 1] = entity_id.entity_id_link(p)
+      ox[#ox + 1] = entity_id.link(p)
     end
   end
   assert(#ox == n)
@@ -80,9 +80,9 @@ function M.wormhole_drag(self, mouse)
     return
   end
 
-  p_vec = entity_class.entity_map_pos(self)
-  nq, nearest = entity_geom.entity_geom_nearest_in_ids(p_vec, self.anchors, nearest)
-  self.anchor = entity_id.entity_id_link(nearest)
+  p_vec = entity_class.map_pos(self)
+  nq, nearest = entity_geom.nearest_in_ids(p_vec, self.anchors, nearest)
+  self.anchor = entity_id.link(nearest)
 
   threshold = tech_gate.tech_gate_if_unlocked("space folding", fixed.LIT(0x000030a3, 0.19),
     fixed.LIT(0x0000451e, 0.27))
@@ -166,7 +166,7 @@ function M.wormhole_update_unfolding(self, t)
   sr = fixed.add(fixed.div(M.wormhole_reveal_radius(self, t), fixed.from_int(128)),
     fixed.LIT(0x000007ef, 0.031))
 
-  self_p = entity_class.entity_map_pos(self)
+  self_p = entity_class.map_pos(self)
   planet_list = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
   if planet_list ~= nil then
     for i = 1, #planet_list do
@@ -177,10 +177,10 @@ function M.wormhole_update_unfolding(self, t)
         assert(planet.planet_is_family(e), "wormhole_update_unfolding: the planet tag holds planets only")
         pt = e
 
-        if pt.state == entity_class.ENTITY_STATE_UNKNOWN then
-          local planet_map_pos = entity_class.entity_map_pos(pt)
-          local diff = vec.vec_sub(planet_map_pos, self_p)
-          if vec.vec_length(diff) < sr then
+        if pt.state == entity_class.STATE_UNKNOWN then
+          local planet_map_pos = entity_class.map_pos(pt)
+          local diff = vec.sub(planet_map_pos, self_p)
+          if vec.length(diff) < sr then
             planet.planet_roll_type(pt)
           end
         end
@@ -219,8 +219,8 @@ M.wormhole_class_def = {
   drag = wormhole_drag_method,
   drop = wormhole_drop_method,
   states = {
-    [entity_class.ENTITY_STATE_PLACING] = wormhole_update_placing_method,
-    [entity_class.ENTITY_STATE_UNFOLDING] = wormhole_update_unfolding_method,
+    [entity_class.STATE_PLACING] = wormhole_update_placing_method,
+    [entity_class.STATE_UNFOLDING] = wormhole_update_unfolding_method,
   },
   tags = entity_class.TAG(entity_class.TAG_WORMHOLE),
   lineage = 0,
@@ -232,11 +232,11 @@ local function wormhole_create()
 
   self = {}
 
-  entity.entity_init_instance(self, M.wormhole_class_def, game_data.wormhole_archetype.state,
+  entity.init_instance(self, M.wormhole_class_def, game_data.wormhole_archetype.state,
     game_data.wormhole_archetype.state_time)
   self.targeting = targeting_module.targeting_zero()
   self.archetype = game_data.wormhole_archetype
-  entity_registry.entity_registry_set_layer(self, self.archetype.layer)
+  entity_registry.set_layer(self, self.archetype.layer)
   self.targeting.archetype = self.archetype.targeting
   self.radius = self.archetype.radius
   self.targeting.cost = self.archetype.targeting.cost
@@ -245,7 +245,7 @@ local function wormhole_create()
   self.anchor = nil
   self.is_dead = false
   M.wormhole_construct(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 

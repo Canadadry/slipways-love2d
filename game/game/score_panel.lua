@@ -85,9 +85,9 @@ M.score_panel_layout_block_class_def = {
 }
 
 M.g_score_panel_layout_block = {}
-entity_class.entity_init_header(M.g_score_panel_layout_block, M.score_panel_layout_block_class_def)
-M.g_score_panel_layout_block.fixed_pos = vec.vec_make(0x0, 0xb0000)
-M.g_score_panel_layout_block.row_step = vec.vec_make(0x0, 0xb0000)
+entity_class.init_header(M.g_score_panel_layout_block, M.score_panel_layout_block_class_def)
+M.g_score_panel_layout_block.fixed_pos = vec.make(0x0, 0xb0000)
+M.g_score_panel_layout_block.row_step = vec.make(0x0, 0xb0000)
 M.g_score_panel_layout_block.back_color = 0xa0000
 
 function M.score_panel_readouts()
@@ -268,14 +268,14 @@ function M.score_panel_draw(gfx, mem, self)
 end
 
 local function score_panel_draw_method(self, screen_pos)
-  M.score_panel_draw(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self)
+  M.score_panel_draw(dispatch_context.gfx(), dispatch_context.mem(), self)
 end
 
 M.score_panel_class_def = {
   draw = score_panel_draw_method,
   new_year = score_panel_display.score_panel_new_year_method,
   refresh = score_panel_refresh_method,
-  states = { [entity_class.ENTITY_STATE_NORMAL] = score_panel_display.score_panel_update_method },
+  states = { [entity_class.STATE_NORMAL] = score_panel_display.score_panel_update_method },
   tags = 0,
   lineage = 0,
   skip_draw_off_screen = false,
@@ -287,12 +287,12 @@ local function score_panel_create()
 
   assert(g_score_panel_up, "score_panel_init() must run first")
   self = {}
-  entity.entity_init_instance(self, M.score_panel_class_def, game_data.score_panel_archetype.state,
+  entity.init_instance(self, M.score_panel_class_def, game_data.score_panel_archetype.state,
     game_data.score_panel_archetype.state_time)
   self.archetype = game_data.score_panel_archetype
-  entity_registry.entity_registry_set_layer(self, self.archetype.layer)
+  entity_registry.set_layer(self, self.archetype.layer)
   self.last_box = nil
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -339,22 +339,22 @@ function M.score_panel_new()
 end
 
 function M.score_panel_last_box(self)
-  return entity_id.entity_get(self.last_box)
+  return entity_id.get(self.last_box)
 end
 
 function M.score_panel_set_last_box(self, box)
-  self.last_box = entity_id.entity_id_link(box)
+  self.last_box = entity_id.link(box)
 end
 
 function M.main_score_panel()
-  local e = entity_id.entity_get(g_main_score_panel)
+  local e = entity_id.get(g_main_score_panel)
 
   assert(e == nil or e.class == M.score_panel_class_def, "main_score_panel: only a score panel is ever stored")
   return e
 end
 
 function M.score_panel_set_main(instance)
-  g_main_score_panel = entity_id.entity_id_link(instance)
+  g_main_score_panel = entity_id.link(instance)
 end
 
 return M

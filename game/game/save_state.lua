@@ -633,8 +633,8 @@ local function type_picker_is_valid(picker)
 end
 
 local function node_state_is_valid(state)
-  return state ~= entity_class.ENTITY_STATE_NONE and state ~= entity_class.ENTITY_STATE_PLACING and
-         state ~= entity_class.ENTITY_STATE_UNFOLDING and state < entity_class.STATE_COUNT
+  return state ~= entity_class.STATE_NONE and state ~= entity_class.STATE_PLACING and
+         state ~= entity_class.STATE_UNFOLDING and state < entity_class.STATE_COUNT
 end
 
 local function has(node, flag)
@@ -643,7 +643,7 @@ end
 
 -- A planet reads its clock only while vanishing; every other kind animates with it.
 local function node_has_state_time(kind, state)
-  return state == entity_class.ENTITY_STATE_VANISHING or kind ~= M.SAVE_NODE_PLANET
+  return state == entity_class.STATE_VANISHING or kind ~= M.SAVE_NODE_PLANET
 end
 
 local function node_flags_are_valid(node)
@@ -946,12 +946,12 @@ end
 local function capture_probe(out)
   for i = 1, tagged_count(entity_class.TAG_PROBE) do
     local e = tagged_at(entity_class.TAG_PROBE, i)
-    if e.class ~= probe.probe_class() or e.is_dead or e.state ~= entity_class.ENTITY_STATE_SETTLED then
+    if e.class ~= probe.probe_class() or e.is_dead or e.state ~= entity_class.STATE_SETTLED then
       goto continue
     end
     out.probe = {
-      pos = vec_of(entity_class.entity_pos(e)),
-      map_pos = vec_of(entity_class.entity_map_pos(e)),
+      pos = vec_of(entity_class.pos(e)),
+      map_pos = vec_of(entity_class.map_pos(e)),
       fold_anchor = e.fold_anchor and 0x10000 or 0,
     }
     do return end
@@ -960,7 +960,7 @@ local function capture_probe(out)
 end
 
 local function is_saved(e)
-  return not e.is_dead and e.state ~= entity_class.ENTITY_STATE_PLACING
+  return not e.is_dead and e.state ~= entity_class.STATE_PLACING
 end
 
 local function node_kind(cls)
@@ -1017,11 +1017,11 @@ local function capture_node_fields(node, planet)
 
   node.kind = node_kind(header.class)
   node.state = bit.band(header.state, 0xFF)
-  if entity_class.entity_has_pos(header) then
+  if entity_class.has_pos(header) then
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_POS)
     node.pos = vec_of(header.pos)
   end
-  if entity_class.entity_has_map_pos(header) then
+  if entity_class.has_map_pos(header) then
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_MAP_POS)
     node.map_pos = vec_of(header.map_pos)
   end
@@ -1119,7 +1119,7 @@ local function capture_world(out, ids)
     if is_saved(e) then
       assert(ids.node_count < M.SAVE_STATE_NODES_CAP, "save_state_capture: node indices are one byte")
       local n = ids.node_count + 1
-      ids.nodes[n] = entity_id.entity_id_link(e)
+      ids.nodes[n] = entity_id.link(e)
       ids.node_count = n
     end
   end
@@ -1132,7 +1132,7 @@ local function capture_world(out, ids)
     end
     assert(ids.slipway_count < M.SAVE_STATE_SLIPWAYS_CAP, "save_state_capture: slipway indices are one byte")
     n = ids.slipway_count + 1
-    ids.slipways[n] = entity_id.entity_id_link(e)
+    ids.slipways[n] = entity_id.link(e)
     ids.slipway_count = n
     saved = save_slipway_zero()
     n = out.slipway_count + 1
@@ -1144,7 +1144,7 @@ local function capture_world(out, ids)
     ::continue::
   end
   for i = 1, ids.node_count do
-    local planet = entity_id.entity_get(ids.nodes[i])
+    local planet = entity_id.get(ids.nodes[i])
     local node = save_node_zero()
     local n = out.node_count + 1
     out.nodes[n] = node

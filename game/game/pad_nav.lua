@@ -72,7 +72,7 @@ end
 
 local function game_unseen(nav)
   local economy = probe.main_economy_typed()
-  return economy ~= nil and entity_id.entity_get(nav.game) ~= economy
+  return economy ~= nil and entity_id.get(nav.game) ~= economy
 end
 
 local function map_mode_now(nav)
@@ -109,7 +109,7 @@ end
 
 function M.pad_nav_slipway_start(nav)
   if map_mode_now(nav) == M.PAD_NAV_MAP_SLIPWAY then
-    return live(entity_id.entity_get(nav.slipway.start))
+    return live(entity_id.get(nav.slipway.start))
   end
   return nil
 end
@@ -117,7 +117,7 @@ end
 function M.pad_nav_slipway_target(nav)
   local target = nil
   if map_mode_now(nav) == M.PAD_NAV_MAP_SLIPWAY then
-    target = entity_id.entity_get(nav.slipway.target)
+    target = entity_id.get(nav.slipway.target)
   end
   if pad_target.pad_target_is_candidate(target) then
     return target
@@ -148,7 +148,7 @@ end
 
 local function placing_structure(e)
   e = live(e)
-  if e ~= nil and planet_module.planet_is_family(e) and e.state == entity_class.ENTITY_STATE_PLACING then
+  if e ~= nil and planet_module.planet_is_family(e) and e.state == entity_class.STATE_PLACING then
     return e
   end
   return nil
@@ -307,7 +307,7 @@ local function action_held(nav, pad_buttons, mode, action)
 end
 
 function M.pad_nav_focus(nav)
-  local focus = entity_id.entity_get(nav.focus)
+  local focus = entity_id.get(nav.focus)
   if M.pad_nav_is_item(focus) then
     return focus
   end
@@ -363,17 +363,17 @@ local function panel_step(nav, pad_buttons, pressed, played)
     choose_held = choose_held and nav.menu_choose_row_armed
   end
   local at
-  at, nav.cursor_x, nav.cursor_y, played.mouse_buttons = pad_panel.pad_panel_step(entity_id.entity_get(nav.focus),
+  at, nav.cursor_x, nav.cursor_y, played.mouse_buttons = pad_panel.pad_panel_step(entity_id.get(nav.focus),
     choose_held, direction, nav.cursor_x, nav.cursor_y, played.mouse_buttons)
-  nav.focus = entity_id.entity_id_link(at)
+  nav.focus = entity_id.link(at)
 end
 
 -- Keep in step with pad_panel's box_at for layers under 10: world point minus the camera, floored.
 local function screen_point(e, x, y)
-  local at = entity_class.entity_pos(e)
+  local at = entity_class.pos(e)
   local camera = scroll.main_camera_typed()
   if camera ~= nil then
-    at = vec.vec_sub(at, entity_class.entity_pos(camera))
+    at = vec.sub(at, entity_class.pos(camera))
   end
   x = fixed.flr_int(at.x)
   y = fixed.flr_int(at.y)
@@ -430,7 +430,7 @@ local function centre_world_point(x, y)
   if camera ~= nil then
     at = scroll.camera_pos_before_shake(camera)
   else
-    at = vec.vec_make(0, 0)
+    at = vec.make(0, 0)
   end
   x = fixed.flr_int(at.x) + cint.div(vram.SCREEN_WIDTH, 2)
   y = fixed.flr_int(at.y) + cint.div(vram.SCREEN_HEIGHT, 2)
@@ -533,7 +533,7 @@ local function reset_on_new_game(nav)
   local start = map_mode_now(nav)
   pad_jump.pad_jump_init(nav.jump)
   pad_back.pad_back_init(nav.back)
-  nav.game = entity_id.entity_id_link(probe.main_economy_typed())
+  nav.game = entity_id.link(probe.main_economy_typed())
   reset_map_mode(nav)
   if start == M.PAD_NAV_MAP_AIM then
     enter_aim_mode(nav)
@@ -792,7 +792,7 @@ local function cancel_point(nav)
     nav.cursor_x = PARKED_X
     nav.cursor_y = PARKED_Y
   end
-  local at = vec.vec_make(fixed.from_int(nav.cursor_x), fixed.from_int(nav.cursor_y))
+  local at = vec.make(fixed.from_int(nav.cursor_x), fixed.from_int(nav.cursor_y))
   assert(ui_module.ui_panel_box() == nil or not geom.box_contains(ui_module.ui_panel_box(), at),
     "cancel_point: inside the ui's panel box the drop would be judged on the map, not cancelled")
 end
@@ -880,7 +880,7 @@ local function act_on_hovered_starts_slipway(nav, hovered, played)
   press_slipway_start(nav, hovered, played)
   nav.map_mode = M.PAD_NAV_MAP_SLIPWAY
   pad_slipway.pad_slipway_init(nav.slipway)
-  nav.slipway.start = entity_id.entity_id_link(hovered)
+  nav.slipway.start = entity_id.link(hovered)
   nav.slipway.phase = pad_slipway.PAD_SLIPWAY_PRESSED
   return true
 end
@@ -927,7 +927,7 @@ local function jump_step(nav, pad_buttons, pressed, release, back_returns, selec
     clicking = click_hovered(nav, hovered, played)
   end
   if not clicking and action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_JUMP,
-      bindings_module.BINDINGS_ACTION_ACT_ON_HOVERED) and hovered.state == entity_class.ENTITY_STATE_KNOWN then
+      bindings_module.BINDINGS_ACTION_ACT_ON_HOVERED) and hovered.state == entity_class.STATE_KNOWN then
     clicking = click_hovered(nav, hovered, played)
     if clicking then
       pad_back.pad_back_record(nav.back, hovered)
@@ -981,12 +981,12 @@ local function slipway_step(nav, pad_buttons, pressed, back_returns, release, pl
   end
   if nav.slipway.phase == pad_slipway.PAD_SLIPWAY_RELEASED then
     local outcome =
-      pad_slipway.pad_slipway_outcome(start, entity_id.entity_get(nav.slipway.target), nav.slipway.linked_before)
+      pad_slipway.pad_slipway_outcome(start, entity_id.get(nav.slipway.target), nav.slipway.linked_before)
     if outcome == pad_slipway.PAD_SLIPWAY_BUILT then
-      pad_back.pad_back_record(nav.back, entity_id.entity_get(nav.slipway.target))
+      pad_back.pad_back_record(nav.back, entity_id.get(nav.slipway.target))
     end
     pad_slipway.pad_slipway_rebase(nav.slipway, outcome)
-    start = live(entity_id.entity_get(nav.slipway.start))
+    start = live(entity_id.get(nav.slipway.start))
     if not press_start_again(nav, start, played) then
       back_to_jump_mode(nav, start)
     end
@@ -1008,7 +1008,7 @@ local function slipway_step(nav, pad_buttons, pressed, back_returns, release, pl
   local direction =
     pad_jump.pad_jump_repeat_step(nav.jump, nav.bindings, bindings_module.BINDINGS_MODE_SLIPWAY, pad_buttons, pressed)
   local target = M.pad_nav_slipway_target(nav)
-  nav.slipway.target = entity_id.entity_id_link(target)
+  nav.slipway.target = entity_id.link(target)
   local build_on_target = action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_SLIPWAY,
     bindings_module.BINDINGS_ACTION_BUILD_ON_TARGET)
   if build_on_target and not release and target ~= nil and pressable(target) then
@@ -1026,7 +1026,7 @@ local function slipway_step(nav, pad_buttons, pressed, back_returns, release, pl
     local picked = pad_target.pad_target_pick(origin, direction, targets)
     if picked ~= nil then
       target = picked
-      nav.slipway.target = entity_id.entity_id_link(target)
+      nav.slipway.target = entity_id.link(target)
     end
   end
   local aimed = start
@@ -1108,7 +1108,7 @@ end
 
 -- Held by the ui, the structure would be dragged onto a pressed row and dropped there.
 local function suspend_placement(nav, carried)
-  nav.suspended_carry = entity_id.entity_id_link(carried)
+  nav.suspended_carry = entity_id.link(carried)
   nav.placement = M.PAD_NAV_PLACEMENT_SUSPENDED
   ui_module.ui_set_left_held(ui_module.main_ui(), nil)
 end
@@ -1118,7 +1118,7 @@ local function resume_placement(nav)
   if nav.placement ~= M.PAD_NAV_PLACEMENT_SUSPENDED then
     return false
   end
-  local suspended = placing_structure(entity_id.entity_get(nav.suspended_carry))
+  local suspended = placing_structure(entity_id.get(nav.suspended_carry))
   if suspended == nil or probe.main_economy_typed() == nil then
     nav.placement = M.PAD_NAV_PLACEMENT_NONE
     nav.suspended_carry = nil

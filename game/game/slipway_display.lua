@@ -43,13 +43,13 @@ function M.slipway_spawn_transit_dot(self, f, t)
   if slipway.slipway_served_planets_has(self.served_planets, t_id) then
     local f_pos = slipway.slipway_end_pos(f)
     local t_pos = slipway.slipway_end_pos(t)
-    local d = vec.vec_sub(t_pos, f_pos)
-    local v = vec.vec_normalize(d)
+    local d = vec.sub(t_pos, f_pos)
+    local v = vec.normalize(d)
     local dot = {}
 
-    dot.pos = vec.vec_add(f_pos, vec.vec_perpendicular(v))
+    dot.pos = vec.add(f_pos, vec.perpendicular(v))
     dot.velocity = v
-    dot.life = vec.vec_length(d)
+    dot.life = vec.length(d)
 
     self.transit_dots[#self.transit_dots + 1] = dot
   end
@@ -58,10 +58,10 @@ end
 function M.slipway_line_ends(self)
   local slipway = require("game.slipway")
   local t = self.state_time
-  local start = vec.vec_add(slipway.slipway_end_pos(slipway.slipway_start(self)),
-    vec.vec_from_polar(fixed.LIT(0x00018000, 1.5), fixed.div(t, fixed.from_int(126))))
-  local end_ = vec.vec_add(slipway.slipway_end_pos(slipway.slipway_end(self)),
-    vec.vec_from_polar(fixed.LIT(0x00018000, 1.5), fixed.div(t, fixed.from_int(176))))
+  local start = vec.add(slipway.slipway_end_pos(slipway.slipway_start(self)),
+    vec.from_polar(fixed.LIT(0x00018000, 1.5), fixed.div(t, fixed.from_int(126))))
+  local end_ = vec.add(slipway.slipway_end_pos(slipway.slipway_end(self)),
+    vec.from_polar(fixed.LIT(0x00018000, 1.5), fixed.div(t, fixed.from_int(176))))
   return slipway_line_ends_make(start, end_)
 end
 
@@ -125,7 +125,7 @@ function M.slipway_draw(graphics, memory, self)
   start_node = slipway.slipway_start(self)
   end_node = slipway.slipway_end(self)
 
-  if entity_geom.entity_geom_is_on_screen(start_node) or entity_geom.entity_geom_is_on_screen(end_node) then
+  if entity_geom.is_on_screen(start_node) or entity_geom.is_on_screen(end_node) then
     local fade_in_step = self.fade_in_step
     local fade_in_step_i = to_int(fade_in_step)
     local fade_color = fixed.from_int(0)
@@ -149,7 +149,7 @@ function M.slipway_draw(graphics, memory, self)
       self.fade_in_step = fixed.add(fade_in_step, fixed.from_int(1))
     end
 
-    target_or_targeted_by = probe.targeting_target(self.targeting) ~= nil or entity_id.entity_get(self.targeted_by) ~= nil
+    target_or_targeted_by = probe.targeting_target(self.targeting) ~= nil or entity_id.get(self.targeted_by) ~= nil
 
     if target_or_targeted_by then
       line_color = fixed.from_int(2)
@@ -177,7 +177,7 @@ function M.slipway_draw(graphics, memory, self)
           goto continue
         end
 
-        new_pos = vec.vec_add(t.pos, t.velocity)
+        new_pos = vec.add(t.pos, t.velocity)
         t.pos = new_pos
 
         new_l = fixed.sub(t.life, fixed.from_int(1))
@@ -214,7 +214,7 @@ function M.slipway_draw(graphics, memory, self)
 end
 
 function M.slipway_draw_method(self, screen_pos)
-  M.slipway_draw(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self)
+  M.slipway_draw(dispatch_context.gfx(), dispatch_context.mem(), self)
 end
 
 return M

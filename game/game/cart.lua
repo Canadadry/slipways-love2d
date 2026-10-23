@@ -54,9 +54,9 @@ local g_loading_frame = 0
 local g_requested_option = nil
 
 local function quit_game()
-  entity_registry.entity_registry_abandon_live_entities()
+  entity_registry.abandon_live_entities()
   M.cart_flush_exit_queue()
-  entity_registry.entity_registry_forget_registries()
+  entity_registry.forget_registries()
 end
 
 -- Do not list the inits data_init() and score_panel_init() run themselves: they would run twice.
@@ -68,8 +68,8 @@ function M.cart_load()
   g_save_cut = false
   g_demo_frame = M.CART_NO_DEMO_FRAME
   g_loading_frame = 0
-  entity.entity_init()
-  assert(entity.entity_ready(), "cart_load: entity_init() must run before every class that extends entity_t")
+  entity.init()
+  assert(entity.ready(), "cart_load: entity.init() must run before every class that extends entity_t")
   scroll.camera_init()
   mouse.mouse_init()
   ui.ui_init()
@@ -85,7 +85,7 @@ function M.cart_load()
   probe.probe_init()
   economy_module.economy_init()
 
-  memory = dispatch_context.dispatch_context_mem()
+  memory = dispatch_context.mem()
   if memory ~= nil then
     data_init.data_init()
   end
@@ -113,7 +113,7 @@ function M.cart_load()
 end
 
 function M.cart_flush_exit_queue()
-  exit_queue.exit_queue_flush()
+  exit_queue.flush()
 end
 
 function M.cart_shutdown()
@@ -145,7 +145,7 @@ function M.cart_shutdown()
   ui.ui_shutdown()
   mouse.mouse_shutdown()
   scroll.camera_shutdown()
-  entity.entity_shutdown()
+  entity.shutdown()
 end
 
 local g_save_state = {}
@@ -195,16 +195,16 @@ end
 
 function M.cart_title_shown()
   return g_title_built and g_loading_frame == 0 and message_box.shown_message_box() == nil
-    and entity_registry.entity_registry_count_tagged(entity_class.TAG_MESSAGE_BOX) == 0
+    and entity_registry.count_tagged(entity_class.TAG_MESSAGE_BOX) == 0
 end
 
 -- Between frames only, never from a handler inside ui_update or update_entities: it releases
 -- every live entity while they are still being walked.
 function M.cart_return_to_title()
-  entity_registry.entity_registry_abandon_live_entities()
+  entity_registry.abandon_live_entities()
   M.cart_flush_exit_queue()
   -- After the flush: reset_world's own abandon would walk the released entries.
-  entity_registry.entity_registry_forget_registries()
+  entity_registry.forget_registries()
   g_save_cut = false
   g_demo_frame = M.CART_NO_DEMO_FRAME
   M.cart_init()
@@ -335,24 +335,24 @@ function M.cart_update60()
   end
   M.cart_flush_exit_queue()
   bootstrap.update_entities()
-  ui.ui_update(dispatch_context.dispatch_context_mem(), ui.main_ui())
+  ui.ui_update(dispatch_context.mem(), ui.main_ui())
   if not g_save_cut then save_at_frame_end() end
 end
 
 function M.cart_draw()
-  local mem = dispatch_context.dispatch_context_mem()
+  local mem = dispatch_context.mem()
 
   if g_loading_frame ~= 0 then
-    loading_screen.loading_screen_draw(dispatch_context.dispatch_context_gfx(), mem)
+    loading_screen.loading_screen_draw(dispatch_context.gfx(), mem)
     return
   end
   text_image.text_image_frame_begin()
   button_image.button_image_frame_begin()
   gfx.cls(mem)
   hud.hud_select_palette_block_default(mem)
-  entity_registry.draw_layers(entity_registry.ENTITY_MESSAGE_DRAW)
-  entity_registry.draw_layers(entity_registry.ENTITY_MESSAGE_DRAW_OVERLAY)
-  demo_overlay.demo_overlay_draw(dispatch_context.dispatch_context_gfx(), mem, g_demo_frame)
+  entity_registry.draw_layers(entity_registry.MESSAGE_DRAW)
+  entity_registry.draw_layers(entity_registry.MESSAGE_DRAW_OVERLAY)
+  demo_overlay.demo_overlay_draw(dispatch_context.gfx(), mem, g_demo_frame)
 end
 
 return M

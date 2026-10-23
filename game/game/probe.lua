@@ -39,7 +39,7 @@ M.main_economy_placeholder_class_def = {
 
 -- research_points and credits stay nil until the cheat sets them.
 M.g_main_economy_placeholder = {}
-entity_class.entity_init_header(M.g_main_economy_placeholder, M.main_economy_placeholder_class_def)
+entity_class.init_header(M.g_main_economy_placeholder, M.main_economy_placeholder_class_def)
 
 local function targeting_track_target_is_holder_class(cls)
   return cls.drag == M.targeting_track_method or cls == require("game.wormhole").wormhole_class()
@@ -53,7 +53,7 @@ M.targeting_track_target_class_def = {
 }
 
 M.g_targeting_track_target = {}
-entity_class.entity_init_header(M.g_targeting_track_target, M.targeting_track_target_class_def)
+entity_class.init_header(M.g_targeting_track_target, M.targeting_track_target_class_def)
 M.g_targeting_track_target.targeted_by = nil
 
 local function probe_to_int(x)
@@ -76,7 +76,7 @@ local function targeting_track_slipway_predicate(e, ctx_ptr)
   start_p = slipway.slipway_end_map_pos(slipway.slipway_start(sw))
   end_p = slipway.slipway_end_map_pos(slipway.slipway_end(sw))
 
-  return geom.geom_near_segment(start_p, end_p, ctx.self_map_pos, fixed.LIT(0x000000d1, 0.0032))
+  return geom.near_segment(start_p, end_p, ctx.self_map_pos, fixed.LIT(0x000000d1, 0.0032))
 end
 
 local function probe_panel_box_contains(rp)
@@ -89,7 +89,7 @@ local function probe_panel_box_contains(rp)
 end
 
 local function probe_is_target_class(cls)
-  return (cls.states[entity_class.ENTITY_STATE_SETTLED] ~= nil or cls == require("game.planet").planet_class() or
+  return (cls.states[entity_class.STATE_SETTLED] ~= nil or cls == require("game.planet").planet_class() or
     cls == require("game.slipway").slipway_class() or cls == M.targeting_track_target_class())
 end
 
@@ -102,7 +102,7 @@ function M.probe_link_target(et, self)
     assert(self.class.drag == M.targeting_track_method or self.class == slipway.slipway_class(),
       "probe_link_target: a planet's targeted_by takes NULL, a host whose drag is targeting_track_method "
         .. "or a slipway, nothing else -- stop, do not widen the member")
-    et.targeted_by = entity_id.entity_id_link(self)
+    et.targeted_by = entity_id.link(self)
     return
   end
   if et.class == slipway.slipway_class() then
@@ -110,14 +110,14 @@ function M.probe_link_target(et, self)
       self.class == wormhole.wormhole_class(),
       "probe_link_target: a slipway's targeted_by takes NULL, a host whose drag is targeting_track_method, "
         .. "a wormhole or another slipway, nothing else -- stop")
-    et.targeted_by = entity_id.entity_id_link(self)
+    et.targeted_by = entity_id.link(self)
     return
   end
   if et.class == slipway.slipway_too_far_class() then
     assert(self.class == slipway.slipway_class(),
       "probe_link_target: the too-far slipway struct's targeted_by takes NULL or a slipway, nothing else "
         .. "-- stop, do not widen the member")
-    et.targeted_by = entity_id.entity_id_link(self)
+    et.targeted_by = entity_id.link(self)
     return
   end
   assert(et == M.g_targeting_track_target,
@@ -125,14 +125,14 @@ function M.probe_link_target(et, self)
   assert(targeting_track_target_is_holder_class(self.class),
     "probe_link_target: the throwaway target's targeted_by takes NULL, a host whose drag is "
       .. "targeting_track_method or a wormhole, nothing else -- stop, do not widen the member")
-  M.g_targeting_track_target.targeted_by = entity_id.entity_id_link(self)
+  M.g_targeting_track_target.targeted_by = entity_id.link(self)
 end
 
 function M.targeting_target(self)
   local kind = self.target.kind
 
   if kind == targeting_module.TARGETING_TARGET_ENTITY then
-    return entity_id.entity_get(self.target.id)
+    return entity_id.get(self.target.id)
   elseif kind == targeting_module.TARGETING_TARGET_TRACK_THROWAWAY then
     return M.g_targeting_track_target
   elseif kind == targeting_module.TARGETING_TARGET_SLIPWAY_TOO_FAR then
@@ -156,7 +156,7 @@ function M.targeting_set_target(self, target)
     value.kind = targeting_module.TARGETING_TARGET_WORMHOLE_TOO_FAR
   elseif target ~= nil then
     value.kind = targeting_module.TARGETING_TARGET_ENTITY
-    value.id = entity_id.entity_id_link(target)
+    value.id = entity_id.link(target)
   end
   self.target = value
 end
@@ -194,19 +194,19 @@ function M.targeting_track(self, mouse)
   assert(targeting ~= nil, "targeting_track: a class that carries no targeting is no receiver -- stop")
 
   mouse_world_vec = entity_class.mouse_pos_world(mouse)
-  p_vec = vec.vec_div(mouse_world_vec, fixed.from_int(128))
+  p_vec = vec.div(mouse_world_vec, fixed.from_int(128))
   assert(bit.band(self.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_PROBE)) ~= 0 or
     require("game.planet").planet_is_family(self) or self.class == require("game.wormhole").wormhole_class(),
     "targeting_track: a host neither a probe, of the planet family nor a wormhole, none of whose drag runs it -- stop")
   if entity_class.mouse_pos_has_world(mouse) then
-    entity_class.entity_set_pos(self, mouse_world_vec)
+    entity_class.set_pos(self, mouse_world_vec)
   else
-    entity_class.entity_clear_pos(self)
+    entity_class.clear_pos(self)
   end
-  entity_class.entity_set_map_pos(self, p_vec)
+  entity_class.set_map_pos(self, p_vec)
 
   candidate = nil
-  distance, candidate = entity_geom.entity_geom_nearest_except(p_vec,
+  distance, candidate = entity_geom.nearest_except(p_vec,
     entity_registry.entities_by_tag(entity_class.TAG_NODE), self, candidate)
 
   target = nil
@@ -281,15 +281,15 @@ function M.targeting_tooltip_show(gfx, mem, state, pb)
   local je
   local display = ""
 
-  if state ~= entity_class.ENTITY_STATE_PLACING then
+  if state ~= entity_class.STATE_PLACING then
     return
   end
 
   je = require("game.ui").main_mouse_typed()
   if je ~= nil then
-    mp = entity_class.entity_pos(je)
+    mp = entity_class.pos(je)
   else
-    mp = vec.vec_make(fixed.from_int(0), fixed.from_int(0))
+    mp = vec.make(fixed.from_int(0), fixed.from_int(0))
   end
 
   if M.targeting_target(pb) ~= nil then
@@ -313,7 +313,7 @@ function M.targeting_tooltip_show(gfx, mem, state, pb)
 end
 
 function M.targeting_tooltip_method(self, screen_pos)
-  M.targeting_tooltip(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self)
+  M.targeting_tooltip(dispatch_context.gfx(), dispatch_context.mem(), self)
 end
 
 local function probe_host_raise_is_dead(self)
@@ -349,10 +349,10 @@ local function targeting_charge(self)
   if target == nil and spend_ok then
     local confirmed = targeting.archetype.confirmed_state
 
-    if confirmed ~= entity_class.ENTITY_STATE_NONE then
-      entity.entity_set_state(self, confirmed)
+    if confirmed ~= entity_class.STATE_NONE then
+      entity.set_state(self, confirmed)
     else
-      entity.entity_set_state(self, entity_class.ENTITY_STATE_NORMAL)
+      entity.set_state(self, entity_class.STATE_NORMAL)
     end
     return targeting
   end
@@ -411,11 +411,11 @@ function M.probe_spawn_particle(self)
     fixed.div(fixed.add(fixed.flr(rnd_angle_slices), rnd_half), angle_slices),
     fixed.mul(state_time, fixed.LIT(0x00000041, 0.001)))
 
-  p = vec.vec_from_polar(fixed.add(base_radius, visual_random.visual_random_draw_one()), a)
-  v = vec.vec_mul(p, speed_factor)
+  p = vec.from_polar(fixed.add(base_radius, visual_random.visual_random_draw_one()), a)
+  v = vec.mul(p, speed_factor)
 
   if pk then
-    v = vec.vec_perpendicular(v)
+    v = vec.perpendicular(v)
   end
 
   particle = particle_module.particle_take()
@@ -444,15 +444,15 @@ M.probe_class_def = {
 }
 
 function M.probe_init_instance(self, cls, archetype)
-  entity.entity_init_instance(self, cls, archetype.state, archetype.state_time)
+  entity.init_instance(self, cls, archetype.state, archetype.state_time)
   self.emitter = particle_module.emitter_zero()
   self.targeting = targeting_module.targeting_zero()
   self.archetype = archetype
-  entity_registry.entity_registry_set_layer(self, self.archetype.layer)
+  entity_registry.set_layer(self, self.archetype.layer)
   self.fold_anchor = self.archetype.fold_anchor
   self.emitter.archetype = self.archetype.emitter
   if self.archetype.pos ~= nil then
-    entity_class.entity_set_pos(self, self.archetype.pos)
+    entity_class.set_pos(self, self.archetype.pos)
   end
   self.targeting.archetype = self.archetype.targeting
   M.targeting_set_target(self.targeting, nil)
@@ -487,7 +487,7 @@ local function probe_create(keys)
     end
   end
   particle_module.emitter_init(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -526,7 +526,7 @@ function M.main_economy()
   if g_main_economy_state == MAIN_ECONOMY_PLACEHOLDER then
     return M.g_main_economy_placeholder
   elseif g_main_economy_state == MAIN_ECONOMY_REAL then
-    return entity_id.entity_get(g_main_economy)
+    return entity_id.get(g_main_economy)
   end
   return nil
 end
@@ -535,7 +535,7 @@ function M.main_economy_typed()
   local e = nil
 
   if g_main_economy_state == MAIN_ECONOMY_REAL then
-    e = entity_id.entity_get(g_main_economy)
+    e = entity_id.get(g_main_economy)
   end
   assert(e == nil or e.class == require("game.economy").economy_class(),
     "main_economy_typed: only the placeholder or an economy is ever stored")
@@ -558,7 +558,7 @@ function M.probe_set_main_economy(instance)
     g_main_economy = nil
   else
     g_main_economy_state = MAIN_ECONOMY_REAL
-    g_main_economy = entity_id.entity_id_link(instance)
+    g_main_economy = entity_id.link(instance)
   end
 end
 

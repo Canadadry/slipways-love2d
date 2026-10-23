@@ -34,8 +34,8 @@ Good interfaces make testing natural. Functions marked real are in `game/`; the 
    -- Allows an impossible state: the end's table outlives the end's death
    self.end_ = end_
 
-   -- A checked id (real code, slipway_connect): entity_get returns nil once end_ is dead
-   self.end_ = entity_id.entity_id_link(end_)
+   -- A checked id (real code, slipway_connect): entity_id.get returns nil once end_ is dead
+   self.end_ = entity_id.link(end_)
    ```
 
 5. **Keep functions pure; push state to the top**
@@ -47,7 +47,7 @@ Good interfaces make testing natural. Functions marked real are in `game/`; the 
    function M.box_contains(box, p)
 
    -- Stateful: reads the entity and the mouse, stays at the top
-   function M.entity_geom_contains_cursor_inline(e, mouse)
+   function M.contains_cursor_inline(e, mouse)
      -- ...
      return geom.box_contains(e.hit_box, point)
    end

@@ -1,5 +1,5 @@
 -- Include cycle with engine.entity_registry: each requires the other at call
--- time only (entity_geom_is_on_screen here); neither needs a value of the
+-- time only (entity_geom.is_on_screen here); neither needs a value of the
 -- other at load.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
@@ -12,8 +12,8 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
--- The body of entity_geom_contains_cursor, inline so the hover loop makes no call.
-function M.entity_geom_contains_cursor_inline(e, mouse)
+-- The body of entity_geom.contains_cursor, inline so the hover loop makes no call.
+function M.contains_cursor_inline(e, mouse)
   local chosen
   local point
 
@@ -25,7 +25,7 @@ function M.entity_geom_contains_cursor_inline(e, mouse)
   else
     chosen = entity_class.mouse_pos_world(mouse)
   end
-  point = vec.vec_make(chosen.x, chosen.y)
+  point = vec.make(chosen.x, chosen.y)
   if e.pos ~= nil then
     point.x = bit.tobit(chosen.x - e.pos.x)
     point.y = bit.tobit(chosen.y - e.pos.y)
@@ -34,28 +34,28 @@ function M.entity_geom_contains_cursor_inline(e, mouse)
 end
 
 local function zero_vec()
-  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
+  return vec.make(fixed.from_int(0), fixed.from_int(0))
 end
 
 local function pos_of(e)
   if e ~= nil then
-    return entity_class.entity_pos(e)
+    return entity_class.pos(e)
   end
   return zero_vec()
 end
 
 local function map_pos_of(e)
   if e ~= nil then
-    return entity_class.entity_map_pos(e)
+    return entity_class.map_pos(e)
   end
   return zero_vec()
 end
 
-function M.entity_geom_contains_cursor(e, mouse)
-  return M.entity_geom_contains_cursor_inline(e, mouse)
+function M.contains_cursor(e, mouse)
+  return M.contains_cursor_inline(e, mouse)
 end
 
-function M.entity_geom_is_on_screen(e)
+function M.is_on_screen(e)
   local entity_registry = require("engine.entity_registry")
   local e_pos = pos_of(e)
   local main_camera_pos = pos_of(entity_registry.main_camera())
@@ -67,14 +67,14 @@ function M.entity_geom_is_on_screen(e)
           fixed.abs(fixed.sub(fixed.sub(e_pos.y, main_camera_pos.y), half_h)) <= fixed.add(half_h, margin))
 end
 
-function M.entity_geom_shake(p, e)
+function M.shake(p, e)
   local decremented
   local clamped
   local t = fixed.from_int(0)
 
   if e ~= nil then
     assert(e.shake ~= nil,
-      "entity_geom_shake: the entity is a planet (planet_draw) or the camera (camera_update)")
+      "entity_geom.shake: the entity is a planet (planet_draw) or the camera (camera_update)")
   end
   decremented = fixed.sub((e ~= nil) and e.shake or fixed.from_int(0), fixed.LIT(0x00001999, 0.1))
   clamped = (decremented > 0) and decremented or 0
@@ -82,12 +82,12 @@ function M.entity_geom_shake(p, e)
     t = e.state_time
     e.shake = clamped
   end
-  return vec.vec_add(p, vec.vec_from_polar(clamped, fixed.mul(t, fixed.LIT(0x00003333, 0.2))))
+  return vec.add(p, vec.from_polar(clamped, fixed.mul(t, fixed.LIT(0x00003333, 0.2))))
 end
 
 local function nearest_step(p, o, best, out_nearest)
   local o_p = map_pos_of(o)
-  local d = vec.vec_length_squared(vec.vec_sub(p, o_p))
+  local d = vec.length_squared(vec.sub(p, o_p))
   local same_position = (p.x == o_p.x and p.y == o_p.y)
 
   if not same_position and d < best then
@@ -96,7 +96,7 @@ local function nearest_step(p, o, best, out_nearest)
   return best, out_nearest
 end
 
-function M.entity_geom_nearest(p, j_, out_nearest)
+function M.nearest(p, j_, out_nearest)
   local mk = fixed.from_int(32767)
 
   out_nearest = nil
@@ -109,8 +109,8 @@ function M.entity_geom_nearest(p, j_, out_nearest)
   return mk, out_nearest
 end
 
--- Answers entity_geom_nearest(p, list) <= threshold for any threshold under its 32767 bound; false for a nil list.
-function M.entity_geom_any_within(p, list, threshold)
+-- Answers entity_geom.nearest(p, list) <= threshold for any threshold under its 32767 bound; false for a nil list.
+function M.any_within(p, list, threshold)
   if list == nil then
     return false
   end
@@ -118,7 +118,7 @@ function M.entity_geom_any_within(p, list, threshold)
     local o_p = map_pos_of(list[i])
     local same_position = (p.x == o_p.x and p.y == o_p.y)
 
-    if not same_position and vec.vec_length_squared(vec.vec_sub(p, o_p)) <= threshold then
+    if not same_position and vec.length_squared(vec.sub(p, o_p)) <= threshold then
       return true
     end
   end
@@ -126,14 +126,14 @@ function M.entity_geom_any_within(p, list, threshold)
 end
 
 -- Skips only `excluded`, by identity: another entity on the very point counts.
-function M.entity_geom_nearest_except(p, j_, excluded, out_nearest)
+function M.nearest_except(p, j_, excluded, out_nearest)
   local best = fixed.from_int(32767)
 
   out_nearest = nil
   if j_ == nil then return best, out_nearest end
   for i = 1, #j_ do
     local o = j_[i]
-    local d = vec.vec_length_squared(vec.vec_sub(p, map_pos_of(o)))
+    local d = vec.length_squared(vec.sub(p, map_pos_of(o)))
     if o ~= excluded and d < best then
       out_nearest = o
       best = d
@@ -142,13 +142,13 @@ function M.entity_geom_nearest_except(p, j_, excluded, out_nearest)
   return best, out_nearest
 end
 
-function M.entity_geom_nearest_in_ids(p, ids, out_nearest)
+function M.nearest_in_ids(p, ids, out_nearest)
   local best = fixed.from_int(32767)
 
   out_nearest = nil
   if ids == nil then return best, out_nearest end
   for i = 1, #ids do
-    best, out_nearest = nearest_step(p, entity_id.entity_id_resolve(ids[i]), best, out_nearest)
+    best, out_nearest = nearest_step(p, entity_id.resolve(ids[i]), best, out_nearest)
   end
   return best, out_nearest
 end

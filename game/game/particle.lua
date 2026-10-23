@@ -36,7 +36,7 @@ end
 local function emitter_host_layer_pos(self)
   assert(self.layer ~= nil and emitter_host_carries_pos(self),
     "emitter_update: a host that carries no layer or no pos, none of whose draw runs it -- stop")
-  return self.layer, entity_class.entity_pos(self)
+  return self.layer, entity_class.pos(self)
 end
 
 local function particle_to_int(x)
@@ -130,7 +130,7 @@ function M.emitter_update(graphics, memory, self)
   assert(emitter ~= nil, "emitter_update: a class that carries no particle emitter is no receiver -- stop")
 
   layer, screen_pos = emitter_host_layer_pos(self)
-  if layer < fixed.from_int(10) and not entity_geom.entity_geom_is_on_screen(self) then
+  if layer < fixed.from_int(10) and not entity_geom.is_on_screen(self) then
     return
   end
 
@@ -153,17 +153,17 @@ function M.emitter_update(graphics, memory, self)
 
       if particle ~= nil then
         local velocity_x
-        pv = vec.vec_make(particle.velocity.x, particle.velocity.y)
+        pv = vec.make(particle.velocity.x, particle.velocity.y)
 
-        particle.pos = vec.vec_add(particle.pos, pv)
+        particle.pos = vec.add(particle.pos, pv)
 
         velocity_x = fixed.add(fixed.mul(matrix_xx, pv.x), fixed.mul(matrix_xy, pv.y))
         -- Reads the x just written, not pv.x: "fixing" it moves every particle whose matrix_yx is not 0.
-        particle.velocity = vec.vec_make(velocity_x,
+        particle.velocity = vec.make(velocity_x,
           fixed.add(fixed.mul(matrix_yx, velocity_x), fixed.mul(matrix_yy, pv.y)))
 
         if particle.acceleration ~= nil then
-          particle.velocity = vec.vec_add(particle.velocity, particle.acceleration)
+          particle.velocity = vec.add(particle.velocity, particle.acceleration)
         end
 
         particle.life = fixed.sub(particle.life, fixed.LIT(0x000023d7, 0.14))
@@ -211,7 +211,7 @@ function M.emitter_update(graphics, memory, self)
 end
 
 function M.emitter_update_method(self, screen_pos)
-  M.emitter_update(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self)
+  M.emitter_update(dispatch_context.gfx(), dispatch_context.mem(), self)
 end
 
 -- particles stays nil while the emitter holds none.

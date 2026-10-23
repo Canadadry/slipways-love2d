@@ -71,7 +71,7 @@ function M.planet_attach_slipway(self, slipway)
   end
 
   assert(slipway ~= nil, "planet_attach_slipway: a planet's slipways list holds slipway ids")
-  self.slipways[#self.slipways + 1] = entity_id.entity_id_link(slipway)
+  self.slipways[#self.slipways + 1] = entity_id.link(slipway)
 
   if slipway ~= nil then
     local slipway_module = require("game.slipway")
@@ -204,15 +204,15 @@ function M.planet_rebuild_trades(self)
 
   local slipways = self.slipways
   for i = 1, #slipways do
-    local w = entity_id.entity_id_resolve(slipways[i])
+    local w = entity_id.resolve(slipways[i])
     local lw = {}
     local other
 
     -- New arrays: the route of the previous offer shares the old ones.
-    local self_id = entity_id.entity_id_of(self)
+    local self_id = entity_id.of(self)
     assert(self_id ~= nil, "planet_rebuild_trades: a route starts at a constructed planet")
     keys.planets = { self_id }
-    keys.slipways = { entity_id.entity_id_of(w) }
+    keys.slipways = { entity_id.of(w) }
 
     lw.route = trade.trade_new(keys)
     -- Recomputed each iteration: an earlier offer's accept may have grown the outgoing routes.

@@ -46,7 +46,7 @@ function M.help_set_resume_game(fn)
 end
 
 local function help_screen_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse)
+  return entity_geom.contains_cursor(self, mouse)
 end
 
 function M.help_screen_construct(self)
@@ -66,11 +66,11 @@ function M.help_screen_construct(self)
     bs[i].type_bias = e.type_bias
     bs[i].on_click = M.help_start_game_field_value()
   end
-  frame.fixed_pos = vec.vec_make(self.archetype.fixed_pos.x, self.archetype.fixed_pos.y)
+  frame.fixed_pos = vec.make(self.archetype.fixed_pos.x, self.archetype.fixed_pos.y)
   frame.clear_ephemerals_after = true
   frame.back_color = self.archetype.back_color
-  frame.row_step = vec.vec_make(self.archetype.row_step.x, self.archetype.row_step.y)
-  frame.pos = entity_class.entity_pos(self)
+  frame.row_step = vec.make(self.archetype.row_step.x, self.archetype.row_step.y)
+  frame.pos = entity_class.pos(self)
   message_box.message_box_open_box(frame, bs, game_data.DIFFICULTY_OPTIONS_COUNT)
 
   -- After the difficulty rows: the pad focus opens on the first button registered, forgiving.
@@ -80,7 +80,7 @@ function M.help_screen_construct(self)
     resume.layout_row_keys = layout.layout_row_keys_of_row(game_data.resume_layout_row)
     resume.name = "resume"
     resume.on_click = M.help_resume_game_field_value()
-    frame.fixed_pos = vec.vec_sub(frame.fixed_pos, frame.row_step)
+    frame.fixed_pos = vec.sub(frame.fixed_pos, frame.row_step)
     message_box.message_box_open_box(frame, { resume }, 1)
   end
 end
@@ -103,7 +103,7 @@ function M.help_screen_draw(gfx, mem, self, p)
 end
 
 function M.help_screen_draw_method(self, screen_pos)
-  M.help_screen_draw(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self,
+  M.help_screen_draw(dispatch_context.gfx(), dispatch_context.mem(), self,
     screen_pos)
 end
 
@@ -133,7 +133,7 @@ local function screen_create()
   self.is_hovered = false
   M.help_screen_construct(self)
   particle.emitter_init(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 

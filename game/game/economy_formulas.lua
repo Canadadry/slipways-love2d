@@ -49,8 +49,8 @@ function M.economy_formulas_fill_resource_map(out, jm)
 end
 
 function M.economy_formulas_route_base_cost(from_pos, to_pos)
-  local diff = vec.vec_sub(to_pos, from_pos)
-  local length_squared = vec.vec_length_squared(diff)
+  local diff = vec.sub(to_pos, from_pos)
+  local length_squared = vec.length_squared(diff)
   local x = fixed.div(length_squared, game_data.game_data_route_length_factor())
   local ec = fixed.pow075(x)
   local clamped = fixed_max(fixed.LIT(0x00008000, 0.5), ec)

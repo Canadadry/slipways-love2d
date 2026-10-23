@@ -211,7 +211,7 @@ local function project_create(keys)
   end
   project_id_issue(self)
   project_zero(self)
-  entity_class.entity_init_header(self, M.research_project_class_def)
+  entity_class.init_header(self, M.research_project_class_def)
   self.name = nil
   self.planet_codes = nil
   self.base_cost = nil

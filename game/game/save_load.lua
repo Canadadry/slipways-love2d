@@ -1,6 +1,6 @@
 -- Every state came out of a save_state_decode that returned true: nothing is validated again.
 -- node_constructors is keyed by the SAVE_NODE_* kind, a disk code from 0. node_ids and
--- slipway_ids are 1-based by save position and hold new tables from entity_id_link; a saved
+-- slipway_ids are 1-based by save position and hold new tables from entity_id.link; a saved
 -- rank r names position r + 1.
 local bit = require("bit")
 local entity = require("engine.entity")
@@ -28,7 +28,7 @@ local fixed = require("p8.fixed")
 local M = {}
 
 local function vec_of(saved)
-  return vec.vec_make(saved.x, saved.y)
+  return vec.make(saved.x, saved.y)
 end
 
 local function has(node, flag)
@@ -124,10 +124,10 @@ local function construct_node(node)
   end
   planet = node_constructors[node.kind](keys)
   if not positions_are_keys and has(node, save_state.SAVE_NODE_HAS_POS) then
-    entity_class.entity_set_pos(planet, vec_of(node.pos))
+    entity_class.set_pos(planet, vec_of(node.pos))
   end
   if not positions_are_keys and has(node, save_state.SAVE_NODE_HAS_MAP_POS) then
-    entity_class.entity_set_map_pos(planet, vec_of(node.map_pos))
+    entity_class.set_map_pos(planet, vec_of(node.map_pos))
   end
   return planet
 end
@@ -135,7 +135,7 @@ end
 local function load_node(node)
   local planet = construct_node(node)
 
-  entity.entity_set_state(planet, node.state)
+  entity.set_state(planet, node.state)
   if has(node, save_state.SAVE_NODE_HAS_STATE_TIME) then
     planet.state_time = node.state_time
   end
@@ -168,7 +168,7 @@ local function remove_bursts()
   local live = entity_registry.live_entities()
   for i = #live, 1, -1 do
     if live[i].class == planet_family.burst_class() then
-      entity_registry.entity_unregister(live[i])
+      entity_registry.unregister(live[i])
     end
   end
 end
@@ -177,9 +177,9 @@ end
 -- action only, when nothing is pending.
 local function load_probe(saved)
   local probe = probe_module.probe_new(nil)
-  entity.entity_set_state(probe, entity_class.ENTITY_STATE_SETTLED)
-  entity_class.entity_set_pos(probe, vec_of(saved.pos))
-  entity_class.entity_set_map_pos(probe, vec_of(saved.map_pos))
+  entity.set_state(probe, entity_class.STATE_SETTLED)
+  entity_class.set_pos(probe, vec_of(saved.pos))
+  entity_class.set_map_pos(probe, vec_of(saved.map_pos))
   probe.fold_anchor = saved.fold_anchor ~= 0 or nil
 end
 
@@ -190,9 +190,9 @@ local function load_slipways(state, node_ids, out)
     local slipway
     keys.start = start
     slipway = slipway_module.slipway_new(keys)
-    slipway_module.slipway_connect(slipway, entity_id.entity_get(node_ids[state.slipways[i].end_ + 1]))
+    slipway_module.slipway_connect(slipway, entity_id.get(node_ids[state.slipways[i].end_ + 1]))
     slipway.state_time = state.slipways[i].state_time
-    out[i] = entity_id.entity_id_link(slipway)
+    out[i] = entity_id.link(slipway)
   end
 end
 
@@ -200,10 +200,10 @@ end
 local function load_attach_order(state, node_ids, slipway_ids)
   for i = 1, state.node_count do
     local node = state.nodes[i]
-    local header = entity_id.entity_get(node_ids[i])
+    local header = entity_id.get(node_ids[i])
     assert(header.class.attach_slipway ~= nil, "save_load: every saved node takes slipways")
     for k = node.first_slipway, node.first_slipway + node.slipway_count - 1 do
-      header.class.attach_slipway(header, entity_id.entity_get(slipway_ids[state.node_slipways[k] + 1]))
+      header.class.attach_slipway(header, entity_id.get(slipway_ids[state.node_slipways[k] + 1]))
     end
   end
 end
@@ -215,7 +215,7 @@ end
 local function undo_attach_side_effects(state, node_ids)
   for i = 1, state.node_count do
     local node = state.nodes[i]
-    local planet = entity_id.entity_get(node_ids[i])
+    local planet = entity_id.get(node_ids[i])
     planet.fold_anchor = node.fold_anchor ~= 0 or nil
     planet.shake = 0
     load_production(planet, node)
@@ -239,7 +239,7 @@ end
 local function load_outgoing_routes(state, node_ids, slipway_ids)
   for i = 1, state.node_count do
     local node = state.nodes[i]
-    local planet = entity_id.entity_get(node_ids[i])
+    local planet = entity_id.get(node_ids[i])
     if not has(node, save_state.SAVE_NODE_HAS_OUTGOING_ROUTES) then
       goto continue
     end
@@ -299,7 +299,7 @@ local slipway_ids = {}
 function M.save_load_world(state)
   assert(state ~= nil)
   for i = 1, state.node_count do
-    node_ids[i] = entity_id.entity_id_link(load_node(state.nodes[i]))
+    node_ids[i] = entity_id.link(load_node(state.nodes[i]))
   end
   -- A protostar's constructor bursts; the save never holds a burst.
   remove_bursts()
@@ -315,7 +315,7 @@ function M.save_load_world(state)
 end
 
 local function refresh_structure_icons()
-  local refreshed = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_REFRESH)
+  local refreshed = entity_registry.entities_by_message(entity_registry.MESSAGE_REFRESH)
   local i = 1
   while refreshed ~= nil and i <= #refreshed do
     if refreshed[i].class == structure_icon.structure_icon_class() then
@@ -354,8 +354,8 @@ function M.save_load_globals(state)
 
   structure_icon.structure_icon_set_id_counter(state.structure_id_counter)
 
-  entity_class.entity_set_map_pos(camera, vec_of(state.camera_map_pos))
-  entity_class.entity_set_pos(camera, vec_of(state.camera_map_pos))
+  entity_class.set_map_pos(camera, vec_of(state.camera_map_pos))
+  entity_class.set_pos(camera, vec_of(state.camera_map_pos))
   -- A protostar's burst shook it; the save never holds a shake.
   camera.shake = 0
 

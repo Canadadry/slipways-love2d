@@ -139,7 +139,7 @@ local function item_zero(item)
   item.color = 0
   item.sprite_id = 0
   item.sprite_palette_block = 0
-  item.offset = vec.vec_make(0, 0)
+  item.offset = vec.make(0, 0)
 end
 
 -- Positions 1-4 are sprite, width, palette block and spacing; nil for a nothing scalar or one past count.
@@ -224,7 +224,7 @@ local function layout_row_construct(self, cells, n)
     if self.placed_items[i].kind == M.LAYOUT_ROW_ITEM_TEXT then
       self.placed_items[i].text = row_copy_text(self.placed_items[i].text)
     end
-    self.placed_items[i].offset = vec.vec_make(x, fixed.from_int(0))
+    self.placed_items[i].offset = vec.make(x, fixed.from_int(0))
     w = fixed.add(w, fixed.add(w_i, spacing_i))
     fs = spacing_i
   end
@@ -233,7 +233,7 @@ local function layout_row_construct(self, cells, n)
 end
 
 local function row_draw_at_item_draw(gfx, mem, item, p)
-  local pos = vec.vec_add(p, item.offset)
+  local pos = vec.add(p, item.offset)
 
   if item.kind == M.LAYOUT_ROW_ITEM_TEXT then
     hud.hud_print_outlined_default(gfx, mem, item.text, fixed.add(pos.x, fixed.from_int(2)),
@@ -259,7 +259,7 @@ function M.layout_row_draw_at(gfx, mem, self, p, a)
     .. "a tooltip's rows, a message box's layout-row article) is a layout row; anything else would be read through "
     .. "the wrong layout")
   w = self.width
-  p = vec.vec_sub(p, vec.vec_make(fixed.mul(a, w), fixed.from_int(0)))
+  p = vec.sub(p, vec.make(fixed.mul(a, w), fixed.from_int(0)))
 
   if self.placed_items == nil then
     return
@@ -276,7 +276,7 @@ function M.layout_row_draw_at_text_image(gfx, mem, self, p, a)
     return
   end
   assert(self.class == M.layout_row_class_def, "layout_row_draw_at_text_image: not a layout row")
-  p = vec.vec_sub(p, vec.vec_make(fixed.mul(a, self.width), fixed.from_int(0)))
+  p = vec.sub(p, vec.make(fixed.mul(a, self.width), fixed.from_int(0)))
   if self.placed_items == nil then
     return
   end
@@ -287,7 +287,7 @@ function M.layout_row_draw_at_text_image(gfx, mem, self, p, a)
       goto continue
     end
     do
-      local pos = vec.vec_add(p, item.offset)
+      local pos = vec.add(p, item.offset)
       text_image.text_image_print_outlined(gfx, mem, item.text,
         fixed.flr_int(fixed.add(pos.x, fixed.from_int(2))),
         fixed.flr_int(fixed.add(pos.y, fixed.from_int(1))),
@@ -359,7 +359,7 @@ function M.tooltip_draw_at(gfx, mem, self, om, a)
   gfx_module.fillp_reset(gfx)
 
   for i = 1, self.rows_count do
-    local pos = vec.vec_make(fixed.from_int(cint.div(vram.SCREEN_WIDTH, 2)),
+    local pos = vec.make(fixed.from_int(cint.div(vram.SCREEN_WIDTH, 2)),
       fixed.add(om, fixed.from_int(2)))
     M.layout_row_draw_at_text_image(gfx, mem, self.rows[i], pos, fixed.LIT(0x00008000, 0.5))
     om = fixed.add(om, fixed.from_int(8))
@@ -367,11 +367,11 @@ function M.tooltip_draw_at(gfx, mem, self, om, a)
 end
 
 local function layout_row_draw_at_method(self, p, a)
-  M.layout_row_draw_at(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self, p, a)
+  M.layout_row_draw_at(dispatch_context.gfx(), dispatch_context.mem(), self, p, a)
 end
 
 local function tooltip_draw_at_method(self, p, a)
-  M.tooltip_draw_at(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self,
+  M.tooltip_draw_at(dispatch_context.gfx(), dispatch_context.mem(), self,
     fixed.from_int(0), a)
 end
 
@@ -384,7 +384,7 @@ M.layout_row_class_def = {
 }
 
 local function row_struct_init(self)
-  entity_class.entity_init_header(self, M.layout_row_class_def)
+  entity_class.init_header(self, M.layout_row_class_def)
   self.color = nil
   self.background = nil
   self.background_is_bool = false
@@ -413,7 +413,7 @@ local function row_fill(self, keys)
   end
   self.score = keys.score
   if keys.pos ~= nil then
-    entity_class.entity_set_pos(self, keys.pos)
+    entity_class.set_pos(self, keys.pos)
   end
   layout_row_construct(self, keys.items, keys.count)
 end
@@ -464,7 +464,7 @@ M.tooltip_class_def = {
 local function tooltip_struct_alloc()
   local self = {}
 
-  entity_class.entity_init_header(self, M.tooltip_class_def)
+  entity_class.init_header(self, M.tooltip_class_def)
   self.rows = nil
   self.rows_count = 0
   return self

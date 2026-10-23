@@ -105,7 +105,7 @@ function M.input_step_run(step, raw)
   step.played.frame_count = 1
   step.played.current_frame = 1
   local fired = cheat.cheat_step(step.cheat, buttons)
-  dispatch_context.dispatch_context_set_input(step.played)
+  dispatch_context.set_input(step.played)
   if M.input_step_attract_phase(step) == attract_module.ATTRACT_PHASE_PLAYING then
     cart.cart_set_demo_frame(M.input_step_attract_demo_frame(step) - 1)
   else

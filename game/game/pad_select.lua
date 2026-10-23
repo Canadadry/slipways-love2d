@@ -62,7 +62,7 @@ local function need_is_unmet(need)
 end
 
 function M.pad_select_needs_attention(e)
-  if not pad_target.pad_target_is_candidate(e) or e.state ~= entity_class.ENTITY_STATE_SETTLED then
+  if not pad_target.pad_target_is_candidate(e) or e.state ~= entity_class.STATE_SETTLED then
     return false
   end
   local planet = e

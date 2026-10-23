@@ -23,8 +23,8 @@ function M.wormhole_draw(graphics, memory, self, screen_pos)
   screen_x = fixed.flr_int(screen_pos.x)
   screen_y = fixed.flr_int(screen_pos.y)
 
-  if self.state == entity_class.ENTITY_STATE_PLACING then
-    local anchor = entity_id.entity_get(self.anchor)
+  if self.state == entity_class.STATE_PLACING then
+    local anchor = entity_id.get(self.anchor)
 
     if probe.targeting_target(self.targeting) == nil then
       local oi = self.radius
@@ -37,7 +37,7 @@ function M.wormhole_draw(graphics, memory, self, screen_pos)
     -- No anchor (the cart would index nil): no line, not one to world (0,0).
     if graphics ~= nil and memory ~= nil then
       if anchor ~= nil then
-        local cp = entity_class.entity_pos(anchor)
+        local cp = entity_class.pos(anchor)
         gfx_module.line(graphics, memory, fixed.flr_int(cp.x), fixed.flr_int(cp.y), screen_x,
           screen_y, 1)
       end
@@ -70,7 +70,7 @@ function M.wormhole_draw(graphics, memory, self, screen_pos)
 end
 
 function M.wormhole_draw_method(self, screen_pos)
-  M.wormhole_draw(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self, screen_pos)
+  M.wormhole_draw(dispatch_context.gfx(), dispatch_context.mem(), self, screen_pos)
 end
 
 return M

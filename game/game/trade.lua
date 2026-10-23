@@ -72,7 +72,7 @@ local function id_list_extended(list, extra)
     out[i] = list[i]
   end
   if extra ~= nil then
-    local id = entity_id.entity_id_of(extra)
+    local id = entity_id.of(extra)
     assert(id ~= nil,
       "trade_extend: a route holds constructed planets and slipways only")
     out[#out + 1] = id
@@ -94,7 +94,7 @@ function M.trade_last_planet(self, out)
   if self == nil or #self.planets == 0 then
     return false, out
   end
-  out = entity_id.entity_id_resolve(self.planets[#self.planets])
+  out = entity_id.resolve(self.planets[#self.planets])
   return true, out
 end
 
@@ -113,7 +113,7 @@ function M.trade_equal(l, r)
   if l == nil or r == nil or #l.planets == 0 or #r.planets == 0 then
     return false
   end
-  if entity_id.entity_id_resolve(l.planets[1]) ~= entity_id.entity_id_resolve(r.planets[1]) then
+  if entity_id.resolve(l.planets[1]) ~= entity_id.resolve(r.planets[1]) then
     return false
   end
   local l_found, l_last = M.trade_last_planet(l, nil)

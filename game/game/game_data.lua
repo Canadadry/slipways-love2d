@@ -58,11 +58,11 @@ M.period_names_table = {
   "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", "UND", "DUO", "TER",
 }
 
-local NONE = entity_class.ENTITY_STATE_NONE
+local NONE = entity_class.STATE_NONE
 
 M.planet_types_table = {
   {
-    name = "vanishing", sprite = 45, weight = 0x0, description = nil, state = entity_class.ENTITY_STATE_VANISHING,
+    name = "vanishing", sprite = 45, weight = 0x0, description = nil, state = entity_class.STATE_VANISHING,
   },
   { name = "e", sprite = 160, weight = 0x48000, description = "earth-like", state = NONE },
   { name = "f", sprite = 128, weight = 0x60000, description = "forgeworld", state = NONE },
@@ -516,9 +516,9 @@ M.score_panel_readouts_items = {
 M.score_panel_readouts_row = data_row({ count = 7, items = M.score_panel_readouts_items })
 M.wormhole_too_far_target_status_text = "-too far-"
 
-local NORMAL = entity_class.ENTITY_STATE_NORMAL
-local PLACING = entity_class.ENTITY_STATE_PLACING
-local SETTLED = entity_class.ENTITY_STATE_SETTLED
+local NORMAL = entity_class.STATE_NORMAL
+local PLACING = entity_class.STATE_PLACING
+local SETTLED = entity_class.STATE_SETTLED
 local FIXED_INT = fixed.INT
 
 local function vec(x, y)
@@ -678,7 +678,7 @@ M.wormhole_archetype = {
   targeting = targeting({
     attach_distance = 0x0,
     cost = 0x30000,
-    confirmed_state = entity_class.ENTITY_STATE_UNFOLDING,
+    confirmed_state = entity_class.STATE_UNFOLDING,
     clock_ticks = 0x10000,
     clock_skips_recompute = true,
   }),
@@ -772,7 +772,7 @@ M.protostar_burst_construct_keys = {
 }
 
 M.planet_archetype = planet_archetype({
-  state = entity_class.ENTITY_STATE_UNKNOWN,
+  state = entity_class.STATE_UNKNOWN,
   state_time = 0x0,
   is_planet = true,
   trade_multiplier = 0x10000,
@@ -1004,7 +1004,7 @@ M.synthesizer_archetype = planet_archetype({
 })
 
 M.burst_archetype = planet_archetype({
-  state = entity_class.ENTITY_STATE_UNKNOWN,
+  state = entity_class.STATE_UNKNOWN,
   state_time = 0x0,
   is_planet = false,
   trade_multiplier = 0x10000,
@@ -1107,7 +1107,7 @@ M.ascension_kind_record = kind_record(
 M.protostar_kind_record = kind_record(
   M.ascension_required_tech_text, 0x620000, SETTLED, 0x3c0000, M.protostar_archetype
 )
-M.burst_kind_record = kind_record(nil, nil, entity_class.ENTITY_STATE_UNKNOWN, nil, M.burst_archetype)
+M.burst_kind_record = kind_record(nil, nil, entity_class.STATE_UNKNOWN, nil, M.burst_archetype)
 M.slipgate_kind_record = kind_record(
   M.slipgate_required_tech_text, 0xaa0000, PLACING, 0xa0000, M.slipgate_archetype
 )

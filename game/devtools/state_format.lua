@@ -50,9 +50,9 @@ end
 
 local function ra_of(e)
   if e ~= nil then
-    return entity_class.entity_pos(e)
+    return entity_class.pos(e)
   end
-  return vec.vec_make(0, 0)
+  return vec.make(0, 0)
 end
 
 -- World y is printed at rest, without the bob: it moves with frame timing alone.
@@ -70,7 +70,7 @@ local function add_position(line, e, camera)
   add_fixed(line, fixed.sub(ra.x, camera.x))
   line_add(line, " ")
   add_fixed(line, fixed.sub(ra.y, camera.y))
-  line_add(line, " visible %d", entity_geom.entity_geom_is_on_screen(e) and 1 or 0)
+  line_add(line, " visible %d", entity_geom.is_on_screen(e) and 1 or 0)
 end
 
 local function class_of(e)
@@ -89,10 +89,10 @@ local function class_of(e)
 end
 
 local function planet_state(state)
-  if state == entity_class.ENTITY_STATE_NONE then return "-" end
-  if state == entity_class.ENTITY_STATE_SETTLED then return "colonized" end
-  if state == entity_class.ENTITY_STATE_VANISHING then return "empty" end
-  return entity.entity_state_name(state)
+  if state == entity_class.STATE_NONE then return "-" end
+  if state == entity_class.STATE_SETTLED then return "colonized" end
+  if state == entity_class.STATE_VANISHING then return "empty" end
+  return entity.state_name(state)
 end
 
 local function id_of(e)
@@ -204,7 +204,7 @@ local function write_planets(sink, camera)
 end
 
 local function slipway_placed(e)
-  return e.state ~= entity_class.ENTITY_STATE_PLACING
+  return e.state ~= entity_class.STATE_PLACING
 end
 
 local function write_slipways(sink)
@@ -241,7 +241,7 @@ local function count_colonies()
   local planets = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
   local n = 0
   for i = 1, count_of(planets) do
-    if planets[i].state == entity_class.ENTITY_STATE_SETTLED then
+    if planets[i].state == entity_class.STATE_SETTLED then
       n = n + 1
     end
   end

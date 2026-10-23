@@ -25,11 +25,11 @@ M.MESSAGE_BOX_ARTICLE_LAYOUT_ROW = 1
 M.MESSAGE_BOX_ARTICLE_SHARED_ROW = 2
 
 local function zero_vec()
-  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
+  return vec.make(fixed.from_int(0), fixed.from_int(0))
 end
 
 local function vec_copy(v)
-  return vec.vec_make(v.x, v.y)
+  return vec.make(v.x, v.y)
 end
 
 -- The three members of `as` are kept apart: only the member of `kind` is written or read. The layout
@@ -37,7 +37,7 @@ end
 local function article_zero()
   local row = {}
 
-  entity_class.entity_init_header(row, nil)
+  entity_class.init_header(row, nil)
   row.background_is_bool = false
   row.placed_items = nil
   row.placed_items_count = 0
@@ -59,11 +59,11 @@ local g_toast_up = false
 local g_shown_message_box = nil
 
 function M.shown_message_box()
-  return entity_id.entity_get(g_shown_message_box)
+  return entity_id.get(g_shown_message_box)
 end
 
 function M.message_box_set_shown(mh)
-  g_shown_message_box = entity_id.entity_id_link(mh)
+  g_shown_message_box = entity_id.link(mh)
 end
 
 -- Closes the shown box as its timeout does: marked dead, no box shown. Does nothing when none is shown.
@@ -90,7 +90,7 @@ function M.message_box_construct(self)
 end
 
 local function message_box_draw_overlay_method(self, screen_pos)
-  M.message_box_draw_overlay(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self)
+  M.message_box_draw_overlay(dispatch_context.gfx(), dispatch_context.mem(), self)
 end
 
 local function message_box_draw_article(gfx, mem, article)
@@ -251,10 +251,10 @@ end
 local function message_box_create(keys)
   local self = {}
 
-  entity.entity_init_instance(self, M.message_box_class_def, game_data.message_box_archetype.state,
+  entity.init_instance(self, M.message_box_class_def, game_data.message_box_archetype.state,
     game_data.message_box_archetype.state_time)
   self.archetype = game_data.message_box_archetype
-  entity_registry.entity_registry_set_layer(self, self.archetype.layer)
+  entity_registry.set_layer(self, self.archetype.layer)
   self.duration_scale = self.archetype.duration_scale
   self.keep_open = nil
   self.articles = {}
@@ -266,7 +266,7 @@ local function message_box_create(keys)
     end
     self.keep_open = keys.keep_open
   end
-  entity.entity_construct(self)
+  entity.construct(self)
   M.message_box_construct(self)
   return self
 end
@@ -291,17 +291,17 @@ end
 
 local function toast_pos_or_zero(e)
   if e ~= nil then
-    return entity_class.entity_pos(e)
+    return entity_class.pos(e)
   end
   return zero_vec()
 end
 
 -- The cart's toast shares its source's vector until its first update, drawn meanwhile (sometimes for several frames): a copy alone would miss a bob in between.
 local function toast_follow_source(self)
-  local source = entity_id.entity_get(self.follow)
+  local source = entity_id.get(self.follow)
 
-  if source ~= nil and entity_class.entity_has_pos(source) then
-    entity_class.entity_set_pos(self, source.pos)
+  if source ~= nil and entity_class.has_pos(source) then
+    entity_class.set_pos(self, source.pos)
   end
 end
 
@@ -310,15 +310,15 @@ function M.toast_construct(self)
     return
   end
 
-  if not entity_class.entity_has_pos(self) then
+  if not entity_class.has_pos(self) then
     local ui = require("game.ui")
     local scroll = require("game.scroll")
     local je = ui.main_mouse_typed()
     local mo = scroll.main_camera_typed()
     local main_mouse_pos = toast_pos_or_zero(je)
     local main_camera_pos = toast_pos_or_zero(mo)
-    local offset = vec.vec_make(fixed.from_int(0), fixed.from_int(5))
-    entity_class.entity_set_pos(self, vec.vec_sub(vec.vec_add(main_mouse_pos, main_camera_pos), offset))
+    local offset = vec.make(fixed.from_int(0), fixed.from_int(5))
+    entity_class.set_pos(self, vec.sub(vec.add(main_mouse_pos, main_camera_pos), offset))
   end
 end
 
@@ -331,7 +331,7 @@ function M.toast_update(self)
 
   toast_follow_source(self)
   self.follow = nil
-  entity_class.entity_set_pos(self, vec.vec_add(entity_class.entity_pos(self), self.archetype.velocity))
+  entity_class.set_pos(self, vec.add(entity_class.pos(self), self.archetype.velocity))
 
   new_l = fixed.add(self.fade, 0x00001999)
   self.fade = new_l
@@ -362,13 +362,13 @@ end
 
 local function toast_draw_method(self, screen_pos)
   toast_follow_source(self)
-  M.toast_draw(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self,
-    entity_class.entity_pos(self))
+  M.toast_draw(dispatch_context.gfx(), dispatch_context.mem(), self,
+    entity_class.pos(self))
 end
 
 M.toast_class_def = {
   draw = toast_draw_method,
-  states = { [entity_class.ENTITY_STATE_NORMAL] = toast_update_method },
+  states = { [entity_class.STATE_NORMAL] = toast_update_method },
   tags = 0,
   lineage = 0,
   skip_draw_off_screen = false,
@@ -377,23 +377,23 @@ M.toast_class_def = {
 local function toast_create(keys)
   local self = {}
 
-  entity.entity_init_instance(self, M.toast_class_def, game_data.toast_archetype.state,
+  entity.init_instance(self, M.toast_class_def, game_data.toast_archetype.state,
     game_data.toast_archetype.state_time)
   self.archetype = game_data.toast_archetype
-  entity_registry.entity_registry_set_layer(self, self.archetype.layer)
+  entity_registry.set_layer(self, self.archetype.layer)
   self.fade = self.archetype.fade
   self.follow = nil
   self.is_dead = false
   self.text = ""
   self.color = fixed.from_int(0)
   if keys ~= nil then
-    local source = entity_id.entity_get(keys.source)
+    local source = entity_id.get(keys.source)
 
-    if source ~= nil and entity_class.entity_has_pos(source) then
-      entity_class.entity_set_pos(self, source.pos)
+    if source ~= nil and entity_class.has_pos(source) then
+      entity_class.set_pos(self, source.pos)
       self.follow = keys.source
     elseif keys.pos ~= nil then
-      entity_class.entity_set_pos(self, keys.pos)
+      entity_class.set_pos(self, keys.pos)
     end
     if keys.text ~= nil then
       self.text = keys.text
@@ -401,7 +401,7 @@ local function toast_create(keys)
     self.color = keys.color
   end
   M.toast_construct(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -457,7 +457,7 @@ local function open_box_step(ctx, frame, row)
   else
     gq = zero_vec()
   end
-  ctx.button_pos = vec.vec_add(ctx.button_pos, gq)
+  ctx.button_pos = vec.add(ctx.button_pos, gq)
 
   return ui_button.button_new(b)
 end
@@ -466,7 +466,7 @@ end
 local function open_box_add(le, button)
   if le ~= nil then
     assert(button ~= nil, "open_box_add: the ephemerals list holds button ids")
-    le[#le + 1] = entity_id.entity_id_link(button)
+    le[#le + 1] = entity_id.link(button)
   end
 end
 
@@ -498,7 +498,7 @@ function M.message_box_open_box(frame, buttons, button_count)
     box_pos = zero_vec()
   end
 
-  step_context.button_pos = vec.vec_add(box_pos, zero_vec())
+  step_context.button_pos = vec.add(box_pos, zero_vec())
   step_context.pos = box_pos
 
   dispatcher = ui.main_ui()

@@ -32,7 +32,7 @@ M.economy_archetype = {
 local function economy_create()
   local self = {}
 
-  entity_class.entity_init_header(self, M.economy_class_def)
+  entity_class.init_header(self, M.economy_class_def)
   self.archetype = M.economy_archetype
   self.credits = fixed.from_int(0)
   self.income = fixed.from_int(0)
@@ -50,8 +50,8 @@ local function economy_create()
   self.year_ticks = self.archetype.year_ticks
   self.year = self.archetype.year
 
-  -- A slot, never entity_register: in the live list the economy would join the update order.
-  entity_id.entity_id_take(self)
+  -- A slot, never entity_registry.register: in the live list the economy would join the update order.
+  entity_id.take(self)
   return self
 end
 
@@ -93,7 +93,7 @@ local function economy_refresh_after_figures(self)
     self.end_status = nil
   end
 
-  refresh_list = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_REFRESH)
+  refresh_list = entity_registry.entities_by_message(entity_registry.MESSAGE_REFRESH)
   for i = 1, #refresh_list do
     qc = refresh_list[i]
     if qc.class.refresh ~= nil then
@@ -174,7 +174,7 @@ function M.economy_new_year(self)
 
   M.economy_recompute(self)
 
-  new_year_list = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_NEW_YEAR)
+  new_year_list = entity_registry.entities_by_message(entity_registry.MESSAGE_NEW_YEAR)
   for i = 1, #new_year_list do
     qc = new_year_list[i]
     if qc.class.new_year ~= nil then
@@ -337,7 +337,7 @@ function M.economy_total_production(out)
   for_each_tagged(entity_class.TAG_PLANET, total_production_visit, out)
 end
 
--- A planet with absent or empty needs is skipped where Lua would crash, like the malformed cases of entity_register. Making one site fatal alone breaks consistency.
+-- A planet with absent or empty needs is skipped where Lua would crash, like the malformed cases of entity_registry.register. Making one site fatal alone breaks consistency.
 local function crowding_penalty_visit(l, ctx)
   local planet = require("game.planet")
   local d = ctx

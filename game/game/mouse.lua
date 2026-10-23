@@ -14,11 +14,11 @@ local g_mouse_up = false
 local g_left_button = { held = nil, pressed = false, released = false }
 
 local function mouse_update_method(self, t)
-  M.mouse_update(dispatch_context.dispatch_context_input(), self)
+  M.mouse_update(dispatch_context.input(), self)
 end
 
 M.mouse_class_def = {
-  states = { [entity_class.ENTITY_STATE_NORMAL] = mouse_update_method },
+  states = { [entity_class.STATE_NORMAL] = mouse_update_method },
   tags = 0,
   lineage = 0,
   skip_draw_off_screen = false,
@@ -27,17 +27,17 @@ M.mouse_class_def = {
 local function mouse_create()
   local self = {}
 
-  entity.entity_init_instance(self, M.mouse_class_def, game_data.mouse_archetype.state,
+  entity.init_instance(self, M.mouse_class_def, game_data.mouse_archetype.state,
     game_data.mouse_archetype.state_time)
   self.archetype = game_data.mouse_archetype
-  entity_class.entity_set_pos(self, vec.vec_make(fixed.from_int(0), fixed.from_int(0)))
-  entity.entity_construct(self)
+  entity_class.set_pos(self, vec.make(fixed.from_int(0), fixed.from_int(0)))
+  entity.construct(self)
   return self
 end
 
 function M.mouse_init()
   M.mouse_shutdown()
-  assert(entity.entity_ready(), "mouse_init: entity_init() runs first")
+  assert(entity.ready(), "mouse_init: entity.init() runs first")
   g_mouse_up = true
   g_left_button.held = nil
   g_left_button.pressed = false
@@ -73,7 +73,7 @@ function M.mouse_update(input, self)
   end
 
   local mouse = input_module.read_mouse(input)
-  entity_class.entity_set_pos(self, vec.vec_make(fixed.from_int(mouse.x), fixed.from_int(mouse.y)))
+  entity_class.set_pos(self, vec.make(fixed.from_int(mouse.x), fixed.from_int(mouse.y)))
 
   if g_mouse_up then
     mouse_button.mouse_button_update(g_left_button, bit_module.band(mouse.buttons, input_module.MOUSE_LEFT) ~= 0)

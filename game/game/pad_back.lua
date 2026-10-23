@@ -10,12 +10,12 @@ end
 
 function M.pad_back_record(back, e)
   if e ~= nil then
-    back.last_acted = entity_id.entity_id_link(e)
+    back.last_acted = entity_id.link(e)
   end
 end
 
 function M.pad_back_target(back, hovered)
-  local e = entity_id.entity_get(back.last_acted)
+  local e = entity_id.get(back.last_acted)
   if pad_target.pad_target_is_candidate(e) and e ~= hovered then
     return e
   end

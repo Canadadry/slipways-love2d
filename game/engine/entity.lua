@@ -7,20 +7,20 @@ local M = {}
 
 local g_entity_up = false
 
-function M.entity_init()
-  M.entity_shutdown()
+function M.init()
+  M.shutdown()
   g_entity_up = true
 end
 
-function M.entity_shutdown()
+function M.shutdown()
   g_entity_up = false
 end
 
-function M.entity_ready()
+function M.ready()
   return g_entity_up
 end
 
-function M.entity_set_state(self, state)
+function M.set_state(self, state)
   if self == nil then
     return
   end
@@ -28,30 +28,30 @@ function M.entity_set_state(self, state)
   self.state_time = fixed.from_int(0)
 end
 
-function M.entity_init_instance(self, cls, state, t)
-  entity_class.entity_init_header(self, cls)
+function M.init_instance(self, cls, state, t)
+  entity_class.init_header(self, cls)
   self.state = state
   self.state_time = t
 end
 
--- Indexed from 0; nil at ENTITY_STATE_NONE.
+-- Indexed from 0; nil at entity_class.STATE_NONE.
 local names = {
-  [entity_class.ENTITY_STATE_NORMAL] = "normal",
-  [entity_class.ENTITY_STATE_SETTLED] = "settled",
-  [entity_class.ENTITY_STATE_VANISHING] = "vanishing",
-  [entity_class.ENTITY_STATE_PLACING] = "placing",
-  [entity_class.ENTITY_STATE_UNFOLDING] = "unfolding",
-  [entity_class.ENTITY_STATE_UNKNOWN] = "unknown",
-  [entity_class.ENTITY_STATE_KNOWN] = "known",
+  [entity_class.STATE_NORMAL] = "normal",
+  [entity_class.STATE_SETTLED] = "settled",
+  [entity_class.STATE_VANISHING] = "vanishing",
+  [entity_class.STATE_PLACING] = "placing",
+  [entity_class.STATE_UNFOLDING] = "unfolding",
+  [entity_class.STATE_UNKNOWN] = "unknown",
+  [entity_class.STATE_KNOWN] = "known",
 }
 
-function M.entity_state_name(state)
+function M.state_name(state)
   return names[state]
 end
 
-function M.entity_construct(self)
-  entity_id.entity_id_take(self)
-  entity_registry.entity_register(self)
+function M.construct(self)
+  entity_id.take(self)
+  entity_registry.register(self)
 end
 
 return M

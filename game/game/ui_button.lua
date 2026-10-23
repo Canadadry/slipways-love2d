@@ -33,15 +33,15 @@ local function button_update_method(self, t)
 end
 
 local function button_draw_overlay_method(self, screen_pos)
-  M.button_draw_overlay(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self)
+  M.button_draw_overlay(dispatch_context.gfx(), dispatch_context.mem(), self)
 end
 
 local function button_draw_method(self, screen_pos)
-  M.button_draw(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self, screen_pos)
+  M.button_draw(dispatch_context.gfx(), dispatch_context.mem(), self, screen_pos)
 end
 
 local function button_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse)
+  return entity_geom.contains_cursor(self, mouse)
 end
 
 local function button_left_press_method(self, mouse)
@@ -67,7 +67,7 @@ M.button_class_def = {
   refresh = button_refresh_method,
   has_refresh = button_has_refresh,
   left_press = button_left_press_method,
-  states = { [entity_class.ENTITY_STATE_NORMAL] = button_update_method },
+  states = { [entity_class.STATE_NORMAL] = button_update_method },
   tags = 0,
   lineage = 0,
   skip_draw_off_screen = false,
@@ -77,7 +77,7 @@ M.button_class_def = {
 local function button_create(keys)
   local self = {}
 
-  entity.entity_init_instance(self, M.button_class_def, game_data.button_archetype.state,
+  entity.init_instance(self, M.button_class_def, game_data.button_archetype.state,
     game_data.button_archetype.state_time)
   self.layout_row = nil
   self.width = 0
@@ -91,16 +91,16 @@ local function button_create(keys)
   self.project_planet = nil
   self.project = nil
   self.archetype = game_data.button_archetype
-  entity_registry.entity_registry_set_layer(self, self.archetype.layer)
+  entity_registry.set_layer(self, self.archetype.layer)
   if keys ~= nil then
     if keys.layer ~= nil then
-      entity_registry.entity_registry_set_layer(self, keys.layer)
+      entity_registry.set_layer(self, keys.layer)
     end
     if keys.pos ~= nil then
-      entity_class.entity_set_pos(self, keys.pos)
+      entity_class.set_pos(self, keys.pos)
     end
     if keys.slide_target ~= nil then
-      self.slide_target = vec.vec_make(keys.slide_target.x, keys.slide_target.y)
+      self.slide_target = vec.make(keys.slide_target.x, keys.slide_target.y)
     end
     self.on_click = keys.on_click
     self.refresh = keys.refresh
@@ -113,7 +113,7 @@ local function button_create(keys)
     self.project_cost = keys.project_cost
   end
   M.button_construct(self, keys)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -183,16 +183,16 @@ function M.button_update(self)
 
   if self.slide_target ~= nil then
     local qf = self.slide_target
-    local ra = entity_class.entity_pos(self)
-    local d = vec.vec_sub(qf, ra)
-    local length_squared = vec.vec_length_squared(d)
+    local ra = entity_class.pos(self)
+    local d = vec.sub(qf, ra)
+    local length_squared = vec.length_squared(d)
     local delta
     if length_squared <= fixed.from_int(1) then
       delta = d
     else
-      delta = vec.vec_mul(d, fixed.LIT(0x00006666, 0.4))
+      delta = vec.mul(d, fixed.LIT(0x00006666, 0.4))
     end
-    entity_class.entity_set_pos(self, vec.vec_add(ra, delta))
+    entity_class.set_pos(self, vec.add(ra, delta))
   end
 end
 
@@ -222,7 +222,7 @@ local function button_draw_body(graphics, memory, self, draw_pos, body, top, thr
   gfx_module.rectfill(graphics, memory, left_pixel, top_pixel, right_pixel, top_pixel, top)
 
   if self.layout_row ~= nil then
-    local off = vec.vec_add(draw_pos, vec.vec_make(fixed.from_int(1), fixed.from_int(2)))
+    local off = vec.add(draw_pos, vec.make(fixed.from_int(1), fixed.from_int(2)))
     if through_text_image then
       layout.layout_row_draw_at_text_image(graphics, memory, self.layout_row, off, fixed.from_int(0))
     else
@@ -240,7 +240,7 @@ local function button_draw_body(graphics, memory, self, draw_pos, body, top, thr
     end
     gfx_module.rectfill(graphics, memory, ui_to_int(right) + 3, top_pixel + 1, ui_to_int(x2) + 4, bottom_pixel, bg)
 
-    local off2 = vec.vec_add(draw_pos, vec.vec_make(fixed.add(width, fixed.from_int(3)),
+    local off2 = vec.add(draw_pos, vec.make(fixed.add(width, fixed.from_int(3)),
       fixed.from_int(2)))
     if through_text_image then
       layout.layout_row_draw_at_text_image(graphics, memory, c, off2, fixed.from_int(0))
@@ -326,7 +326,7 @@ local g_building_look = { body = 0, top = 0 }
 
 -- context is the button. Draws no visual random number and reads no game state but its rows.
 local function button_image_build_draw(gfx, mem, context)
-  button_draw_body(gfx, mem, context, vec.vec_make(fixed.from_int(1), fixed.from_int(0)),
+  button_draw_body(gfx, mem, context, vec.make(fixed.from_int(1), fixed.from_int(0)),
     g_building_look.body, g_building_look.top, false)
 end
 
@@ -384,7 +384,7 @@ local function modal_backdrop_left_press_method(self, mouse)
 end
 
 M.modal_backdrop_class_def = {
-  hit_test = entity_registry.entity_registry_hit_test_always,
+  hit_test = entity_registry.hit_test_always,
   left_press = modal_backdrop_left_press_method,
   states = {},
   tags = 0,
@@ -395,17 +395,17 @@ M.modal_backdrop_class_def = {
 local function modal_backdrop_create(keys)
   local self = {}
 
-  entity.entity_init_instance(self, M.modal_backdrop_class_def, game_data.modal_backdrop_archetype.state,
+  entity.init_instance(self, M.modal_backdrop_class_def, game_data.modal_backdrop_archetype.state,
     game_data.modal_backdrop_archetype.state_time)
   self.archetype = game_data.modal_backdrop_archetype
-  entity_registry.entity_registry_set_layer(self, self.archetype.layer)
+  entity_registry.set_layer(self, self.archetype.layer)
   self.on_click = nil
   self.is_dead = false
   self.is_hovered = false
   if keys ~= nil then
     self.on_click = keys.on_click
   end
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -460,7 +460,7 @@ end
 
 function M.button_zero()
   local b = {}
-  entity_class.entity_init_header(b, nil)
+  entity_class.init_header(b, nil)
   b.archetype = nil
   b.layout_row = nil
   b.width = 0

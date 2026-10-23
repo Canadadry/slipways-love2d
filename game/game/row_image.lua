@@ -126,7 +126,7 @@ end
 -- Draws no visual random number and reads no game state: only the row's own items, each at its
 -- whole offset, so at (offset, 0) whatever the caller's alignment.
 local function row_image_build_draw(gfx, mem, context)
-  layout.layout_row_draw_at(gfx, mem, context, vec.vec_make(0, 0), 0)
+  layout.layout_row_draw_at(gfx, mem, context, vec.make(0, 0), 0)
 end
 
 local function slot_for(key)
@@ -163,7 +163,7 @@ function M.row_image_draw_at(gfx, mem, row, p, a)
   end
   g_stamp = g_stamp + 1
   g_slots[i].stamp = g_stamp
-  origin = vec.vec_sub(p, vec.vec_make(fixed.mul(a, row.width), 0))
+  origin = vec.sub(p, vec.make(fixed.mul(a, row.width), 0))
   image.draw(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i - 1, fixed.flr_int(origin.x),
     fixed.flr_int(origin.y))
   hud.hud_select_palette_block_default(mem)

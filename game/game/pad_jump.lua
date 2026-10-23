@@ -28,11 +28,11 @@ function M.pad_jump_init(jump)
 end
 
 function M.pad_jump_hover(jump, e)
-  jump.hovered = entity_id.entity_id_link(e)
+  jump.hovered = entity_id.link(e)
 end
 
 function M.pad_jump_hovered(jump)
-  local hovered = entity_id.entity_get(jump.hovered)
+  local hovered = entity_id.get(jump.hovered)
   return pad_target.pad_target_is_candidate(hovered) and hovered or nil
 end
 
@@ -142,8 +142,8 @@ local function world_pixel(map_units)
 end
 
 function M.pad_jump_world_point(e, x, y)
-  assert(e ~= nil and entity_class.entity_has_map_pos(e), "pad_jump_world_point: the entity has a map position")
-  local map_pos = entity_class.entity_map_pos(e)
+  assert(e ~= nil and entity_class.has_map_pos(e), "pad_jump_world_point: the entity has a map position")
+  local map_pos = entity_class.map_pos(e)
   x = world_pixel(map_pos.x)
   y = world_pixel(map_pos.y)
   return x, y
@@ -168,7 +168,7 @@ function M.pad_jump_nearest(x, y, candidates)
 end
 
 local function is_colony(e)
-  return e.class == planet.planet_class() and e.state == entity_class.ENTITY_STATE_SETTLED
+  return e.class == planet.planet_class() and e.state == entity_class.STATE_SETTLED
 end
 
 function M.pad_jump_seed(candidates, centre_x, centre_y)

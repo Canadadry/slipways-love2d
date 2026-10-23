@@ -63,7 +63,7 @@ M.slipgate_left_press_empty_class_def = {
 }
 
 M.slipgate_left_press_empty = {}
-entity_class.entity_init_header(M.slipgate_left_press_empty, M.slipgate_left_press_empty_class_def)
+entity_class.init_header(M.slipgate_left_press_empty, M.slipgate_left_press_empty_class_def)
 
 function M.slipgate_left_press(self)
   local accept_drop_result = down_zero()
@@ -82,9 +82,9 @@ function M.slipgate_left_press(self)
   end
 
   assert(slipway.slipway_ready(), "slipway_init() must run before slipgate_left_press builds a slipway")
-  keys.start = entity_id.entity_id_link(self)
+  keys.start = entity_id.link(self)
   made = slipway.slipway_new(keys)
-  accept_drop_result.held = entity_id.entity_id_link(made)
+  accept_drop_result.held = entity_id.link(made)
   accept_drop_result.stop = made ~= nil
   return accept_drop_result
 end
@@ -132,13 +132,13 @@ function M.slipgate_offer_trade(self, trade_offer)
   slipways = self.slipways
 
   for i = 1, #slipways do
-    local slipway = entity_id.entity_id_resolve(slipways[i])
+    local slipway = entity_id.resolve(slipways[i])
     if trade_offer.amount <= fixed.from_int(0) then
       goto continue
     end
 
     do
-      local slipway_id = entity_id.entity_id_of(slipway)
+      local slipway_id = entity_id.of(slipway)
       local on_route = false
       for j = 1, #route.slipways do
         if route.slipways[j] == slipway_id then
@@ -192,8 +192,8 @@ M.slipgate_class_def = {
   attach_slipway = planet_trade.planet_attach_slipway_method,
   offer_trade = slipgate_offer_trade_method,
   states = {
-    [entity_class.ENTITY_STATE_VANISHING] = planet.planet_update_vanishing_method,
-    [entity_class.ENTITY_STATE_SETTLED] = planet_family.structure_update_settled_method,
+    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_SETTLED] = planet_family.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_SLIPGATE), entity_class.TAG(entity_class.TAG_NODE)),
   lineage = bit.bor(entity_class.LINEAGE(entity_class.LINEAGE_PLANET), entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)),
@@ -210,7 +210,7 @@ local function slipgate_create(keys)
   slipgate_init_instance(self, M.slipgate_class_def, game_data.slipgate_archetype)
   planet.planet_copy_keys(self, keys)
   planet.planet_construct(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -229,8 +229,8 @@ M.infraspace_gate_class_def = {
   attach_slipway = planet_trade.planet_attach_slipway_method,
   offer_trade = slipgate_offer_trade_method,
   states = {
-    [entity_class.ENTITY_STATE_VANISHING] = planet.planet_update_vanishing_method,
-    [entity_class.ENTITY_STATE_SETTLED] = planet_family.structure_update_settled_method,
+    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_SETTLED] = planet_family.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_SLIPGATE), entity_class.TAG(entity_class.TAG_NODE)),
   lineage = bit.bor(entity_class.LINEAGE(entity_class.LINEAGE_PLANET), entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)),
@@ -247,7 +247,7 @@ local function infraspace_gate_create(keys)
     .. "-- stop, do not add one")
   planet.planet_copy_keys(self, keys)
   planet.planet_construct(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 
@@ -322,8 +322,8 @@ M.synthesizer_class_def = {
   offer_trade = planet_trade.planet_offer_trade_method,
   spawn_particle = probe.probe_spawn_particle,
   states = {
-    [entity_class.ENTITY_STATE_VANISHING] = planet.planet_update_vanishing_method,
-    [entity_class.ENTITY_STATE_SETTLED] = planet_family.structure_update_settled_method,
+    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_SETTLED] = planet_family.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_PLANET), entity_class.TAG(entity_class.TAG_NODE)),
   lineage = bit.bor(entity_class.LINEAGE(entity_class.LINEAGE_PLANET), entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)),
@@ -340,7 +340,7 @@ local function synthesizer_create(keys)
   planet.planet_copy_keys(self, keys)
   require("game.particle").emitter_init(self)
   planet.planet_construct(self)
-  entity.entity_construct(self)
+  entity.construct(self)
   return self
 end
 

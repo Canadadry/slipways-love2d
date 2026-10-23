@@ -64,10 +64,10 @@ local function rebuild_incoming_routes_route_visit(entity, context)
     local found
 
     for index = 1, #slipways do
-      local w_val = entity_id.entity_id_resolve(slipways[index])
+      local w_val = entity_id.resolve(slipways[index])
 
       if index + 1 <= #planets then
-        local planet_val = entity_id.entity_id_resolve(planets[index + 1])
+        local planet_val = entity_id.resolve(planets[index + 1])
         assert(planet_module.planet_is_family(planet_val),
           "rebuild_incoming_routes_route_visit: a trade's planets list holds planets only")
         local planet = planet_val
@@ -185,7 +185,7 @@ function M.economy_tiers_compute_tier(entity)
   end
   assert(planet_module.planet_is_family(entity), "economy_tiers_compute_tier: the entity is a planet")
   planet = entity
-  if planet.state ~= entity_class.ENTITY_STATE_SETTLED then
+  if planet.state ~= entity_class.STATE_SETTLED then
     return fixed.from_int(0)
   end
 

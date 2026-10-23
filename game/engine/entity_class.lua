@@ -6,10 +6,10 @@
 --     compares two infraspaces.
 -- A class table: { draw, draw_overlay, hit_test, new_year, refresh,
 --     has_refresh, left_press, accept_drop, drag, drop, attach_slipway,
---     offer_trade, draw_at, spawn_particle, states (keyed by ENTITY_STATE_*, from 0,
+--     offer_trade, draw_at, spawn_particle, states (keyed by entity_class.STATE_*, from 0,
 --     STATE_COUNT entries), tags, lineage, apply_camera, release, skip_draw_off_screen }.
 --     skip_draw_off_screen true: draw_layers calls draw only when
---     entity_geom_is_on_screen holds, so draw may trust it.
+--     entity_geom.is_on_screen holds, so draw may trust it.
 -- A left_press answer: { stop, held } (held an entity id).
 -- A mouse position: { world, screen, has }.
 -- A kind: { new_entity, record }.
@@ -21,14 +21,14 @@ local vec = require("engine.vec")
 
 local M = {}
 
-M.ENTITY_STATE_NONE = 0
-M.ENTITY_STATE_NORMAL = 1
-M.ENTITY_STATE_SETTLED = 2
-M.ENTITY_STATE_VANISHING = 3
-M.ENTITY_STATE_PLACING = 4
-M.ENTITY_STATE_UNFOLDING = 5
-M.ENTITY_STATE_UNKNOWN = 6
-M.ENTITY_STATE_KNOWN = 7
+M.STATE_NONE = 0
+M.STATE_NORMAL = 1
+M.STATE_SETTLED = 2
+M.STATE_VANISHING = 3
+M.STATE_PLACING = 4
+M.STATE_UNFOLDING = 5
+M.STATE_UNKNOWN = 6
+M.STATE_KNOWN = 7
 M.STATE_COUNT = 8
 
 M.TAG_STRUCTURE = 0
@@ -57,7 +57,7 @@ end
 
 -- Writes class, state, state_time, is_dead and id only: every other field,
 -- an optional header part included, stays as it was.
-function M.entity_init_header(self, cls)
+function M.init_header(self, cls)
   self.class = cls
   self.state = 0
   self.state_time = 0
@@ -65,43 +65,43 @@ function M.entity_init_header(self, cls)
   self.id = nil
 end
 
-function M.entity_has_pos(self)
+function M.has_pos(self)
   return self.pos ~= nil
 end
 
-function M.entity_has_map_pos(self)
+function M.has_map_pos(self)
   return self.map_pos ~= nil
 end
 
 -- The zero vector when the position is absent.
-function M.entity_pos(self)
+function M.pos(self)
   if self.pos ~= nil then
-    return vec.vec_make(self.pos.x, self.pos.y)
+    return vec.make(self.pos.x, self.pos.y)
   end
-  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
+  return vec.make(fixed.from_int(0), fixed.from_int(0))
 end
 
 -- The zero vector when the map position is absent.
-function M.entity_map_pos(self)
+function M.map_pos(self)
   if self.map_pos ~= nil then
-    return vec.vec_make(self.map_pos.x, self.map_pos.y)
+    return vec.make(self.map_pos.x, self.map_pos.y)
   end
-  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
+  return vec.make(fixed.from_int(0), fixed.from_int(0))
 end
 
-function M.entity_set_pos(self, pos)
-  self.pos = vec.vec_make(pos.x, pos.y)
+function M.set_pos(self, pos)
+  self.pos = vec.make(pos.x, pos.y)
 end
 
-function M.entity_clear_pos(self)
+function M.clear_pos(self)
   self.pos = nil
 end
 
-function M.entity_set_map_pos(self, map_pos)
-  self.map_pos = vec.vec_make(map_pos.x, map_pos.y)
+function M.set_map_pos(self, map_pos)
+  self.map_pos = vec.make(map_pos.x, map_pos.y)
 end
 
-function M.entity_clear_map_pos(self)
+function M.clear_map_pos(self)
   self.map_pos = nil
 end
 
@@ -119,17 +119,17 @@ end
 -- The zero vector when the world point is absent.
 function M.mouse_pos_world(mouse)
   if M.mouse_pos_has_world(mouse) then
-    return vec.vec_make(mouse.world.x, mouse.world.y)
+    return vec.make(mouse.world.x, mouse.world.y)
   end
-  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
+  return vec.make(fixed.from_int(0), fixed.from_int(0))
 end
 
 -- The zero vector when the screen point is absent.
 function M.mouse_pos_screen(mouse)
   if M.mouse_pos_has_screen(mouse) then
-    return vec.vec_make(mouse.screen.x, mouse.screen.y)
+    return vec.make(mouse.screen.x, mouse.screen.y)
   end
-  return vec.vec_make(fixed.from_int(0), fixed.from_int(0))
+  return vec.make(fixed.from_int(0), fixed.from_int(0))
 end
 
 return M

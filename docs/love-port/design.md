@@ -839,11 +839,11 @@ rows, every pixel loop), an address or angle (`p8.sprite_sheet_packed`,
 `p8.quarter_wave`), an image slot handle (from 0, like a PICO-8 sprite number; the
 game's own caches compute slot `FIRST + i - 1`), a byte (`crc32_table`), a disk code
 (`SAVE_NODE_*` in `node_constructors` and `node_kind`), a saved state
-(`ENTITY_STATE_*`), a tag's bit position (the registry's tag buckets), a layer
+(`entity_class.STATE_*`), a tag's bit position (the registry's tag buckets), a layer
 value (the layer order's `start`, `start[0]` the empty prefix; `ui`'s hover layers),
 a draw-function code, a disk rank (the save validators' `seen` sets) and a demo frame
 (`demo_data_pad_buttons`). An enum that only indexes tables is numbered from 1
-(`ENTITY_MESSAGE_*`, `BINDINGS_MODE_*`, `BINDINGS_ACTION_*`). The save state mirrors the
+(`entity_registry.MESSAGE_*`, `BINDINGS_MODE_*`, `BINDINGS_ACTION_*`). The save state mirrors the
 bytes: its arrays are 1-based but every reference it holds keeps its on-disk value, a
 0-based rank, converted to a position only where the capture writes it
 (`position - 1`) and where the loader and the decoder's node-slipway check read it
@@ -865,7 +865,7 @@ built by a constructor listing every field, copied at each use; a table
 received by value is never mutated. The copy is shallow as in C: pointer
 members are shared, inline mutable
 sub-structs are copied by the caller. An entity id is a number handed out by
-`entity_id_take`, never reused, resolved by `entity_get` through the current
+`entity_id.take`, never reused, resolved by `entity_id.get` through the current
 table, which drops an entity when the exit queue flushes it; `nil` is "no
 link"; ids are compared with `==`. A research project id follows the same
 convention from `research`'s own counter and table, and goes stale when
@@ -898,7 +898,7 @@ plain-array lists are emptied or refilled in place when several owners hold them
 outlives a copy point is copied, never shared by accident (an offer's routes
 are a copy of the source list, assigned back when the offer returns); a
 route's id arrays are never changed once built, so route copies share them.
-An id list is read through `entity_id_resolve`, which asserts the id is
+An id list is read through `entity_id.resolve`, which asserts the id is
 alive. A walk whose body may change its list walks a copy and says so.
 Strings are Lua strings, compared with `==`.
 

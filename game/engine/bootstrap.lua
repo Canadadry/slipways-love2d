@@ -18,11 +18,11 @@ function M.reset_world()
   if ui.main_ui() ~= nil then
     ui.ui_forget_world(ui.main_ui())
   end
-  entity_registry.entity_registry_abandon_live_entities()
-  entity_registry.entity_registry_init()
+  entity_registry.abandon_live_entities()
+  entity_registry.init()
 
-  if not entity.entity_ready() then
-    entity.entity_init()
+  if not entity.ready() then
+    entity.init()
   end
   if not scroll.camera_ready() then
     scroll.camera_init()
@@ -38,17 +38,17 @@ function M.reset_world()
   real_main_mouse = mouse.mouse_new()
   real_main_ui = ui.ui_new()
 
-  entity_registry.entity_registry_set_main_camera(real_main_camera)
+  entity_registry.set_main_camera(real_main_camera)
   ui.ui_set_main_mouse(real_main_mouse)
   ui.ui_set_main_ui(real_main_ui)
 end
 
-function M.bootstrap_shutdown()
+function M.shutdown()
   ui.ui_shutdown()
   mouse.mouse_shutdown()
   scroll.camera_shutdown()
-  entity.entity_shutdown()
-  entity_registry.entity_registry_shutdown()
+  entity.shutdown()
+  entity_registry.shutdown()
 end
 
 function M.update_entities()
@@ -61,12 +61,12 @@ function M.update_entities()
   while i <= #hv do
     local qc = hv[i]
 
-    if qc.state ~= entity_class.ENTITY_STATE_NONE and qc.class.states[qc.state] ~= nil then
+    if qc.state ~= entity_class.STATE_NONE and qc.class.states[qc.state] ~= nil then
       qc.class.states[qc.state](qc, qc.state_time)
     end
 
     if qc.is_dead then
-      entity_registry.entity_unregister(qc)
+      entity_registry.unregister(qc)
     end
 
     qc.state_time = fixed.add(qc.state_time, fixed.from_int(1))

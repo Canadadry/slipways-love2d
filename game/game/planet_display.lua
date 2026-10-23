@@ -184,8 +184,8 @@ local function planet_open_box_frame(self)
     message_box.open_box_frame_set_description(frame, self.description)
   end
   frame.back_color = self.archetype.back_color
-  frame.row_step = vec.vec_make(self.archetype.row_step.x, self.archetype.row_step.y)
-  frame.pos = entity_class.entity_pos(self)
+  frame.row_step = vec.make(self.archetype.row_step.x, self.archetype.row_step.y)
+  frame.pos = entity_class.pos(self)
   return frame
 end
 
@@ -359,7 +359,7 @@ function M.planet_accept_drop(self, s)
   if self == nil then
     return out
   end
-  if self.state ~= entity_class.ENTITY_STATE_SETTLED then
+  if self.state ~= entity_class.STATE_SETTLED then
     return out
   end
   if s ~= nil and s.class == slipway.slipway_class() and slipway.slipway_start(s) == self then
@@ -381,7 +381,7 @@ local function planet_projects_panel_on_click_method(self)
   if self == nil then
     return
   end
-  pt = entity_id.entity_get(self.project_planet)
+  pt = entity_id.get(self.project_planet)
   b = research.research_project_get(self.project)
   if self.project_cost ~= nil then
     od = self.project_cost
@@ -413,7 +413,7 @@ local function planet_projects_panel_keys(self, b, keys)
     keys.side_tooltip_row.color = fixed.from_int(13)
   end
 
-  keys.project_planet = entity_id.entity_id_link(self)
+  keys.project_planet = entity_id.link(self)
   keys.project = research.research_project_id_of(b)
   keys.project_cost = od
   keys.on_click = planet_projects_panel_on_click_method
@@ -484,7 +484,7 @@ local function planet_build_images(gfx, mem)
 end
 
 function M.planet_draw(graphics, memory, self, screen_pos)
-  if self == nil or not entity_geom.entity_geom_is_on_screen(self) then
+  if self == nil or not entity_geom.is_on_screen(self) then
     return
   end
   planet_draw_on_screen(graphics, memory, self, screen_pos)
@@ -499,9 +499,9 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
   local spr_index = 43
 
   -- Everything below draws at shaken_pos, never at screen_pos.
-  shaken_pos = entity_geom.entity_geom_shake(screen_pos, self)
+  shaken_pos = entity_geom.shake(screen_pos, self)
 
-  if self.state == entity_class.ENTITY_STATE_VANISHING then
+  if self.state == entity_class.STATE_VANISHING then
     local t = self.state_time
     if visual_random.visual_random_draw(fixed.from_int(30)) < fixed.sub(t, fixed.from_int(30)) then
       return
@@ -553,13 +553,13 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
 
   do
     if self.layout_row ~= nil then
-      local offset = vec.vec_add(shaken_pos, vec.vec_make(fixed.from_int(0), fixed.from_int(7)))
+      local offset = vec.add(shaken_pos, vec.make(fixed.from_int(0), fixed.from_int(7)))
       row_image.row_image_draw_at(graphics, memory, self.layout_row, offset, fixed.LIT(0x00008000, 0.5))
     end
   end
 
   do
-    local targeted_by = entity_id.entity_get(self.targeted_by)
+    local targeted_by = entity_id.get(self.targeted_by)
 
     if targeted_by ~= nil then
       local probe = require("game.probe")
@@ -591,9 +591,9 @@ function M.planet_accept_drop_method(self, s)
 end
 
 function M.planet_draw_method(self, screen_pos)
-  assert(self.class.skip_draw_off_screen and entity_geom.entity_geom_is_on_screen(self),
+  assert(self.class.skip_draw_off_screen and entity_geom.is_on_screen(self),
     "planet_draw_method trusts draw_layers' cull: only a class with skip_draw_off_screen may use it")
-  planet_draw_on_screen(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self, screen_pos)
+  planet_draw_on_screen(dispatch_context.gfx(), dispatch_context.mem(), self, screen_pos)
 end
 
 function M.planet_left_press_method(self, mouse)
@@ -606,20 +606,20 @@ function M.planet_left_press(self)
   if self == nil then
     return out
   end
-  if self.state == entity_class.ENTITY_STATE_KNOWN then
+  if self.state == entity_class.STATE_KNOWN then
     M.planet_projects_panel(self)
     out.stop = true
     return out
   end
-  if self.state == entity_class.ENTITY_STATE_SETTLED then
+  if self.state == entity_class.STATE_SETTLED then
     local slipway = require("game.slipway")
     local keys = slipway.slipway_keys_zero()
     local made
 
     assert(slipway.slipway_ready(), "slipway_init() must run before planet_left_press builds a slipway")
-    keys.start = entity_id.entity_id_link(self)
+    keys.start = entity_id.link(self)
     made = slipway.slipway_new(keys)
-    out.held = entity_id.entity_id_link(made)
+    out.held = entity_id.link(made)
     out.stop = made ~= nil
   end
   return out
@@ -646,8 +646,8 @@ function M.planet_apply_project(self, research_project_instance)
 
     target_kind = require("game.planet_family").planet_kind_named(research_project_instance.class_name)
 
-    keys.map_pos = entity_class.entity_map_pos(self)
-    keys.pos = entity_class.entity_pos(self)
+    keys.map_pos = entity_class.map_pos(self)
+    keys.pos = entity_class.pos(self)
     if self.planet_id ~= nil then
       planet.planet_keys_set_id(keys, self.planet_id)
     end
@@ -656,7 +656,7 @@ function M.planet_apply_project(self, research_project_instance)
   elseif research_project_instance ~= nil and research_project_instance.next_type ~= nil then
     self.planet_type = game_data.planet_types_lookup(research_project_instance.next_type)
   else
-    entity.entity_set_state(self, entity_class.ENTITY_STATE_SETTLED)
+    entity.set_state(self, entity_class.STATE_SETTLED)
     planet.planet_install_project(self, research_project_instance)
     self.fold_anchor = true
     fp = tech_gate.tech_gate_if_unlocked("autoassemblers", fixed.from_int(3), fixed.from_int(2))
