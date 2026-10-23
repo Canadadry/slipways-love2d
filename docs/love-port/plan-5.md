@@ -332,3 +332,28 @@ a route's resource), save format fields, the layer key, the dump and
 cost-key formats; every `return 0/1` left is in a function returning
 numbers. design.md § Truth values and warn-review rule 20 match. `make e2e`
 20/20 in 4.9 s, `make end-state` 20/20, `make test` 0.7 s.
+
+### Step 3.2
+
+Ten chunks by module group: runtime lists, registry, `game_data`
+sequences, `map_tables` lookups, data rows, layout values and image caches,
+message box/menus/panels, research/tech gate/economy/slipway lists, input
+and pad, save. Every array runs from 1; a counted array keeps its count and
+appends with `local n = count + 1`; a removal shifts down and clears the
+vacated slot; an array with holes is walked by index, never `#`/`ipairs`.
+Enums that index a table (`ENTITY_MESSAGE_*`, `BINDINGS_MODE_*`,
+`BINDINGS_ACTION_*`) are numbered from 1; "not found" is `nil` instead of
+`-1`. Kept as maps keyed by a value where 0 is real: colours, pixel
+coordinates and offsets, glyph rows, byte addresses, angles, image slot
+handles, the CRC table, disk node kinds, tag bit positions, layer values,
+the demo's frame clock. The save writes the same bytes: ranks on disk stay
+0-based, converted only in the builder (`position - 1`) and loader
+(`rank + 1`). Each chunk ran a zero-key trap and a past-count counter over
+one `make e2e` (never fired, counts equal before and after) and compared
+every shifted data table with its HEAD version at load; the 133 encoded
+saves stayed byte-identical, every record and the demo record round-trip,
+the decoder's accept/reject is unchanged under fuzzing. Remaining grep
+hits, by kind: the value-keyed maps above, genuine element shifts (registry
+insert/remove, ticket removal), neighbour reads, save-rank conversions,
+plain numbers. warn-review rule 21 matches. `make e2e` 20/20 in 4.9 s,
+`make end-state` 20/20, `make test` 0.65 s.

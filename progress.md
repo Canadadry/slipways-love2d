@@ -24,7 +24,7 @@
   - [x] Step 2.1 — optional parts as nil-able fields
 - [ ] Phase 3 — The surface
   - [x] Step 3.1 — booleans
-  - [ ] Step 3.2 — 1-based arrays
+  - [x] Step 3.2 — 1-based arrays
   - [ ] Step 3.3 — the C headers
   - [ ] Step 3.4 — names without the module prefix
   - [ ] Step 3.5 — design.md conventions replaced
@@ -59,7 +59,7 @@
   - [x] Chunk 7 — UI
   - [x] Chunk 8 — input, cart and save
   - [x] Chunk 9 — pad layer, docs, full check
-- [ ] Step 3.2 chunks
+- [x] Step 3.2 chunks
   - [x] Chunk 1 — runtime lists
   - [x] Chunk 2 — registry
   - [x] Chunk 3 — game_data sequences and lookups
