@@ -6,9 +6,6 @@
 --   entity_kind_t: { new_entity, record }, record the game_data kind record table.
 --   planet_kinds: 0-indexed array of { class_name, kind }.
 --
--- A planet is one table with its entity header: the planet's own `has` (PLANET_HAS_* bits) is
--- `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
---
 -- Include cycle: game.planet, game.planet_display, game.planet_trade and game.probe are required
 -- at load, since their methods fill the class tables; game.probe's targeting methods are held by
 -- identity (probe.c compares a class's drag with targeting_track_method), so this module does not
@@ -24,6 +21,7 @@ local planet = require("game.planet")
 local planet_display = require("game.planet_display")
 local planet_trade = require("game.planet_trade")
 local probe = require("game.probe")
+local targeting = require("game.targeting")
 local visual_random = require("game.visual_random")
 local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")
@@ -66,7 +64,7 @@ M.structure_class_def = {
 
 function M.structure_init_instance(self, cls, archetype)
   planet.planet_init_instance(self, cls, archetype)
-  self.has_ = bit.bor(self.has_, planet.PLANET_HAS_TARGETING)
+  self.targeting = targeting.targeting_zero()
   self.targeting.archetype = self.archetype.targeting
   self.targeting.cost = self.archetype.targeting.cost
   self.targeting.has_cost = self.archetype.targeting.has_cost
@@ -94,9 +92,9 @@ function M.trading_hub_update_settled(self, t)
   end
   planet.planet_bob(self, t)
 
-  assert(self.has_development_tier ~= 0,
+  assert(self.development_tier ~= nil,
     "trading_hub_update_settled: a settled trading hub has a development tier; only ascension_draw checks for none")
-  if self.has_development_tier ~= 0 and self.development_tier >= fixed.p8_fixed_from_int(2) then
+  if self.development_tier ~= nil and self.development_tier >= fixed.p8_fixed_from_int(2) then
     self.palette_block =
       fixed.p8_fixed_add(fixed.p8_fixed_from_int(8),
         fixed.p8_fixed_div(fixed.p8_fixed_mod(t, fixed.p8_fixed_from_int(42)), fixed.p8_fixed_from_int(6)))
@@ -194,7 +192,7 @@ function M.ascension_draw(gfx, mem, self, p)
   if self == nil then
     return
   end
-  if self.has_development_tier ~= 0 and self.development_tier >= fixed.p8_fixed_from_int(2) then
+  if self.development_tier ~= nil and self.development_tier >= fixed.p8_fixed_from_int(2) then
     require("game.particle").emitter_update(gfx, mem, self)
   end
   planet_display.planet_draw(gfx, mem, self, p)
@@ -237,7 +235,7 @@ M.ascension_class_def = {
 
 function M.ascension_init_instance(self, cls, archetype)
   M.structure_init_instance(self, cls, archetype)
-  self.has_ = bit.bor(self.has_, planet.PLANET_HAS_EMITTER)
+  self.emitter = require("game.particle").emitter_zero()
   self.emitter.archetype = self.archetype.emitter
   self.emitter.speed_factor = self.archetype.emitter.speed_factor
   self.emitter.angle_slices = self.archetype.emitter.angle_slices
@@ -451,7 +449,7 @@ local function burst_create(keys)
 
   assert(g_family_up ~= 0, "planet_family_init() must run first")
   planet.planet_init_instance(self, M.burst_class_def, game_data.burst_archetype)
-  self.has_ = bit.bor(self.has_, planet.PLANET_HAS_EMITTER)
+  self.emitter = require("game.particle").emitter_zero()
   self.emitter.archetype = self.archetype.emitter
   self.emitter.matrix_xx = self.archetype.emitter.matrix_xx
   self.emitter.matrix_xy = self.archetype.emitter.matrix_xy
@@ -462,7 +460,7 @@ local function burst_create(keys)
   self.emitter.speed_factor = self.archetype.emitter.speed_factor
   self.speed = self.archetype.speed
   self.emitter.has = 0
-  self.has_ = bit.bor(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES)
+  self.outgoing_routes = {}
   if keys ~= nil then
     planet.planet_copy_keys(self, keys.planet)
     if keys.construct ~= nil then
@@ -615,7 +613,6 @@ local function burst_kind_new(keys)
   end
   burst_keys.planet = {
     planet_id = keys.planet_id,
-    has_planet_id = keys.has_planet_id,
     map_pos = vec.vec_make(keys.map_pos.x, keys.map_pos.y),
     has_map_pos = keys.has_map_pos,
     pos = vec.vec_make(keys.pos.x, keys.pos.y),

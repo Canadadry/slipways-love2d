@@ -36,7 +36,7 @@
   - [x] Chunk 1 — display rows
   - [x] Chunk 2 — resources
   - [x] Chunk 3 — research projects
-  - [ ] Chunk 4 — the planet's parts
+  - [x] Chunk 4 — the planet's parts
   - [ ] Chunk 5 — particles, probes and targeting
   - [ ] Chunk 6 — the economy
   - [ ] Chunk 7 — UI, buttons and icons

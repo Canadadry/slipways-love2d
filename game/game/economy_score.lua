@@ -1,7 +1,7 @@
 -- Copy of src/game/economy_score.h then src/game/economy_score.c.
 --
--- A planet's own `has` (PLANET_HAS_* bits) is `has_`, and so is the economy's (ECONOMY_HAS_*
--- bits) and the button's: the header's `has` holds the ENTITY_HAS_* bits on the same table.
+-- The economy's own `has` (ECONOMY_HAS_* bits) is `has_`, and so is the button's: the header's
+-- `has` holds the ENTITY_HAS_* bits on the same table.
 --
 -- Include cycle: game.planet and game.probe are required at call time, inside the functions that
 -- need them, so that this module loads before they exist. game.ui_button is required at load, one
@@ -66,7 +66,7 @@ function M.economy_score_planet_upkeep(pt)
     local jo = pt
     local found
     local es
-    if jo.has_development_tier ~= 0 then
+    if jo.development_tier ~= nil then
       found, es = game_data.int_seq_at(game_data.upkeep_by_tier_table, game_data.UPKEEP_BY_TIER_COUNT,
         fixed.p8_fixed_flr_int(jo.development_tier), es)
       if found ~= 0 then
@@ -111,7 +111,7 @@ function M.economy_score_trade_income(entity)
   end
   assert(planet_module.planet_is_family(entity) ~= 0, "economy_score_trade_income: the entity is a planet")
   planet = entity
-  outgoing = (bit.band(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES) ~= 0) and planet.outgoing_routes or nil
+  outgoing = planet.outgoing_routes
 
   if outgoing ~= nil then
     for i = 1, #outgoing do
@@ -133,11 +133,11 @@ function M.economy_score_trade_income(entity)
           if difficulty ~= nil and difficulty.has_trade ~= 0 then
             trade_mult = difficulty.trade
           end
-          if planet.has_development_tier ~= 0 then
+          if planet.development_tier ~= nil then
             _, planet_bonus = game_data.game_data_fixed_seq_at(game_data.partner_bonus_by_tier_table,
               game_data.PARTNER_BONUS_BY_TIER_COUNT, fixed.p8_fixed_flr_int(planet.development_tier), planet_bonus)
           end
-          if oz.has_development_tier ~= 0 then
+          if oz.development_tier ~= nil then
             _, partner_bonus = game_data.game_data_fixed_seq_at(game_data.partner_bonus_by_tier_table,
               game_data.PARTNER_BONUS_BY_TIER_COUNT, fixed.p8_fixed_flr_int(oz.development_tier), partner_bonus)
           end
@@ -178,7 +178,7 @@ local function sum_by_development_tier_visit(pt, ctx)
     return
   end
   jo = pt
-  if jo.has_development_tier ~= 0 then
+  if jo.development_tier ~= nil then
     found, v = game_data.int_seq_at(ctx.seq, ctx.count, fixed.p8_fixed_flr_int(jo.development_tier), v)
     if found ~= 0 then
       ctx.total = fixed.p8_fixed_add(ctx.total, fixed.p8_fixed_from_int(v))
@@ -313,7 +313,6 @@ function M.economy_score_net_income(p)
   assert(planet.planet_is_family(p) ~= 0, "economy_score_net_income: the planet tag holds planets only")
   jo = p
   jo.net_income = kr
-  jo.has_net_income = 1
   return kr
 end
 

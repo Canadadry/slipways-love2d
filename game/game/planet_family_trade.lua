@@ -6,9 +6,6 @@
 --   down_t: { stop, held }.
 --   slipgate_left_press_empty_t: the entity header only, one table.
 --
--- A planet is one table with its entity header: the planet's own `has` (PLANET_HAS_* bits) is
--- `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
---
 -- Include cycle: game.planet, game.planet_display, game.planet_trade, game.planet_family and
 -- game.probe are required at load, since their methods fill the class tables by identity.
 -- game.slipway, game.particle and game.trade are required at call time.
@@ -276,7 +273,7 @@ function M.synthesizer_attach_slipway(self, slipway)
     local jy
 
     assert(planet.planet_is_family(other_end) ~= 0, "synthesizer_attach_slipway: the other end of a registered slipway is a planet")
-    assert(bit.band(other_end.has_, planet.PLANET_HAS_NEEDS) ~= 0,
+    assert(other_end.needs ~= nil,
       "synthesizer_attach_slipway: the other end of a slipway to a synthesizer holds needs")
     jy = other_end.needs
 

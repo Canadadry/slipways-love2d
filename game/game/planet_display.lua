@@ -6,9 +6,6 @@
 -- them, so that this module loads before they exist.
 --
 -- down_t and layout_row_tuple_t zeroes are local.
---
--- A planet is one table with its entity header: the planet's own `has` (PLANET_HAS_* bits) is
--- `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
 local bit = require("bit")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
@@ -135,13 +132,13 @@ function M.planet_refresh(self)
     return
   end
 
-  needs_list = (bit.band(self.has_, planet.PLANET_HAS_NEEDS) ~= 0) and self.needs or nil
+  needs_list = self.needs
   do
     local kw = planet.planet_production_read(self)
     output = kw.resource
     mu = kw.amount
   end
-  by_list = (bit.band(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES) ~= 0) and self.outgoing_routes or nil
+  by_list = self.outgoing_routes
   route_count = (by_list ~= nil) and #by_list or 0
   signature = planet_row_signature(needs_list, output, mu, route_count)
   if bit.band(signature.flags, ROW_SIGNATURE_VALID) ~= 0
@@ -245,7 +242,7 @@ function M.planet_inspection_panel(self)
   end
   if lineage_has(self, entity_class.LINEAGE_STRUCTURE) and self.archetype.name ~= nil then
     icon_row = self.archetype.name
-  elseif self.has_development_tier ~= 0 then
+  elseif self.development_tier ~= nil then
     local mi = fixed.p8_fixed_flr_int(self.development_tier)
 
     if mi >= 1 and mi <= game_data.PLANET_MOOD_ROWS_COUNT then
@@ -256,7 +253,7 @@ function M.planet_inspection_panel(self)
     buttons[0].layout_row_keys = layout.layout_row_keys_of_row(icon_row)
   end
   buttons[0].has_side_tooltip = 1
-  if self.has_net_income ~= 0 then
+  if self.net_income ~= nil then
     local discard_color = 0
     local h_keys = buttons[0].side_tooltip_row
     local signed
@@ -271,7 +268,7 @@ function M.planet_inspection_panel(self)
 
   filter_context.received_needs = {}
 
-  needs = (bit.band(self.has_, planet.PLANET_HAS_NEEDS) ~= 0) and self.needs or nil
+  needs = self.needs
   unmet_needs = {}
   if needs ~= nil then
     for index = 1, #needs do
@@ -290,7 +287,7 @@ function M.planet_inspection_panel(self)
     end
     row_count = row_count + 1
   else
-    local development_tier_fixed = (self.has_development_tier ~= 0) and self.development_tier or fixed.p8_fixed_from_int(0)
+    local development_tier_fixed = self.development_tier or fixed.p8_fixed_from_int(0)
     local kw = planet.planet_production_read(self)
     local r_w = 0
     local resource_is_r_w = false
@@ -339,7 +336,7 @@ function M.planet_inspection_panel(self)
         layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("makes:"))
         layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string(amount_str))
       else
-        local by = (bit.band(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES) ~= 0) and self.outgoing_routes or nil
+        local by = self.outgoing_routes
         local by_count = (by ~= nil) and #by or 0
         local count_str = str.p8_tostr_fixed(fixed.p8_fixed_from_int(by_count))
         local amount_str = str.p8_tostr_fixed(mu)
@@ -548,7 +545,7 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
   hud.hud_select_palette_block_default(memory)
 
   if planet.planet_is_colonized(self) ~= 0 then
-    local mi = fixed.p8_fixed_flr_int((self.has_development_tier ~= 0) and self.development_tier or fixed.p8_fixed_from_int(0))
+    local mi = fixed.p8_fixed_flr_int(self.development_tier or fixed.p8_fixed_from_int(0))
     local color = 0
     local found
     found, color = game_data.int_seq_at(planet.planet_ring_colors().items, planet.planet_ring_colors().count, mi, color)
@@ -665,7 +662,7 @@ function M.planet_apply_project(self, research_project_instance)
     keys.has_map_pos = entity_class.entity_has_map_pos(self)
     keys.pos = vec.vec_make(self.pos.x, self.pos.y)
     keys.has_pos = entity_class.entity_has_pos(self)
-    if bit.band(self.has_, planet.PLANET_HAS_ID) ~= 0 then
+    if self.planet_id ~= nil then
       planet.planet_keys_set_id(keys, self.planet_id)
     end
 

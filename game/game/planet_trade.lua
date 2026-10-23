@@ -3,8 +3,6 @@
 -- Shapes, with the C field names:
 --   trade_offer_t: { route, amount, accept, accepted_routes }, accept a function (offer, route),
 --     accepted_routes a trade_route_list_t.
--- A planet's own `has` (PLANET_HAS_* bits) is `has_`: the header's `has` holds the ENTITY_HAS_*
--- bits on the same table.
 --
 -- Include cycle: game.planet and game.slipway are required at call time, inside the functions
 -- that need them, so that this module loads before they exist.
@@ -34,12 +32,6 @@ local function route_list_copy(list)
     copy[i] = list[i]
   end
   return copy
-end
-
-local function route_list_empty(list)
-  for i = #list, 1, -1 do
-    list[i] = nil
-  end
 end
 
 -- In place: whoever holds dst sees src's elements.
@@ -128,10 +120,10 @@ function M.planet_offer_trade(self, trade_offer)
     any_resource = { kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(resource) }
   end
 
-  assert(bit.band(self.has_, planet.PLANET_HAS_NEEDS) ~= 0, "planet_offer_trade: an offer goes to a planet holding needs")
+  assert(self.needs ~= nil, "planet_offer_trade: an offer goes to a planet holding needs")
   needs = self.needs
 
-  if bonus_resource ~= nil and trade.resource_equal(t_resource, bonus_resource) ~= 0 and self.has_production_bonus == 0 then
+  if bonus_resource ~= nil and trade.resource_equal(t_resource, bonus_resource) ~= 0 and self.production_bonus == nil then
     for index = 1, #needs do
       local entry = needs[index]
       if entry ~= nil then
@@ -156,7 +148,6 @@ function M.planet_offer_trade(self, trade_offer)
       needs_refill(self.needs, prefixed)
     end
     self.production_bonus = fixed.p8_fixed_from_int(1)
-    self.has_production_bonus = 1
   end
 
   for index = 1, #needs do
@@ -208,9 +199,8 @@ function M.planet_rebuild_trades(self)
     return nil
   end
 
-  if bit.band(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES) == 0 then
-    route_list_empty(self.outgoing_routes)
-    self.has_ = bit.bor(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES)
+  if self.outgoing_routes == nil then
+    self.outgoing_routes = {}
   end
 
   do

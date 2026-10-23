@@ -69,10 +69,7 @@ function M.emitter_of(e)
     return e.emitter
   end
   if planet.planet_is_family(e) ~= 0 then
-    if bit.band(e.has_, planet.PLANET_HAS_EMITTER) ~= 0 then
-      return e.emitter
-    end
-    return nil
+    return e.emitter
   end
   return nil
 end

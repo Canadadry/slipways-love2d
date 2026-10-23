@@ -331,7 +331,7 @@ local function total_production_visit(pt, ctx)
 
   assert(planet.planet_is_family(pt) ~= 0, "total_production_visit: the planet tag holds planets only")
   jo = pt
-  if bit.band(jo.has_, planet.PLANET_HAS_NEEDS) == 0 then
+  if jo.needs == nil then
     return
   end
   kw = planet.planet_production_read(jo)
@@ -361,7 +361,7 @@ local function crowding_penalty_visit(l, ctx)
   local current
 
   assert(planet.planet_is_family(l) ~= 0, "crowding_penalty_visit: the structure tag holds planets only")
-  if bit.band(l.has_, planet.PLANET_HAS_NEEDS) == 0 then
+  if l.needs == nil then
     return
   end
   jy = l.needs

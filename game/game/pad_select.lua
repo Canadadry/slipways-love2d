@@ -4,9 +4,7 @@
 --   pad_select_t: { held_frames, fired, chain_frames }.
 local entity_class = require("engine.entity_class")
 local pad_target = require("game.pad_target")
-local planet_module = require("game.planet")
 local cint = require("p8.cint")
-local bit = require("bit")
 
 local M = {}
 
@@ -72,7 +70,7 @@ function M.pad_select_needs_attention(e)
     return 0
   end
   local planet = e
-  if bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) == 0 then
+  if planet.needs == nil then
     return 0
   end
   for i = 1, #planet.needs do

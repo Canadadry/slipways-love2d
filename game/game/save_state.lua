@@ -1028,7 +1028,7 @@ local function capture_node_fields(node, planet)
   end
   node.description_type = description_type_index(planet)
   node.project = project_index(planet.project)
-  if bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) ~= 0 then
+  if planet.needs ~= nil then
     assert(#planet.needs <= M.SAVE_STATE_NEEDS_CAP)
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_NEEDS)
     node.need_count = #planet.needs
@@ -1038,15 +1038,15 @@ local function capture_node_fields(node, planet)
       node.needs[i].resource = need.row.resource
     end
   end
-  if planet.has_development_tier ~= 0 then
+  if planet.development_tier ~= nil then
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_DEVELOPMENT_TIER)
     node.development_tier = planet.development_tier
   end
-  if planet.has_production_bonus ~= 0 then
+  if planet.production_bonus ~= nil then
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_PRODUCTION_BONUS)
     node.production_bonus = planet.production_bonus
   end
-  if bit.band(planet.has_, planet_module.PLANET_HAS_PRODUCTION) ~= 0 then
+  if planet.production ~= nil then
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_PRODUCTION)
     if planet.production.resource ~= nil then
       node.flags = bit.bor(node.flags, M.SAVE_NODE_PRODUCTION_HAS_RESOURCE)
@@ -1075,7 +1075,7 @@ end
 
 local function capture_node_links(out, node, planet, ids)
   node.first_route = out.route_count
-  if bit.band(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES) ~= 0 then
+  if planet.outgoing_routes ~= nil then
     local count = #planet.outgoing_routes
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_OUTGOING_ROUTES)
     assert(out.route_count + count <= M.SAVE_STATE_ROUTES_CAP)

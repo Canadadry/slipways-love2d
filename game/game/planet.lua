@@ -1,17 +1,17 @@
 -- Copy of src/game/planet.h then src/game/planet.c.
 --
 -- Shapes, with the C field names:
---   planet_keys_t: { planet_id, has_planet_id, map_pos, has_map_pos, pos, has_pos }, planet_id a
---     Lua string ("" at its zero).
+--   planet_keys_t: { planet_id, map_pos, has_map_pos, pos, has_pos }, planet_id a Lua string,
+--     nil when not given.
 --   planet_row_signature_t: { output, amount, need_resources, route_count, needs_count, flags,
 --     need_flags }, need_resources and need_flags 0-indexed of PLANET_ROW_SIGNATURE_NEEDS.
 --   planet_t: one table holding the entity header and { archetype, planet_id, slipways, project,
 --     description, needs, planet_type, layout_row, layout_row_signature,
---     targeted_by, production_bonus, has_production_bonus, net_income, has_net_income,
---     incoming_routes, outgoing_routes, development_tier, has_development_tier, production,
---     sprite, palette_block, acceleration_factor, speed, synthesizable_resources, has_,
---     targeting, emitter }. The planet's own `has` (PLANET_HAS_* bits) is `has_`, since the
---     header's `has` holds the ENTITY_HAS_* bits.
+--     targeted_by, production_bonus, net_income, incoming_routes, outgoing_routes,
+--     development_tier, production, sprite, palette_block, acceleration_factor, speed,
+--     synthesizable_resources, targeting, emitter }. planet_id, needs, production_bonus,
+--     net_income, incoming_routes, outgoing_routes, development_tier, production, targeting and
+--     emitter are nil when the planet has none.
 --
 -- Declared in planet.h, defined elsewhere and ported there: planet_refresh_method,
 -- planet_release_row, planet_release_method, planet_accept_drop_method, planet_draw_method,
@@ -19,8 +19,8 @@
 -- planet_offer_trade_method (game.planet_trade); planet_kind_named (game.planet_family).
 --
 -- Include cycle: game.planet_display and game.planet_trade are required at load, since their
--- methods fill planet_class_def; neither requires this module at load. game.message_box and
--- game.particle are required at call time.
+-- methods fill planet_class_def; neither requires this module at load. game.message_box is
+-- required at call time.
 local bit = require("bit")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -35,7 +35,6 @@ local map_tables = require("game.map_tables")
 local planet_display = require("game.planet_display")
 local planet_trade = require("game.planet_trade")
 local research = require("game.research")
-local targeting = require("game.targeting")
 local fixed = require("p8.fixed")
 
 local M = {}
@@ -44,14 +43,6 @@ local M = {}
 M.PLANET_ID_SIZE = 8
 
 M.PLANET_ROW_SIGNATURE_NEEDS = 4
-
-M.PLANET_HAS_TARGETING = bit.lshift(1, 0)
-M.PLANET_HAS_EMITTER = bit.lshift(1, 1)
-M.PLANET_HAS_PRODUCTION = bit.lshift(1, 2)
-M.PLANET_HAS_NEEDS = bit.lshift(1, 3)
-M.PLANET_HAS_INCOMING_ROUTES = bit.lshift(1, 4)
-M.PLANET_HAS_OUTGOING_ROUTES = bit.lshift(1, 5)
-M.PLANET_HAS_ID = bit.lshift(1, 6)
 
 -- production_t p = {0}.
 local function production_zero()
@@ -136,31 +127,18 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.fold_anchor = 0
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.shake = self.archetype.shake
-  self.planet_id = ""
   self.slipways = {}
   self.project = { index = research.RESEARCH_PROJECT_ID_NONE.index, epoch = research.RESEARCH_PROJECT_ID_NONE.epoch }
   self.description = nil
-  self.needs = {}
   self.planet_type = nil
   self.layout_row = nil
   self.layout_row_signature = M.planet_row_signature_zero()
   self.targeted_by = nil
-  self.production_bonus = 0
-  self.has_production_bonus = 0
   self.is_dead = 0
-  self.net_income = 0
-  self.has_net_income = 0
-  self.incoming_routes = {}
-  self.outgoing_routes = {}
   self.development_tier = self.archetype.development_tier
-  self.has_development_tier = self.archetype.has_development_tier
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)
   self.is_hovered = 0
-  self.production = production_zero()
   self.synthesizable_resources = self.archetype.synthesizable_resources
-  self.has_ = 0
-  self.targeting = targeting.targeting_zero()
-  self.emitter = require("game.particle").emitter_zero()
 end
 
 local function planet_create(keys)
@@ -177,15 +155,10 @@ function M.planet_keys_set_id(keys, id)
   assert(#id < M.PLANET_ID_SIZE,
     "planet_keys_set_id: a planet id is \"p\"/\"s\" plus a counter -- stop, measure before widening")
   keys.planet_id = id
-  keys.has_planet_id = 1
 end
 
--- nil without PLANET_HAS_ID.
 function M.planet_id_or_null(self)
-  if bit.band(self.has_, M.PLANET_HAS_ID) ~= 0 then
-    return self.planet_id
-  end
-  return nil
+  return self.planet_id
 end
 
 -- Copies the keys' id and positions that are given; nil keys copy nothing.
@@ -199,10 +172,9 @@ function M.planet_copy_keys(self, keys)
   if keys.has_pos ~= 0 then
     entity_class.entity_set_pos(self, keys.pos)
   end
-  if keys.has_planet_id ~= 0 then
+  if keys.planet_id ~= nil then
     assert(#keys.planet_id < M.PLANET_ID_SIZE, "planet_copy_keys: set the id with planet_keys_set_id")
     self.planet_id = keys.planet_id
-    self.has_ = bit.bor(self.has_, M.PLANET_HAS_ID)
   end
 end
 
@@ -260,20 +232,14 @@ function M.planet_shared_production()
   return g_planet_production_shared
 end
 
--- Without PLANET_HAS_PRODUCTION, the result is the shared production: a write through it shows on
+-- Without its own production, the result is the shared production: a write through it shows on
 -- every such planet.
 function M.planet_production(self)
-  if bit.band(self.has_, M.PLANET_HAS_PRODUCTION) ~= 0 then
-    return self.production
-  end
-  return g_planet_production_shared
+  return self.production or g_planet_production_shared
 end
 
 function M.planet_production_read(self)
-  if bit.band(self.has_, M.PLANET_HAS_PRODUCTION) ~= 0 then
-    return self.production
-  end
-  return g_planet_production_shared
+  return self.production or g_planet_production_shared
 end
 
 function M.planet_class()
@@ -344,12 +310,17 @@ function M.planet_install_project(self, research_project_instance)
       end
     end
   end
-  needs_refill(self.needs, jy)
-  self.has_ = bit.bor(self.has_, M.PLANET_HAS_NEEDS)
+  if self.needs ~= nil then
+    needs_refill(self.needs, jy)
+  else
+    self.needs = jy
+  end
 
+  if self.production == nil then
+    self.production = production_zero()
+  end
   self.production.resource = (research_project_instance ~= nil) and research_project_instance.output or nil
   self.production.amount = fixed.p8_fixed_from_int(0)
-  self.has_ = bit.bor(self.has_, M.PLANET_HAS_PRODUCTION)
 end
 
 function M.planet_is_colonized(self)
@@ -412,7 +383,7 @@ function M.planet_new_year(self)
   if self == nil then
     return
   end
-  if self.has_net_income == 0 or self.net_income == fixed.p8_fixed_from_int(0) then
+  if self.net_income == nil or self.net_income == fixed.p8_fixed_from_int(0) then
     return
   end
   if entity_geom.entity_geom_is_on_screen(self) == 0 then
@@ -461,8 +432,6 @@ end
 -- Lua only: planet_keys_t keys = {0}.
 function M.planet_keys_zero()
   return {
-    planet_id = "",
-    has_planet_id = 0,
     map_pos = vec.vec_make(0, 0),
     has_map_pos = 0,
     pos = vec.vec_make(0, 0),

@@ -66,7 +66,7 @@ local function load_needs(planet, node)
   local needs = {}
 
   if has(node, save_state.SAVE_NODE_HAS_NEEDS) == 0 then
-    planet.has_ = bit.band(bit.band(planet.has_, bit.bnot(planet_module.PLANET_HAS_NEEDS)), 0xFFFF)
+    planet.needs = nil
     return
   end
   for i = 0, node.need_count - 1 do
@@ -78,13 +78,15 @@ local function load_needs(planet, node)
     needs[#needs + 1] = research.need_new(resource)
   end
   planet.needs = needs
-  planet.has_ = bit.bor(planet.has_, planet_module.PLANET_HAS_NEEDS)
 end
 
 local function load_production(planet, node)
   if has(node, save_state.SAVE_NODE_HAS_PRODUCTION) == 0 then
-    planet.has_ = bit.band(bit.band(planet.has_, bit.bnot(planet_module.PLANET_HAS_PRODUCTION)), 0xFFFF)
+    planet.production = nil
     return
+  end
+  if planet.production == nil then
+    planet.production = {}
   end
   planet.production.resource = (has(node, save_state.SAVE_NODE_PRODUCTION_HAS_RESOURCE) ~= 0)
     and node.production_resource or nil
@@ -92,7 +94,6 @@ local function load_production(planet, node)
   planet.production.amount = fixed.p8_fixed_from_int(0)
   local _, amount = economy_tiers.economy_tiers_compute_production_amount(planet, planet.production.amount)
   planet.production.amount = amount
-  planet.has_ = bit.bor(planet.has_, planet_module.PLANET_HAS_PRODUCTION)
 end
 
 M.node_constructors = {
@@ -150,10 +151,14 @@ local function load_node(node)
   -- After planet_install_project, which clears it.
   planet.description = (node.description_type ~= 0) and game_data.planet_types_table[node.description_type - 1].description or nil
   load_needs(planet, node)
-  planet.has_development_tier = has(node, save_state.SAVE_NODE_HAS_DEVELOPMENT_TIER)
-  planet.development_tier = (planet.has_development_tier ~= 0) and node.development_tier or 0
-  planet.has_production_bonus = has(node, save_state.SAVE_NODE_HAS_PRODUCTION_BONUS)
-  planet.production_bonus = (planet.has_production_bonus ~= 0) and node.production_bonus or 0
+  planet.development_tier = nil
+  if has(node, save_state.SAVE_NODE_HAS_DEVELOPMENT_TIER) ~= 0 then
+    planet.development_tier = node.development_tier
+  end
+  planet.production_bonus = nil
+  if has(node, save_state.SAVE_NODE_HAS_PRODUCTION_BONUS) ~= 0 then
+    planet.production_bonus = node.production_bonus
+  end
   planet.fold_anchor = node.fold_anchor
   if node.infraspace ~= 0 then
     planet.infraspace = node.infraspace
@@ -243,10 +248,12 @@ local function load_outgoing_routes(state, node_ids, slipway_ids)
     if has(node, save_state.SAVE_NODE_HAS_OUTGOING_ROUTES) == 0 then
       goto continue
     end
+    if planet.outgoing_routes == nil then
+      planet.outgoing_routes = {}
+    end
     for r = #planet.outgoing_routes, 1, -1 do
       planet.outgoing_routes[r] = nil
     end
-    planet.has_ = bit.bor(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES)
     for k = 0, node.route_count - 1 do
       local saved = state.routes[node.first_route + k]
       local keys = { planets = nil, slipways = nil, resource = nil, resource_is_bool = 0 }

@@ -1,8 +1,5 @@
 -- Copy of src/game/economy_tiers.h then src/game/economy_tiers.c.
 --
--- A planet's own `has` (PLANET_HAS_* bits) is `has_`: the header's `has` holds the ENTITY_HAS_*
--- bits on the same table.
---
 -- Include cycle: game.planet, game.planet_trade and game.slipway are required at call time,
 -- inside the functions that need them, so that this module loads before they exist.
 local bit = require("bit")
@@ -37,13 +34,13 @@ local function rebuild_incoming_routes_reset_visit(pt, ctx)
   end
   assert(planet.planet_is_family(pt) ~= 0, "rebuild_incoming_routes_reset_visit: the planet tag holds planets only")
   jo = pt
+  if jo.incoming_routes == nil then
+    jo.incoming_routes = {}
+    return
+  end
   for i = #jo.incoming_routes, 1, -1 do
     jo.incoming_routes[i] = nil
   end
-  if bit.band(jo.has_, planet.PLANET_HAS_INCOMING_ROUTES) ~= 0 then
-    return
-  end
-  jo.has_ = bit.bor(jo.has_, planet.PLANET_HAS_INCOMING_ROUTES)
 end
 
 local function rebuild_incoming_routes_route_visit(entity, context)
@@ -76,7 +73,7 @@ local function rebuild_incoming_routes_route_visit(entity, context)
         assert(planet_module.planet_is_family(planet_val) ~= 0,
           "rebuild_incoming_routes_route_visit: a trade's planets list holds planets only")
         local planet = planet_val
-        if bit.band(planet.has_, planet_module.PLANET_HAS_ID) ~= 0 then
+        if planet.planet_id ~= nil then
           assert(w_val.class == slipway.slipway_class(),
             "rebuild_incoming_routes_route_visit: a trade's slipways list holds slipways only")
           local w = w_val
@@ -91,7 +88,7 @@ local function rebuild_incoming_routes_route_visit(entity, context)
 
       assert(planet_module.planet_is_family(to_val) ~= 0, "rebuild_incoming_routes_route_visit: a trade leads to a planet")
       dest = to_val
-      if bit.band(dest.has_, planet_module.PLANET_HAS_INCOMING_ROUTES) ~= 0 then
+      if dest.incoming_routes ~= nil then
         trade.trade_route_list_add(dest.incoming_routes, route)
       end
     end
@@ -108,7 +105,6 @@ local function update_tiers_visit(entity, context)
   local changed = context
   local planet
   local tier
-  local has_development_tier
   local development_tier = fixed.p8_fixed_from_int(0)
   local production
 
@@ -118,16 +114,15 @@ local function update_tiers_visit(entity, context)
   tier = M.economy_tiers_compute_tier(entity)
   assert(planet_module.planet_is_family(entity) ~= 0, "update_tiers_visit: the planet tag holds planets only")
   planet = entity
-  has_development_tier = planet.has_development_tier
-  if has_development_tier ~= 0 then
+  if planet.development_tier ~= nil then
     development_tier = planet.development_tier
   end
 
-  if has_development_tier == 0 or tier > development_tier then
-    if has_development_tier ~= 0 and development_tier == fixed.p8_fixed_from_int(1) then
+  if planet.development_tier == nil or tier > development_tier then
+    if planet.development_tier ~= nil and development_tier == fixed.p8_fixed_from_int(1) then
       local hn = research.research_project_get(planet.project)
       if hn ~= nil and hn.byproduct ~= nil then
-        if bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) ~= 0 then
+        if planet.needs ~= nil then
           local entry = research.need_new(
             { kind = trade.RESOURCE_FIXED, number = hn.byproduct })
           planet.needs[#planet.needs + 1] = entry
@@ -135,7 +130,6 @@ local function update_tiers_visit(entity, context)
       end
     end
     planet.development_tier = tier
-    planet.has_development_tier = 1
     development_tier = tier
     changed.value = 1
   end
@@ -156,7 +150,7 @@ function M.economy_tiers_compute_production_amount(planet, out)
   local bonus = fixed.p8_fixed_from_int(0)
 
   assert(planet ~= nil and out ~= nil)
-  if planet.has_development_tier == 0 or planet.development_tier == fixed.p8_fixed_from_int(0) then
+  if planet.development_tier == nil or planet.development_tier == fixed.p8_fixed_from_int(0) then
     return 0, out
   end
   project = research.research_project_get(planet.project)
@@ -169,7 +163,7 @@ function M.economy_tiers_compute_production_amount(planet, out)
   if clamped_idx >= 1 then
     base = fixed.p8_fixed_from_int(production_table.values[clamped_idx - 1])
   end
-  if planet.has_production_bonus ~= 0 then
+  if planet.production_bonus ~= nil then
     bonus = planet.production_bonus
   end
   out = fixed.p8_fixed_add(base, bonus)
@@ -198,9 +192,8 @@ function M.economy_tiers_compute_tier(entity)
     return fixed.p8_fixed_from_int(0)
   end
 
-  needs = (bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) ~= 0) and planet.needs or nil
-  incoming_routes = (bit.band(planet.has_, planet_module.PLANET_HAS_INCOMING_ROUTES) ~= 0)
-    and planet.incoming_routes or nil
+  needs = planet.needs
+  incoming_routes = planet.incoming_routes
   if needs ~= nil then
     for index = 1, #needs do
       local i_val = needs[index]
@@ -256,7 +249,7 @@ function M.economy_tiers_compute_tier(entity)
   end
 
   do
-    local by = (bit.band(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES) ~= 0) and planet.outgoing_routes or nil
+    local by = planet.outgoing_routes
     local by_count = (by ~= nil) and #by or 0
     local incoming_routes_count = (incoming_routes ~= nil) and #incoming_routes or 0
     local mid_val = fixed.p8_fixed_mid(fixed.p8_fixed_from_int(by_count), fixed.p8_fixed_from_int(incoming_routes_count),

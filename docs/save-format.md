@@ -107,13 +107,13 @@ Node kinds: 0 planet, 1 protostar, 2 structure, 3 processor, 4 slipgate, 5 infra
 | 0 | `HAS_POS` | pos follows |
 | 1 | `HAS_MAP_POS` | map_pos follows |
 | 2 | `HAS_PLANET_ID` | the planet id follows |
-| 3 | `HAS_NEEDS` | mirrors `PLANET_HAS_NEEDS`; the needs follow |
+| 3 | `HAS_NEEDS` | set when the planet holds needs; the needs follow |
 | 4 | `HAS_DEVELOPMENT_TIER` | development_tier follows |
 | 5 | `HAS_PRODUCTION_BONUS` | production_bonus follows |
-| 6 | `HAS_PRODUCTION` | mirrors `PLANET_HAS_PRODUCTION`; no field of its own |
+| 6 | `HAS_PRODUCTION` | set when the planet holds its own production; no field of its own |
 | 7 | `PRODUCTION_HAS_RESOURCE` | the production resource follows; requires `HAS_PRODUCTION` |
 | 8 | `SYNTHESIZER_SPENT` | the node's `synthesizable_resources` differs from its archetype's; synthesizer kind only; no field |
-| 9 | `HAS_OUTGOING_ROUTES` | mirrors `PLANET_HAS_OUTGOING_ROUTES`; the routes follow |
+| 9 | `HAS_OUTGOING_ROUTES` | set when the planet holds outgoing routes; the routes follow |
 | 10 | `HAS_STATE_TIME` | state_time follows; set if and only if the state is `VANISHING` or the kind is not planet |
 
 Bits 11–15 are always 0.

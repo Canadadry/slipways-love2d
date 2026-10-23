@@ -181,11 +181,7 @@ function M.targeting_of(e)
     return e.targeting
   end
   if planet_module.planet_is_family(e) ~= 0 then
-    local planet = e
-    if bit.band(planet.has_, planet_module.PLANET_HAS_TARGETING) ~= 0 then
-      return planet.targeting
-    end
-    return nil
+    return e.targeting
   end
   if e.class == require("game.slipway").slipway_class() then
     return e.targeting
