@@ -163,7 +163,7 @@ function M.need_new(resource)
 
   assert(resource.kind ~= trade.RESOURCE_FALSE, "need_new: a need holds a fixed resource or none, never false")
   i = {}
-  i.row = map_tables.map_tables_make_data_row({})
+  i.row = map_tables.make_data_row({})
   if resource.kind == trade.RESOURCE_FIXED then
     i.row.resource = resource.number
   end

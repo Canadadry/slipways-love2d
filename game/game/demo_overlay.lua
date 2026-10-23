@@ -76,9 +76,9 @@ function M.demo_overlay_draw(gfx, mem, frame)
   gfx_module.camera_reset(own)
   gfx_module.fillp_reset(own)
   draw_tag(own, mem)
-  local caption = M.demo_overlay_find_caption(demo_data.demo_data_captions, demo_data.demo_data_caption_count, frame)
+  local caption = M.demo_overlay_find_caption(demo_data.captions, demo_data.caption_count, frame)
   if caption ~= nil then
-    draw_caption(own, mem, demo_data.demo_data_captions[caption].text)
+    draw_caption(own, mem, demo_data.captions[caption].text)
   end
 end
 

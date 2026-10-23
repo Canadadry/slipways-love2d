@@ -197,10 +197,10 @@ local function need_row(need)
 end
 
 local gap_items = {
-  map_tables.map_tables_make_data_item({ is_false = true }),
-  map_tables.map_tables_make_data_item({ number = 1 }),
+  map_tables.make_data_item({ is_false = true }),
+  map_tables.make_data_item({ number = 1 }),
 }
-local gap = map_tables.map_tables_make_data_row({ count = 2, items = gap_items })
+local gap = map_tables.make_data_row({ count = 2, items = gap_items })
 
 -- Returns the new last button and the new count.
 local function planet_append_button(buttons, count)
@@ -503,7 +503,7 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
 
   if self.state == entity_class.STATE_VANISHING then
     local t = self.state_time
-    if visual_random.visual_random_draw(fixed.from_int(30)) < fixed.sub(t, fixed.from_int(30)) then
+    if visual_random.draw(fixed.from_int(30)) < fixed.sub(t, fixed.from_int(30)) then
       return
     end
   end

@@ -1,4 +1,4 @@
--- Include cycle: game.probe and game.wormhole are required at call time (background_left_press).
+-- Include cycle: game.probe and game.wormhole are required at call time (background.left_press).
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -14,7 +14,7 @@ local vram = require("p8.vram")
 
 local M = {}
 
-M.BACKGROUND_GRID_EDGE = 262
+M.GRID_EDGE = 262
 
 local DRAW_PALETTE_LENGTH = 16
 
@@ -27,14 +27,14 @@ local function background_to_int(x)
 end
 
 local function background_draw_method(self, screen_pos)
-  M.background_draw(dispatch_context.gfx(), dispatch_context.mem(), self)
+  M.draw(dispatch_context.gfx(), dispatch_context.mem(), self)
 end
 
 local function background_left_press_method(self, mouse)
-  return M.background_left_press(self)
+  return M.left_press(self)
 end
 
-M.background_class_def = {
+M.class_def = {
   draw = background_draw_method,
   hit_test = entity_registry.hit_test_always,
   left_press = background_left_press_method,
@@ -47,52 +47,52 @@ M.background_class_def = {
 local function background_create()
   local self = {}
 
-  entity.init_instance(self, M.background_class_def, game_data.background_archetype.state,
+  entity.init_instance(self, M.class_def, game_data.background_archetype.state,
     game_data.background_archetype.state_time)
   self.archetype = game_data.background_archetype
   entity_registry.set_layer(self, self.archetype.layer)
   self.is_hovered = false
   self.seed = fixed.rnd_state()
-  M.background_construct(dispatch_context.mem(), self)
+  M.construct(dispatch_context.mem(), self)
   entity.construct(self)
   return self
 end
 
-function M.background_init()
-  M.background_shutdown()
+function M.init()
+  M.shutdown()
   g_background_up = true
 end
 
-function M.background_shutdown()
+function M.shutdown()
   g_background_up = false
 end
 
-function M.background_ready()
+function M.ready()
   return g_background_up
 end
 
-function M.background_class()
-  return M.background_class_def
+function M.class()
+  return M.class_def
 end
 
 -- Records the RNG state as its seed, then draws its tile map from the RNG.
-function M.background_new()
+function M.new()
   return background_create()
 end
 
 -- The live background, or nil when none is up.
-function M.background_live()
+function M.live()
   local live = entity_registry.live_entities()
   for i = 1, #live do
     local candidate = live[i]
-    if candidate.class == M.background_class_def then
+    if candidate.class == M.class_def then
       return candidate
     end
   end
   return nil
 end
 
-function M.background_construct(memory, self)
+function M.construct(memory, self)
   local row_values = {}
   local row_values_set = {}
   local value = fixed.from_int(0)
@@ -179,22 +179,22 @@ local function background_draw_map_image(gfx, mem)
   image.draw(gfx, mem, image_slot.IMAGE_SLOT_BACKGROUND, 0, 0)
 end
 
-function M.background_draw(gfx, mem, self)
+function M.draw(gfx, mem, self)
   if gfx == nil or mem == nil then
     return
   end
 
   background_draw_map_image(gfx, mem)
   gfx_module.fillp(gfx, 0xA5A5)
-  for xy = 3, M.BACKGROUND_GRID_EDGE, 32 do
-    gfx_module.rectfill(gfx, mem, xy, 0, xy, M.BACKGROUND_GRID_EDGE, 1)
-    gfx_module.rectfill(gfx, mem, 0, xy, M.BACKGROUND_GRID_EDGE, xy, 1)
+  for xy = 3, M.GRID_EDGE, 32 do
+    gfx_module.rectfill(gfx, mem, xy, 0, xy, M.GRID_EDGE, 1)
+    gfx_module.rectfill(gfx, mem, 0, xy, M.GRID_EDGE, xy, 1)
   end
   gfx_module.fillp_reset(gfx)
-  gfx_module.rect(gfx, mem, 0, 0, M.BACKGROUND_GRID_EDGE, M.BACKGROUND_GRID_EDGE, 5)
+  gfx_module.rect(gfx, mem, 0, 0, M.GRID_EDGE, M.GRID_EDGE, 5)
 end
 
-function M.background_left_press(self)
+function M.left_press(self)
   local g_tag
   local count
   local made
@@ -205,7 +205,7 @@ function M.background_left_press(self)
   if count > 0 then
     local wormhole = require("game.wormhole")
     assert(wormhole.wormhole_ready(),
-      "wormhole_init() must run before background_left_press builds a wormhole")
+      "wormhole_init() must run before background.left_press builds a wormhole")
     made = wormhole.wormhole_new()
   else
     made = require("game.probe").probe_new(nil)

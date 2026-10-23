@@ -128,11 +128,11 @@ function M.economy_score_trade_income(entity)
             trade_mult = difficulty.trade
           end
           if planet.development_tier ~= nil then
-            _, planet_bonus = game_data.game_data_fixed_seq_at(game_data.partner_bonus_by_tier_table,
+            _, planet_bonus = game_data.fixed_seq_at(game_data.partner_bonus_by_tier_table,
               game_data.PARTNER_BONUS_BY_TIER_COUNT, fixed.flr_int(planet.development_tier), planet_bonus)
           end
           if oz.development_tier ~= nil then
-            _, partner_bonus = game_data.game_data_fixed_seq_at(game_data.partner_bonus_by_tier_table,
+            _, partner_bonus = game_data.fixed_seq_at(game_data.partner_bonus_by_tier_table,
               game_data.PARTNER_BONUS_BY_TIER_COUNT, fixed.flr_int(oz.development_tier), partner_bonus)
           end
           bonus = fixed.add(fixed.from_int(1), fixed.add(planet_bonus, partner_bonus))

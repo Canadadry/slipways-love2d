@@ -20,7 +20,7 @@ M.DRAW_FUNCTION_COUNT = 6
 -- Defined above the tables, like the two constructors below, because the
 -- tables call them at load. Returns made; raises on a field of fields that made
 -- lacks, which would otherwise be dropped silently.
-function M.map_tables_check_fields(fields, made, type_name)
+function M.check_fields(fields, made, type_name)
   for key in pairs(fields) do
     if made[key] == nil then
       error(type_name .. ": unknown field " .. tostring(key))
@@ -29,10 +29,10 @@ function M.map_tables_check_fields(fields, made, type_name)
   return made
 end
 
-local check_fields = M.map_tables_check_fields
+local check_fields = M.check_fields
 
 -- A new data item: a missing field takes its default, an unknown field raises.
-function M.map_tables_make_data_item(fields)
+function M.make_data_item(fields)
   return check_fields(fields, {
     text = fields.text,
     number = fields.number or 0,
@@ -45,7 +45,7 @@ function M.map_tables_make_data_item(fields)
 end
 
 -- A new data row: a missing field takes its default, an unknown field raises.
-function M.map_tables_make_data_row(fields)
+function M.make_data_row(fields)
   return check_fields(fields, {
     count = fields.count or 0,
     items = fields.items,
@@ -55,8 +55,8 @@ function M.map_tables_make_data_row(fields)
   }, "data_row_t")
 end
 
-local data_item = M.map_tables_make_data_item
-local data_row = M.map_tables_make_data_row
+local data_item = M.make_data_item
+local data_row = M.make_data_row
 
 local function project_record(fields)
   return check_fields(fields, {
@@ -692,7 +692,7 @@ function M.production_tables_lookup(key)
   return nil
 end
 
-function M.map_tables_technologies_lookup(px)
+function M.technologies_lookup(px)
   if px == nil then
     return nil
   end

@@ -15,7 +15,7 @@ The largest record of the `worst-case/` games, measured with the C game before p
 
 When the record format changes (a version bump, a new field), `tests/e2e/pad_resume_at_start.json`'s `initial_save` stops decoding and its hash changes: the fixture must be re-cut from `pad_research`'s last record, as `tests/e2e/pad_resume_at_start.txt` records, and that one hash rebaselined. No target writes a save to a file today, so re-cutting it first needs one (a leftover for plan 5).
 
-Visual-only effects (particles, the probe and title emitters, harvest bursts, transit dots, the flicker of a vanishing planet) draw from a second random stream, `game/game/visual_random.lua`, that the record does not hold. The stream is seeded once at boot and never reseeded: a resumed game draws from wherever the stream stands at the resume, and particles restart from nothing. `visual_random_state` and `visual_random_set_state` read and set the stream; nothing in `game/` calls them.
+Visual-only effects (particles, the probe and title emitters, harvest bursts, transit dots, the flicker of a vanishing planet) draw from a second random stream, `game/game/visual_random.lua`, that the record does not hold. The stream is seeded once at boot and never reseeded: a resumed game draws from wherever the stream stands at the resume, and particles restart from nothing. `visual_random.state` and `visual_random.set_state` read and set the stream; nothing in `game/` calls them.
 
 ## Encoding rules
 

@@ -119,16 +119,16 @@ local function message_box_draw_article(gfx, mem, article)
     local argument = article.as.scalars.arguments[i]
 
     if argument.kind == M.MESSAGE_BOX_ARGUMENT_TEXT then
-      items[i] = map_tables.map_tables_make_data_item({ text = article.as.scalars.text })
+      items[i] = map_tables.make_data_item({ text = article.as.scalars.text })
     elseif argument.kind == M.MESSAGE_BOX_ARGUMENT_FALSE then
-      items[i] = map_tables.map_tables_make_data_item({ is_false = true })
+      items[i] = map_tables.make_data_item({ is_false = true })
     elseif argument.kind == M.MESSAGE_BOX_ARGUMENT_NIL then
-      items[i] = map_tables.map_tables_make_data_item({ is_nil = true })
+      items[i] = map_tables.make_data_item({ is_nil = true })
     else
-      items[i] = map_tables.map_tables_make_data_item({ is_fixed = true, fixed = argument.number })
+      items[i] = map_tables.make_data_item({ is_fixed = true, fixed = argument.number })
     end
   end
-  row = map_tables.map_tables_make_data_row({
+  row = map_tables.make_data_row({
     count = article.as.scalars.count,
     items = items,
     draw_function = article.draw_function,

@@ -270,7 +270,7 @@ local function load_rolls(state)
   local walk
   local vanish_walk
 
-  galaxy.galaxy_install_rolls()
+  galaxy.install_rolls()
   picker = planet_module.planet_type_picker()
   walk = gen.weighted_picker_walk(picker)
   vanish_walk = planet_module.planet_vanish_roll()
@@ -294,7 +294,7 @@ end
 local node_ids = {}
 local slipway_ids = {}
 
--- Where cart_start_game calls galaxy_populate: the saved nodes, then the
+-- Where cart_start_game calls galaxy.populate: the saved nodes, then the
 -- type picker and vanish walk.
 function M.save_load_world(state)
   assert(state ~= nil)

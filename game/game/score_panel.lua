@@ -19,8 +19,8 @@ local vram = require("p8.vram")
 
 local M = {}
 
-local data_item = map_tables.map_tables_make_data_item
-local data_row = map_tables.map_tables_make_data_row
+local data_item = map_tables.make_data_item
+local data_row = map_tables.make_data_row
 
 -- Every field of the data item src written into dst.
 local function data_item_assign(dst, src)

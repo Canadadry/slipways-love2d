@@ -138,7 +138,7 @@ function M.pad_jump_scroll(x, y, dx, dy)
 end
 
 local function world_pixel(map_units)
-  return fixed.flr_int(fixed.mul(map_units, fixed.from_int(galaxy.GALAXY_MAP_SCALE)))
+  return fixed.flr_int(fixed.mul(map_units, fixed.from_int(galaxy.MAP_SCALE)))
 end
 
 function M.pad_jump_world_point(e, x, y)

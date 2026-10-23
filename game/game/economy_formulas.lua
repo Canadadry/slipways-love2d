@@ -51,10 +51,10 @@ end
 function M.economy_formulas_route_base_cost(from_pos, to_pos)
   local diff = vec.sub(to_pos, from_pos)
   local length_squared = vec.length_squared(diff)
-  local x = fixed.div(length_squared, game_data.game_data_route_length_factor())
+  local x = fixed.div(length_squared, game_data.route_length_factor())
   local ec = fixed.pow075(x)
   local clamped = fixed_max(fixed.LIT(0x00008000, 0.5), ec)
-  local scale = fixed.mul(game_data.game_data_route_cost_factor(), M.economy_formulas_cost_scale())
+  local scale = fixed.mul(game_data.route_cost_factor(), M.economy_formulas_cost_scale())
   local cost = fixed.flr(fixed.mul(scale, clamped))
   return cost
 end

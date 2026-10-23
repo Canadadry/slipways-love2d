@@ -331,13 +331,13 @@ function M.burst_spawn_particle(self_ptr)
   local a
   local particle
 
-  qd = fixed.add(visual_random.visual_random_draw(fixed.LIT(0x00018000, 1.5)),
+  qd = fixed.add(visual_random.draw(fixed.LIT(0x00018000, 1.5)),
     fixed.LIT(0x00008000, 0.5))
-  if visual_random.visual_random_draw_one() < fixed.LIT(0x00009999, 0.6) then
+  if visual_random.draw_one() < fixed.LIT(0x00009999, 0.6) then
     qd = fixed.mul(fixed.flr(fixed.div(qd, fixed.LIT(0x00008000, 0.5))),
       fixed.LIT(0x00008000, 0.5))
   end
-  p = vec.from_polar(qd, visual_random.visual_random_draw_one())
+  p = vec.from_polar(qd, visual_random.draw_one())
 
   ms = self.speed
   iu = self.acceleration_factor
@@ -350,7 +350,7 @@ function M.burst_spawn_particle(self_ptr)
   particle.pos = p
   particle.velocity = v
   particle.acceleration = a
-  particle.life = fixed.add(visual_random.visual_random_draw(py), py)
+  particle.life = fixed.add(visual_random.draw(py), py)
 
   return particle
 end

@@ -64,12 +64,12 @@ function M.research_project_tooltip(self)
   end
 
   jb = {}
-  jb.outer = map_tables.map_tables_make_data_row({})
-  jb.outer_item = map_tables.map_tables_make_data_item({})
-  jb.inner = map_tables.map_tables_make_data_row({})
+  jb.outer = map_tables.make_data_row({})
+  jb.outer_item = map_tables.make_data_item({})
+  jb.inner = map_tables.make_data_row({})
   jb.inner_items = {}
   for i = 1, 3 do
-    jb.inner_items[i] = map_tables.map_tables_make_data_item({})
+    jb.inner_items[i] = map_tables.make_data_item({})
   end
   jb.inner_items[1].text = research_project_tooltip_join(self)
   jb.inner_items[2].number = 13
@@ -102,10 +102,10 @@ local function planet_resource_row_pair(first, width)
 end
 
 local tail_row_items = {
-  map_tables.map_tables_make_data_item({ is_false = true }),
-  map_tables.map_tables_make_data_item({ number = -4 }),
+  map_tables.make_data_item({ is_false = true }),
+  map_tables.make_data_item({ number = -4 }),
 }
-local tail_row = map_tables.map_tables_make_data_row({ count = 2, items = tail_row_items })
+local tail_row = map_tables.make_data_row({ count = 2, items = tail_row_items })
 
 local function planet_resource_row_keys(inputs, output, amount, used, spacing, out_keys)
   local planet = require("game.planet")

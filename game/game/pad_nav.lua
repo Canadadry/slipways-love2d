@@ -385,7 +385,7 @@ local function entity_under(x, y, accept)
 end
 
 local function presses_off_background(e)
-  return e.class.left_press ~= nil and e.class ~= background.background_class()
+  return e.class.left_press ~= nil and e.class ~= background.class()
 end
 
 local function click(nav, played)

@@ -30,7 +30,7 @@ function M.slipway_spawn_transit_dot(self, f, t)
     return
   end
   -- The visual draw must stay before the served planets test, or the visual stream desynchronises.
-  if visual_random.visual_random_draw_one() >= fixed.LIT(0x0000147a, 0.08) then
+  if visual_random.draw_one() >= fixed.LIT(0x0000147a, 0.08) then
     return
   end
 

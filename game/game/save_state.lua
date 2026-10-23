@@ -1157,7 +1157,7 @@ end
 function M.save_state_capture(out)
   local ids = {}
   local vanish_walk = planet_module.planet_vanish_roll()
-  local background = background_module.background_live()
+  local background = background_module.live()
   local ok, counter
 
   assert(vanish_walk ~= nil, "save_state_capture: a running game has a vanish walk")

@@ -59,7 +59,7 @@ local function quit_game()
   entity_registry.forget_registries()
 end
 
--- Do not list the inits data_init() and score_panel_init() run themselves: they would run twice.
+-- Do not list the inits data_init.init() and score_panel_init() run themselves: they would run twice.
 function M.cart_load()
   local memory
 
@@ -79,7 +79,7 @@ function M.cart_load()
 
   ui_button.button_init()
   ui_button.modal_backdrop_init()
-  background.background_init()
+  background.init()
   message_box.message_box_init()
   message_box.toast_init()
   probe.probe_init()
@@ -87,7 +87,7 @@ function M.cart_load()
 
   memory = dispatch_context.mem()
   if memory ~= nil then
-    data_init.data_init()
+    data_init.init()
   end
 
   planet.planet_init()
@@ -129,13 +129,13 @@ function M.cart_shutdown()
   slipway.slipway_shutdown()
   planet.planet_shutdown()
 
-  data_init.data_init_shutdown()
+  data_init.shutdown()
 
   economy_module.economy_shutdown()
   probe.probe_shutdown()
   message_box.toast_shutdown()
   message_box.message_box_shutdown()
-  background.background_shutdown()
+  background.shutdown()
   ui_button.modal_backdrop_shutdown()
   ui_button.button_shutdown()
 
@@ -231,7 +231,7 @@ local function start_world(difficulty)
 
   bootstrap.reset_world()
   research.research_expire_project_ids()
-  background.background_new()
+  background.new()
 end
 
 local function start_interface()
@@ -271,7 +271,7 @@ end
 
 function M.cart_start_game(chosen_option)
   start_world(chosen_option)
-  galaxy.galaxy_populate(fixed.from_int(90))
+  galaxy.populate(fixed.from_int(90))
   start_interface()
   recompute_economy()
 end
@@ -299,7 +299,7 @@ function M.cart_resume_game(state)
   save_load.save_load_difficulty(state, difficulty)
   save_load.save_load_background_seed(state)
   start_world(difficulty)
-  assert(background.background_live().seed == state.background_seed,
+  assert(background.live().seed == state.background_seed,
     "cart_resume_game: the RNG moved between the reseed and the background")
   save_load.save_load_world(state)
   start_interface()

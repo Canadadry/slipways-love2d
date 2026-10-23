@@ -11,11 +11,11 @@ local str = require("p8.str")
 local M = {}
 
 -- Planets lie in [margin, margin + span) on both axes, in map units; a planet's position is its map position times the scale.
-M.GALAXY_MAP_MARGIN = fixed.LIT(0x00002000, 0.125)
-M.GALAXY_MAP_SPAN = fixed.LIT(0x0002c000, 2.75)
-M.GALAXY_MAP_SCALE = 128
+M.MAP_MARGIN = fixed.LIT(0x00002000, 0.125)
+M.MAP_SPAN = fixed.LIT(0x0002c000, 2.75)
+M.MAP_SCALE = 128
 
-function M.galaxy_populate(planet_count)
+function M.populate(planet_count)
   local planet = require("game.planet")
   local fixed_one = fixed.from_int(1)
   local threshold = fixed.LIT(0x00000ccc, 0.05)
@@ -30,8 +30,8 @@ function M.galaxy_populate(planet_count)
 
     -- Not an inert loop: every accepted planet registers under the planet tag, so later candidates are rejected against it.
     repeat
-      local rx = fixed.add(fixed.rnd(M.GALAXY_MAP_SPAN), M.GALAXY_MAP_MARGIN)
-      local ry = fixed.add(fixed.rnd(M.GALAXY_MAP_SPAN), M.GALAXY_MAP_MARGIN)
+      local rx = fixed.add(fixed.rnd(M.MAP_SPAN), M.MAP_MARGIN)
+      local ry = fixed.add(fixed.rnd(M.MAP_SPAN), M.MAP_MARGIN)
       p_vec = vec.make(rx, ry)
     until not entity_geom.any_within(p_vec, entity_registry.entities_by_tag(entity_class.TAG_PLANET),
       threshold)
@@ -39,18 +39,18 @@ function M.galaxy_populate(planet_count)
     id_num_str = str.tostr_fixed(planet_id)
     planet.planet_keys_set_id(keys, str.concat2("p", id_num_str))
     keys.map_pos = p_vec
-    keys.pos = vec.mul(p_vec, fixed.from_int(M.GALAXY_MAP_SCALE))
+    keys.pos = vec.mul(p_vec, fixed.from_int(M.MAP_SCALE))
 
     made = planet.planet_new(keys)
     planet_id = fixed.add(planet_id, fixed_one)
   end
 
-  M.galaxy_install_rolls()
+  M.install_rolls()
 end
 
 -- The type picker and vanish walk of a new game, for the current difficulty.
 -- Draws nothing from the RNG: a resume builds them the same way.
-function M.galaxy_install_rolls()
+function M.install_rolls()
   local planet = require("game.planet")
   local difficulty = require("game.economy_score").economy_score_difficulty()
   local difficulty_type_bias = fixed.from_int(0)

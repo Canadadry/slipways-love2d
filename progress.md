@@ -83,7 +83,7 @@
   - [x] Chunk 2 — runtime p8/
   - [x] Chunk 3 — LÖVE glue and devtools
   - [x] Chunk 4 — engine
-  - [ ] Chunk 5 — data and generation
+  - [x] Chunk 5 — data and generation
   - [ ] Chunk 6 — layout and images
   - [ ] Chunk 7 — planets
   - [ ] Chunk 8 — slipways, wormholes, trade, probes

@@ -74,11 +74,11 @@ end
 -- The pad has no mouse to reach the screen's edges: the bound keeps the screen centre over the galaxy's planet area.
 local function camera_pad_bound(p, frame_size)
   local galaxy = require("game.galaxy")
-  local scale = fixed.from_int(galaxy.GALAXY_MAP_SCALE)
+  local scale = fixed.from_int(galaxy.MAP_SCALE)
   local half = fixed.from_int(cint.div(frame_size, 2))
-  local near = fixed.sub(fixed.mul(galaxy.GALAXY_MAP_MARGIN, scale), half)
+  local near = fixed.sub(fixed.mul(galaxy.MAP_MARGIN, scale), half)
   local far = fixed.sub(
-    fixed.mul(fixed.add(galaxy.GALAXY_MAP_MARGIN, galaxy.GALAXY_MAP_SPAN), scale), half)
+    fixed.mul(fixed.add(galaxy.MAP_MARGIN, galaxy.MAP_SPAN), scale), half)
 
   return fixed.mid(near, far, p)
 end

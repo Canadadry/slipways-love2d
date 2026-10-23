@@ -35,7 +35,7 @@ end
 -- The row is copied, its items array shared with input's row.
 local function need_copy_into(copy, input)
   local row = input.row
-  copy.row = map_tables.map_tables_make_data_row({
+  copy.row = map_tables.make_data_row({
     count = row.count,
     items = row.items,
     color = row.color,

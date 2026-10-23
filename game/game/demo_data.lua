@@ -1,6 +1,6 @@
 local M = {}
 
-M.demo_data_record = {
+M.record = {
   83, 76, 87, 89, 1, 0, 0, 15, 2, 0, 0, 86, 0, 0, 0, 12,
   0, 0, 0, 2, 0, 0, 0, 84, 13, 0, 0, 1, 0, 2, 0, 1,
   79, 111, 41, 78, 157, 26, 61, 102, 43, 1, 1, 1, 1, 1, 2, 2,
@@ -244,7 +244,7 @@ M.demo_data_record = {
   150, 1, 47, 74, 0, 0, 110, 1, 87, 69, 228, 255,
 }
 
-M.demo_data_pad_buttons = {
+M.pad_buttons = {
   [0] = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -418,7 +418,7 @@ M.demo_data_pad_buttons = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 }
 
-M.demo_data_captions = {
+M.captions = {
   { from = 0, to = 300, text = "build a trading empire\nacross the stars" },
   { from = 300, to = 785, text = "probe the dark\nto find new planets" },
   { from = 785, to = 1225, text = "colonize planets:\neach one needs and makes goods" },
@@ -428,8 +428,8 @@ M.demo_data_captions = {
   { from = 2556, to = 2736, text = "slipways\npress any button" },
 }
 
-M.demo_data_record_count = 3852
-M.demo_data_frame_count = 2736
-M.demo_data_caption_count = 7
+M.record_count = 3852
+M.frame_count = 2736
+M.caption_count = 7
 
 return M

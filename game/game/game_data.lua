@@ -26,9 +26,9 @@ M.PLANET_RING_COLORS_COUNT = 4
 local HALF_WIDTH = cint.div(vram.SCREEN_WIDTH, 2)
 local HALF_HEIGHT = cint.div(vram.SCREEN_HEIGHT, 2)
 
-local check_fields = map_tables.map_tables_check_fields
-local data_item = map_tables.map_tables_make_data_item
-local data_row = map_tables.map_tables_make_data_row
+local check_fields = map_tables.check_fields
+local data_item = map_tables.make_data_item
+local data_row = map_tables.make_data_row
 
 -- score is nil when the row is unscored; pos_x and pos_y are both nil when it has no position.
 local function score_row(fields)
@@ -1118,7 +1118,7 @@ M.synthesizer_kind_record = kind_record(
   M.synthesizer_required_tech_text, 0x420000, PLACING, 0x280000, M.synthesizer_archetype
 )
 
--- int_seq_at and game_data_fixed_seq_at return found, value: value is out
+-- int_seq_at and game_data.fixed_seq_at return found, value: value is out
 -- unchanged when found is false.
 function M.int_seq_at(seq, count, i, out)
   assert(seq ~= nil and count >= 0, "a sequence is an array and its length")
@@ -1129,7 +1129,7 @@ function M.int_seq_at(seq, count, i, out)
   return true, out
 end
 
-function M.game_data_fixed_seq_at(seq, count, i, out)
+function M.fixed_seq_at(seq, count, i, out)
   assert(seq ~= nil and count >= 0, "a sequence is an array and its length")
   if i < 1 or i > count then
     return false, out
@@ -1159,11 +1159,11 @@ function M.planet_types_lookup(px)
   return nil
 end
 
-function M.game_data_route_cost_factor()
+function M.route_cost_factor()
   return fixed.from_int(6)
 end
 
-function M.game_data_route_length_factor()
+function M.route_length_factor()
   return fixed.LIT(0x00001902, 0.0977)
 end
 

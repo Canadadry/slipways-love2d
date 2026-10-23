@@ -138,7 +138,7 @@ end
 function M.button_keys_set_tooltip_row(keys, row)
   keys.tooltip_row = nil
   if row ~= nil then
-    keys.tooltip_row = map_tables.map_tables_make_data_row({
+    keys.tooltip_row = map_tables.make_data_row({
       count = row.count,
       items = row.items,
       color = row.color,

@@ -405,13 +405,13 @@ function M.probe_spawn_particle(self)
   end
 
   -- Two statements: rnd(angle_slices) must be drawn before rnd(0.5), or the replays move.
-  rnd_angle_slices = visual_random.visual_random_draw(angle_slices)
-  rnd_half = visual_random.visual_random_draw(fixed.LIT(0x00008000, 0.5))
+  rnd_angle_slices = visual_random.draw(angle_slices)
+  rnd_half = visual_random.draw(fixed.LIT(0x00008000, 0.5))
   a = fixed.add(
     fixed.div(fixed.add(fixed.flr(rnd_angle_slices), rnd_half), angle_slices),
     fixed.mul(state_time, fixed.LIT(0x00000041, 0.001)))
 
-  p = vec.from_polar(fixed.add(base_radius, visual_random.visual_random_draw_one()), a)
+  p = vec.from_polar(fixed.add(base_radius, visual_random.draw_one()), a)
   v = vec.mul(p, speed_factor)
 
   if pk then

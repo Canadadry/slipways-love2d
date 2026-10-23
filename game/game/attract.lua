@@ -27,7 +27,7 @@ end
 function M.attract_frame(attract, on_title, raw_buttons, played_buttons)
   assert(type(on_title) == "boolean", "attract_frame: on_title is a boolean")
   if attract.phase == M.ATTRACT_PHASE_PLAYING then
-    if raw_buttons ~= 0 or attract.demo_frame == demo_data.demo_data_frame_count then
+    if raw_buttons ~= 0 or attract.demo_frame == demo_data.frame_count then
       if raw_buttons ~= 0 then
         attract.phase = M.ATTRACT_PHASE_SWALLOWING
       else
@@ -37,7 +37,7 @@ function M.attract_frame(attract, on_title, raw_buttons, played_buttons)
       played_buttons = 0
       return M.ATTRACT_ACTION_RETURN, played_buttons
     end
-    played_buttons = demo_data.demo_data_pad_buttons[attract.demo_frame]
+    played_buttons = demo_data.pad_buttons[attract.demo_frame]
     attract.demo_frame = attract.demo_frame + 1
     return M.ATTRACT_ACTION_NONE, played_buttons
   end
@@ -56,7 +56,7 @@ function M.attract_frame(attract, on_title, raw_buttons, played_buttons)
   if attract.idle_frames >= attract.attract_after then
     attract.phase = M.ATTRACT_PHASE_PLAYING
     attract.demo_frame = 1
-    played_buttons = demo_data.demo_data_pad_buttons[0]
+    played_buttons = demo_data.pad_buttons[0]
     return M.ATTRACT_ACTION_START, played_buttons
   end
   attract.idle_frames = attract.idle_frames + 1
@@ -74,7 +74,7 @@ end
 
 -- Returns the module's save state, refilled on each call.
 function M.attract_demo_record()
-  local decoded = save_state.save_state_decode(demo_data.demo_data_record, demo_data.demo_data_record_count,
+  local decoded = save_state.save_state_decode(demo_data.record, demo_data.record_count,
     g_demo_record)
   assert(decoded, "the compiled demo record decodes: test_demo_data proves it")
   return g_demo_record

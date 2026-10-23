@@ -100,7 +100,7 @@ function M.emitter_spawn(self, n)
     qy = emitter.particles
   end
 
-  while visual_random.visual_random_draw_one() < n do
+  while visual_random.draw_one() < n do
     if qy ~= nil and self.class.spawn_particle ~= nil then
       local spawned = self.class.spawn_particle(self)
       assert(spawned ~= nil, "an emitter's particles are particles")

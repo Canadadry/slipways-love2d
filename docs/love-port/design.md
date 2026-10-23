@@ -842,7 +842,7 @@ game's own caches compute slot `FIRST + i - 1`), a byte (`crc32_table`), a disk 
 (`entity_class.STATE_*`), a tag's bit position (the registry's tag buckets), a layer
 value (the layer order's `start`, `start[0]` the empty prefix; `ui`'s hover layers),
 a draw-function code, a disk rank (the save validators' `seen` sets) and a demo frame
-(`demo_data_pad_buttons`). An enum that only indexes tables is numbered from 1
+(`demo_data.pad_buttons`). An enum that only indexes tables is numbered from 1
 (`entity_registry.MESSAGE_*`, `BINDINGS_MODE_*`, `BINDINGS_ACTION_*`). The save state mirrors the
 bytes: its arrays are 1-based but every reference it holds keeps its on-disk value, a
 0-based rank, converted to a position only where the capture writes it
@@ -950,7 +950,7 @@ built from its value) is required at load in one direction per pair only:
 (LuaJIT allows 200 locals per function); a struct the C partly initializes
 goes through a local constructor, defined before the tables that call it at
 load, that fills each missing field with its C zero and rejects a field the
-struct lacks (`map_tables.map_tables_check_fields`); a positional C
+struct lacks (`map_tables.check_fields`); a positional C
 initializer gets a positional constructor. A pointer in a table is the table
 pointed to. The data modules once generated from the C (`p8.quarter_wave`,
 `p8.sprite_sheet_packed`, `game.demo_data`, `game.bindings_default`) are
