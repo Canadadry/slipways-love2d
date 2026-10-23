@@ -26,7 +26,7 @@
   - [x] Step 3.1 — booleans
   - [x] Step 3.2 — 1-based arrays
   - [x] Step 3.3 — the C headers
-  - [ ] Step 3.4 — names without the module prefix
+  - [x] Step 3.4 — names without the module prefix
   - [ ] Step 3.5 — design.md conventions replaced
 - [x] Added after the phase 1 review
   - [x] Decisions reopened with the user
@@ -78,7 +78,7 @@
   - [x] Chunk 5 — economy, research, probes
   - [x] Chunk 6 — UI
   - [x] Chunk 7 — input, cart, save, pad, docs, full check
-- [ ] Step 3.4 chunks
+- [x] Step 3.4 chunks
   - [x] Chunk 1 — the check tool and lua-names target
   - [x] Chunk 2 — runtime p8/
   - [x] Chunk 3 — LÖVE glue and devtools

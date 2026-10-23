@@ -382,3 +382,28 @@ words. Left byte for byte, being code: assert and error strings naming
 longer exists. design.md's `-- Lua only` and generated-header sentences
 match; warn-review rule 22 added. `make e2e` 20/20 in 4.5 s,
 `make end-state` 20/20, `make test` 0.66 s.
+
+### Step 3.4
+
+Fourteen chunks: the `make lua-names` check (`tools/lua_names.lua`, its
+fixture self-test, outside `make test`, `test-all` and CI, 0.45 s), then
+one module group each with all its callers. 930 exports lost their module's
+name or first word, and `p8_` is gone from `game/p8/` (`planet.init_instance`,
+`fixed.add`, `vram.SCREEN_WIDTH`, `entity_class.STATE_NORMAL`). Special
+cases: an empty stripped name takes a role name (`fatal.raise`,
+`state_format.dump`, `data_init.init`, `bindings_default.bindings`); the
+keyword case `slipway.slipway_end` became `slipway.end_node`, with
+`slipway.start_node`. Kept: kind prefixes that are not the module's own,
+instance fields, `g_*` fields, module locals outside `p8/`, the dump's
+`stopped p8_fatal frame` token and `fixed_reference.txt` (`test_fixed` maps
+its record names). Exceptions to the check, listed in the tool:
+`draw_functions.draw_row`, `.draw_row_text_image`, `.draw_rows_default`
+(the verb is the module's first word) and `bindings_default.bindings` (the
+stripped name would be empty). Proof per chunk: the rename map regenerated
+at HEAD reproduces the chunk's files except listed hand edits (require
+paths and file paths the script had touched, wildcard mentions), the
+old-name grep's hits all explained, `lua-names` clean for the group.
+Seen: unrestricted `make lua-names` reports 0 prefix and 0 field findings.
+CLAUDE.md's naming rule, design.md's Naming paragraph and warn-review rule
+23 match. `make e2e` 20/20 in 4.8–5.1 s, `make end-state` 20/20,
+`make test` 0.63 s.
