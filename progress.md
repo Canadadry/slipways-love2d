@@ -39,7 +39,7 @@
   - [x] Chunk 4 — the planet's parts
   - [x] Chunk 5 — particles, probes and targeting
   - [x] Chunk 6 — the economy
-  - [ ] Chunk 7 — UI, buttons and icons
+  - [x] Chunk 7 — UI, buttons and icons
   - [ ] Chunk 8 — boxes and panels
   - [ ] Chunk 9 — positions
   - [ ] Chunk 10 — the header's other parts, docs and skills

@@ -496,12 +496,10 @@ local function open_box_step(ctx, frame, row)
 
   b.has_pos = 1
   b.pos = vec_copy(ctx.pos)
-  b.has_slide_target = 1
   b.slide_target = vec_copy(ctx.button_pos)
 
   if frame.has_back_color ~= 0 then
     b.layer = frame.back_color
-    b.has_layer = 1
   end
 
   if frame.has_row_step ~= 0 then

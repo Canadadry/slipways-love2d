@@ -252,17 +252,16 @@ function M.planet_inspection_panel(self)
   if icon_row ~= nil then
     buttons[0].layout_row_keys = layout.layout_row_keys_of_row(icon_row)
   end
-  buttons[0].has_side_tooltip = 1
   if self.net_income ~= nil then
     local discard_color = 0
-    local h_keys = buttons[0].side_tooltip_row
+    local h_keys = layout.layout_row_keys_zero()
     local signed
 
     signed, discard_color = economy_formulas.economy_formulas_format_signed(self.net_income, 0, nil, discard_color)
     layout.layout_row_keys_append(h_keys, layout.layout_row_cell_string(planet_dollar(signed)))
     h_keys.background_is_bool = (self.net_income < fixed.p8_fixed_from_int(0)) and 1 or 0
     h_keys.background = (self.net_income >= fixed.p8_fixed_from_int(0)) and fixed.p8_fixed_from_int(1) or 0
-    buttons[0].has_side_tooltip_row = 1
+    buttons[0].side_tooltip_row = h_keys
   end
   row_count = 1
 
@@ -390,7 +389,7 @@ local function planet_projects_panel_on_click_method(self)
   end
   pt = entity_id.entity_get(self.project_planet)
   b = research.research_project_get(self.project)
-  if self.has_project_cost ~= 0 then
+  if self.project_cost ~= nil then
     od = self.project_cost
   end
 
@@ -413,22 +412,17 @@ local function planet_projects_panel_keys(self, b, keys)
     _, keys.layout_row_keys = research_display.research_project_layout_row_keys(b, keys.layout_row_keys)
   end
 
-  keys.has_side_tooltip = 1
-  keys.side_tooltip_is_false = (od <= fixed.p8_fixed_from_int(0)) and 1 or 0
   if od > fixed.p8_fixed_from_int(0) then
+    keys.side_tooltip_row = layout.layout_row_keys_zero()
     layout.layout_row_keys_append(keys.side_tooltip_row,
       layout.layout_row_cell_string(planet_dollar(str.p8_tostr_fixed(od))))
     keys.side_tooltip_row.color = fixed.p8_fixed_from_int(13)
-    keys.has_side_tooltip_row = 1
   end
 
   keys.project_planet = entity_id.entity_id_link(self)
   keys.project = research.research_project_id_of(b)
-  keys.has_project_cost = 1
   keys.project_cost = od
-  keys.has_on_click = 1
   keys.on_click = planet_projects_panel_on_click_method
-  keys.has_tooltip = 1
   ui_button.button_keys_set_tooltip_row(keys, research_display.research_project_tooltip(b))
 end
 

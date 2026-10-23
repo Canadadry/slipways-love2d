@@ -1,10 +1,12 @@
 -- Copy of src/game/ui_button.h then src/game/ui_button.c.
 --
 -- Shapes, with the C field names:
---   button_t: one table holding the entity header and its own fields; its own `has`
---     (BUTTON_HAS_* bits) is `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
+--   button_t: one table holding the entity header and its own fields; slide_target, trade,
+--     type_bias and project_cost nil when not given.
 --   modal_backdrop_t: one table holding the entity header and { archetype, on_click }.
---   button_keys_t: the fields of button_keys_zero; tooltip_row a data_row_t table.
+--   button_keys_t: the fields of button_keys_zero, plus layer, side_tooltip_row (layout row
+--     keys), tooltip_row (a data_row_t table), pos, slide_target, trade, type_bias and
+--     project_cost, each nil when not given.
 --   button_look_t: { body, top }.
 --
 -- Include cycle: game.ui is required at call time (button_draw).
@@ -26,8 +28,6 @@ local gfx_module = require("p8.gfx")
 local vram = require("p8.vram")
 
 local M = {}
-
-M.BUTTON_HAS_SLIDE_TARGET = bit.lshift(1, 0)
 
 local function research_project_id_none()
   local none = research.RESEARCH_PROJECT_ID_NONE
@@ -98,51 +98,36 @@ local function button_create(keys)
   self.layout_row = nil
   self.width = 0
   self.side_tooltip = nil
-  self.has_side_tooltip = 0
   self.tooltip = nil
-  self.has_ = 0
-  self.slide_target = vec.vec_make(0, 0)
   self.on_click = nil
-  self.has_on_click = 0
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)
   self.is_hovered = 0
   self.refresh = nil
   self.name = nil
-  self.trade = 0
-  self.has_trade = 0
-  self.type_bias = 0
-  self.has_type_bias = 0
   self.technology = nil
   self.project_planet = nil
   self.project = research_project_id_none()
-  self.project_cost = 0
-  self.has_project_cost = 0
   self.archetype = game_data.button_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
   if keys ~= nil then
-    if keys.has_layer ~= 0 then
+    if keys.layer ~= nil then
       entity_registry.entity_registry_set_layer(self, keys.layer)
     end
     if keys.has_pos ~= 0 then
       entity_class.entity_set_pos(self, keys.pos)
     end
-    if keys.has_slide_target ~= 0 then
+    if keys.slide_target ~= nil then
       self.slide_target = vec.vec_make(keys.slide_target.x, keys.slide_target.y)
-      self.has_ = bit.bor(self.has_, M.BUTTON_HAS_SLIDE_TARGET)
     end
     self.on_click = keys.on_click
-    self.has_on_click = keys.has_on_click
     self.refresh = keys.refresh
     self.name = keys.name
     self.trade = keys.trade
-    self.has_trade = keys.has_trade
     self.type_bias = keys.type_bias
-    self.has_type_bias = keys.has_type_bias
     self.technology = keys.technology
     self.project_planet = keys.project_planet
     self.project = { index = keys.project.index, epoch = keys.project.epoch }
     self.project_cost = keys.project_cost
-    self.has_project_cost = keys.has_project_cost
   end
   M.button_construct(self, keys)
   entity.entity_construct(self)
@@ -168,7 +153,7 @@ end
 
 -- Copies `row` into the keys; nil leaves the tooltip row absent.
 function M.button_keys_set_tooltip_row(keys, row)
-  keys.has_tooltip_row = (row ~= nil) and 1 or 0
+  keys.tooltip_row = nil
   if row ~= nil then
     keys.tooltip_row = map_tables.map_tables_make_data_row({
       count = row.count,
@@ -201,14 +186,10 @@ function M.button_construct(self, keys)
   self.hit_box = { left = fixed.p8_fixed_from_int(0), top = fixed.p8_fixed_from_int(-1), right = self.width,
     bottom = fixed.p8_fixed_from_int(11) }
 
-  if keys.has_side_tooltip_row ~= 0 then
+  if keys.side_tooltip_row ~= nil then
     self.side_tooltip = layout.layout_row_new(keys.side_tooltip_row)
-    self.has_side_tooltip = 1
-  elseif keys.has_side_tooltip ~= 0 and keys.side_tooltip_is_false ~= 0 then
-    self.side_tooltip = nil
-    self.has_side_tooltip = 1
   end
-  if keys.has_tooltip_row ~= 0 then
+  if keys.tooltip_row ~= nil then
     self.tooltip = layout.tooltip_new(keys.tooltip_row)
   end
 end
@@ -218,7 +199,7 @@ function M.button_update(self)
     return
   end
 
-  if bit.band(self.has_, M.BUTTON_HAS_SLIDE_TARGET) ~= 0 then
+  if self.slide_target ~= nil then
     local qf = self.slide_target
     local ra = entity_class.entity_pos(self)
     local d = vec.vec_sub(qf, ra)
@@ -393,11 +374,11 @@ function M.button_draw(graphics, memory, self, draw_pos)
     return
   end
 
-  local has_on_click = self.on_click ~= nil
+  local clickable = self.on_click ~= nil
   local hovered = self.is_hovered ~= 0 or (ui.main_ui() ~= nil and ui.ui_pad_tab(ui.main_ui()) == self)
   local look = {
-    body = has_on_click and (hovered and 12 or 13) or 5,
-    top = has_on_click and 6 or 5,
+    body = clickable and (hovered and 12 or 13) or 5,
+    top = clickable and 6 or 5,
   }
 
   if button_draw_image(graphics, memory, self, draw_pos, look) == 0 then
@@ -406,10 +387,10 @@ function M.button_draw(graphics, memory, self, draw_pos)
 end
 
 function M.button_left_press(self)
-  local has_on_click = self ~= nil and self.on_click ~= nil
+  local clickable = self ~= nil and self.on_click ~= nil
   local out = { stop = 1, held = nil }
 
-  if has_on_click then
+  if clickable then
     self.on_click(self)
   end
 
@@ -482,35 +463,17 @@ function M.modal_backdrop_left_press(self)
   return out
 end
 
--- Lua only: the memset of a button_keys_t; writes every field of keys at its C zero and returns keys.
+-- Lua only: the memset of a button_keys_t; writes every field but the optional ones at its C zero and returns keys.
 function M.button_keys_zero(keys)
-  keys.has_layer = 0
-  keys.layer = 0
   keys.layout_row_keys = layout.layout_row_keys_zero()
-  keys.has_side_tooltip = 0
-  keys.side_tooltip_is_false = 0
-  keys.has_side_tooltip_row = 0
-  keys.side_tooltip_row = layout.layout_row_keys_zero()
-  keys.has_tooltip = 0
-  keys.has_tooltip_row = 0
-  keys.tooltip_row = map_tables.map_tables_make_data_row({})
   keys.has_pos = 0
   keys.pos = vec.vec_make(0, 0)
-  keys.has_slide_target = 0
-  keys.slide_target = vec.vec_make(0, 0)
-  keys.has_on_click = 0
   keys.on_click = nil
   keys.refresh = nil
   keys.name = nil
-  keys.has_trade = 0
-  keys.trade = 0
-  keys.has_type_bias = 0
-  keys.type_bias = 0
   keys.technology = nil
   keys.project_planet = nil
   keys.project = research_project_id_none()
-  keys.has_project_cost = 0
-  keys.project_cost = 0
   return keys
 end
 
@@ -518,27 +481,17 @@ end
 function M.button_zero()
   local b = {}
   entity_class.entity_init_header(b, nil)
-  b.has_ = 0
   b.archetype = nil
   b.layout_row = nil
   b.width = 0
   b.side_tooltip = nil
-  b.has_side_tooltip = 0
   b.tooltip = nil
-  b.slide_target = vec.vec_make(0, 0)
   b.on_click = nil
-  b.has_on_click = 0
   b.refresh = nil
   b.name = nil
-  b.trade = 0
-  b.has_trade = 0
-  b.type_bias = 0
-  b.has_type_bias = 0
   b.technology = nil
   b.project_planet = nil
   b.project = research_project_id_none()
-  b.project_cost = 0
-  b.has_project_cost = 0
   return b
 end
 

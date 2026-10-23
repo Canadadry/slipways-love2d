@@ -55,8 +55,7 @@ local g_save_cut = 0
 local g_demo_frame = M.CART_NO_DEMO_FRAME
 -- 0 when not loading, else the loading frame being played, from 1 (the press) to LOADING_SCREEN_FRAMES.
 local g_loading_frame = 0
-local g_requested_option = ui_button.button_zero()
-local g_has_requested_option = 0
+local g_requested_option = nil
 
 local function quit_game()
   entity_registry.entity_registry_abandon_live_entities()
@@ -284,13 +283,11 @@ end
 -- The title's difficulty buttons: copies the option's value, then the press frame and the next
 -- draw the loading screen and the frame after generates the galaxy. nil starts with no difficulty.
 function M.cart_request_start_game(chosen_option)
-  g_has_requested_option = (chosen_option ~= nil) and 1 or 0
-  g_requested_option = ui_button.button_zero()
+  g_requested_option = nil
   if chosen_option ~= nil then
+    g_requested_option = ui_button.button_zero()
     g_requested_option.name = chosen_option.name
-    g_requested_option.has_trade = chosen_option.has_trade
     g_requested_option.trade = chosen_option.trade
-    g_requested_option.has_type_bias = chosen_option.has_type_bias
     g_requested_option.type_bias = chosen_option.type_bias
   end
   g_loading_frame = 1
@@ -335,11 +332,7 @@ function M.cart_update60()
   end
   if g_loading_frame == loading_screen.LOADING_SCREEN_FRAMES then
     M.cart_flush_exit_queue()
-    if g_has_requested_option ~= 0 then
-      M.cart_start_game(g_requested_option)
-    else
-      M.cart_start_game(nil)
-    end
+    M.cart_start_game(g_requested_option)
     g_loading_frame = 0
     if g_save_cut == 0 then save_at_frame_end() end
     return

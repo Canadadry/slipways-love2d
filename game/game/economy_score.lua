@@ -1,12 +1,9 @@
 -- Copy of src/game/economy_score.h then src/game/economy_score.c.
 --
--- The button's own `has` is `has_`: the header's `has` holds the ENTITY_HAS_* bits on the same
--- table.
---
 -- Include cycle: game.planet and game.probe are required at call time, inside the functions that
 -- need them, so that this module loads before they exist. game.ui_button is required at load, one
--- direction only: g_difficulty is built by ui_button.button_zero() at load, and none of
--- ui_button's load-time requires reaches economy_score.
+-- direction only: g_difficulty is built by ui_button.button_zero(), and none of ui_button's
+-- load-time requires reaches economy_score.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_registry = require("engine.entity_registry")
@@ -129,7 +126,7 @@ function M.economy_score_trade_income(entity)
           local bonus
           local _
 
-          if difficulty ~= nil and difficulty.has_trade ~= 0 then
+          if difficulty ~= nil and difficulty.trade ~= nil then
             trade_mult = difficulty.trade
           end
           if planet.development_tier ~= nil then
@@ -156,7 +153,7 @@ function M.economy_score_trade_income(entity)
       if found ~= 0 and kw.resource == fixed.p8_fixed_from_int(w) then
         local mu = kw.amount
         local trade_mult = fixed.p8_fixed_from_int(0)
-        if difficulty ~= nil and difficulty.has_trade ~= 0 then
+        if difficulty ~= nil and difficulty.trade ~= nil then
           trade_mult = difficulty.trade
         end
         total = fixed.p8_fixed_add(
@@ -273,11 +270,10 @@ function M.economy_score_happiness()
 end
 
 -- The cart reads the difficulty all game long, after the menu button dies: keep a copy, never a link to the button.
-local g_difficulty = ui_button.button_zero()
-local g_has_difficulty = 0
+local g_difficulty = nil
 
 function M.economy_score_difficulty()
-  return (g_has_difficulty ~= 0) and g_difficulty or nil
+  return g_difficulty
 end
 
 -- C `g_difficulty = copy` overwrites the storage a returned pointer still points at: written in
@@ -285,15 +281,16 @@ end
 function M.economy_score_set_difficulty(dk)
   local copy = ui_button.button_zero()
 
-  g_has_difficulty = (dk ~= nil) and 1 or 0
   if dk == nil then
+    g_difficulty = nil
     return
   end
   copy.name = dk.name
-  copy.has_trade = dk.has_trade
   copy.trade = dk.trade
-  copy.has_type_bias = dk.has_type_bias
   copy.type_bias = dk.type_bias
+  if g_difficulty == nil then
+    g_difficulty = {}
+  end
   for key in pairs(g_difficulty) do
     g_difficulty[key] = nil
   end

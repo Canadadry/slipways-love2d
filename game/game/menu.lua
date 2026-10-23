@@ -82,16 +82,12 @@ local function tech_tree_screen_step(t, b)
   research_cost_result = tech_gate.tech_gate_research_cost(t)
   research_cost_str = str.p8_tostr_fixed(research_cost_result)
 
+  b.side_tooltip_row = layout.layout_row_keys_zero()
   layout.layout_row_keys_append(b.side_tooltip_row, layout.layout_row_cell_row(pair))
   layout.layout_row_keys_append(b.side_tooltip_row, layout.layout_row_cell_string(research_cost_str))
-  b.has_side_tooltip = 1
-  b.has_side_tooltip_row = 1
 
-  b.has_tooltip = 1
   ui_button.button_keys_set_tooltip_row(b, t.tooltip_rows)
 
-  -- An unaffordable tech gets on_click present but nil, not absent.
-  b.has_on_click = 1
   if tech_gate.tech_gate_affordable_flags(t) ~= 0 then
     b.technology = t
     b.on_click = tech_tree_screen_row_on_click_method
@@ -162,7 +158,6 @@ function M.menu_show_tech_tree_screen()
     layout.layout_row_keys_append(extra.layout_row_keys, layout.layout_row_cell_fixed(fixed.p8_fixed_from_int(30)))
     layout.layout_row_keys_append(extra.layout_row_keys, layout.layout_row_cell_string(label))
     extra.layout_row_keys.color = fixed.p8_fixed_from_int(3)
-    extra.has_tooltip = 1
     ui_button.button_keys_set_tooltip_row(extra, invented_lines(economy.invented))
   end
 
@@ -289,7 +284,6 @@ galaxy_menu_button4_on_click_method = function(self)
 
     bs[i] = ui_button.button_keys_zero({})
     bs[i].layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
-    bs[i].has_on_click = 1
     bs[i].on_click = my[i]
   end
   frame.has_fixed_pos = (bit.band(M.g_pause_menu_open_box.has_, PAUSE_MENU_OPEN_BOX_HAS_FIXED_POS) ~= 0) and 1 or 0
@@ -312,7 +306,6 @@ function M.galaxy_menu_button(i)
   keys.layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
   keys.has_pos = 1
   keys.pos = vec_copy(g_galaxy_menu_pos[i - 1])
-  keys.has_on_click = 1
   keys.on_click = M.galaxy_menu_on_click_table[i - 1]
   keys.refresh = M.galaxy_menu_refresh_table[i - 1]
   return ui_button.button_new(keys)

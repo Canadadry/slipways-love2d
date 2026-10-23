@@ -67,11 +67,8 @@ function M.help_screen_construct(self)
     bs[i] = ui_button.button_keys_zero({})
     bs[i].layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
     bs[i].name = e.name
-    bs[i].has_trade = 1
     bs[i].trade = fixed.p8_fixed_from_int(e.trade)
-    bs[i].has_type_bias = 1
     bs[i].type_bias = e.type_bias
-    bs[i].has_on_click = 1
     bs[i].on_click = M.help_start_game_field_value()
   end
   frame.has_fixed_pos = 1
@@ -91,7 +88,6 @@ function M.help_screen_construct(self)
 
     resume.layout_row_keys = layout.layout_row_keys_of_row(game_data.resume_layout_row)
     resume.name = "resume"
-    resume.has_on_click = 1
     resume.on_click = M.help_resume_game_field_value()
     frame.fixed_pos = vec.vec_sub(frame.fixed_pos, frame.row_step)
     message_box.message_box_open_box(frame, { [0] = resume }, 1)

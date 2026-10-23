@@ -2,9 +2,8 @@
 --
 -- Shapes, with the C field names:
 --   wormhole_too_far_target_t: the entity header plus { status_text }, one table.
---   wormhole_t: one table holding the entity header and { archetype, has_, radius, anchors,
---     anchor, targeting }; the wormhole's own `has` (WORMHOLE_HAS_* bits) is `has_`, since the
---     header's `has` holds the ENTITY_HAS_* bits; targeting a targeting_t (game.targeting).
+--   wormhole_t: one table holding the entity header and { archetype, radius, anchors,
+--     anchor, targeting }; targeting a targeting_t (game.targeting).
 --
 -- Declared in wormhole.h, defined in src/game/wormhole_display.c and ported there:
 -- wormhole_draw_method.
@@ -27,8 +26,6 @@ local wormhole_display = require("game.wormhole_display")
 local fixed = require("p8.fixed")
 
 local M = {}
-
-M.WORMHOLE_HAS_TOO_FAR_TARGET = bit.lshift(1, 0)
 
 local g_wormhole_up = 0
 
@@ -254,7 +251,6 @@ local function wormhole_create()
   self.targeting.archetype = self.archetype.targeting
   self.radius = self.archetype.radius
   self.targeting.cost = self.archetype.targeting.cost
-  self.has_ = M.WORMHOLE_HAS_TOO_FAR_TARGET
   self.anchors = {}
   probe.targeting_set_target(self.targeting, nil)
   self.anchor = nil

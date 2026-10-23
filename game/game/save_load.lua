@@ -49,9 +49,7 @@ function M.save_load_difficulty(state, out)
     out[key] = value
   end
   out.name = option.name
-  out.has_trade = 1
   out.trade = fixed.p8_fixed_from_int(option.trade)
-  out.has_type_bias = 1
   out.type_bias = option.type_bias
 end
 

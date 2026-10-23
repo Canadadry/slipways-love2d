@@ -1,7 +1,8 @@
 -- Copy of src/game/structure_icon.h then src/game/structure_icon.c.
 --
 -- Shapes, with the C field names:
---   structure_icon_t: the entity header plus { archetype, kind, tooltip, is_revealed, has_is_revealed }.
+--   structure_icon_t: the entity header plus { archetype, kind, tooltip, is_revealed }; is_revealed
+--     nil until revealed.
 --   structure_icon_kind_t: the entity header plus { required_tech, sprite, state, cost },
 --     returned by value: a new table each call; sprite and cost nil when the kind has none.
 --   structure_icon_keys_t: { kind, tooltip }.
@@ -26,15 +27,12 @@ local M = {}
 
 local g_structure_icon_up = 0
 
-local g_cursor = vec.vec_make(0, 0)
-local g_has_cursor = 0
+local g_cursor = nil
 
 local function structure_icon_clear_cursor()
-  g_cursor = vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
-  g_has_cursor = 0
+  g_cursor = nil
 end
-local g_id_counter = 0
-local g_has_id_counter = 0
+local g_id_counter = nil
 
 local function structure_icon_to_int(x)
   return fixed.p8_fixed_flr_int(x)
@@ -78,7 +76,7 @@ function M.structure_icon_refresh(self)
     return
   end
 
-  if self.has_is_revealed ~= 0 and self.is_revealed ~= 0 then
+  if self.is_revealed ~= nil and self.is_revealed ~= 0 then
     return
   end
 
@@ -90,13 +88,12 @@ function M.structure_icon_refresh(self)
 
   assert(g_structure_icon_up ~= 0, "structure_icon_init() must run before structure_icon_refresh moves the shared cursor")
 
-  if g_has_cursor ~= 0 then
+  if g_cursor ~= nil then
     entity_class.entity_set_pos(self, g_cursor)
   else
     entity_class.entity_clear_pos(self)
   end
   self.is_revealed = 1
-  self.has_is_revealed = 1
 
   M.structure_icon_set_cursor(vec.vec_sub(M.structure_icon_cursor(),
     vec.vec_make(fixed.p8_fixed_from_int(10), fixed.p8_fixed_from_int(0))))
@@ -107,7 +104,7 @@ function M.structure_icon_is_revealed(e)
     return 0
   end
   local icon = e
-  return (icon.has_is_revealed ~= 0 and icon.is_revealed ~= 0) and 1 or 0
+  return (icon.is_revealed ~= nil and icon.is_revealed ~= 0) and 1 or 0
 end
 
 local function structure_icon_refresh_method(self)
@@ -125,10 +122,8 @@ function M.structure_icon_left_press(self)
 
   assert(g_structure_icon_up ~= 0,
     "structure_icon_init() must run before structure_icon_left_press bumps the shared identifier counter")
-  new_id = fixed.p8_fixed_add((g_has_id_counter ~= 0) and g_id_counter or fixed.p8_fixed_from_int(0),
-    fixed.p8_fixed_from_int(1))
+  new_id = fixed.p8_fixed_add(g_id_counter or fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(1))
   g_id_counter = new_id
-  g_has_id_counter = 1
 
   entity_kind = structure_icon_own_kind(self)
   if entity_kind == nil then
@@ -150,7 +145,7 @@ end
 function M.structure_icon_draw(gfx, mem, self, p)
   local view
 
-  if self == nil or not (self.has_is_revealed ~= 0 and self.is_revealed ~= 0) then
+  if self == nil or not (self.is_revealed ~= nil and self.is_revealed ~= 0) then
     return
   end
   if gfx == nil or mem == nil then
@@ -215,8 +210,6 @@ local function structure_icon_create(keys)
   entity_class.entity_set_pos(self, self.archetype.pos)
   self.kind = nil
   self.tooltip = nil
-  self.is_revealed = 0
-  self.has_is_revealed = 0
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)
   self.is_hovered = 0
   if keys ~= nil then
@@ -233,7 +226,6 @@ function M.structure_icon_init()
   g_structure_icon_up = 1
   structure_icon_clear_cursor()
   g_id_counter = fixed.p8_fixed_from_int(0)
-  g_has_id_counter = 1
 end
 
 function M.structure_icon_shutdown()
@@ -259,12 +251,12 @@ function M.structure_icon_rest_cursor()
 end
 
 function M.structure_icon_has_cursor()
-  return g_has_cursor
+  return (g_cursor ~= nil) and 1 or 0
 end
 
 -- Zero while the cursor is absent.
 function M.structure_icon_cursor()
-  if g_has_cursor ~= 0 then
+  if g_cursor ~= nil then
     return vec.vec_make(g_cursor.x, g_cursor.y)
   end
   return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
@@ -274,11 +266,10 @@ function M.structure_icon_set_id_counter(id)
   assert(g_structure_icon_up ~= 0,
     "structure_icon_init() must run before structure_icon_set_id_counter, or the next init resets the counter")
   g_id_counter = id
-  g_has_id_counter = 1
 end
 
 function M.structure_icon_id_counter(out)
-  if g_has_id_counter == 0 then
+  if g_id_counter == nil then
     return 0, out
   end
   return 1, g_id_counter
@@ -286,7 +277,6 @@ end
 
 function M.structure_icon_set_cursor(cursor)
   g_cursor = vec.vec_make(cursor.x, cursor.y)
-  g_has_cursor = 1
 end
 
 return M

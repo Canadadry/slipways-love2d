@@ -1,10 +1,10 @@
 -- Copy of src/game/ui.h then src/game/ui.c.
 --
 -- Shapes, with the C field names:
---   ui_t: one table holding the entity header and its own fields; its own `has`
---     (UI_HAS_* bits) is `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
+--   ui_t: one table holding the entity header and its own fields; mouse_world and
+--     hovered_by_layer nil until the first ui_update and hover pass write them.
 --   ui_hovered_by_layer_t: { layer_count, written, layers }, layers a 0-indexed array of
---     UI_HOVER_LAYERS plain 1-based arrays of ids created by ui_create.
+--     UI_HOVER_LAYERS plain 1-based arrays of ids created by the first hover pass.
 --   ephemerals: a plain 1-based array of ids.
 --   mouse_pos_t: { world, screen, has }; down_t: { stop, held }.
 --
@@ -30,10 +30,6 @@ local M = {}
 M.UI_HOVER_LAYERS = 16
 
 M.MOUSE_SIDE_LEFT = 0
-
-M.UI_HAS_MOUSE_WORLD = bit.lshift(1, 0)
-M.UI_HAS_HOVERED_BY_LAYER = bit.lshift(1, 1)
-M.UI_HAS_OWN_EPHEMERALS = bit.lshift(1, 2)
 
 M.UI_PAD_BLINK_PERIOD = 32
 M.UI_PAD_CROSSHAIR_ARM = 2
@@ -68,15 +64,13 @@ end
 
 function M.ui_set_ephemerals(self, list)
   self.ephemerals = list
-  self.has_ = bit.bor(self.has_, M.UI_HAS_OWN_EPHEMERALS)
   self.ephemerals_serial = bit.band(self.ephemerals_serial + 1, 0xFFFF)
 end
 
--- The screen point is the mouse's raw header pos, as the old &mouse->header.pos: entity_pos() would zero it when the position bit is absent.
 local function ui_mouse_pos(self, mouse)
   local out = { world = zero_vec(), screen = zero_vec(), has = 0 }
 
-  if bit.band(self.has_, M.UI_HAS_MOUSE_WORLD) ~= 0 then
+  if self.mouse_world ~= nil then
     out.world = vec.vec_make(self.mouse_world.x, self.mouse_world.y)
     out.has = bit.bor(out.has, entity_class.MOUSE_POS_HAS_WORLD)
   end
@@ -116,7 +110,7 @@ local function ui_main_mouse_button()
     return nil
   end
   b = mouse_module.mouse_left_button()
-  if b ~= nil and b.has_held ~= 0 then
+  if b ~= nil and b.held ~= nil then
     return b
   end
   return nil
@@ -127,7 +121,6 @@ local function ui_draw_overlay_method(self, screen_pos)
 end
 
 local function ui_ephemerals_release(self)
-  self.has_ = bit.band(bit.band(self.has_, bit.bnot(M.UI_HAS_OWN_EPHEMERALS)), 0xFFFF)
   self.ephemerals = {}
 end
 
@@ -152,16 +145,8 @@ local function ui_create()
   entity.entity_init_instance(self, M.ui_class_def, game_data.ui_archetype.state, game_data.ui_archetype.state_time)
   self.archetype = game_data.ui_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
-  self.has_ = 0
   self.ephemerals_serial = 0
   self.ephemerals = {}
-  self.mouse_world = vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
-  self.hovered_by_layer = { layer_count = 0, written = 0, layers = {} }
-  for layer = 0, M.UI_HOVER_LAYERS - 1 do
-    self.hovered_by_layer.layers[layer] = {}
-  end
-  self.hovered_by_layer.layer_count = M.UI_HOVER_LAYERS
-  self.hovered_by_layer.written = 0
   self.hovered = nil
   self.previous_hovered = nil
   self.left_held = nil
@@ -251,22 +236,22 @@ end
 -- Empties the ui's own ephemerals list (kept, not replaced) and its hover layers: their ids name
 -- entities of the world reset_world() abandons.
 function M.ui_forget_world(self)
-  if bit.band(self.has_, M.UI_HAS_OWN_EPHEMERALS) ~= 0 then
-    local ephemerals = self.ephemerals
-    for i = #ephemerals, 1, -1 do
-      ephemerals[i] = nil
-    end
+  local ephemerals = self.ephemerals
+  for i = #ephemerals, 1, -1 do
+    ephemerals[i] = nil
   end
-  self.hovered_by_layer.written = 0
+  if self.hovered_by_layer ~= nil then
+    self.hovered_by_layer.written = 0
+  end
 end
 
 local empty = {}
 
 -- The layer's list from the last hover pass; a shared empty list for a layer that pass did not
--- write, or after ui_forget_world.
+-- write, before the first pass, or after ui_forget_world.
 function M.ui_hovered_layer(self, layer)
   assert(layer >= 0 and layer < M.UI_HOVER_LAYERS)
-  if bit.band(self.hovered_by_layer.written, bit.lshift(1, layer)) ~= 0 then
+  if self.hovered_by_layer ~= nil and bit.band(self.hovered_by_layer.written, bit.lshift(1, layer)) ~= 0 then
     return self.hovered_by_layer.layers[layer]
   end
   return empty
@@ -343,7 +328,6 @@ function M.ui_update(mem, self)
   mo = scroll.main_camera_typed()
   qa = vec.vec_add(ui_pos_or_zero(je), ui_pos_or_zero(mo))
   self.mouse_world = qa
-  self.has_ = bit.bor(self.has_, M.UI_HAS_MOUSE_WORLD)
 
   M.ui_update_hover(self)
 
@@ -405,8 +389,13 @@ function M.ui_update_hover(self)
     return
   end
 
+  if self.hovered_by_layer == nil then
+    self.hovered_by_layer = { layer_count = M.UI_HOVER_LAYERS, written = 0, layers = {} }
+    for layer = 0, M.UI_HOVER_LAYERS - 1 do
+      self.hovered_by_layer.layers[layer] = {}
+    end
+  end
   self.hovered_by_layer.written = 0
-  self.has_ = bit.bor(self.has_, M.UI_HAS_HOVERED_BY_LAYER)
   self.hovered = nil
 
   mouse = ui_mouse_pos(self, M.main_mouse_typed())
@@ -528,7 +517,7 @@ function M.ui_send_to_hovered(self, message, mouse, held, out_target, out_down)
     return 0, out_target, out_down
   end
 
-  if bit.band(self.has_, M.UI_HAS_HOVERED_BY_LAYER) == 0 then
+  if self.hovered_by_layer == nil then
     return 0, out_target, out_down
   end
 

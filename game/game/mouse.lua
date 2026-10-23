@@ -16,7 +16,7 @@ local input_module = require("p8.input")
 local M = {}
 
 local g_mouse_up = 0
-local g_left_button = { has_held = 0, held = 0, pressed = 0, released = 0 }
+local g_left_button = { held = nil, pressed = 0, released = 0 }
 
 local function mouse_update_method(self, t)
   M.mouse_update(dispatch_context.dispatch_context_input(), self)
@@ -44,8 +44,7 @@ function M.mouse_init()
   M.mouse_shutdown()
   assert(entity.entity_ready() ~= 0, "mouse_init: entity_init() runs first")
   g_mouse_up = 1
-  g_left_button.has_held = 0
-  g_left_button.held = 0
+  g_left_button.held = nil
   g_left_button.pressed = 0
   g_left_button.released = 0
 end

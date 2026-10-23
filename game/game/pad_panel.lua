@@ -217,8 +217,8 @@ end
 -- A box row still sliding in is judged where it comes to rest, or a Down on its first frames skips a row.
 local function rest_box(e)
   local button = e.class == ui_button.button_class() and e or nil
-  return box_at(e, (button ~= nil and bit.band(button.has_, ui_button.BUTTON_HAS_SLIDE_TARGET) ~= 0) and
-    button.slide_target or entity_class.entity_pos(e))
+  return box_at(e, (button ~= nil and button.slide_target ~= nil) and button.slide_target or
+    entity_class.entity_pos(e))
 end
 
 local function middle(low, high)

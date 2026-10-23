@@ -230,20 +230,16 @@ function M.score_panel_update(self)
     ui_button.modal_backdrop_new(nil)
 
     layout.layout_row_keys_append(restart_keys.layout_row_keys, layout.layout_row_cell_string(" again? "))
-    restart_keys.has_layer = 1
     restart_keys.layer = fixed.p8_fixed_from_int(15)
     restart_keys.has_pos = 1
     restart_keys.pos = first_line_pos
-    restart_keys.has_on_click = 1
     restart_keys.on_click = score_panel.score_panel_init_field_value()
     made1 = ui_button.button_new(restart_keys)
 
     layout.layout_row_keys_append(toggle_keys.layout_row_keys, layout.layout_row_cell_row(back))
-    toggle_keys.has_layer = 1
     toggle_keys.layer = fixed.p8_fixed_from_int(15)
     toggle_keys.has_pos = 1
     toggle_keys.pos = second_line_pos
-    toggle_keys.has_on_click = 1
     toggle_keys.on_click = score_panel_toggle_button_on_click_method
     made2 = ui_button.button_new(toggle_keys)
 

@@ -62,7 +62,7 @@ function M.galaxy_install_rolls()
   local type_picker_state
   local vanish_roll_state
 
-  if difficulty ~= nil and difficulty.has_type_bias ~= 0 then
+  if difficulty ~= nil and difficulty.type_bias ~= nil then
     difficulty_type_bias = difficulty.type_bias
   end
 
