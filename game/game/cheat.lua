@@ -29,9 +29,7 @@ local function apply()
   if fm.class == probe.main_economy_placeholder_class() then
     local provisional = fm
     provisional.research_points = fixed.p8_fixed_from_int(99)
-    provisional.has_research_points = 1
     provisional.credits = fixed.p8_fixed_from_int(200)
-    provisional.has_credits = 1
     return
   end
   hy = probe.main_economy_typed()

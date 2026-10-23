@@ -2,8 +2,8 @@
 -- src/game/targeting.h and src/game/main_economy.h.
 --
 -- Shapes, with the C field names:
---   probe_keys_t: { state_time, has_angle_slices, angle_slices, has_base_radius, base_radius,
---     has_speed_factor, speed_factor }.
+--   probe_keys_t: { state_time, angle_slices, base_radius, speed_factor }, each of the last three
+--     nil when not given.
 --   probe_t: one table holding the entity header and { archetype, emitter, targeting };
 --     targeting a targeting_t (game.targeting), emitter an emitter_t.
 --   targeting_track_ctx_t: { self_map_pos }.
@@ -49,10 +49,6 @@ M.main_economy_placeholder_class_def = {
 
 M.g_main_economy_placeholder = {}
 entity_class.entity_init_header(M.g_main_economy_placeholder, M.main_economy_placeholder_class_def)
-M.g_main_economy_placeholder.research_points = 0
-M.g_main_economy_placeholder.has_research_points = 0
-M.g_main_economy_placeholder.credits = 0
-M.g_main_economy_placeholder.has_credits = 0
 
 local function targeting_track_target_is_holder_class(cls)
   return (cls.drag == M.targeting_track_method or cls == require("game.wormhole").wormhole_class()) and 1 or 0
@@ -315,7 +311,7 @@ function M.targeting_tooltip_show(gfx, mem, state, pb)
           probe_to_int(fixed.p8_fixed_sub(mp.y, fixed.p8_fixed_from_int(8))))
       end
     end
-  elseif pb.has_cost ~= 0 then
+  elseif pb.cost ~= nil then
     display = str.p8_concat2(str.p8_tostr_fixed(pb.cost), "$")
   end
 
@@ -337,7 +333,7 @@ end
 
 local function targeting_charge(self)
   local targeting
-  local has_target
+  local target
   local spend_ok = 0
 
   if self == nil then
@@ -346,11 +342,11 @@ local function targeting_charge(self)
   targeting = M.targeting_of(self)
   assert(targeting ~= nil, "targeting_confirm: a class that carries no targeting is no receiver -- stop")
 
-  has_target = (M.targeting_target(targeting) ~= nil) and 1 or 0
+  target = M.targeting_target(targeting)
 
-  if has_target == 0 then
+  if target == nil then
     local cost
-    if targeting.has_cost ~= 0 then
+    if targeting.cost ~= nil then
       cost = targeting.cost
     else
       cost = fixed.p8_fixed_from_int(0)
@@ -358,10 +354,10 @@ local function targeting_charge(self)
     spend_ok = require("game.economy").economy_spend(M.main_economy_typed(), cost)
   end
 
-  assert(has_target == 0 or spend_ok == 0,
+  assert(target == nil or spend_ok == 0,
     "targeting_confirm: economy_spend must stay short-circuited when a target is set")
 
-  if has_target == 0 and spend_ok ~= 0 then
+  if target == nil and spend_ok ~= 0 then
     local confirmed = targeting.archetype.confirmed_state
 
     if confirmed ~= entity_class.ENTITY_STATE_NONE then
@@ -436,8 +432,6 @@ function M.probe_spawn_particle(self)
   particle = particle_module.particle_take()
   particle.pos = p
   particle.velocity = v
-  particle.has_acceleration = 0
-  particle.acceleration = vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
   particle.life = lifetime
 
   return particle
@@ -471,7 +465,6 @@ function M.probe_init_instance(self, cls, archetype)
   self.fold_anchor = self.archetype.fold_anchor
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.emitter.archetype = self.archetype.emitter
-  self.emitter.has = 0
   if self.archetype.has_pos ~= 0 then
     entity_class.entity_set_pos(self, self.archetype.pos)
   end
@@ -479,7 +472,6 @@ function M.probe_init_instance(self, cls, archetype)
   M.targeting_set_target(self.targeting, nil)
   self.is_dead = 0
   self.targeting.cost = self.archetype.targeting.cost
-  self.targeting.has_cost = self.archetype.targeting.has_cost
   self.emitter.speed_factor = self.archetype.emitter.speed_factor
   self.emitter.angle_slices = self.archetype.emitter.angle_slices
   self.emitter.trail_colors = self.archetype.emitter.trail_colors
@@ -498,13 +490,13 @@ local function probe_create(keys)
   M.probe_init_instance(self, M.probe_class_def, game_data.probe_archetype)
   if keys ~= nil then
     self.state_time = keys.state_time
-    if keys.has_angle_slices ~= 0 then
+    if keys.angle_slices ~= nil then
       self.emitter.angle_slices = keys.angle_slices
     end
-    if keys.has_base_radius ~= 0 then
+    if keys.base_radius ~= nil then
       self.emitter.base_radius = keys.base_radius
     end
-    if keys.has_speed_factor ~= 0 then
+    if keys.speed_factor ~= nil then
       self.emitter.speed_factor = keys.speed_factor
     end
   end
@@ -518,10 +510,8 @@ function M.probe_init()
 
   g_probe_up = 1
 
-  M.g_main_economy_placeholder.research_points = 0
-  M.g_main_economy_placeholder.has_research_points = 0
-  M.g_main_economy_placeholder.credits = 0
-  M.g_main_economy_placeholder.has_credits = 0
+  M.g_main_economy_placeholder.research_points = nil
+  M.g_main_economy_placeholder.credits = nil
   M.probe_set_main_economy(M.g_main_economy_placeholder)
 end
 

@@ -67,7 +67,6 @@ function M.structure_init_instance(self, cls, archetype)
   self.targeting = targeting.targeting_zero()
   self.targeting.archetype = self.archetype.targeting
   self.targeting.cost = self.archetype.targeting.cost
-  self.targeting.has_cost = self.archetype.targeting.has_cost
   self.sprite = self.archetype.sprite
   probe.targeting_set_target(self.targeting, nil)
 end
@@ -245,7 +244,6 @@ function M.ascension_init_instance(self, cls, archetype)
   self.emitter.matrix_xy = self.archetype.emitter.matrix_xy
   self.emitter.matrix_yx = self.archetype.emitter.matrix_yx
   self.emitter.matrix_yy = self.archetype.emitter.matrix_yy
-  self.emitter.has = 0
 end
 
 local function ascension_create(keys)
@@ -360,7 +358,6 @@ function M.burst_spawn_particle(self_ptr)
   particle = require("game.particle").particle_take()
   particle.pos = p
   particle.velocity = v
-  particle.has_acceleration = 1
   particle.acceleration = a
   particle.life = fixed.p8_fixed_add(visual_random.visual_random_draw(py), py)
 
@@ -381,9 +378,7 @@ function M.burst_draw(graphics, memory, self, screen_pos)
   ramp = self.emitter.trail_colors
   assert(ramp ~= nil, "a burst always holds a trail ramp: the archetype's default or its construct keys'")
 
-  if bit.band(self.emitter.has, particle.EMITTER_HAS_PARTICLES) ~= 0 then
-    particles = self.emitter.particles
-  end
+  particles = self.emitter.particles
 
   screen_x = fixed.p8_fixed_flr_int(screen_pos.x)
   screen_y = fixed.p8_fixed_flr_int(screen_pos.y)
@@ -459,7 +454,6 @@ local function burst_create(keys)
   self.acceleration_factor = self.archetype.acceleration_factor
   self.emitter.speed_factor = self.archetype.emitter.speed_factor
   self.speed = self.archetype.speed
-  self.emitter.has = 0
   self.outgoing_routes = {}
   if keys ~= nil then
     planet.planet_copy_keys(self, keys.planet)

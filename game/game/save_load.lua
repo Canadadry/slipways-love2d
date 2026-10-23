@@ -309,7 +309,7 @@ function M.save_load_world(state)
   -- A protostar's constructor bursts; the save never holds a burst.
   remove_bursts()
   -- Before the slipways: the probe and infraspace slipways share a layer, drawn in registration order.
-  if state.has_probe ~= 0 then
+  if state.probe ~= nil then
     load_probe(state.probe)
   end
   load_slipways(state, node_ids, slipway_ids)

@@ -148,7 +148,7 @@ local function write_resources(sink)
   line_add(line, "resources credits ")
   if economy ~= nil then
     add_fixed(line, economy.credits)
-  elseif placeholder ~= nil and placeholder.has_credits ~= 0 then
+  elseif placeholder ~= nil and placeholder.credits ~= nil then
     add_fixed(line, placeholder.credits)
   else
     line_add(line, "-")
@@ -157,7 +157,7 @@ local function write_resources(sink)
   line_add(line, "resources science ")
   if economy ~= nil then
     add_fixed(line, economy.research_points)
-  elseif placeholder ~= nil and placeholder.has_research_points ~= 0 then
+  elseif placeholder ~= nil and placeholder.research_points ~= nil then
     add_fixed(line, placeholder.research_points)
   else
     line_add(line, "-")

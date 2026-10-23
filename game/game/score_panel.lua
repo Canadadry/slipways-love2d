@@ -199,10 +199,10 @@ function M.score_panel_refresh()
     main_economy_credits = economy.credits
     main_economy_research_points = data_item({ is_fixed = 1, fixed = economy.research_points })
   elseif economy_placeholder ~= nil then
-    if economy_placeholder.has_credits ~= 0 then
+    if economy_placeholder.credits ~= nil then
       main_economy_credits = economy_placeholder.credits
     end
-    if economy_placeholder.has_research_points ~= 0 then
+    if economy_placeholder.research_points ~= nil then
       main_economy_research_points = data_item({ is_fixed = 1, fixed = economy_placeholder.research_points })
     end
   end

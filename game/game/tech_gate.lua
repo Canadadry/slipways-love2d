@@ -83,7 +83,7 @@ local function available_technologies_predicate(t, bi)
   local affordable
   if fm ~= nil then
     jk = fm.research_points
-  elseif provisional ~= nil and provisional.has_research_points ~= 0 then
+  elseif provisional ~= nil and provisional.research_points ~= nil then
     jk = provisional.research_points
   end
   affordable = (M.tech_gate_research_cost(t) <= jk) and 1 or 0

@@ -254,7 +254,6 @@ local function wormhole_create()
   self.targeting.archetype = self.archetype.targeting
   self.radius = self.archetype.radius
   self.targeting.cost = self.archetype.targeting.cost
-  self.targeting.has_cost = self.archetype.targeting.has_cost
   self.has_ = M.WORMHOLE_HAS_TOO_FAR_TARGET
   self.anchors = {}
   probe.targeting_set_target(self.targeting, nil)

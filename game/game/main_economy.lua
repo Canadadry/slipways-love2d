@@ -9,8 +9,8 @@
 --     end_status, has_end_status, save_pending }, one table; invented an array of
 --     technology names, production and demand inline resource_map_t tables. The economy's own
 --     `has` (ECONOMY_HAS_* bits) is `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
---   main_economy_placeholder_t: the entity header plus { research_points,
---     has_research_points, credits, has_credits }, one table.
+--   main_economy_placeholder_t: the entity header plus { research_points, credits }, one table;
+--     each nil until the cheat sets it.
 local bit = require("bit")
 
 local M = {}

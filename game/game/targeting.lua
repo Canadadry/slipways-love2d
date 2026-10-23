@@ -4,7 +4,7 @@
 --
 -- Shapes, with the C field names:
 --   targeting_target_t: { kind, id }.
---   targeting_t: { archetype, target, cost, has_cost }.
+--   targeting_t: { archetype, target, cost }, cost nil when it has none.
 --   targeting_track_target_t: the entity header plus targeted_by, one table.
 
 local M = {}
@@ -20,8 +20,6 @@ function M.targeting_zero()
   return {
     archetype = nil,
     target = { kind = M.TARGETING_TARGET_NONE, id = nil },
-    cost = 0,
-    has_cost = 0,
   }
 end
 

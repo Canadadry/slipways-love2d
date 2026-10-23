@@ -191,7 +191,6 @@ function M.slipway_drag(self, mouse)
 
   self.targeting.cost = economy_formulas.economy_formulas_route_base_cost(
     M.slipway_end_map_pos(M.slipway_start(self)), M.slipway_end_map_pos(M.slipway_end(self)))
-  self.targeting.has_cost = 1
 
   slipway_inherit_infraspace(self)
 
@@ -427,7 +426,6 @@ local function slipway_create(keys)
   self.end_ = nil
   self.end_is_point = 0
   self.targeting.cost = self.archetype.targeting.cost
-  self.targeting.has_cost = self.archetype.targeting.has_cost
   self.infraspace = 0
   require("game.probe").targeting_set_target(self.targeting, nil)
   self.targeted_by = nil

@@ -1,10 +1,10 @@
 -- Copy of src/game/particle.h then src/game/particle.c.
 --
 -- Shapes, with the C field names:
---   particle_t: { pos, velocity, has_acceleration, acceleration, life }.
---   emitter_t: { archetype, has, angle_slices, base_radius, speed_factor, trail_colors, matrix_xx,
+--   particle_t: { pos, velocity, acceleration, life }, acceleration nil when it has none.
+--   emitter_t: { archetype, angle_slices, base_radius, speed_factor, trail_colors, matrix_xx,
 --     matrix_xy, matrix_yx, matrix_yy, particles }, the `emitter` field of its
---     host (a probe, a help screen or a planet), particles an array.
+--     host (a probe, a help screen or a planet), particles an array, nil when it holds none.
 --   p8_point_t: { x, y, col }, the batch a 0-indexed array of them.
 --
 -- Include cycle: game.planet is required at call time (emitter_of). A probe is reached through
@@ -20,9 +20,6 @@ local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")
 
 local M = {}
-
-M.EMITTER_HAS_PARTICLES = bit.lshift(1, 0)
-
 
 local EMITTER_POINT_BATCH = 32
 
@@ -84,22 +81,19 @@ function M.emitter_init(self)
   assert(emitter ~= nil, "emitter_init: a class that carries no particle emitter has no particle list -- stop")
 
   M.emitter_release_particles(emitter)
-  for i = #emitter.particles, 1, -1 do
-    emitter.particles[i] = nil
-  end
-  emitter.has = bit.bor(emitter.has, M.EMITTER_HAS_PARTICLES)
+  emitter.particles = {}
 end
 
 function M.emitter_release_particles(emitter)
   local qy = emitter.particles
 
-  if bit.band(emitter.has, M.EMITTER_HAS_PARTICLES) == 0 then
+  if qy == nil then
     return
   end
   for i = #qy, 1, -1 do
     qy[i] = nil
   end
-  emitter.has = bit.band(bit.band(emitter.has, bit.bnot(M.EMITTER_HAS_PARTICLES)), 0xFFFF)
+  emitter.particles = nil
 end
 
 function M.emitter_spawn(self, n)
@@ -111,7 +105,7 @@ function M.emitter_spawn(self, n)
   end
   emitter = M.emitter_of(self)
   qy = nil
-  if emitter ~= nil and bit.band(emitter.has, M.EMITTER_HAS_PARTICLES) ~= 0 then
+  if emitter ~= nil then
     qy = emitter.particles
   end
 
@@ -157,7 +151,7 @@ function M.emitter_update(graphics, memory, self)
   matrix_yy = emitter.matrix_yy
   colors = emitter.trail_colors
 
-  if bit.band(emitter.has, M.EMITTER_HAS_PARTICLES) ~= 0 then
+  if emitter.particles ~= nil then
     local points = {}
     local point_count = 0
     local index = 1
@@ -177,7 +171,7 @@ function M.emitter_update(graphics, memory, self)
         particle.velocity = vec.vec_make(velocity_x,
           fixed.p8_fixed_add(fixed.p8_fixed_mul(matrix_yx, velocity_x), fixed.p8_fixed_mul(matrix_yy, pv.y)))
 
-        if particle.has_acceleration ~= 0 then
+        if particle.acceleration ~= nil then
           particle.velocity = vec.vec_add(particle.velocity, particle.acceleration)
         end
 
@@ -232,7 +226,6 @@ end
 function M.emitter_zero()
   return {
     archetype = nil,
-    has = 0,
     angle_slices = 0,
     base_radius = 0,
     speed_factor = 0,
@@ -241,7 +234,6 @@ function M.emitter_zero()
     matrix_xy = 0,
     matrix_yx = 0,
     matrix_yy = 0,
-    particles = {},
   }
 end
 

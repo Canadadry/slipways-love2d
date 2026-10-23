@@ -11,8 +11,8 @@
 --   difficulty_options_entry_t: { layout_row, name, trade, type_bias }.
 --   score_rows_entry_t: { row (a data_row_t held inline), score (nil when unscored),
 --     has_pos, pos_x, pos_y }.
---   kind_record_t: { required_tech, has_sprite, sprite, state, has_cost, cost,
---     archetype }.
+--   kind_record_t: { required_tech, sprite, state, cost, archetype }, sprite and cost nil
+--     when the kind has none.
 --   The *_archetype_t, targeting_archetype_t, emitter_archetype_t and
 --     burst_construct_keys_t: their C fields, box_t { left, top, right,
 --     bottom } and vec_t { x, y } held inline as new tables.
@@ -553,8 +553,7 @@ end
 local function targeting(fields)
   return check_fields(fields, {
     attach_distance = fields.attach_distance or 0,
-    cost = fields.cost or 0,
-    has_cost = fields.has_cost or 0,
+    cost = fields.cost,
     confirmed_state = fields.confirmed_state or NONE,
     clock_ticks = fields.clock_ticks or 0,
     clock_skips_recompute = fields.clock_skips_recompute or 0,
@@ -596,13 +595,11 @@ local function probe_archetype(fields)
   }, "probe_archetype_t")
 end
 
-local function kind_record(required_tech, has_sprite, sprite, state, has_cost, cost, archetype)
+local function kind_record(required_tech, sprite, state, cost, archetype)
   return {
     required_tech = required_tech,
-    has_sprite = has_sprite,
     sprite = sprite,
     state = state,
-    has_cost = has_cost,
     cost = cost,
     archetype = archetype,
   }
@@ -702,7 +699,6 @@ M.wormhole_archetype = {
   targeting = targeting({
     attach_distance = 0x0,
     cost = 0x30000,
-    has_cost = 1,
     confirmed_state = entity_class.ENTITY_STATE_UNFOLDING,
     clock_ticks = 0x10000,
     clock_skips_recompute = 1,
@@ -716,12 +712,12 @@ M.slipway_archetype = {
   trail_colors = M.slipway_trail_colors_seq,
   fade_in_step = 0x140000,
   targeting = targeting({
-    attach_distance = 0x106, cost = 0x0, has_cost = 0, confirmed_state = NONE, clock_ticks = 0x0,
+    attach_distance = 0x106, confirmed_state = NONE, clock_ticks = 0x0,
   }),
 }
 
 M.targeting_archetype_none = targeting({
-  attach_distance = 0x0, cost = 0x0, has_cost = 0, confirmed_state = NONE, clock_ticks = 0x0,
+  attach_distance = 0x0, confirmed_state = NONE, clock_ticks = 0x0,
 })
 
 M.probe_archetype = probe_archetype({
@@ -744,7 +740,7 @@ M.probe_archetype = probe_archetype({
     matrix_yy = 0x1051e,
   }),
   targeting = targeting({
-    attach_distance = 0x666, cost = 0x0, has_cost = 1, confirmed_state = SETTLED, clock_ticks = 0x0,
+    attach_distance = 0x666, cost = 0x0, confirmed_state = SETTLED, clock_ticks = 0x0,
   }),
 })
 
@@ -775,7 +771,7 @@ M.help_screen_archetype = probe_archetype({
     matrix_yy = 0x1051e,
   }),
   targeting = targeting({
-    attach_distance = 0x666, cost = 0x0, has_cost = 1, confirmed_state = SETTLED, clock_ticks = 0x0,
+    attach_distance = 0x666, cost = 0x0, confirmed_state = SETTLED, clock_ticks = 0x0,
   }),
 })
 
@@ -837,7 +833,6 @@ M.structure_archetype = planet_archetype({
   targeting = targeting({
     attach_distance = 0x666,
     cost = 0xf0000,
-    has_cost = 1,
     confirmed_state = SETTLED,
     clock_ticks = 0x20000,
   }),
@@ -869,7 +864,6 @@ M.trading_hub_archetype = planet_archetype({
   targeting = targeting({
     attach_distance = 0x666,
     cost = 0x140000,
-    has_cost = 1,
     confirmed_state = SETTLED,
     clock_ticks = 0x20000,
   }),
@@ -898,7 +892,6 @@ M.processor_archetype = planet_archetype({
   targeting = targeting({
     attach_distance = 0x666,
     cost = 0xf0000,
-    has_cost = 1,
     confirmed_state = SETTLED,
     clock_ticks = 0x20000,
   }),
@@ -928,7 +921,6 @@ M.ascension_archetype = planet_archetype({
   targeting = targeting({
     attach_distance = 0x666,
     cost = 0x3c0000,
-    has_cost = 1,
     confirmed_state = SETTLED,
     clock_ticks = 0x20000,
   }),
@@ -973,7 +965,6 @@ M.protostar_archetype = planet_archetype({
   targeting = targeting({
     attach_distance = 0x666,
     cost = 0x3c0000,
-    has_cost = 1,
     confirmed_state = SETTLED,
     clock_ticks = 0x20000,
   }),
@@ -1017,7 +1008,6 @@ M.synthesizer_archetype = planet_archetype({
   targeting = targeting({
     attach_distance = 0x666,
     cost = 0x280000,
-    has_cost = 1,
     confirmed_state = SETTLED,
     clock_ticks = 0x20000,
   }),
@@ -1093,7 +1083,6 @@ M.slipgate_archetype = planet_archetype({
   targeting = targeting({
     attach_distance = 0x28e,
     cost = 0xa0000,
-    has_cost = 1,
     confirmed_state = SETTLED,
     clock_ticks = 0x10000,
   }),
@@ -1125,32 +1114,31 @@ M.infraspace_gate_archetype = planet_archetype({
   targeting = targeting({
     attach_distance = 0x28e,
     cost = 0x190000,
-    has_cost = 1,
     confirmed_state = SETTLED,
     clock_ticks = 0x10000,
   }),
 })
 
-M.structure_kind_record = kind_record(nil, 1, 0xae0000, PLACING, 1, 0xf0000, M.structure_archetype)
+M.structure_kind_record = kind_record(nil, 0xae0000, PLACING, 0xf0000, M.structure_archetype)
 M.trading_hub_kind_record = kind_record(
-  M.trading_hub_required_tech_text, 1, 0x440000, PLACING, 1, 0x140000, M.trading_hub_archetype
+  M.trading_hub_required_tech_text, 0x440000, PLACING, 0x140000, M.trading_hub_archetype
 )
-M.processor_kind_record = kind_record(nil, 1, 0x640000, PLACING, 1, 0xf0000, M.processor_archetype)
+M.processor_kind_record = kind_record(nil, 0x640000, PLACING, 0xf0000, M.processor_archetype)
 M.ascension_kind_record = kind_record(
-  M.ascension_required_tech_text, 1, 0xa60000, PLACING, 1, 0x3c0000, M.ascension_archetype
+  M.ascension_required_tech_text, 0xa60000, PLACING, 0x3c0000, M.ascension_archetype
 )
 M.protostar_kind_record = kind_record(
-  M.ascension_required_tech_text, 1, 0x620000, SETTLED, 1, 0x3c0000, M.protostar_archetype
+  M.ascension_required_tech_text, 0x620000, SETTLED, 0x3c0000, M.protostar_archetype
 )
-M.burst_kind_record = kind_record(nil, 0, 0x0, entity_class.ENTITY_STATE_UNKNOWN, 0, 0x0, M.burst_archetype)
+M.burst_kind_record = kind_record(nil, nil, entity_class.ENTITY_STATE_UNKNOWN, nil, M.burst_archetype)
 M.slipgate_kind_record = kind_record(
-  M.slipgate_required_tech_text, 1, 0xaa0000, PLACING, 1, 0xa0000, M.slipgate_archetype
+  M.slipgate_required_tech_text, 0xaa0000, PLACING, 0xa0000, M.slipgate_archetype
 )
 M.infraspace_gate_kind_record = kind_record(
-  M.infraspace_gate_required_tech_text, 1, 0x4e0000, PLACING, 1, 0x190000, M.infraspace_gate_archetype
+  M.infraspace_gate_required_tech_text, 0x4e0000, PLACING, 0x190000, M.infraspace_gate_archetype
 )
 M.synthesizer_kind_record = kind_record(
-  M.synthesizer_required_tech_text, 1, 0x420000, PLACING, 1, 0x280000, M.synthesizer_archetype
+  M.synthesizer_required_tech_text, 0x420000, PLACING, 0x280000, M.synthesizer_archetype
 )
 
 -- seq is the 0-indexed array, i 1-based as in the cart.

@@ -2,8 +2,8 @@
 --
 -- Shapes, with the C field names:
 --   structure_icon_t: the entity header plus { archetype, kind, tooltip, is_revealed, has_is_revealed }.
---   structure_icon_kind_t: the entity header plus { required_tech, sprite, has_sprite, state, cost, has_cost },
---     returned by value: a new table each call.
+--   structure_icon_kind_t: the entity header plus { required_tech, sprite, state, cost },
+--     returned by value: a new table each call; sprite and cost nil when the kind has none.
 --   structure_icon_keys_t: { kind, tooltip }.
 --   down_t: { stop, held }.
 --
@@ -57,18 +57,12 @@ function M.structure_icon_kind_view(self)
 
   entity_class.entity_init_header(view, M.structure_icon_kind_view_class_def)
   view.required_tech = nil
-  view.sprite = 0
-  view.has_sprite = 0
   view.state = entity_class.ENTITY_STATE_NONE
-  view.cost = 0
-  view.has_cost = 0
   if kind ~= nil then
     view.required_tech = kind.record.required_tech
     view.sprite = kind.record.sprite
-    view.has_sprite = kind.record.has_sprite
     view.state = kind.record.state
     view.cost = kind.record.cost
-    view.has_cost = kind.record.has_cost
   end
   return view
 end
@@ -166,7 +160,7 @@ function M.structure_icon_draw(gfx, mem, self, p)
   gfx_module.p8_palt(mem, 3, 0)
 
   view = M.structure_icon_kind_view(self)
-  gfx_module.p8_spr_default(gfx, mem, (view.has_sprite ~= 0) and structure_icon_to_int(view.sprite) or 0,
+  gfx_module.p8_spr_default(gfx, mem, (view.sprite ~= nil) and structure_icon_to_int(view.sprite) or 0,
     structure_icon_to_int(p.x), structure_icon_to_int(p.y))
 
   if self.is_hovered ~= 0 then
@@ -174,7 +168,6 @@ function M.structure_icon_draw(gfx, mem, self, p)
       local pb = targeting.targeting_zero()
       pb.archetype = game_data.targeting_archetype_none
 
-      pb.has_cost = view.has_cost
       pb.cost = view.cost
       require("game.probe").targeting_tooltip_show(gfx, mem, view.state, pb)
     end

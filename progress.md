@@ -37,7 +37,7 @@
   - [x] Chunk 2 — resources
   - [x] Chunk 3 — research projects
   - [x] Chunk 4 — the planet's parts
-  - [ ] Chunk 5 — particles, probes and targeting
+  - [x] Chunk 5 — particles, probes and targeting
   - [ ] Chunk 6 — the economy
   - [ ] Chunk 7 — UI, buttons and icons
   - [ ] Chunk 8 — boxes and panels

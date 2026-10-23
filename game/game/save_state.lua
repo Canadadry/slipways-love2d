@@ -4,9 +4,10 @@
 --   A byte buffer is a 0-indexed array of integers 0 .. 255, owned and filled in place as the C's.
 --   cursor_t: { position, end_, failed }.
 --   save_vec_t: { x, y }; save_need_t: { resource }, nil when absent. A save_route_t's resource
---     is nil when absent too; the flag bytes are written from presence.
+--     is nil when absent too, and so is save_state_t's probe { pos, map_pos, fold_anchor }; the
+--     flag bytes are written from presence.
 --   save_state_t: { difficulty, economy, rnd_state, background_seed, type_picker, vanish_walk,
---     structure_id_counter, has_probe, probe, camera_map_pos, node_count, nodes, slipway_count,
+--     structure_id_counter, probe, camera_map_pos, node_count, nodes, slipway_count,
 --     slipways, route_count, routes, route_index_count, route_indices, node_slipway_count,
 --     node_slipways }, every array 0-indexed. memset leaves nodes, slipways, routes,
 --     route_indices and node_slipways empty: an element is created at its C zero value when the
@@ -122,8 +123,7 @@ local function save_state_zero(out)
   }
   out.vanish_walk = { step = 0, bias = 0 }
   out.structure_id_counter = 0
-  out.has_probe = 0
-  out.probe = { pos = { x = 0, y = 0 }, map_pos = { x = 0, y = 0 }, fold_anchor = 0 }
+  out.probe = nil
   out.camera_map_pos = { x = 0, y = 0 }
   out.node_count = 0
   out.nodes = {}
@@ -370,8 +370,8 @@ local function write_payload(bytes, writer, state)
 
   write_i32(bytes, writer, state.structure_id_counter)
 
-  write_u8(bytes, writer, state.has_probe)
-  if state.has_probe ~= 0 then
+  write_u8(bytes, writer, (state.probe ~= nil) and 1 or 0)
+  if state.probe ~= nil then
     write_vec(bytes, writer, state.probe.pos)
     write_vec(bytes, writer, state.probe.map_pos)
     write_i32(bytes, writer, state.probe.fold_anchor)
@@ -578,8 +578,13 @@ local function read_payload(bytes, reader, out)
   out.vanish_walk.step = read_i32(bytes, reader)
   out.vanish_walk.bias = read_i32(bytes, reader)
   out.structure_id_counter = read_i32(bytes, reader)
-  out.has_probe = read_u8(bytes, reader)
-  if out.has_probe ~= 0 then
+  local probe_flag = read_u8(bytes, reader)
+  if probe_flag > 1 then
+    reader.failed = 1
+    return
+  end
+  if probe_flag == 1 then
+    out.probe = {}
     out.probe.pos = read_vec(bytes, reader)
     out.probe.map_pos = read_vec(bytes, reader)
     out.probe.fold_anchor = read_i32(bytes, reader)
@@ -740,7 +745,7 @@ end
 
 local function state_is_valid(state)
   return (state.difficulty >= 1 and state.difficulty <= game_data.DIFFICULTY_OPTIONS_COUNT and economy_is_valid(state.economy) ~= 0 and
-          type_picker_is_valid(state.type_picker) ~= 0 and is_flag(state.has_probe) ~= 0 and nodes_are_valid(state) ~= 0 and
+          type_picker_is_valid(state.type_picker) ~= 0 and nodes_are_valid(state) ~= 0 and
           slipways_are_valid(state) ~= 0 and routes_are_valid(state) ~= 0 and node_slipways_are_valid(state) ~= 0) and 1 or 0
 end
 
@@ -942,10 +947,11 @@ local function capture_probe(out)
     if e.class ~= probe.probe_class() or e.is_dead ~= 0 or e.state ~= entity_class.ENTITY_STATE_SETTLED then
       goto continue
     end
-    out.has_probe = 1
-    out.probe.pos = vec_of(entity_class.entity_pos(e))
-    out.probe.map_pos = vec_of(entity_class.entity_map_pos(e))
-    out.probe.fold_anchor = e.fold_anchor
+    out.probe = {
+      pos = vec_of(entity_class.entity_pos(e)),
+      map_pos = vec_of(entity_class.entity_map_pos(e)),
+      fold_anchor = e.fold_anchor,
+    }
     do return end
     ::continue::
   end
