@@ -138,11 +138,11 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
     local o_is_r_w = found_w and output == fixed.p8_fixed_from_int(r_w)
 
     if o_is_r_w then
-      outputs[0] = fixed.p8_fixed_from_int(25)
-      outputs[1] = fixed.p8_fixed_from_int(23)
+      outputs[1] = fixed.p8_fixed_from_int(25)
+      outputs[2] = fixed.p8_fixed_from_int(23)
       outputs_count = 2
     else
-      outputs[0] = output
+      outputs[1] = output
       outputs_count = 1
     end
   end
@@ -198,7 +198,7 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
     amount = fixed.p8_fixed_from_int(1)
   end
 
-  for output_index = 0, outputs_count - 1 do
+  for output_index = 1, outputs_count do
     local qq = outputs[output_index]
     local loop_bound = (amount > fixed.p8_fixed_from_int(1)) and amount or fixed.p8_fixed_from_int(1)
     local n = fixed.p8_fixed_flr_int(loop_bound)

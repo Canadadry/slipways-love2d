@@ -420,7 +420,7 @@ M.demo_data_pad_buttons = {
 }
 
 M.demo_data_captions = {
-  [0] = { from = 0, to = 300, text = "build a trading empire\nacross the stars" },
+  { from = 0, to = 300, text = "build a trading empire\nacross the stars" },
   { from = 300, to = 785, text = "probe the dark\nto find new planets" },
   { from = 785, to = 1225, text = "colonize planets:\neach one needs and makes goods" },
   { from = 1225, to = 1655, text = "link colonies with slipways\nso goods can flow" },

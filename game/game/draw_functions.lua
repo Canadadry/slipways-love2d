@@ -138,7 +138,7 @@ function M.draw_functions_draw_row_text_image(gfx, mem, row)
 end
 
 function M.draw_functions_draw_rows_default(gfx, mem, rb, n)
-  for i = 0, n - 1 do
+  for i = 1, n do
     draw_rows_dispatch_one(gfx, mem, rb[i], print_outlined_entry)
   end
 end

@@ -5,8 +5,7 @@
 --     until first set.
 --   score_panel_layout_block_t: the entity header plus { fixed_pos, row_step, back_color }.
 --   score_panel_readouts_t: { row, items, subs, sub_items, texts }; score_panel_year_banner_t: { row, items,
---     second, second_items, year, keep_open }. items, second_items and each sub_items[i] are row items, from 1;
---     the other arrays from 0. Char arrays Lua strings ("" at zero).
+--     second, second_items, year, keep_open }. Every array runs from 1. Char arrays Lua strings ("" at zero).
 --
 -- score_panel_new_year_method, score_panel_update_method, score_panel_display_init and
 -- score_panel_display_shutdown are defined in game.score_panel_display, required at load: the class holds
@@ -57,7 +56,7 @@ local g_score_panel_readouts = {
   sub_items = {},
   texts = {},
 }
-for i = 0, 6 do
+for i = 1, 7 do
   g_score_panel_readouts.subs[i] = data_row({})
   -- [1] is written by score_panel_refresh whatever the copied row's count: it must hold a table.
   g_score_panel_readouts.sub_items[i] = { data_item({}) }
@@ -194,11 +193,11 @@ function M.score_panel_refresh()
   text, income_color = economy_formulas.economy_formulas_format_signed(main_economy_income, 0, nil, income_color)
 
   credits_str = str.p8_tostr_fixed(main_economy_credits)
-  readouts[0] = data_item({ text = str.p8_concat2(credits_str, "$") })
+  readouts[1] = data_item({ text = str.p8_concat2(credits_str, "$") })
 
-  readouts[1] = data_item({ text = text })
+  readouts[2] = data_item({ text = text })
 
-  readouts[2] = main_economy_research_points
+  readouts[3] = main_economy_research_points
 
   do
     local found
@@ -211,26 +210,26 @@ function M.score_panel_refresh()
     end
     production_text =
       str.p8_tostr_fixed(fixed.p8_fixed_add(production_val, fixed.p8_fixed_from_int(1)))
-    readouts[3] = data_item({ text = str.p8_concat2("+", production_text) })
+    readouts[4] = data_item({ text = str.p8_concat2("+", production_text) })
   end
 
   happiness_str = str.p8_tostr_fixed(main_economy_happiness)
-  readouts[4] = data_item({ text = str.p8_concat2(happiness_str, "%") })
+  readouts[5] = data_item({ text = str.p8_concat2(happiness_str, "%") })
 
   do
     local lo = fixed.p8_fixed_flr_int(main_economy_year_ticks)
     if lo >= 1 and lo <= game_data.PERIOD_NAMES_COUNT then
-      readouts[5] = data_item({ text = game_data.period_names_table[lo] })
+      readouts[6] = data_item({ text = game_data.period_names_table[lo] })
     else
-      readouts[5] = data_item({ is_nil = true })
+      readouts[6] = data_item({ is_nil = true })
     end
   end
 
-  readouts[6] = main_economy_year
+  readouts[7] = main_economy_year
 
   readouts_state = M.score_panel_readouts()
   if readouts_state ~= nil then
-    for index = 0, 6 do
+    for index = 1, 7 do
       if readouts[index].text ~= nil then
         readouts_state.texts[index] = readouts[index].text
         readouts[index].text = readouts_state.texts[index]
@@ -252,13 +251,13 @@ function M.score_panel_draw(gfx, mem, self)
   local i
 
   for k = 1, i_.count do
-    combined[n] = i_.items[k].row
     n = n + 1
+    combined[n] = i_.items[k].row
   end
   i = 1
   while readouts_state ~= nil and i <= readouts_state.row.count do
-    combined[n] = readouts_state.row.items[i].row
     n = n + 1
+    combined[n] = readouts_state.row.items[i].row
     i = i + 1
   end
 
@@ -310,10 +309,10 @@ function M.score_panel_init()
 
   g_score_panel_up = true
   score_panel_row_copy(g_score_panel_readouts.row, g_score_panel_readouts.items, game_data.score_panel_readouts_row)
-  for i = 0, g_score_panel_readouts.row.count - 1 do
+  for i = 1, g_score_panel_readouts.row.count do
     score_panel_row_copy(g_score_panel_readouts.subs[i], g_score_panel_readouts.sub_items[i],
-      game_data.score_panel_readouts_row.items[i + 1].row)
-    g_score_panel_readouts.items[i + 1].row = g_score_panel_readouts.subs[i]
+      game_data.score_panel_readouts_row.items[i].row)
+    g_score_panel_readouts.items[i].row = g_score_panel_readouts.subs[i]
   end
   score_panel_row_copy(g_score_panel_year_banner.row, g_score_panel_year_banner.items,
     game_data.score_panel_year_banner_row)

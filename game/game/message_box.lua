@@ -2,11 +2,11 @@
 --
 -- Shapes, with the C field names:
 --   message_box_t: one table holding the entity header and { archetype, duration_scale,
---     keep_open, articles, articles_count }, articles a 0-indexed array of message_box_article_t tables, each
---     created when it is added.
+--     keep_open, articles, articles_count }, articles an array of message_box_article_t tables, each created
+--     when it is added.
 --   message_box_article_t: { kind, draw_function, as = { scalars, layout, row_of } }, the union's
 --     three members kept apart (only the member of `kind` is written or read):
---     scalars = { count, arguments, text }, arguments a 0-indexed array of count { kind, number };
+--     scalars = { count, arguments, text }, arguments an array of count { kind, number };
 --     layout = { row, pos, align }, row a
 --     layout_row_t filled in place by layout_row_init, pos nil when absent; row_of a Lua function
 --     or nil.
@@ -132,17 +132,17 @@ local function message_box_draw_article(gfx, mem, article)
     layout.layout_row_draw_at_text_image(gfx, mem, article.as.layout.row, p, article.as.layout.align)
     return
   end
-  for i = 0, article.as.scalars.count - 1 do
+  for i = 1, article.as.scalars.count do
     local argument = article.as.scalars.arguments[i]
 
     if argument.kind == M.MESSAGE_BOX_ARGUMENT_TEXT then
-      items[i + 1] = map_tables.map_tables_make_data_item({ text = article.as.scalars.text })
+      items[i] = map_tables.map_tables_make_data_item({ text = article.as.scalars.text })
     elseif argument.kind == M.MESSAGE_BOX_ARGUMENT_FALSE then
-      items[i + 1] = map_tables.map_tables_make_data_item({ is_false = true })
+      items[i] = map_tables.map_tables_make_data_item({ is_false = true })
     elseif argument.kind == M.MESSAGE_BOX_ARGUMENT_NIL then
-      items[i + 1] = map_tables.map_tables_make_data_item({ is_nil = true })
+      items[i] = map_tables.map_tables_make_data_item({ is_nil = true })
     else
-      items[i + 1] = map_tables.map_tables_make_data_item({ is_fixed = true, fixed = argument.number })
+      items[i] = map_tables.map_tables_make_data_item({ is_fixed = true, fixed = argument.number })
     end
   end
   row = map_tables.map_tables_make_data_row({
@@ -175,7 +175,7 @@ function M.message_box_draw_overlay(gfx, mem, self)
   nc = fixed.p8_fixed_div(fixed.p8_fixed_neg(t3), fixed.p8_fixed_from_int(9))
 
   if gfx ~= nil and mem ~= nil then
-    for i = 0, self.articles_count - 1 do
+    for i = 1, self.articles_count do
       gfx_module.p8_camera(gfx, fixed.p8_fixed_flr_int(nc), 0)
       nc = fixed.p8_fixed_neg(nc)
       message_box_draw_article(gfx, mem, self.articles[i])
@@ -201,9 +201,10 @@ M.message_box_class_def = {
 
 local function message_box_next_article(self)
   local article = article_zero()
+  local n = self.articles_count + 1
 
-  self.articles[self.articles_count] = article
-  self.articles_count = self.articles_count + 1
+  self.articles[n] = article
+  self.articles_count = n
   return article
 end
 
@@ -217,15 +218,15 @@ function M.message_box_add_row(self, row)
   article.draw_function = row.draw_function
   article.as.scalars.count = row.count
   article.as.scalars.text = ""
-  for i = 0, row.count - 1 do
-    local item = row.items[i + 1]
+  for i = 1, row.count do
+    local item = row.items[i]
     local argument = { kind = M.MESSAGE_BOX_ARGUMENT_NUMBER, number = 0 }
 
     article.as.scalars.arguments[i] = argument
     assert(item.row == nil, "message_box_add_row: a draw function reads no nested row")
     argument.number = fixed.p8_fixed_from_int(0)
     if item.text ~= nil then
-      assert(i == 0, "message_box_add_row: only print_outlined's first argument is read as text -- stop, do not widen")
+      assert(i == 1, "message_box_add_row: only print_outlined's first argument is read as text -- stop, do not widen")
       article.as.scalars.text = item.text
       argument.kind = M.MESSAGE_BOX_ARGUMENT_TEXT
     elseif item.is_false then
@@ -498,6 +499,8 @@ function M.message_box_open_box(frame, buttons, button_count)
   if frame == nil then
     return
   end
+  assert(button_count == 0 or buttons[button_count] ~= nil,
+    "message_box_open_box: buttons is an array of button_count keys, from 1")
 
   if frame.description ~= nil then
     layout.layout_row_keys_append(description_row.layout_row_keys, layout.layout_row_cell_string(frame.description))
@@ -524,7 +527,7 @@ function M.message_box_open_box(frame, buttons, button_count)
   if frame.description ~= nil then
     open_box_add(ephemerals, open_box_step(step_context, frame, description_row))
   end
-  for index = 0, button_count - 1 do
+  for index = 1, button_count do
     open_box_add(ephemerals, open_box_step(step_context, frame, buttons[index]))
   end
   if dispatcher ~= nil then

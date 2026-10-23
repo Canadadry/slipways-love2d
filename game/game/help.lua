@@ -60,8 +60,8 @@ function M.help_screen_construct(self)
   if self == nil then
     return
   end
-  for i = 0, game_data.DIFFICULTY_OPTIONS_COUNT - 1 do
-    local e = game_data.difficulty_options_table[i + 1]
+  for i = 1, game_data.DIFFICULTY_OPTIONS_COUNT do
+    local e = game_data.difficulty_options_table[i]
 
     bs[i] = ui_button.button_keys_zero({})
     bs[i].layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
@@ -85,7 +85,7 @@ function M.help_screen_construct(self)
     resume.name = "resume"
     resume.on_click = M.help_resume_game_field_value()
     frame.fixed_pos = vec.vec_sub(frame.fixed_pos, frame.row_step)
-    message_box.message_box_open_box(frame, { [0] = resume }, 1)
+    message_box.message_box_open_box(frame, { resume }, 1)
   end
 end
 
@@ -95,14 +95,12 @@ function M.help_screen_draw(gfx, mem, self, p)
   particle.emitter_update(gfx, mem, self)
 
   if gfx ~= nil and mem ~= nil then
+    local rows = (self ~= nil) and self.archetype.rows or nil
+    local n = (rows ~= nil) and rows.count or 0
     local items = {}
-    local n = 0
-    local i = 1
 
-    while self ~= nil and self.archetype.rows ~= nil and i <= self.archetype.rows.count do
-      items[n] = self.archetype.rows.items[i].row
-      n = n + 1
-      i = i + 1
+    for i = 1, n do
+      items[i] = rows.items[i].row
     end
     draw_functions.draw_functions_draw_rows_default(gfx, mem, items, n)
   end

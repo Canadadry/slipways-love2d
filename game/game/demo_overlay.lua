@@ -19,13 +19,14 @@ local BAND_TOP = BAND_BOTTOM - BAND_HEIGHT + 1
 
 M.TAG_TEXT = "demo"
 
+-- Returns the position of the caption shown at frame, nil when none is.
 function M.demo_overlay_find_caption(captions, count, frame)
-  for i = 0, count - 1 do
+  for i = 1, count do
     if captions[i].from <= frame and frame < captions[i].to then
       return i
     end
   end
-  return -1
+  return nil
 end
 
 local function text_width(length)
@@ -78,7 +79,7 @@ function M.demo_overlay_draw(gfx, mem, frame)
   gfx_module.p8_fillp_reset(own)
   draw_tag(own, mem)
   local caption = M.demo_overlay_find_caption(demo_data.demo_data_captions, demo_data.demo_data_caption_count, frame)
-  if caption >= 0 then
+  if caption ~= nil then
     draw_caption(own, mem, demo_data.demo_data_captions[caption].text)
   end
 end

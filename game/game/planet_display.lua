@@ -172,7 +172,7 @@ local function planet_inspection_panel_filter_step(e, ctx_ptr)
     end
   end
   count = fixed.p8_fixed_flr_int(gc)
-  for _ = 0, count - 1 do
+  for _ = 1, count do
     ctx.received_needs[#ctx.received_needs + 1] = e
   end
   return gc == fixed.p8_fixed_from_int(0)
@@ -209,6 +209,15 @@ local gap_items = {
 }
 local gap = map_tables.map_tables_make_data_row({ count = 2, items = gap_items })
 
+-- Returns the new last button and the new count.
+local function planet_append_button(buttons, count)
+  local ui_button = require("game.ui_button")
+  local n = count + 1
+
+  buttons[n] = ui_button.button_keys_zero({})
+  return buttons[n], n
+end
+
 function M.planet_inspection_panel(self)
   local planet = require("game.planet")
   local message_box = require("game.message_box")
@@ -225,7 +234,7 @@ function M.planet_inspection_panel(self)
     return
   end
 
-  buttons[0] = ui_button.button_keys_zero({})
+  buttons[1] = ui_button.button_keys_zero({})
   if lineage_has(self, entity_class.LINEAGE_STRUCTURE) and self.archetype.name ~= nil then
     icon_row = self.archetype.name
   elseif self.development_tier ~= nil then
@@ -236,7 +245,7 @@ function M.planet_inspection_panel(self)
     end
   end
   if icon_row ~= nil then
-    buttons[0].layout_row_keys = layout.layout_row_keys_of_row(icon_row)
+    buttons[1].layout_row_keys = layout.layout_row_keys_of_row(icon_row)
   end
   if self.net_income ~= nil then
     local discard_color = 0
@@ -247,7 +256,7 @@ function M.planet_inspection_panel(self)
     layout.layout_row_keys_append(h_keys, layout.layout_row_cell_string(planet_dollar(signed)))
     h_keys.background_is_bool = self.net_income < fixed.p8_fixed_from_int(0)
     h_keys.background = (self.net_income >= fixed.p8_fixed_from_int(0)) and fixed.p8_fixed_from_int(1) or 0
-    buttons[0].side_tooltip_row = h_keys
+    buttons[1].side_tooltip_row = h_keys
   end
   row_count = 1
 
@@ -265,13 +274,14 @@ function M.planet_inspection_panel(self)
   end
 
   if #unmet_needs > 0 then
-    buttons[row_count] = ui_button.button_keys_zero({})
-    layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("needs:"))
+    local row
+
+    row, row_count = planet_append_button(buttons, row_count)
+    layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string("needs:"))
     for index = 1, #unmet_needs do
-      layout.layout_row_keys_append(buttons[row_count].layout_row_keys,
+      layout.layout_row_keys_append(row.layout_row_keys,
         layout.layout_row_cell_row(need_row(unmet_needs[index])))
     end
-    row_count = row_count + 1
   else
     local development_tier_fixed = self.development_tier or fixed.p8_fixed_from_int(0)
     local kw = planet.planet_production_read(self)
@@ -286,30 +296,31 @@ function M.planet_inspection_panel(self)
 
     if development_tier_fixed < fixed.p8_fixed_from_int(4) and needs ~= nil and #needs > 0 and not resource_is_r_w then
       local last_only = lineage_has(self, entity_class.LINEAGE_STRUCTURE) and self.archetype.is_structure
+      local row
 
-      buttons[row_count] = ui_button.button_keys_zero({})
-      layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("wants more:"))
+      row, row_count = planet_append_button(buttons, row_count)
+      layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string("wants more:"))
       if last_only then
-        layout.layout_row_keys_append(buttons[row_count].layout_row_keys,
+        layout.layout_row_keys_append(row.layout_row_keys,
           layout.layout_row_cell_row(need_row(needs[#needs])))
       else
         for index = 1, #needs do
-          layout.layout_row_keys_append(buttons[row_count].layout_row_keys,
+          layout.layout_row_keys_append(row.layout_row_keys,
             layout.layout_row_cell_row(need_row(needs[index])))
         end
       end
-      row_count = row_count + 1
     end
   end
 
   if #filter_context.received_needs >= 1 then
-    buttons[row_count] = ui_button.button_keys_zero({})
-    layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("receives:"))
+    local row
+
+    row, row_count = planet_append_button(buttons, row_count)
+    layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string("receives:"))
     for index = 1, #filter_context.received_needs do
-      layout.layout_row_keys_append(buttons[row_count].layout_row_keys,
+      layout.layout_row_keys_append(row.layout_row_keys,
         layout.layout_row_cell_row(need_row(filter_context.received_needs[index])))
     end
-    row_count = row_count + 1
   end
 
   do
@@ -318,12 +329,13 @@ function M.planet_inspection_panel(self)
 
     if mu > fixed.p8_fixed_from_int(0) then
       local makes = kw.resource ~= nil and game_data.int_seq_has_fixed(planet.planet_made_resources(), kw.resource)
+      local row
 
-      buttons[row_count] = ui_button.button_keys_zero({})
+      row, row_count = planet_append_button(buttons, row_count)
       if makes then
         local amount_str = str.p8_tostr_fixed(mu)
-        layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("makes:"))
-        layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string(amount_str))
+        layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string("makes:"))
+        layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string(amount_str))
       else
         local by = self.outgoing_routes
         local by_count = (by ~= nil) and #by or 0
@@ -331,16 +343,15 @@ function M.planet_inspection_panel(self)
         local amount_str = str.p8_tostr_fixed(mu)
         local combined = str.p8_concat2(str.p8_concat2(count_str, "/"),
           amount_str)
-        layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("exports:"))
-        layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string(combined))
+        layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string("exports:"))
+        layout.layout_row_keys_append(row.layout_row_keys, layout.layout_row_cell_string(combined))
       end
-      layout.layout_row_keys_append(buttons[row_count].layout_row_keys, planet_production_cell(kw))
-      row_count = row_count + 1
+      layout.layout_row_keys_append(row.layout_row_keys, planet_production_cell(kw))
     end
   end
 
-  -- Starts at 1: row 0's layout row is a single icon, not a list.
-  for index = 1, row_count - 1 do
+  -- Starts at 2: row 1's layout row is a single icon, not a list.
+  for index = 2, row_count do
     layout.layout_row_keys_append(buttons[index].layout_row_keys, layout.layout_row_cell_row(gap))
   end
 
@@ -433,12 +444,12 @@ function M.planet_projects_panel(self)
   available_projects_list = research_display.research_display_available_projects(self)
   cap = (available_projects_list.count > 0) and available_projects_list.count or 1
   bs = {}
-  for i = 0, cap - 1 do
+  for i = 1, cap do
     bs[i] = ui_button.button_keys_zero({})
   end
   for i = 0, available_projects_list.count - 1 do
-    planet_projects_panel_keys(self, research.research_project_get(available_projects_list.items[i]), bs[n])
     n = n + 1
+    planet_projects_panel_keys(self, research.research_project_get(available_projects_list.items[i]), bs[n])
   end
 
   frame = planet_open_box_frame(self)

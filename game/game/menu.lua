@@ -133,17 +133,17 @@ function M.menu_show_tech_tree_screen()
   -- true lists every tech of the era, affordable or not; the galaxy row's refresh must pass false.
   available_technologies_list = tech_gate.tech_gate_available_technologies(true)
   buttons = {}
-  for i = 0, available_technologies_list.count do
+  for i = 1, available_technologies_list.count + 1 do
     buttons[i] = ui_button.button_keys_zero({})
   end
   for index = 0, available_technologies_list.count - 1 do
-    tech_tree_screen_step(available_technologies_list.items[index], buttons[row_count])
     row_count = row_count + 1
+    tech_tree_screen_step(available_technologies_list.items[index], buttons[row_count])
   end
 
   if invented_count > 0 then
-    local extra = buttons[row_count]
     row_count = row_count + 1
+    local extra = buttons[row_count]
     local invented_text = str.p8_tostr_fixed(fixed.p8_fixed_from_int(invented_count))
     local label = str.p8_concat2(invented_text, " invented")
     layout.layout_row_keys_append(extra.layout_row_keys, layout.layout_row_cell_fixed(fixed.p8_fixed_from_int(30)))
@@ -266,12 +266,12 @@ galaxy_menu_button4_on_click_method = function(self)
   if not g_menu_up then
     return
   end
-  for i = 0, game_data.PAUSE_MENU_COUNT - 1 do
-    local e = game_data.pause_menu_table[i + 1]
+  for i = 1, game_data.PAUSE_MENU_COUNT do
+    local e = game_data.pause_menu_table[i]
 
     bs[i] = ui_button.button_keys_zero({})
     bs[i].layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
-    bs[i].on_click = my[i + 1]
+    bs[i].on_click = my[i]
   end
   frame.fixed_pos = M.g_pause_menu_open_box.fixed_pos and vec_copy(M.g_pause_menu_open_box.fixed_pos)
   frame.back_color = M.g_pause_menu_open_box.back_color
