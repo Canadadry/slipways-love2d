@@ -1,7 +1,3 @@
--- Copy of src/game/economy.h then src/game/economy.c.
---
--- economy_t is the shape listed in game.main_economy. end_status is a Lua string or nil.
---
 -- Include cycle: game.economy_score, game.economy_tiers, game.message_box and game.planet are
 -- required at call time, inside the functions that need them, so that this module loads before
 -- they exist.
@@ -32,6 +28,7 @@ M.economy_archetype = {
   year = 0xd490000,
 }
 
+-- production, demand and happiness stay nil until the first economy_recompute.
 local function economy_create()
   local self = {}
 

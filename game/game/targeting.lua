@@ -1,12 +1,3 @@
--- Copy of src/game/targeting.h, which has no .c: its enum as fields, plus
--- the Lua-only targeting_zero. Its functions are defined in src/game/probe.c
--- and ported with it.
---
--- Shapes, with the C field names:
---   targeting_target_t: { kind, id }.
---   targeting_t: { archetype, target, cost }, cost nil when it has none.
---   targeting_track_target_t: the entity header plus targeted_by, one table.
-
 local M = {}
 
 M.TARGETING_TARGET_NONE = 0
@@ -15,7 +6,7 @@ M.TARGETING_TARGET_TRACK_THROWAWAY = 2
 M.TARGETING_TARGET_SLIPWAY_TOO_FAR = 3
 M.TARGETING_TARGET_WORMHOLE_TOO_FAR = 4
 
--- Lua only: targeting_t at its C zero, the inline sub-struct later code writes field by field.
+-- A new table; cost stays nil when the targeting has none.
 function M.targeting_zero()
   return {
     archetype = nil,

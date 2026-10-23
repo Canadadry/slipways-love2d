@@ -1,5 +1,3 @@
--- Copy of src/game/economy_tiers.h then src/game/economy_tiers.c.
---
 -- Include cycle: game.planet, game.planet_trade and game.slipway are required at call time,
 -- inside the functions that need them, so that this module loads before they exist.
 local bit = require("bit")
@@ -139,8 +137,7 @@ local function update_tiers_visit(entity, context)
   _, production.amount = M.economy_tiers_compute_production_amount(planet, production.amount)
 end
 
--- Returns false, leaving *out untouched, when the tier or the project gives no amount.
--- Returns found, out.
+-- Returns found, out: false and out unchanged when the tier or the project gives no amount.
 function M.economy_tiers_compute_production_amount(planet, out)
   local project
   local production_table

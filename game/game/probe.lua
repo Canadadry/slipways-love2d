@@ -1,13 +1,3 @@
--- Copy of src/game/probe.h then src/game/probe.c, which also defines the functions of
--- src/game/targeting.h and src/game/main_economy.h.
---
--- Shapes, with the C field names:
---   probe_keys_t: { state_time, angle_slices, base_radius, speed_factor }, each of the last three
---     nil when not given.
---   probe_t: one table holding the entity header and { archetype, emitter, targeting };
---     targeting a targeting_t (game.targeting), emitter an emitter_t.
---   targeting_track_ctx_t: { self_map_pos }.
---
 -- Include cycle: game.particle is required at load, since emitter_update_method fills
 -- probe_class_def; particle never requires this module. game.economy, game.planet,
 -- game.slipway, game.ui and game.wormhole are required at call time, inside the functions that need
@@ -47,6 +37,7 @@ M.main_economy_placeholder_class_def = {
   skip_draw_off_screen = false,
 }
 
+-- research_points and credits stay nil until the cheat sets them.
 M.g_main_economy_placeholder = {}
 entity_class.entity_init_header(M.g_main_economy_placeholder, M.main_economy_placeholder_class_def)
 
@@ -413,7 +404,7 @@ function M.probe_spawn_particle(self)
     pk = emitter.archetype.quarter_turn
   end
 
-  -- Two statements: C leaves argument order unspecified, and rnd(angle_slices) must come first.
+  -- Two statements: rnd(angle_slices) must be drawn before rnd(0.5), or the replays move.
   rnd_angle_slices = visual_random.visual_random_draw(angle_slices)
   rnd_half = visual_random.visual_random_draw(fixed.P8_FIXED_LIT(0x00008000, 0.5))
   a = fixed.p8_fixed_add(
@@ -454,7 +445,6 @@ M.probe_class_def = {
 
 function M.probe_init_instance(self, cls, archetype)
   entity.entity_init_instance(self, cls, archetype.state, archetype.state_time)
-  -- Lua only: the inline sub-structs the C writes into in place.
   self.emitter = particle_module.emitter_zero()
   self.targeting = targeting_module.targeting_zero()
   self.archetype = archetype

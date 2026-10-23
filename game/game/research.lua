@@ -1,15 +1,7 @@
--- Copy of src/game/research.h then src/game/research.c.
---
--- Shapes, with the C field names:
---   need_t: { row, satisfied }, row a data_row_t of map_tables, satisfied nil until counted.
---   research_project_t: one table holding the entity header and { archetype, name,
---     planet_codes, base_cost, production_key, inputs, output, upgrade_tech, byproduct,
---     required_tech, icon_sprite, class_name, next_type }, inputs an array of need_t;
---     base_cost, output, upgrade_tech, byproduct and icon_sprite nil when absent.
---   research_project_id_t: a number never reused, nil for none, stale once research_expire_project_ids runs.
---   research_project_keys_t: { record, required_tech }.
+-- A project's base_cost, output, upgrade_tech, byproduct and icon_sprite are nil when absent.
+-- A project id is a number never reused, nil for none, stale once research_expire_project_ids runs.
 -- g_project_table grows when a project is created and is never emptied: the project at an index
--- is always the same table, which project_create zeroes in place, as the C reuses the bytes.
+-- is always the same table, which project_create zeroes in place.
 -- research_project_cost and research_project_production read the main economy through
 -- tech_gate: they cannot run before game.probe exists.
 local entity_class = require("engine.entity_class")
@@ -32,7 +24,6 @@ local g_project_id_counter = 0
 local g_project_by_id = {}
 local g_project_id_by_project = {}
 
--- Lua only: project - g_project_table, the position of each table.
 local project_index_of = {}
 
 local g_projects = {}
@@ -166,6 +157,7 @@ function M.need_resource(i)
   return { kind = trade.RESOURCE_NIL, number = 0 }
 end
 
+-- The need's satisfied stays nil until economy_tiers counts it.
 function M.need_new(resource)
   local i
 
@@ -178,7 +170,7 @@ function M.need_new(resource)
   return i
 end
 
--- memset(self, 0, sizeof *self) on the same table: the inline inputs table keeps its identity.
+-- Resets every field of self in place: the inputs table keeps its identity.
 local function project_zero(self)
   local inputs = self.inputs
 

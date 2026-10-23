@@ -1,5 +1,3 @@
--- Copy of src/game/economy_score.h then src/game/economy_score.c.
---
 -- Include cycle: game.planet and game.probe are required at call time, inside the functions that
 -- need them, so that this module loads before they exist. game.ui_button is required at load, one
 -- direction only: g_difficulty is built by ui_button.button_zero(), and none of ui_button's
@@ -17,7 +15,7 @@ local str = require("p8.str")
 
 local M = {}
 
--- final_score_t, returned by value: a new table per call.
+-- A new table per call.
 local function final_score_zero()
   return {
     development = 0,
@@ -165,7 +163,6 @@ function M.economy_score_trade_income(entity)
   return total
 end
 
--- sum_by_development_tier_ctx_t: { total, seq, count }; seq is the very game_data table.
 local function sum_by_development_tier_visit(pt, ctx)
   local jo
   local found
@@ -276,8 +273,8 @@ function M.economy_score_difficulty()
   return g_difficulty
 end
 
--- C `g_difficulty = copy` overwrites the storage a returned pointer still points at: written in
--- place, every field, so that a holder of g_difficulty sees the new values.
+-- Written in place, every field, so that a holder of the table economy_score_difficulty returned
+-- sees the new values.
 function M.economy_score_set_difficulty(dk)
   local copy = ui_button.button_zero()
 

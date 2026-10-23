@@ -1,9 +1,5 @@
--- Copy of src/game/economy_formulas.h then src/game/economy_formulas.c.
---
--- Shapes, with the C field names:
---   resource_map_t: { count, entries }, entries 1-based of { resource, value }; filled in
---     place by its init and set functions; the caller creates entries. A value copy of a map
---     copies entries and each entry, since set changes an entry in place.
+-- A resource map is { count, entries }, entries of { resource, value }, filled in place by
+-- resource_map_set: a copy of a map copies each entry too, since set changes an entry in place.
 local entity_class = require("engine.entity_class")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")

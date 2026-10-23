@@ -1,14 +1,4 @@
--- Copy of src/game/research_display.h then src/game/research_display.c.
---
--- Shapes, with the C field names:
---   available_projects_kept_t: { items, count }, items 1-based research project ids (numbers).
---   research_project_tooltip_t: the table holding { outer, outer_item, inner,
---     inner_items }, data_row_t and data_item_t tables of map_tables, inner_items of 3;
---     each `items` field is the table it points to.
---
 -- Include cycle: game.planet is required at call time (planet_is_family, planet_spacer).
---
--- layout_row_tuple_t zeroes are local.
 local layout = require("game.layout")
 local map_tables = require("game.map_tables")
 local research = require("game.research")
@@ -19,7 +9,6 @@ local str = require("p8.str")
 
 local M = {}
 
--- layout_row_tuple_t tuple = {0}.
 local function tuple_zero()
   return { count = 0, scalars = {} }
 end

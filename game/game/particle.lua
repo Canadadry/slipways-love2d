@@ -1,12 +1,3 @@
--- Copy of src/game/particle.h then src/game/particle.c.
---
--- Shapes, with the C field names:
---   particle_t: { pos, velocity, acceleration, life }, acceleration nil when it has none.
---   emitter_t: { archetype, angle_slices, base_radius, speed_factor, trail_colors, matrix_xx,
---     matrix_xy, matrix_yx, matrix_yy, particles }, the `emitter` field of its
---     host (a probe, a help screen or a planet), particles an array, nil when it holds none.
---   p8_point_t: { x, y, col }, the batch a 1-based array of them, read up to its count.
---
 -- Include cycle: game.planet is required at call time (emitter_of). A probe is reached through
 -- LINEAGE_PROBE and its `emitter` field only, so game.probe is not required.
 local bit = require("bit")
@@ -52,6 +43,7 @@ local function particle_to_int(x)
   return fixed.p8_fixed_flr_int(x)
 end
 
+-- A particle: { pos, velocity, acceleration, life }, acceleration nil when it has none.
 function M.particle_take()
   return {}
 end
@@ -222,7 +214,7 @@ function M.emitter_update_method(self, screen_pos)
   M.emitter_update(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self)
 end
 
--- Lua only: emitter_t at its C zero, the inline sub-struct later code writes field by field.
+-- particles stays nil while the emitter holds none.
 function M.emitter_zero()
   return {
     archetype = nil,

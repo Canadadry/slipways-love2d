@@ -1,13 +1,3 @@
--- Copy of src/game/structure_icon.h then src/game/structure_icon.c.
---
--- Shapes, with the C field names:
---   structure_icon_t: the entity header plus { archetype, kind, tooltip, is_revealed }; is_revealed
---     nil until revealed.
---   structure_icon_kind_t: the entity header plus { required_tech, sprite, state, cost },
---     returned by value: a new table each call; sprite and cost nil when the kind has none.
---   structure_icon_keys_t: { kind, tooltip }.
---   down_t: { stop, held }.
---
 -- game.planet, game.probe, game.tech_gate and game.layout are required at call time.
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
@@ -48,6 +38,7 @@ M.structure_icon_kind_view_class_def = {
   skip_draw_off_screen = false,
 }
 
+-- A new table each call; sprite and cost nil when the kind has none.
 function M.structure_icon_kind_view(self)
   local kind = structure_icon_own_kind(self)
   local view = {}
@@ -194,6 +185,7 @@ M.structure_icon_class_def = {
   skip_draw_off_screen = false,
 }
 
+-- is_revealed stays nil until the refresh method reveals the icon.
 local function structure_icon_create(keys)
   local self = {}
   local archetype = game_data.structure_icon_archetype

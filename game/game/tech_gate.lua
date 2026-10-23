@@ -1,8 +1,3 @@
--- Copy of src/game/tech_gate.h then src/game/tech_gate.c.
---
--- Shapes, with the C field names:
---   available_technologies_kept_t: { items, count }, items 1-based, each the very
---     technologies_table entry.
 -- The main economy is read through game.probe at call time: these functions cannot run before
 -- game.probe exists.
 local economy_formulas = require("game.economy_formulas")
@@ -14,7 +9,6 @@ local M = {}
 local TECHNOLOGIES_COUNT = map_tables.TECHNOLOGIES_COUNT
 local technologies_table = map_tables.technologies_table
 
--- Lua only: each entry's position in technologies_table.
 local technology_index_of = {}
 for i = 1, TECHNOLOGIES_COUNT do
   technology_index_of[technologies_table[i]] = i
