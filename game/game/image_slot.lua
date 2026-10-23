@@ -4,8 +4,9 @@ local image = require("p8.image")
 
 local M = {}
 
--- Every p8 image slot the game uses; row slot k is IMAGE_SLOT_ROW_FIRST + k, text slot k
--- IMAGE_SLOT_TEXT_FIRST + k, ring slot k holds ring colour k, button slots follow the same rule.
+-- Every p8 image slot the game uses, 0-based handles; row cache slot k (from 1) is
+-- IMAGE_SLOT_ROW_FIRST + k - 1, text and button cache slots follow the same rule, ring slot
+-- IMAGE_SLOT_PLANET_RING_FIRST + k - 1 holds ring colour k.
 M.IMAGE_SLOT_BACKGROUND = 0
 M.IMAGE_SLOT_ROW_FIRST = 1
 M.IMAGE_SLOT_ROW_COUNT = 32

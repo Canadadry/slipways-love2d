@@ -3,16 +3,16 @@
 -- Shapes, with the C field names:
 --   layout_row_item_t: { kind, text, color, sprite_id, sprite_palette_block, offset }.
 --   layout_row_scalar_t: { kind, value }.
---   layout_row_tuple_t: { count, scalars }, scalars 0-indexed, below count only.
+--   layout_row_tuple_t: { count, scalars }, scalars 1-based, up to count only.
 --   layout_row_cell_t: { kind, as }, the union as a table holding the member the kind uses
 --     (fixed, text or tuple).
 --   layout_row_keys_t: { items, count, color, background_is_bool, background, score, pos },
---     items 0-indexed cells, below count only; color, background, score and pos nil when
+--     items 1-based cells, up to count only; color, background, score and pos nil when
 --     absent, background_is_bool read only with a background.
 --   layout_row_t: one table holding the entity header and { color, background,
 --     background_is_bool, score, placed_items, placed_items_count, width, serial }, placed_items
---     0-indexed, the same three nil when absent.
---   tooltip_t: one table holding the entity header and { rows, rows_count }, rows 0-indexed.
+--     1-based, the same three nil when absent.
+--   tooltip_t: one table holding the entity header and { rows, rows_count }, rows 1-based.
 -- Scalars, tuples and cells are by value and never changed after their constructor: passing or
 -- storing one shares the table.
 local bit = require("bit")
@@ -111,13 +111,13 @@ function M.layout_row_cell_row(row)
   end
   if row.resource ~= nil then
     tuple.count = 2
-    tuple.scalars[0] = M.layout_row_scalar_fixed(row.resource)
-    tuple.scalars[1] = M.layout_row_scalar_fixed(fixed.p8_fixed_from_int(5))
+    tuple.scalars[1] = M.layout_row_scalar_fixed(row.resource)
+    tuple.scalars[2] = M.layout_row_scalar_fixed(fixed.p8_fixed_from_int(5))
     return M.layout_row_cell_tuple(tuple)
   end
   tuple.count = row.count
-  for i = 0, row.count - 1 do
-    tuple.scalars[i] = tuple_scalar_of_item(row.items[i + 1])
+  for i = 1, row.count do
+    tuple.scalars[i] = tuple_scalar_of_item(row.items[i])
   end
   return M.layout_row_cell_tuple(tuple)
 end
@@ -157,9 +157,9 @@ local function item_zero(item)
   item.offset = vec.vec_make(0, 0)
 end
 
--- Positions 0-3 are sprite, width, palette block and spacing; nil for a nothing scalar or one at or past count.
+-- Positions 1-4 are sprite, width, palette block and spacing; nil for a nothing scalar or one past count.
 local function tuple_fixed_at(tuple, i)
-  local scalar = i < tuple.count and tuple.scalars[i] or nil
+  local scalar = i <= tuple.count and tuple.scalars[i] or nil
   if scalar ~= nil and scalar.kind == M.LAYOUT_ROW_SCALAR_FIXED then
     return scalar.value
   end
@@ -175,18 +175,18 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
   item_zero(out_item)
   if cell.kind == M.LAYOUT_ROW_CELL_TUPLE then
     local t = cell.as.tuple
-    local sprite = tuple_fixed_at(t, 0)
+    local sprite = tuple_fixed_at(t, 1)
 
     if sprite ~= nil then
       cell = M.layout_row_cell_fixed(sprite)
     else
       cell = M.layout_row_cell_nothing()
     end
-    width = tuple_fixed_at(t, 1) or width
-    palette_block = tuple_fixed_at(t, 2) or palette_block
-    if tuple_fixed_at(t, 3) ~= nil then
+    width = tuple_fixed_at(t, 2) or width
+    palette_block = tuple_fixed_at(t, 3) or palette_block
+    if tuple_fixed_at(t, 4) ~= nil then
       have_spacing = true
-      spacing = tuple_fixed_at(t, 3)
+      spacing = tuple_fixed_at(t, 4)
     end
   end
 
@@ -229,7 +229,7 @@ local function layout_row_construct(self, cells, n)
   local fs = fixed.p8_fixed_from_int(0)
 
   self.placed_items = {}
-  for i = 0, n - 1 do
+  for i = 1, n do
     local w_i = fixed.p8_fixed_from_int(0)
     local spacing_i = fixed.p8_fixed_from_int(0)
     local x = w
@@ -279,7 +279,7 @@ function M.layout_row_draw_at(gfx, mem, self, p, a)
   if self.placed_items == nil then
     return
   end
-  for i = 0, self.placed_items_count - 1 do
+  for i = 1, self.placed_items_count do
     row_draw_at_item_draw(gfx, mem, self.placed_items[i], p)
   end
 end
@@ -295,7 +295,7 @@ function M.layout_row_draw_at_text_image(gfx, mem, self, p, a)
   if self.placed_items == nil then
     return
   end
-  for i = 0, self.placed_items_count - 1 do
+  for i = 1, self.placed_items_count do
     local item = self.placed_items[i]
     if item.kind ~= M.LAYOUT_ROW_ITEM_TEXT then
       row_draw_at_item_draw(gfx, mem, item, p)
@@ -351,8 +351,8 @@ local function tooltip_construct(self, row)
 
   -- A table even for no line: tooltip_draw_at() skips a nil `rows` but draws an empty tooltip's frame.
   self.rows = {}
-  for i = 0, n - 1 do
-    self.rows[i] = tooltip_line(row.items[i + 1])
+  for i = 1, n do
+    self.rows[i] = tooltip_line(row.items[i])
   end
   self.rows_count = n
 end
@@ -374,7 +374,7 @@ function M.tooltip_draw_at(gfx, mem, self, om, a)
   hud.hud_draw_bar(gfx, mem, om, dn, 0x10)
   gfx_module.p8_fillp_reset(gfx)
 
-  for i = 0, self.rows_count - 1 do
+  for i = 1, self.rows_count do
     local pos = vec.vec_make(fixed.p8_fixed_from_int(cint.div(vram.P8_SCREEN_WIDTH, 2)),
       fixed.p8_fixed_add(om, fixed.p8_fixed_from_int(2)))
     M.layout_row_draw_at_text_image(gfx, mem, self.rows[i], pos, fixed.P8_FIXED_LIT(0x00008000, 0.5))
@@ -448,8 +448,9 @@ function M.layout_row_init(self, keys)
 end
 
 function M.layout_row_keys_append(keys, cell)
-  keys.items[keys.count] = cell
-  keys.count = keys.count + 1
+  local n = keys.count + 1
+  keys.items[n] = cell
+  keys.count = n
 end
 
 function M.layout_row_keys_of_row(row)

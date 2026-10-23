@@ -4,7 +4,7 @@
 --   planet_keys_t: { planet_id, map_pos, pos }, planet_id a Lua string, each nil when not
 --     given.
 --   planet_row_signature_t: { output, amount, need_resources, route_count, needs_count, flags,
---     need_flags }, need_resources and need_flags 0-indexed, one entry per need.
+--     need_flags }, need_resources and need_flags 1-based, one entry per need.
 --   planet_t: one table holding the entity header and { archetype, planet_id, slipways, project,
 --     description, needs, planet_type, layout_row, layout_row_signature,
 --     targeted_by, production_bonus, net_income, incoming_routes, outgoing_routes,

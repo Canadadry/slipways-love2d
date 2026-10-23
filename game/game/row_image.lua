@@ -1,7 +1,7 @@
 -- Copy of src/game/row_image.h then src/game/row_image.c.
 --
 -- Shapes, with the C field names:
---   row_image_key_t: { mem, hash, count, extent, entries }, entries 0-indexed uint32_t, below count only.
+--   row_image_key_t: { mem, hash, count, extent, entries }, entries 1-based uint32_t, up to count only.
 --   row_image_slot_t: { key, stamp }.
 -- The hash mixes in 0 where the C mixes in the p8_vram_t address: same_key also compares mem by
 -- identity and every entry, so two keys are equal in Lua exactly when they are in C.
@@ -43,14 +43,14 @@ local function key_copy(key)
   copy.hash = key.hash
   copy.count = key.count
   copy.extent = key.extent
-  for i = 0, key.count - 1 do
+  for i = 1, key.count do
     copy.entries[i] = key.entries[i]
   end
   return copy
 end
 
 local g_slots = {}
-for i = 0, image_slot.IMAGE_SLOT_ROW_COUNT - 1 do
+for i = 1, image_slot.IMAGE_SLOT_ROW_COUNT do
   g_slots[i] = { key = key_zero(), stamp = 0 }
 end
 local g_stamp = 0
@@ -74,7 +74,7 @@ local function key_of(row, mem, key)
   if row == nil or row.placed_items == nil then
     return false
   end
-  for i = 0, row.placed_items_count - 1 do
+  for i = 1, row.placed_items_count do
     local item = row.placed_items[i]
     if item.kind == layout.LAYOUT_ROW_ITEM_NONE then
       goto continue
@@ -91,8 +91,9 @@ local function key_of(row, mem, key)
         or block >= BLOCK_COUNT then
         return false
       end
-      key.entries[key.count] = entry_of(item)
-      key.count = key.count + 1
+      local n = key.count + 1
+      key.entries[n] = entry_of(item)
+      key.count = n
       if x + gfx_module.P8_SPRITE_SIZE > key.extent then
         key.extent = x + gfx_module.P8_SPRITE_SIZE
       end
@@ -103,7 +104,7 @@ local function key_of(row, mem, key)
     return false
   end
   hash = u32(bit.bxor(2166136261, 0))
-  for i = 0, key.count - 1 do
+  for i = 1, key.count do
     hash = mul_u32(u32(bit.bxor(hash, key.entries[i])), 16777619)
   end
   key.hash = hash
@@ -121,7 +122,7 @@ local function same_key(a, b)
   if not (a.hash == b.hash and a.mem == b.mem and a.count == b.count) then
     return false
   end
-  for i = 0, a.count - 1 do
+  for i = 1, a.count do
     if a.entries[i] ~= b.entries[i] then
       return false
     end
@@ -136,8 +137,8 @@ local function row_image_build_draw(gfx, mem, context)
 end
 
 local function slot_for(key)
-  local oldest = 0
-  for i = 0, image_slot.IMAGE_SLOT_ROW_COUNT - 1 do
+  local oldest = 1
+  for i = 1, image_slot.IMAGE_SLOT_ROW_COUNT do
     if g_slots[i].key.mem ~= nil and same_key(g_slots[i].key, key) then
       return i, true
     end
@@ -163,14 +164,14 @@ function M.row_image_draw_at(gfx, mem, row, p, a)
   end
   i, built = slot_for(key)
   if not built then
-    image.p8_image_build(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i, key.extent, ROW_IMAGE_HEIGHT,
+    image.p8_image_build(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i - 1, key.extent, ROW_IMAGE_HEIGHT,
       row_image_build_draw, row)
     g_slots[i].key = key_copy(key)
   end
   g_stamp = g_stamp + 1
   g_slots[i].stamp = g_stamp
   origin = vec.vec_sub(p, vec.vec_make(fixed.p8_fixed_mul(a, row.width), 0))
-  image.p8_image_draw(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i, fixed.p8_fixed_flr_int(origin.x),
+  image.p8_image_draw(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i - 1, fixed.p8_fixed_flr_int(origin.x),
     fixed.p8_fixed_flr_int(origin.y))
   hud.hud_select_palette_block_default(mem)
 end

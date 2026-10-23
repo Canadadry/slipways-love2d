@@ -49,8 +49,8 @@ local function planet_production_cell(kw)
 
   if kw.resource ~= nil then
     tuple.count = 2
-    tuple.scalars[0] = layout.layout_row_scalar_fixed(kw.resource)
-    tuple.scalars[1] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(5))
+    tuple.scalars[1] = layout.layout_row_scalar_fixed(kw.resource)
+    tuple.scalars[2] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(5))
   end
   return layout.layout_row_cell_tuple(tuple)
 end
@@ -73,24 +73,23 @@ local function planet_row_signature(needs_list, output, amount, route_count)
   if needs_list ~= nil then
     for index = 1, #needs_list do
       local entry = needs_list[index]
+      local n = signature.needs_count + 1
 
-      signature.need_flags[signature.needs_count] = 0
-      signature.need_resources[signature.needs_count] = 0
+      signature.need_flags[n] = 0
+      signature.need_resources[n] = 0
       if entry ~= nil then
         local need = entry
         local resource = research.need_resource(need)
 
         if resource.kind == trade.RESOURCE_FIXED then
-          signature.need_flags[signature.needs_count] =
-            bit.bor(signature.need_flags[signature.needs_count], ROW_NEED_HAS_RESOURCE)
-          signature.need_resources[signature.needs_count] = resource.number
+          signature.need_flags[n] = bit.bor(signature.need_flags[n], ROW_NEED_HAS_RESOURCE)
+          signature.need_resources[n] = resource.number
         end
         if need.satisfied ~= nil and need.satisfied == 0 then
-          signature.need_flags[signature.needs_count] =
-            bit.bor(signature.need_flags[signature.needs_count], ROW_NEED_SATISFIED_ZERO)
+          signature.need_flags[n] = bit.bor(signature.need_flags[n], ROW_NEED_SATISFIED_ZERO)
         end
       end
-      signature.needs_count = signature.needs_count + 1
+      signature.needs_count = n
     end
   end
   signature.flags = bit.bor(signature.flags, ROW_SIGNATURE_VALID)
@@ -102,7 +101,7 @@ local function planet_row_signature_equal(left, right)
     or left.needs_count ~= right.needs_count or left.flags ~= right.flags then
     return false
   end
-  for i = 0, left.needs_count - 1 do
+  for i = 1, left.needs_count do
     if left.need_flags[i] ~= right.need_flags[i] or left.need_resources[i] ~= right.need_resources[i] then
       return false
     end

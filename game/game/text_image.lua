@@ -15,7 +15,7 @@ local OUTLINE = 1
 local TEXT_IMAGE_HEIGHT = gfx.P8_FONT_GLYPH_HEIGHT + 2 * OUTLINE
 
 local g_slots = {}
-for i = 0, image_slot.IMAGE_SLOT_TEXT_COUNT - 1 do
+for i = 1, image_slot.IMAGE_SLOT_TEXT_COUNT do
   g_slots[i] = { key = { col = 0, length = 0, text = "" }, stamp = 0, frame = 0 }
 end
 local g_stamp = 0
@@ -47,14 +47,14 @@ local function same_key(a, b)
 end
 
 -- Returns the slot holding key and true, else the least recently used slot not copied this
--- frame and false, else -1 and false.
+-- frame and false, else nil and false.
 local function slot_for(key)
-  local oldest = -1
-  for i = 0, image_slot.IMAGE_SLOT_TEXT_COUNT - 1 do
+  local oldest = nil
+  for i = 1, image_slot.IMAGE_SLOT_TEXT_COUNT do
     if g_slots[i].key.length > 0 and same_key(g_slots[i].key, key) then
       return i, true
     end
-    if g_slots[i].frame ~= g_frame and (oldest < 0 or g_slots[i].stamp < g_slots[oldest].stamp) then
+    if g_slots[i].frame ~= g_frame and (oldest == nil or g_slots[i].stamp < g_slots[oldest].stamp) then
       oldest = i
     end
   end
@@ -80,19 +80,19 @@ function M.text_image_print_outlined(graphics, mem, str, x, y, col)
   key.length = text_length(str)
   key.text = str:sub(1, key.length)
   local i, built = slot_for(key)
-  if i < 0 then
+  if i == nil then
     gfx.p8_print_outlined(graphics, mem, str, x, y, col)
     return
   end
   if not built then
     g_slots[i].key = { col = key.col, length = key.length, text = key.text }
-    image.p8_image_build(graphics, mem, image_slot.IMAGE_SLOT_TEXT_FIRST + i, image_width(key.length),
+    image.p8_image_build(graphics, mem, image_slot.IMAGE_SLOT_TEXT_FIRST + i - 1, image_width(key.length),
       TEXT_IMAGE_HEIGHT, text_image_build_draw, g_slots[i].key)
   end
   g_stamp = g_stamp + 1
   g_slots[i].stamp = g_stamp
   g_slots[i].frame = g_frame
-  image.p8_image_draw(graphics, mem, image_slot.IMAGE_SLOT_TEXT_FIRST + i, x - OUTLINE, y - OUTLINE)
+  image.p8_image_draw(graphics, mem, image_slot.IMAGE_SLOT_TEXT_FIRST + i - 1, x - OUTLINE, y - OUTLINE)
 end
 
 return M

@@ -107,8 +107,8 @@ local function planet_resource_row_pair(first, width)
   local tuple = tuple_zero()
 
   tuple.count = 2
-  tuple.scalars[0] = first
-  tuple.scalars[1] = layout.layout_row_scalar_fixed(width)
+  tuple.scalars[1] = first
+  tuple.scalars[2] = layout.layout_row_scalar_fixed(width)
   return layout.layout_row_cell_tuple(tuple)
 end
 
@@ -164,13 +164,13 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
         gc_zero = i.satisfied ~= nil and i.satisfied == 0
       end
       if qe.kind == trade.RESOURCE_FIXED then
-        tuple.scalars[0] = layout.layout_row_scalar_fixed(qe.number)
+        tuple.scalars[1] = layout.layout_row_scalar_fixed(qe.number)
       else
-        tuple.scalars[0] = layout.layout_row_scalar_nothing()
+        tuple.scalars[1] = layout.layout_row_scalar_nothing()
       end
-      tuple.scalars[1] = layout.layout_row_scalar_fixed(
+      tuple.scalars[2] = layout.layout_row_scalar_fixed(
         fixed.p8_fixed_sub(fixed.p8_fixed_from_int(3), crowded))
-      tuple.scalars[2] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(gc_zero and 7 or 0))
+      tuple.scalars[3] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(gc_zero and 7 or 0))
       layout.layout_row_keys_append(keys, layout.layout_row_cell_tuple(tuple))
     end
   end
@@ -209,10 +209,10 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
       local tuple = tuple_zero()
 
       tuple.count = 4
-      tuple.scalars[0] = layout.layout_row_scalar_fixed(qq)
-      tuple.scalars[1] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(6))
-      tuple.scalars[2] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(within and 0 or 7))
-      tuple.scalars[3] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(wide and -4 or -3))
+      tuple.scalars[1] = layout.layout_row_scalar_fixed(qq)
+      tuple.scalars[2] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(6))
+      tuple.scalars[3] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(within and 0 or 7))
+      tuple.scalars[4] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(wide and -4 or -3))
       layout.layout_row_keys_append(keys, layout.layout_row_cell_tuple(tuple))
     end
 
@@ -267,8 +267,8 @@ function M.research_project_icon_row_keys(self)
   icon.count = 2
   assert(self.icon_sprite ~= nil,
     "research_project_icon_row_keys: the row {name, 32, {icon_sprite, 8}} is a project with an icon sprite's")
-  icon.scalars[0] = layout.layout_row_scalar_fixed(self.icon_sprite)
-  icon.scalars[1] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(8))
+  icon.scalars[1] = layout.layout_row_scalar_fixed(self.icon_sprite)
+  icon.scalars[2] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(8))
   layout.layout_row_keys_append(keys, layout.layout_row_cell_string(self.name))
   layout.layout_row_keys_append(keys, layout.layout_row_cell_fixed(fixed.p8_fixed_from_int(32)))
   layout.layout_row_keys_append(keys, layout.layout_row_cell_tuple(icon))

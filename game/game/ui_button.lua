@@ -270,7 +270,7 @@ local function row_extent(row, dx, extent)
   if row == nil or row.placed_items == nil then
     return true, extent
   end
-  for i = 0, row.placed_items_count - 1 do
+  for i = 1, row.placed_items_count do
     local item = row.placed_items[i]
     if not is_whole(item.offset.x) or item.offset.y ~= 0 then
       return false, extent
@@ -349,7 +349,7 @@ local function button_draw_image(graphics, memory, self, draw_pos, look)
     return false
   end
   local key = { words = {
-    [0] = (self.layout_row ~= nil) and self.layout_row.serial or 0,
+    (self.layout_row ~= nil) and self.layout_row.serial or 0,
     (self.side_tooltip ~= nil) and self.side_tooltip.serial or 0,
     bit.bor(look.body, bit.lshift(look.top, 8)),
     ui_to_int(self.width),
