@@ -14,7 +14,6 @@
 -- tech_gate: they cannot run before game.probe exists.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
-local vec = require("engine.vec")
 local game_data = require("game.game_data")
 local map_tables = require("game.map_tables")
 local tech_gate = require("game.tech_gate")
@@ -202,8 +201,8 @@ local function project_zero(self)
   self.state_time = 0
   self.has = 0
   self.layer = 0
-  self.pos = vec.vec_make(0, 0)
-  self.map_pos = vec.vec_make(0, 0)
+  self.pos = nil
+  self.map_pos = nil
   self.hit_box = { left = 0, top = 0, right = 0, bottom = 0 }
   self.infraspace = 0
   self.shake = 0

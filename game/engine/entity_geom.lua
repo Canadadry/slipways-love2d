@@ -27,7 +27,7 @@ function M.entity_geom_contains_cursor_inline(e, mouse)
     chosen = entity_class.mouse_pos_world(mouse)
   end
   point = vec.vec_make(chosen.x, chosen.y)
-  if entity_class.entity_has(e, entity_class.ENTITY_HAS_POS) ~= 0 then
+  if e.pos ~= nil then
     point.x = bit.tobit(chosen.x - e.pos.x)
     point.y = bit.tobit(chosen.y - e.pos.y)
   end

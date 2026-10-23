@@ -6,8 +6,8 @@
 --   layout_row_tuple_t: { count, scalars }, scalars 0-indexed of LAYOUT_ROW_TUPLE_CAP.
 --   layout_row_cell_t: { kind, as }, the union as a table holding the member the kind uses
 --     (fixed, text or tuple).
---   layout_row_keys_t: { items, count, color, background_is_bool, background, score, has_pos,
---     pos }, items 0-indexed of LAYOUT_ROW_KEYS_CAP cells; color, background and score nil when
+--   layout_row_keys_t: { items, count, color, background_is_bool, background, score, pos },
+--     items 0-indexed of LAYOUT_ROW_KEYS_CAP cells; color, background, score and pos nil when
 --     absent, background_is_bool read only with a background.
 --   layout_row_t: one table holding the entity header and { color, background,
 --     background_is_bool, score, placed_items, placed_items_count, width, serial }, placed_items
@@ -339,8 +339,6 @@ local function keys_zero()
     items = items,
     count = 0,
     background_is_bool = 0,
-    has_pos = 0,
-    pos = vec.vec_make(0, 0),
   }
 end
 
@@ -447,7 +445,7 @@ local function row_fill(self, keys)
     self.background_is_bool = keys.background_is_bool
   end
   self.score = keys.score
-  if keys.has_pos ~= 0 then
+  if keys.pos ~= nil then
     entity_class.entity_set_pos(self, keys.pos)
   end
   layout_row_construct(self, keys.items, keys.count)

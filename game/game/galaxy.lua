@@ -41,9 +41,7 @@ function M.galaxy_populate(planet_count)
     id_num_str = str.p8_tostr_fixed(planet_id)
     planet.planet_keys_set_id(keys, str.p8_concat2("p", id_num_str))
     keys.map_pos = p_vec
-    keys.has_map_pos = 1
     keys.pos = vec.vec_mul(p_vec, fixed.p8_fixed_from_int(M.GALAXY_MAP_SCALE))
-    keys.has_pos = 1
 
     made = planet.planet_new(keys)
     planet_id = fixed.p8_fixed_add(planet_id, fixed_one)

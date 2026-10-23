@@ -10,7 +10,7 @@
 --     back_color }.
 --   difficulty_options_entry_t: { layout_row, name, trade, type_bias }.
 --   score_rows_entry_t: { row (a data_row_t held inline), score (nil when unscored),
---     has_pos, pos_x, pos_y }.
+--     pos_x, pos_y (both nil when the row has no position) }.
 --   kind_record_t: { required_tech, sprite, state, cost, archetype }, sprite and cost nil
 --     when the kind has none.
 --   The *_archetype_t, targeting_archetype_t, emitter_archetype_t and
@@ -55,9 +55,8 @@ local function score_row(fields)
   return check_fields(fields, {
     row = fields.row or data_row({}),
     score = fields.score,
-    has_pos = fields.has_pos or 0,
-    pos_x = fields.pos_x or 0,
-    pos_y = fields.pos_y or 0,
+    pos_x = fields.pos_x,
+    pos_y = fields.pos_y,
   }, "score_rows_entry_t")
 end
 
@@ -214,31 +213,31 @@ M.score_rows_table = {
   score_row({ row = data_row({ count = 3, items = M.score_rows_5_items, draw_function = DRAW_BAR }) }),
   score_row({
     row = data_row({ count = 1, items = M.score_rows_6_items, color = 5 }),
-    score = 0, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 43,
+    score = 0, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 43,
   }),
   score_row({
     row = data_row({ count = 2, items = M.score_rows_7_items }),
-    score = 1, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 30,
+    score = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 30,
   }),
   score_row({
     row = data_row({ count = 2, items = M.score_rows_8_items }),
-    score = 2, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 21,
+    score = 2, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 21,
   }),
   score_row({
     row = data_row({ count = 2, items = M.score_rows_9_items }),
-    score = 3, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 12,
+    score = 3, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 12,
   }),
   score_row({
     row = data_row({ count = 5, items = M.score_rows_10_items }),
-    score = 4, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 3,
+    score = 4, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 3,
   }),
   score_row({
     row = data_row({ count = 2, items = M.score_rows_11_items }),
-    score = 5, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT + 10,
+    score = 5, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT + 10,
   }),
   score_row({
     row = data_row({ count = 0, items = nil }),
-    score = 6, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT + 18,
+    score = 6, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT + 18,
   }),
 }
 
@@ -582,8 +581,7 @@ local function probe_archetype(fields)
     state_time = fields.state_time or 0,
     fold_anchor = fields.fold_anchor or 0,
     layer = fields.layer or 0,
-    pos = fields.pos or vec(0, 0),
-    has_pos = fields.has_pos or 0,
+    pos = fields.pos,
     fixed_pos = fields.fixed_pos or vec(0, 0),
     back_color = fields.back_color or 0,
     row_step = fields.row_step or vec(0, 0),
@@ -725,7 +723,6 @@ M.probe_archetype = probe_archetype({
   state_time = 0x0,
   fold_anchor = 0x10000,
   layer = 0x20000,
-  has_pos = 0,
   emitter = emitter({
     angle_slices = 0x30000,
     base_radius = 0x20000,
@@ -750,7 +747,6 @@ M.help_screen_archetype = probe_archetype({
   fold_anchor = 0x10000,
   layer = 0xa0000,
   pos = vec(FIXED_INT(HALF_WIDTH), FIXED_INT(HALF_HEIGHT - 36)),
-  has_pos = 1,
   fixed_pos = vec(FIXED_INT(HALF_WIDTH - 30), FIXED_INT(HALF_HEIGHT - 8)),
   back_color = 0xb0000,
   row_step = vec(0x0, 0xb0000),

@@ -288,7 +288,6 @@ function M.galaxy_menu_button(i)
     "galaxy_menu_button: the galaxy menu has GALAXY_MENU_COUNT rows, after menu_init()")
   e = game_data.galaxy_menu_table[i - 1]
   keys.layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
-  keys.has_pos = 1
   keys.pos = vec_copy(g_galaxy_menu_pos[i - 1])
   keys.on_click = M.galaxy_menu_on_click_table[i - 1]
   keys.refresh = M.galaxy_menu_refresh_table[i - 1]

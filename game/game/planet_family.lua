@@ -76,7 +76,7 @@ local function structure_create(keys)
 
   assert(g_family_up ~= 0, "planet_family_init() must run first")
   M.structure_init_instance(self, M.structure_class_def, game_data.structure_archetype)
-  assert(keys == nil or (keys.has_map_pos == 0 and keys.has_pos == 0),
+  assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "structure_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
     .. "-- stop, do not add one")
   planet.planet_copy_keys(self, keys)
@@ -142,7 +142,7 @@ local function trading_hub_create(keys)
   assert(g_family_up ~= 0, "planet_family_init() must run first")
   M.structure_init_instance(self, M.trading_hub_class_def, game_data.trading_hub_archetype)
   self.palette_block = self.archetype.palette_block
-  assert(keys == nil or (keys.has_map_pos == 0 and keys.has_pos == 0),
+  assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "trading_hub_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
     .. "-- stop, do not add one")
   planet.planet_copy_keys(self, keys)
@@ -178,7 +178,7 @@ local function processor_create(keys)
 
   assert(g_family_up ~= 0, "planet_family_init() must run first")
   M.structure_init_instance(self, M.processor_class_def, game_data.processor_archetype)
-  assert(keys == nil or (keys.has_map_pos == 0 and keys.has_pos == 0),
+  assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "processor_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
     .. "-- stop, do not add one")
   planet.planet_copy_keys(self, keys)
@@ -251,7 +251,7 @@ local function ascension_create(keys)
 
   assert(g_family_up ~= 0, "planet_family_init() must run first")
   M.ascension_init_instance(self, M.ascension_class_def, game_data.ascension_archetype)
-  assert(keys == nil or (keys.has_map_pos == 0 and keys.has_pos == 0),
+  assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "ascension_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
     .. "-- stop, do not add one")
   planet.planet_copy_keys(self, keys)
@@ -270,7 +270,6 @@ function M.protostar_construct(self)
   end
 
   keys.planet.pos = vec.vec_add(entity_class.entity_pos(self), self.archetype.spawn_offset)
-  keys.planet.has_pos = 1
   keys.construct = game_data.protostar_burst_construct_keys
 
   spawned = M.burst_new(keys)
@@ -607,10 +606,8 @@ local function burst_kind_new(keys)
   end
   burst_keys.planet = {
     planet_id = keys.planet_id,
-    map_pos = vec.vec_make(keys.map_pos.x, keys.map_pos.y),
-    has_map_pos = keys.has_map_pos,
-    pos = vec.vec_make(keys.pos.x, keys.pos.y),
-    has_pos = keys.has_pos,
+    map_pos = keys.map_pos and vec.vec_make(keys.map_pos.x, keys.map_pos.y),
+    pos = keys.pos and vec.vec_make(keys.pos.x, keys.pos.y),
   }
   burst_keys.construct = nil
   return burst_create(burst_keys)

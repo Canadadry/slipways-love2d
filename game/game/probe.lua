@@ -465,7 +465,7 @@ function M.probe_init_instance(self, cls, archetype)
   self.fold_anchor = self.archetype.fold_anchor
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.emitter.archetype = self.archetype.emitter
-  if self.archetype.has_pos ~= 0 then
+  if self.archetype.pos ~= nil then
     entity_class.entity_set_pos(self, self.archetype.pos)
   end
   self.targeting.archetype = self.archetype.targeting

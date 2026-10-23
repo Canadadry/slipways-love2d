@@ -75,8 +75,7 @@ function M.help_screen_construct(self)
   frame.clear_ephemerals_after = 1
   frame.back_color = self.archetype.back_color
   frame.row_step = vec.vec_make(self.archetype.row_step.x, self.archetype.row_step.y)
-  frame.has_pos = entity_class.entity_has_pos(self)
-  frame.pos = vec.vec_make(self.pos.x, self.pos.y)
+  frame.pos = entity_class.entity_pos(self)
   message_box.message_box_open_box(frame, bs, game_data.DIFFICULTY_OPTIONS_COUNT)
 
   -- After the difficulty rows: the pad focus opens on the first button registered, forgiving.

@@ -113,7 +113,7 @@ local function button_create(keys)
     if keys.layer ~= nil then
       entity_registry.entity_registry_set_layer(self, keys.layer)
     end
-    if keys.has_pos ~= 0 then
+    if keys.pos ~= nil then
       entity_class.entity_set_pos(self, keys.pos)
     end
     if keys.slide_target ~= nil then
@@ -466,8 +466,6 @@ end
 -- Lua only: the memset of a button_keys_t; writes every field but the optional ones at its C zero and returns keys.
 function M.button_keys_zero(keys)
   keys.layout_row_keys = layout.layout_row_keys_zero()
-  keys.has_pos = 0
-  keys.pos = vec.vec_make(0, 0)
   keys.on_click = nil
   keys.refresh = nil
   keys.name = nil

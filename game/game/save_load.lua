@@ -119,11 +119,9 @@ local function construct_node(node)
   end
   if positions_are_keys ~= 0 and has(node, save_state.SAVE_NODE_HAS_POS) ~= 0 then
     keys.pos = vec_of(node.pos)
-    keys.has_pos = 1
   end
   if positions_are_keys ~= 0 and has(node, save_state.SAVE_NODE_HAS_MAP_POS) ~= 0 then
     keys.map_pos = vec_of(node.map_pos)
-    keys.has_map_pos = 1
   end
   planet = node_constructors[node.kind](keys)
   if positions_are_keys == 0 and has(node, save_state.SAVE_NODE_HAS_POS) ~= 0 then

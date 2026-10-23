@@ -15,8 +15,8 @@
 --   down_t: { stop, held } (held an entity id).
 --   mouse_pos_t: { world, screen, has }.
 --   entity_kind_t: { new_entity, record }.
--- pos and map_pos are owned by the entity: set copies them in, get copies
--- them out, because game code changes self.pos.y in place.
+-- pos and map_pos are owned by the entity, nil when absent: set copies them
+-- in, get copies them out, because game code changes self.pos.y in place.
 local bit_module = require("bit")
 local fixed = require("p8.fixed")
 local vec = require("engine.vec")
@@ -64,8 +64,6 @@ M.ENTITY_HAS_FOLD_ANCHOR = bit_module.lshift(1, 4)
 M.ENTITY_HAS_SHAKE = bit_module.lshift(1, 5)
 M.ENTITY_HAS_IS_DEAD = bit_module.lshift(1, 6)
 M.ENTITY_HAS_IS_HOVERED = bit_module.lshift(1, 7)
-M.ENTITY_HAS_POS = bit_module.lshift(1, 8)
-M.ENTITY_HAS_MAP_POS = bit_module.lshift(1, 9)
 
 -- Writes the header fields only: the object's own fields stay, as the C
 -- assignment writes the header bytes alone.
@@ -75,8 +73,6 @@ function M.entity_init_header(self, cls)
   self.state_time = 0
   self.has = 0
   self.layer = 0
-  self.pos = vec.vec_make(0, 0)
-  self.map_pos = vec.vec_make(0, 0)
   self.hit_box = { left = 0, top = 0, right = 0, bottom = 0 }
   self.infraspace = 0
   self.shake = 0
@@ -91,16 +87,16 @@ function M.entity_has(self, bit)
 end
 
 function M.entity_has_pos(self)
-  return M.entity_has(self, M.ENTITY_HAS_POS)
+  return (self.pos ~= nil) and 1 or 0
 end
 
 function M.entity_has_map_pos(self)
-  return M.entity_has(self, M.ENTITY_HAS_MAP_POS)
+  return (self.map_pos ~= nil) and 1 or 0
 end
 
 -- The zero vector when the position is absent.
 function M.entity_pos(self)
-  if M.entity_has_pos(self) ~= 0 then
+  if self.pos ~= nil then
     return vec.vec_make(self.pos.x, self.pos.y)
   end
   return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
@@ -108,7 +104,7 @@ end
 
 -- The zero vector when the map position is absent.
 function M.entity_map_pos(self)
-  if M.entity_has_map_pos(self) ~= 0 then
+  if self.map_pos ~= nil then
     return vec.vec_make(self.map_pos.x, self.map_pos.y)
   end
   return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
@@ -116,20 +112,18 @@ end
 
 function M.entity_set_pos(self, pos)
   self.pos = vec.vec_make(pos.x, pos.y)
-  self.has = bit_module.bor(self.has, M.ENTITY_HAS_POS)
 end
 
 function M.entity_clear_pos(self)
-  self.has = bit_module.band(self.has, bit_module.band(bit_module.bnot(M.ENTITY_HAS_POS), 0xFFFF))
+  self.pos = nil
 end
 
 function M.entity_set_map_pos(self, map_pos)
   self.map_pos = vec.vec_make(map_pos.x, map_pos.y)
-  self.has = bit_module.bor(self.has, M.ENTITY_HAS_MAP_POS)
 end
 
 function M.entity_clear_map_pos(self)
-  self.has = bit_module.band(self.has, bit_module.band(bit_module.bnot(M.ENTITY_HAS_MAP_POS), 0xFFFF))
+  self.map_pos = nil
 end
 
 M.MOUSE_POS_HAS_WORLD = bit_module.lshift(1, 0)

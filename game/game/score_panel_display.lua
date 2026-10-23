@@ -203,7 +203,7 @@ local function score_panel_update_add_row(box, entry, context)
   end
   keys.score = fixed.p8_fixed_from_int(score_i)
   message_box.message_box_add_layout_row(box, keys,
-    vec.vec_make(fixed.p8_fixed_from_int(entry.pos_x), fixed.p8_fixed_from_int(entry.pos_y)), entry.has_pos,
+    entry.pos_x and vec.vec_make(fixed.p8_fixed_from_int(entry.pos_x), fixed.p8_fixed_from_int(entry.pos_y)),
     fixed.P8_FIXED_LIT(0x00008000, 0.5))
 end
 
@@ -229,14 +229,12 @@ function M.score_panel_update(self)
 
     layout.layout_row_keys_append(restart_keys.layout_row_keys, layout.layout_row_cell_string(" again? "))
     restart_keys.layer = fixed.p8_fixed_from_int(15)
-    restart_keys.has_pos = 1
     restart_keys.pos = first_line_pos
     restart_keys.on_click = score_panel.score_panel_init_field_value()
     made1 = ui_button.button_new(restart_keys)
 
     layout.layout_row_keys_append(toggle_keys.layout_row_keys, layout.layout_row_cell_row(back))
     toggle_keys.layer = fixed.p8_fixed_from_int(15)
-    toggle_keys.has_pos = 1
     toggle_keys.pos = second_line_pos
     toggle_keys.on_click = score_panel_toggle_button_on_click_method
     made2 = ui_button.button_new(toggle_keys)

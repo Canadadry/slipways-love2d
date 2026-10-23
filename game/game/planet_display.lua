@@ -200,8 +200,7 @@ local function planet_open_box_frame(self)
   end
   frame.back_color = self.archetype.back_color
   frame.row_step = vec.vec_make(self.archetype.row_step.x, self.archetype.row_step.y)
-  frame.has_pos = entity_class.entity_has_pos(self)
-  frame.pos = vec.vec_make(self.pos.x, self.pos.y)
+  frame.pos = entity_class.entity_pos(self)
   return frame
 end
 
@@ -650,10 +649,8 @@ function M.planet_apply_project(self, research_project_instance)
 
     target_kind = require("game.planet_family").planet_kind_named(research_project_instance.class_name)
 
-    keys.map_pos = vec.vec_make(self.map_pos.x, self.map_pos.y)
-    keys.has_map_pos = entity_class.entity_has_map_pos(self)
-    keys.pos = vec.vec_make(self.pos.x, self.pos.y)
-    keys.has_pos = entity_class.entity_has_pos(self)
+    keys.map_pos = entity_class.entity_map_pos(self)
+    keys.pos = entity_class.entity_pos(self)
     if self.planet_id ~= nil then
       planet.planet_keys_set_id(keys, self.planet_id)
     end

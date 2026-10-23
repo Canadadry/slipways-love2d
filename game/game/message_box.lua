@@ -7,12 +7,13 @@
 --   message_box_article_t: { kind, draw_function, as = { scalars, layout, row_of } }, the union's
 --     three members kept apart (only the member of `kind` is written or read):
 --     scalars = { count, arguments, text }, arguments a 0-indexed array of
---     MESSAGE_BOX_ARGUMENTS_CAP { kind, number }; layout = { row, has_pos, pos, align }, row a
---     layout_row_t filled in place by layout_row_init; row_of a Lua function or nil.
+--     MESSAGE_BOX_ARGUMENTS_CAP { kind, number }; layout = { row, pos, align }, row a
+--     layout_row_t filled in place by layout_row_init, pos nil when absent; row_of a Lua function
+--     or nil.
 --   toast_t: one table holding the entity header and { follow, text, archetype, fade, color }.
 --   message_box_keys_t: { duration_scale, keep_open }, duration_scale nil when not given.
 --   toast_keys_t, open_box_frame_t: the fields of toast_keys_zero and open_box_frame_zero, plus a toast's text and
---     a frame's description, fixed_pos, back_color and row_step, each nil when not given.
+--     pos and a frame's description, fixed_pos, back_color, row_step and pos, each nil when not given.
 --   Char arrays are Lua strings, "" at zero.
 --
 -- Include cycle: game.scroll, game.ui and game.ui_button are required at call time.
@@ -77,7 +78,7 @@ local function article_zero()
     draw_function = map_tables.DRAW_FUNCTION_NONE,
     as = {
       scalars = { count = 0, arguments = arguments, text = "" },
-      layout = { row = row, has_pos = 0, pos = zero_vec(), align = 0 },
+      layout = { row = row, pos = nil, align = 0 },
       row_of = nil,
     },
   }
@@ -136,7 +137,7 @@ local function message_box_draw_article(gfx, mem, article)
   end
   if article.kind == M.MESSAGE_BOX_ARTICLE_LAYOUT_ROW then
     local p
-    if article.as.layout.has_pos ~= 0 then
+    if article.as.layout.pos ~= nil then
       p = vec_copy(article.as.layout.pos)
     else
       p = zero_vec()
@@ -261,18 +262,14 @@ function M.message_box_add_row(self, row)
   end
 end
 
-function M.message_box_add_layout_row(self, keys, pos, has_pos, align)
+-- A nil pos draws the row at the zero vector.
+function M.message_box_add_layout_row(self, keys, pos, align)
   local article = message_box_next_article(self)
 
   article.kind = M.MESSAGE_BOX_ARTICLE_LAYOUT_ROW
   article.draw_function = map_tables.DRAW_FUNCTION_DRAW_ROW
   layout.layout_row_init(article.as.layout.row, keys)
-  article.as.layout.has_pos = has_pos
-  if has_pos ~= 0 then
-    article.as.layout.pos = vec_copy(pos)
-  else
-    article.as.layout.pos = zero_vec()
-  end
+  article.as.layout.pos = pos and vec_copy(pos)
   article.as.layout.align = align
 end
 
@@ -435,7 +432,7 @@ local function toast_create(keys)
     if source ~= nil and entity_class.entity_has_pos(source) ~= 0 then
       entity_class.entity_set_pos(self, source.pos)
       self.follow = keys.source
-    elseif keys.has_pos ~= 0 then
+    elseif keys.pos ~= nil then
       entity_class.entity_set_pos(self, keys.pos)
     end
     if keys.text ~= nil then
@@ -493,7 +490,6 @@ local function open_box_step(ctx, frame, row)
   local b = button_keys_copy(row)
   local gq
 
-  b.has_pos = 1
   b.pos = vec_copy(ctx.pos)
   b.slide_target = vec_copy(ctx.button_pos)
 
@@ -539,7 +535,7 @@ function M.message_box_open_box(frame, buttons, button_count)
 
   if frame.fixed_pos ~= nil then
     box_pos = vec_copy(frame.fixed_pos)
-  elseif frame.has_pos ~= 0 then
+  elseif frame.pos ~= nil then
     box_pos = vec_copy(frame.pos)
   else
     box_pos = zero_vec()
@@ -572,8 +568,6 @@ end
 -- Lua only: toast_keys_t keys = {0}, a new table.
 function M.toast_keys_zero()
   return {
-    has_pos = 0,
-    pos = vec.vec_make(0, 0),
     source = nil,
     color = 0,
   }
@@ -583,8 +577,6 @@ end
 function M.open_box_frame_zero()
   return {
     clear_ephemerals_after = 0,
-    has_pos = 0,
-    pos = vec.vec_make(0, 0),
   }
 end
 

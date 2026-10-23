@@ -1,8 +1,8 @@
 -- Copy of src/game/planet.h then src/game/planet.c.
 --
 -- Shapes, with the C field names:
---   planet_keys_t: { planet_id, map_pos, has_map_pos, pos, has_pos }, planet_id a Lua string,
---     nil when not given.
+--   planet_keys_t: { planet_id, map_pos, pos }, planet_id a Lua string, each nil when not
+--     given.
 --   planet_row_signature_t: { output, amount, need_resources, route_count, needs_count, flags,
 --     need_flags }, need_resources and need_flags 0-indexed of PLANET_ROW_SIGNATURE_NEEDS.
 --   planet_t: one table holding the entity header and { archetype, planet_id, slipways, project,
@@ -27,7 +27,6 @@ local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
 local entity_registry = require("engine.entity_registry")
-local vec = require("engine.vec")
 local economy_formulas = require("game.economy_formulas")
 local game_data = require("game.game_data")
 local gen = require("game.gen")
@@ -166,10 +165,10 @@ function M.planet_copy_keys(self, keys)
   if keys == nil then
     return
   end
-  if keys.has_map_pos ~= 0 then
+  if keys.map_pos ~= nil then
     entity_class.entity_set_map_pos(self, keys.map_pos)
   end
-  if keys.has_pos ~= 0 then
+  if keys.pos ~= nil then
     entity_class.entity_set_pos(self, keys.pos)
   end
   if keys.planet_id ~= nil then
@@ -411,7 +410,7 @@ end
 function M.planet_bob(self, t)
   assert(self == nil or M.planet_is_family(self) ~= 0,
     "planet_bob: self is a planet (structure and trading hub settled updates) -- stop")
-  if self ~= nil and entity_class.entity_has_pos(self) ~= 0 then
+  if self ~= nil and self.pos ~= nil then
     self.pos.y = fixed.p8_fixed_add(self.pos.y, bob_delta(t))
   end
 end
@@ -431,12 +430,7 @@ end
 
 -- Lua only: planet_keys_t keys = {0}.
 function M.planet_keys_zero()
-  return {
-    map_pos = vec.vec_make(0, 0),
-    has_map_pos = 0,
-    pos = vec.vec_make(0, 0),
-    has_pos = 0,
-  }
+  return {}
 end
 
 -- Lua only: planet_row_signature_t signature = {0}.
