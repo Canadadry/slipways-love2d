@@ -22,12 +22,12 @@
     - [x] Chunk 5 — the exit queue, design.md and the tdd examples
 - [x] Phase 2 — The entity model
   - [x] Step 2.1 — optional parts as nil-able fields
-- [ ] Phase 3 — The surface
+- [x] Phase 3 — The surface
   - [x] Step 3.1 — booleans
   - [x] Step 3.2 — 1-based arrays
   - [x] Step 3.3 — the C headers
   - [x] Step 3.4 — names without the module prefix
-  - [ ] Step 3.5 — design.md conventions replaced
+  - [x] Step 3.5 — design.md conventions replaced
 - [x] Added after the phase 1 review
   - [x] Decisions reopened with the user
   - [x] Step 2.2 — research project ids as plain numbers

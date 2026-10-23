@@ -407,3 +407,21 @@ Seen: unrestricted `make lua-names` reports 0 prefix and 0 field findings.
 CLAUDE.md's naming rule, design.md's Naming paragraph and warn-review rule
 23 match. `make e2e` 20/20 in 4.8–5.1 s, `make end-state` 20/20,
 `make test` 0.63 s.
+
+### Step 3.5
+
+One unit, docs only. design.md § "Conventions inherited from the C" is
+replaced, in the same place, by § "Code conventions": Naming, Modules and
+loading, Tables and objects, Ids, Lists and sharing, Arrays, Integers bytes
+and strings, Truth values, Control flow and errors, Data tables and checks.
+Claims found false against the code were corrected rather than carried over
+(the context box is `{ value = false }`; the data constructors are
+`map_tables` exports; `math.floor` and `%` are described by what they do;
+module state also lives in `M.g_*` fields), and three stale claims outside
+the section were fixed (§ Layout of the fork's `tests/lua/`, § How the Lua
+game draws, § Numbers and randomness). Each paragraph was checked against
+the code by a grep or a read; every backticked name in design.md exists.
+Seen: "inherited from the C" is gone; the C mentions left are true facts,
+not conventions (the C game set the hashes, the fake LÖVE is C with C
+tests, the fixed-point reference was frozen from the C library, no C unit
+test was ported). `make e2e` 20/20 in 4.8 s, `make end-state` 20/20.
