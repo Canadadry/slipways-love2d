@@ -93,7 +93,7 @@ end
 
 function M.pad_jump_repeat_step(jump, bindings, mode, pad_buttons, pressed)
   assert(bindings ~= nil and
-    bindings_module.bindings_mode_has_action(mode, bindings_module.BINDINGS_ACTION_JUMP_UP) ~= 0,
+    bindings_module.bindings_mode_has_action(mode, bindings_module.BINDINGS_ACTION_JUMP_UP),
     "pad_jump_repeat_step: a mode with jump_* actions (jump or slipway)")
   local direction = first_pressed_direction(bindings, mode, pressed)
   if direction ~= pad_direction.PAD_DIRECTION_NONE then

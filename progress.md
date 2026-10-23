@@ -53,7 +53,7 @@
   - [x] Chunk 1 — runtime
   - [x] Chunk 2 — engine
   - [x] Chunk 3 — class callbacks
-  - [ ] Chunk 4 — data lookups
+  - [x] Chunk 4 — data lookups
   - [ ] Chunk 5 — planets, slipways, wormholes
   - [ ] Chunk 6 — economy, research, targeting
   - [ ] Chunk 7 — UI

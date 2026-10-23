@@ -282,7 +282,7 @@ function M.planet_inspection_panel(self)
     if kw.resource ~= nil then
       local found
       found, r_w = map_tables.resource_code_lookup("w", r_w)
-      resource_is_r_w = found ~= 0 and kw.resource == fixed.p8_fixed_from_int(r_w)
+      resource_is_r_w = found and kw.resource == fixed.p8_fixed_from_int(r_w)
     end
 
     if development_tier_fixed < fixed.p8_fixed_from_int(4) and needs ~= nil and #needs > 0 and not resource_is_r_w then
@@ -318,7 +318,7 @@ function M.planet_inspection_panel(self)
     local mu = kw.amount
 
     if mu > fixed.p8_fixed_from_int(0) then
-      local makes = kw.resource ~= nil and game_data.int_seq_has_fixed(planet.planet_made_resources(), kw.resource) ~= 0
+      local makes = kw.resource ~= nil and game_data.int_seq_has_fixed(planet.planet_made_resources(), kw.resource)
 
       buttons[row_count] = ui_button.button_keys_zero({})
       if makes then
@@ -534,7 +534,7 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
     local color = 0
     local found
     found, color = game_data.int_seq_at(planet.planet_ring_colors().items, planet.planet_ring_colors().count, mi, color)
-    if found ~= 0 and graphics.fillp_pattern == 0 then
+    if found and graphics.fillp_pattern == 0 then
       planet_build_images(graphics, memory)
       image.p8_image_draw(graphics, memory, image_slot.IMAGE_SLOT_PLANET_RING_FIRST + mi - 1, screen_x - PLANET_RING_RADIUS,
         screen_y - PLANET_RING_RADIUS)

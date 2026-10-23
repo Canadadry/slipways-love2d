@@ -116,7 +116,7 @@ local function resource_code_of(s)
   assert(s ~= nil, "resource_code_of: a position that is not a number does not fit the member's type "
     .. "-- stop, do not widen the member")
   found, qe = map_tables.resource_code_lookup(s, qe)
-  assert(found ~= 0, "resource_code_of: a routed position missing from the resource codes would stay a string in a "
+  assert(found, "resource_code_of: a routed position missing from the resource codes would stay a string in a "
     .. "fixed member -- stop, do not widen the member")
   return fixed.p8_fixed_from_int(qe)
 end
@@ -262,7 +262,7 @@ local function project_create(keys)
     local key = input_codes:sub(input_count, input_count)
     local found, r_resource = map_tables.resource_code_lookup(key, 0)
 
-    if found ~= 0 then
+    if found then
       self.inputs[#self.inputs + 1] =
         M.need_new({ kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(r_resource) })
     else

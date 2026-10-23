@@ -146,7 +146,7 @@ function M.slipway_draw(graphics, memory, self)
     if self.archetype.trail_colors ~= nil then
       local found, entry = game_data.int_seq_at(self.archetype.trail_colors.items, self.archetype.trail_colors.count,
         fade_in_step_i, nil)
-      if found ~= 0 then
+      if found then
         fade_color = fixed.p8_fixed_from_int(entry)
       end
     end

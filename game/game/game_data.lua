@@ -18,7 +18,7 @@
 --     bottom } and vec_t { x, y } held inline as new tables.
 -- A char[] table is its Lua string, and so is a pointer to one.
 -- int_seq_at and game_data_fixed_seq_at return found, value: value is out
--- unchanged when found is 0.
+-- unchanged when found is false.
 -- Every data table is a module field, also the C statics: a local per table
 -- would pass LuaJIT's 200 locals per function.
 local map_tables = require("game.map_tables")
@@ -640,7 +640,7 @@ local function planet_archetype(fields)
 end
 
 M.background_archetype = {
-  state = NORMAL, state_time = 0x0, layer = 0x10000, hit_test = 0x10000, tile_choices = M.background_tile_choices_seq,
+  state = NORMAL, state_time = 0x0, layer = 0x10000, tile_choices = M.background_tile_choices_seq,
 }
 
 M.ui_archetype = {
@@ -652,7 +652,7 @@ M.ui_archetype = {
 
 M.button_archetype = { state = NORMAL, state_time = 0x0, layer = 0xb0000 }
 
-M.modal_backdrop_archetype = { state = NORMAL, state_time = 0x0, layer = 0xe0000, hit_test = 0x10000 }
+M.modal_backdrop_archetype = { state = NORMAL, state_time = 0x0, layer = 0xe0000 }
 
 M.camera_archetype = {
   state = NORMAL,
@@ -1141,28 +1141,28 @@ M.synthesizer_kind_record = kind_record(
 function M.int_seq_at(seq, count, i, out)
   assert(seq ~= nil and count >= 0, "a sequence is an array and its length")
   if i < 1 or i > count then
-    return 0, out
+    return false, out
   end
   out = seq[i - 1]
-  return 1, out
+  return true, out
 end
 
 function M.game_data_fixed_seq_at(seq, count, i, out)
   assert(seq ~= nil and count >= 0, "a sequence is an array and its length")
   if i < 1 or i > count then
-    return 0, out
+    return false, out
   end
   out = seq[i - 1]
-  return 1, out
+  return true, out
 end
 
 function M.int_seq_has_fixed(seq, v)
   for i = 0, seq.count - 1 do
     if fixed.p8_fixed_from_int(seq.items[i]) == v then
-      return 1
+      return true
     end
   end
-  return 0
+  return false
 end
 
 function M.planet_types_lookup(px)

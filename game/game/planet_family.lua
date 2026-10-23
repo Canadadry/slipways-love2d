@@ -397,7 +397,7 @@ function M.burst_draw(graphics, memory, self, screen_pos)
 
       idx = fixed.p8_fixed_flr_int(fixed.p8_fixed_flr(fixed.p8_fixed_div(pt.life, fixed.p8_fixed_from_int(2))))
       found, trail_color = game_data.int_seq_at(ramp.items, ramp.count, idx, trail_color)
-      if found ~= 0 then
+      if found then
         color = trail_color
       end
       if particle.particle_pixels_hidden() == 0 then

@@ -681,10 +681,10 @@ function M.resource_code_lookup(key, out_resource)
   for i = 0, M.RESOURCE_CODE_COUNT - 1 do
     if M.resource_codes[i].key == key then
       out_resource = M.resource_codes[i].resource
-      return 1, out_resource
+      return true, out_resource
     end
   end
-  return 0, out_resource
+  return false, out_resource
 end
 
 function M.resource_names_lookup(key)

@@ -49,7 +49,7 @@ local function contains_trade(list, v)
     return 0
   end
   for i = 1, #list do
-    if trade.trade_equal(list[i], v) ~= 0 then
+    if trade.trade_equal(list[i], v) then
       return 1
     end
   end
@@ -112,18 +112,18 @@ function M.planet_offer_trade(self, trade_offer)
   t_resource = trade.trade_resource(route)
 
   found, resource = map_tables.resource_code_lookup("e", resource)
-  if found ~= 0 then
+  if found then
     bonus_resource = { kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(resource) }
   end
   found, resource = map_tables.resource_code_lookup("?", resource)
-  if found ~= 0 then
+  if found then
     any_resource = { kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(resource) }
   end
 
   assert(self.needs ~= nil, "planet_offer_trade: an offer goes to a planet holding needs")
   needs = self.needs
 
-  if bonus_resource ~= nil and trade.resource_equal(t_resource, bonus_resource) ~= 0 and self.production_bonus == nil then
+  if bonus_resource ~= nil and trade.resource_equal(t_resource, bonus_resource) and self.production_bonus == nil then
     for index = 1, #needs do
       local entry = needs[index]
       if entry ~= nil then
@@ -131,7 +131,7 @@ function M.planet_offer_trade(self, trade_offer)
         local gc = i.satisfied or fixed.p8_fixed_from_int(0)
         local resource_is_any
 
-        resource_is_any = any_resource ~= nil and trade.resource_equal(research.need_resource(i), any_resource) ~= 0
+        resource_is_any = any_resource ~= nil and trade.resource_equal(research.need_resource(i), any_resource)
         if gc == fixed.p8_fixed_from_int(0) and not resource_is_any then
           table.remove(needs, index)
           break
@@ -161,13 +161,13 @@ function M.planet_offer_trade(self, trade_offer)
     i = entry
     resource_val = research.need_resource(i)
 
-    if any_resource ~= nil and trade.resource_equal(resource_val, any_resource) ~= 0 then
+    if any_resource ~= nil and trade.resource_equal(resource_val, any_resource) then
       local accepted = 0
 
       if bit.band(self.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)) ~= 0
         and self.archetype.accepted_resources ~= nil then
         accepted = (t_resource.kind == trade.RESOURCE_FIXED
-          and game_data.int_seq_has_fixed(self.archetype.accepted_resources, t_resource.number) ~= 0) and 1 or 0
+          and game_data.int_seq_has_fixed(self.archetype.accepted_resources, t_resource.number)) and 1 or 0
       end
       if accepted ~= 0 then
         assert(t_resource.kind == trade.RESOURCE_FIXED, "a need's resource is a resource code, never a boolean")
@@ -176,8 +176,8 @@ function M.planet_offer_trade(self, trade_offer)
       end
     end
 
-    if trade.resource_equal(t_resource, resource_val) ~= 0
-      and not (any_resource ~= nil and trade.resource_equal(resource_val, any_resource) ~= 0) then
+    if trade.resource_equal(t_resource, resource_val)
+      and not (any_resource ~= nil and trade.resource_equal(resource_val, any_resource)) then
       local extended = trade.trade_extend(route, self, nil)
       if trade_offer.accept ~= nil then
         trade_offer.accept(trade_offer, extended)

@@ -204,7 +204,7 @@ function M.score_panel_refresh()
     local resource_index
     local production_val = fixed.p8_fixed_from_int(0)
     found, resource_index = map_tables.resource_code_lookup("k", resource_index)
-    if found ~= 0 then
+    if found then
       found, production_val = economy_formulas.resource_map_get(main_economy_production,
         fixed.p8_fixed_from_int(resource_index), production_val)
     end

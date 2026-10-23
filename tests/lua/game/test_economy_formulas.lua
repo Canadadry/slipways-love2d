@@ -17,7 +17,7 @@ local function test_set_appends_a_new_resource_then_updates_it_in_place()
   economy_formulas.resource_map_set(map, resource(28), 7)
   expect(map.count, 2, "count after two keys")
   local found, value = economy_formulas.resource_map_get(map, resource(28), -1)
-  expect(found, 1, "food found")
+  expect(found, true, "food found")
   expect(value, 7, "food value after update")
 end
 
@@ -25,10 +25,10 @@ local function test_get_leaves_out_unchanged_for_a_missing_key_or_a_nil_map()
   local map = new_map()
   economy_formulas.resource_map_set(map, resource(28), 3)
   local found, value = economy_formulas.resource_map_get(map, resource(21), 42)
-  expect(found, 0, "ore found")
+  expect(found, false, "ore found")
   expect(value, 42, "out for a missing key")
   found, value = economy_formulas.resource_map_get(nil, resource(28), 42)
-  expect(found, 0, "found in a nil map")
+  expect(found, false, "found in a nil map")
   expect(value, 42, "out for a nil map")
 end
 
@@ -40,7 +40,7 @@ local function test_fill_gives_every_resource_code_the_same_value()
   for i = 0, map_tables.RESOURCE_CODE_COUNT - 1 do
     local code = map_tables.resource_codes[i].resource
     local found, value = economy_formulas.resource_map_get(map, resource(code), -1)
-    expect(found, 1, "resource " .. code .. " found")
+    expect(found, true, "resource " .. code .. " found")
     expect(value, 9, "resource " .. code .. " value")
   end
 end

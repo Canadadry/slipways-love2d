@@ -126,7 +126,7 @@ function M.menu_show_tech_tree_screen()
 
   found, tier_thresholds = game_data.int_seq_at(game_data.tier_thresholds_table, game_data.TIER_THRESHOLDS_COUNT,
     fixed.p8_fixed_flr_int(current_era) - 1, tier_thresholds)
-  if found ~= 0 then
+  if found then
     next_threshold = fixed.p8_fixed_from_int(tier_thresholds)
   end
 
@@ -165,7 +165,7 @@ function M.menu_show_tech_tree_screen()
 
     found, tier_thresholds = game_data.int_seq_at(game_data.tier_thresholds_table, game_data.TIER_THRESHOLDS_COUNT,
       fixed.p8_fixed_flr_int(current_era), tier_thresholds)
-    if found ~= 0 then
+    if found then
       tier_thresholds_era = fixed.p8_fixed_from_int(tier_thresholds)
     end
 

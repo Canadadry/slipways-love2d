@@ -25,11 +25,11 @@ function M.resource_map_get(map, qe, out)
   while map ~= nil and i < map.count do
     if map.entries[i].resource == key then
       out = map.entries[i].value
-      return 1, out
+      return true, out
     end
     i = i + 1
   end
-  return 0, out
+  return false, out
 end
 
 function M.resource_map_set(map, qe, v)

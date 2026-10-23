@@ -4,7 +4,8 @@
 --   random_walk_t: { step, bias }.
 --   weighted_picker_t: { tickets, tickets_count, recent, recent_set,
 --     multiplier, random, random_ctx }; tickets, recent and recent_set
---     indexed from 0, created when first written. A ticket and a recent entry
+--     indexed from 0, created when first written; recent_set[i] is true once
+--     slot i is written, nil before. A ticket and a recent entry
 --     are the very planet_types_table entry; random is a function taking
 --     random_ctx (a random_walk_t when random is M.random_walk_draw).
 local game_data = require("game.game_data")
@@ -39,14 +40,14 @@ M.WEIGHTED_PICKER_TICKETS_CAP = 66
 -- Return, not continue, at the first unwritten slot: slots fill out of order.
 local function weighted_picker_recent_contains(state, e)
   for i = 0, 2 do
-    if state.recent_set[i] == 0 then
-      return 0
+    if not state.recent_set[i] then
+      return false
     end
     if state.recent[i] == e then
-      return 1
+      return true
     end
   end
-  return 0
+  return false
 end
 
 local function weighted_picker_fill(state)
@@ -72,7 +73,6 @@ function M.weighted_picker_new(multiplier, r, r_ctx)
   state.recent_set = {}
   for i = 0, 2 do
     state.recent[i] = nil
-    state.recent_set[i] = 0
   end
   state.multiplier = multiplier
   state.random = r
@@ -84,11 +84,11 @@ end
 
 local function weighted_picker_has_drawable_ticket(state)
   for i = 0, state.tickets_count - 1 do
-    if weighted_picker_recent_contains(state, state.tickets[i]) == 0 then
-      return 1
+    if not weighted_picker_recent_contains(state, state.tickets[i]) then
+      return true
     end
   end
-  return 0
+  return false
 end
 
 local function weighted_picker_tickets_del(state, e)
@@ -107,7 +107,7 @@ end
 function M.weighted_picker_next(state)
   local e
 
-  if weighted_picker_has_drawable_ticket(state) == 0 then
+  if not weighted_picker_has_drawable_ticket(state) then
     weighted_picker_fill(state)
   end
 
@@ -119,7 +119,7 @@ function M.weighted_picker_next(state)
     local idx0 = fixed.p8_fixed_flr_int(idx_fixed) - 1
 
     e = state.tickets[idx0]
-    if weighted_picker_recent_contains(state, e) == 0 then
+    if not weighted_picker_recent_contains(state, e) then
       break
     end
   end
@@ -128,7 +128,7 @@ function M.weighted_picker_next(state)
   do
     local slot = 3 - cint.mod(state.tickets_count, 3)
     state.recent[slot - 1] = e
-    state.recent_set[slot - 1] = 1
+    state.recent_set[slot - 1] = true
   end
   return e
 end

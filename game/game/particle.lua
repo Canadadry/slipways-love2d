@@ -193,7 +193,7 @@ function M.emitter_update(graphics, memory, self)
 
           if colors ~= nil then
             local found, value = game_data.int_seq_at(colors.items, colors.count, idx, col)
-            if found ~= 0 then
+            if found then
               col = value
             end
           end

@@ -377,7 +377,7 @@ function M.draw_layers(message)
 
     if is_draw and group.count > 0 then
       local found, ci = game_data.game_data_fixed_seq_at(game_data.layer_fades_table, game_data.LAYER_FADES_COUNT, layer, nil)
-      if found ~= 0 and g_main_camera ~= nil and g_main_camera.class.apply_camera ~= nil then
+      if found and g_main_camera ~= nil and g_main_camera.class.apply_camera ~= nil then
         g_main_camera.class.apply_camera(g_main_camera, ci)
       end
     end

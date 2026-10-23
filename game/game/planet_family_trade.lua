@@ -113,7 +113,7 @@ function M.slipgate_refresh(self)
   if self.archetype.link_sprites ~= nil then
     local found, entry = game_data.int_seq_at(self.archetype.link_sprites.items, self.archetype.link_sprites.count,
       slipways_count + 1, nil)
-    if found ~= 0 then
+    if found then
       s_val = fixed.p8_fixed_from_int(entry)
     end
   end
@@ -292,7 +292,7 @@ function M.synthesizer_attach_slipway(self, slipway)
       end
 
       if i.row.resource ~= nil and self.synthesizable_resources ~= nil
-        and game_data.int_seq_has_fixed(self.synthesizable_resources, i.row.resource) ~= 0 then
+        and game_data.int_seq_has_fixed(self.synthesizable_resources, i.row.resource) then
         local kw = planet.planet_production(self)
         kw.resource = i.row.resource
         self.synthesizable_resources = M.synthesizer_synthesizable_resources_spent

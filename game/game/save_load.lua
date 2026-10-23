@@ -282,7 +282,7 @@ local function load_rolls(state)
     picker.tickets[i] = game_data.planet_types_table[saved.tickets[i]]
   end
   for i = 0, save_state.SAVE_STATE_RECENT_COUNT - 1 do
-    picker.recent_set[i] = saved.recent_set[i]
+    picker.recent_set[i] = saved.recent_set[i] ~= 0
     picker.recent[i] = (saved.recent_set[i] ~= 0) and game_data.planet_types_table[saved.recent[i]] or nil
   end
   picker.multiplier = saved.multiplier

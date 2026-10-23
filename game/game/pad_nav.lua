@@ -213,7 +213,7 @@ local pan_action = {
 }
 
 local function aim_pan(nav, mode, pad_buttons)
-  assert(bindings_module.bindings_mode_has_action(mode, bindings_module.BINDINGS_ACTION_PAN_UP) ~= 0,
+  assert(bindings_module.bindings_mode_has_action(mode, bindings_module.BINDINGS_ACTION_PAN_UP),
     "aim_pan: a mode with pan_* actions (aim or placement)")
   local speed = {}
   for i = 0, pad_jump.PAD_JUMP_DIRECTIONS - 1 do
@@ -344,7 +344,7 @@ local move_action = {
 }
 
 local function first_pressed_move(nav, pressed, mode)
-  assert(bindings_module.bindings_mode_has_action(mode, bindings_module.BINDINGS_ACTION_MOVE_UP) ~= 0,
+  assert(bindings_module.bindings_mode_has_action(mode, bindings_module.BINDINGS_ACTION_MOVE_UP),
     "first_pressed_move: a mode with move_* actions (title, menu, pause or panels)")
   for i = 0, pad_jump.PAD_JUMP_DIRECTIONS - 1 do
     if action_pressed(nav, pressed, mode, move_action[i]) ~= 0 then

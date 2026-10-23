@@ -65,7 +65,7 @@ function M.economy_score_planet_upkeep(pt)
     if jo.development_tier ~= nil then
       found, es = game_data.int_seq_at(game_data.upkeep_by_tier_table, game_data.UPKEEP_BY_TIER_COUNT,
         fixed.p8_fixed_flr_int(jo.development_tier), es)
-      if found ~= 0 then
+      if found then
         return fixed.p8_fixed_from_int(es)
       end
     end
@@ -114,7 +114,7 @@ function M.economy_score_trade_income(entity)
       local found
       local partner
       found, partner = trade.trade_last_planet(outgoing[i], partner)
-      if found ~= 0 then
+      if found then
         local oz
         assert(planet_module.planet_is_family(partner) ~= 0, "economy_score_trade_income: a trade leads to a planet")
         oz = partner
@@ -150,7 +150,7 @@ function M.economy_score_trade_income(entity)
     local w
     if kw.resource ~= nil then
       found, w = map_tables.resource_code_lookup("w", w)
-      if found ~= 0 and kw.resource == fixed.p8_fixed_from_int(w) then
+      if found and kw.resource == fixed.p8_fixed_from_int(w) then
         local mu = kw.amount
         local trade_mult = fixed.p8_fixed_from_int(0)
         if difficulty ~= nil and difficulty.trade ~= nil then
@@ -176,7 +176,7 @@ local function sum_by_development_tier_visit(pt, ctx)
   jo = pt
   if jo.development_tier ~= nil then
     found, v = game_data.int_seq_at(ctx.seq, ctx.count, fixed.p8_fixed_flr_int(jo.development_tier), v)
-    if found ~= 0 then
+    if found then
       ctx.total = fixed.p8_fixed_add(ctx.total, fixed.p8_fixed_from_int(v))
     end
   end
@@ -208,10 +208,10 @@ function M.economy_score_final()
     local p
     local population_val
     found, p = map_tables.resource_code_lookup("p", p)
-    if found ~= 0 then
+    if found then
       found, population_val = economy_formulas.resource_map_get(main_economy_production, fixed.p8_fixed_from_int(p),
         population_val)
-      if found ~= 0 then
+      if found then
         population = fixed.p8_fixed_mul(population_val, fixed.p8_fixed_from_int(40))
       end
     end
@@ -249,11 +249,11 @@ function M.economy_score_happiness()
     local w_key
     local _
     found, h_key = map_tables.resource_code_lookup("h", h_key)
-    if found ~= 0 then
+    if found then
       _, r_h = economy_formulas.resource_map_get(main_economy_production, fixed.p8_fixed_from_int(h_key), r_h)
     end
     found, w_key = map_tables.resource_code_lookup("w", w_key)
-    if found ~= 0 then
+    if found then
       _, r_w = economy_formulas.resource_map_get(main_economy_production, fixed.p8_fixed_from_int(w_key), r_w)
     end
   end

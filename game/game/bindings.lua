@@ -94,20 +94,20 @@ local MAP_SHORTCUTS = {
   M.BINDINGS_ACTION_OPEN_BUILD_BAR, M.BINDINGS_ACTION_OPEN_TECH_PANEL, M.BINDINGS_ACTION_PAUSE,
 }
 
--- One row of mode_actions: 1 for each action of the groups and the listed
--- actions, 0 for every other action, as the C's designated initializers.
+-- One row of mode_actions: true for each action of the groups and the listed
+-- actions, false for every other action, as the C's designated initializers.
 local function mode_actions_row(groups, ...)
   local row = {}
   for action = 0, M.BINDINGS_ACTION_COUNT - 1 do
-    row[action] = 0
+    row[action] = false
   end
   for _, group in ipairs(groups) do
     for _, action in ipairs(group) do
-      row[action] = 1
+      row[action] = true
     end
   end
   for _, action in ipairs({ ... }) do
-    row[action] = 1
+    row[action] = true
   end
   return row
 end
@@ -188,7 +188,7 @@ end
 
 function M.bindings_mask(bindings, mode, action)
   assert(bindings ~= nil, "bindings_mask needs a table")
-  if M.bindings_mode_has_action(mode, action) == 0 then
+  if not M.bindings_mode_has_action(mode, action) then
     return 0
   end
   return bindings.masks[mode][action]
@@ -272,7 +272,7 @@ local function parse_line(file_name, line_number, text, start, end_, out, given_
   local action_start = skip_blanks(text, dot + 1, left_end)
   token = copy_token(text, action_start, left_end)
   local action = find_action(token)
-  if action < 0 or M.mode_actions[mode][action] == 0 then
+  if action < 0 or not M.mode_actions[mode][action] then
     return fail(error, file_name, line_number, "unknown action \"%s\" in mode %s", token, M.mode_names[mode])
   end
   local first_line = given_on_line[mode][action]

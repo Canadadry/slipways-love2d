@@ -923,8 +923,8 @@ local function capture_type_picker(out)
     out.tickets[i] = planet_type_index(picker.tickets[i])
   end
   for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
-    out.recent_set[i] = (picker.recent_set[i] ~= 0) and 1 or 0
-    out.recent[i] = (picker.recent_set[i] ~= 0) and planet_type_index(picker.recent[i]) or 0
+    out.recent_set[i] = picker.recent_set[i] and 1 or 0
+    out.recent[i] = picker.recent_set[i] and planet_type_index(picker.recent[i]) or 0
   end
   out.multiplier = picker.multiplier
   out.walk_step = walk.step

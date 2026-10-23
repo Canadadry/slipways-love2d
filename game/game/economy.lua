@@ -162,7 +162,7 @@ function M.economy_new_year(self)
     local found
     local k = 0
     found, k = map_tables.resource_code_lookup("k", k)
-    if found ~= 0 then
+    if found then
       local _
       _, science_production = economy_formulas.resource_map_get(self.production, fixed.p8_fixed_from_int(k),
         science_production)
@@ -293,7 +293,7 @@ function M.economy_invent(self, t)
     local threshold = 0
     found, threshold = game_data.int_seq_at(game_data.tier_thresholds_table, game_data.TIER_THRESHOLDS_COUNT,
       fixed.p8_fixed_flr_int(ew), threshold)
-    if found ~= 0 and fixed.p8_fixed_from_int(count) >= fixed.p8_fixed_from_int(threshold) then
+    if found and fixed.p8_fixed_from_int(count) >= fixed.p8_fixed_from_int(threshold) then
       self.era = fixed.p8_fixed_add(ew, fixed.p8_fixed_from_int(1))
     end
   end
@@ -329,7 +329,7 @@ local function total_production_visit(pt, ctx)
     return
   end
   found, current = economy_formulas.resource_map_get(p, kw.resource, current)
-  if found == 0 then
+  if not found then
     current = fixed.p8_fixed_from_int(0)
   end
   economy_formulas.resource_map_set(p, kw.resource, fixed.p8_fixed_add(current, kw.amount))
@@ -368,7 +368,7 @@ local function crowding_penalty_visit(l, ctx)
   end
   -- Fallback 1, not 0: the map was seeded with 1 for every resource code.
   found, current = economy_formulas.resource_map_get(d, last.row.resource, current)
-  if found == 0 then
+  if not found then
     current = fixed.p8_fixed_from_int(1)
   end
   economy_formulas.resource_map_set(d, last.row.resource,

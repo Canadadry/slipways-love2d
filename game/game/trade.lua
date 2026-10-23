@@ -43,7 +43,7 @@ function M.trade_resource(self)
 end
 
 function M.resource_equal(a, b)
-  return (a.kind == b.kind and (a.kind ~= M.RESOURCE_FIXED or a.number == b.number)) and 1 or 0
+  return a.kind == b.kind and (a.kind ~= M.RESOURCE_FIXED or a.number == b.number)
 end
 
 function M.trade_init()
@@ -98,10 +98,10 @@ end
 -- Returns found, out.
 function M.trade_last_planet(self, out)
   if self == nil or #self.planets == 0 then
-    return 0, out
+    return false, out
   end
   out = entity_id.entity_id_resolve(self.planets[#self.planets])
-  return 1, out
+  return true, out
 end
 
 -- The new route's id lists are new lists; a nil node or slipway adds nothing.
@@ -117,20 +117,20 @@ end
 
 function M.trade_equal(l, r)
   if l == nil or r == nil or #l.planets == 0 or #r.planets == 0 then
-    return 0
+    return false
   end
   if entity_id.entity_id_resolve(l.planets[1]) ~= entity_id.entity_id_resolve(r.planets[1]) then
-    return 0
+    return false
   end
   local l_found, l_last = M.trade_last_planet(l, nil)
-  if l_found == 0 then
-    return 0
+  if not l_found then
+    return false
   end
   local r_found, r_last = M.trade_last_planet(r, nil)
-  if r_found == 0 then
-    return 0
+  if not r_found then
+    return false
   end
-  return (l_last == r_last) and 1 or 0
+  return l_last == r_last
 end
 
 -- Stores a copy of the route; its id lists are shared, not copied.

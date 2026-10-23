@@ -135,7 +135,7 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
 
   do
     local found_w, r_w = map_tables.resource_code_lookup("w", nil)
-    local o_is_r_w = found_w ~= 0 and output == fixed.p8_fixed_from_int(r_w)
+    local o_is_r_w = found_w and output == fixed.p8_fixed_from_int(r_w)
 
     if o_is_r_w then
       outputs[0] = fixed.p8_fixed_from_int(25)

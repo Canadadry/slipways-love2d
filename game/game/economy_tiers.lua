@@ -83,7 +83,7 @@ local function rebuild_incoming_routes_route_visit(entity, context)
     end
 
     found, to_val = trade.trade_last_planet(route, to_val)
-    if found ~= 0 then
+    if found then
       local dest
 
       assert(planet_module.planet_is_family(to_val) ~= 0, "rebuild_incoming_routes_route_visit: a trade leads to a planet")
@@ -206,7 +206,7 @@ function M.economy_tiers_compute_tier(entity)
         if incoming_routes ~= nil then
           for j = 1, #incoming_routes do
             local im = incoming_routes[j]
-            if im.resource ~= nil and trade.resource_equal(trade.trade_resource(im), resource_val) ~= 0 then
+            if im.resource ~= nil and trade.resource_equal(trade.trade_resource(im), resource_val) then
               gc = gc + 1
             end
           end
