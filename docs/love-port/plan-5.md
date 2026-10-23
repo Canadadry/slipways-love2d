@@ -25,7 +25,12 @@ state unchanged. Read `docs/love-port/design.md` first.
 - Each step updates or deletes, in the same step, the parts of
   `docs/love-port/design.md` and of `CLAUDE.md` § The game that it makes
   false: later steps are planned from them.
-- One module (or one kind of C-ism) per step, small enough to fail fast.
+- One module (or one kind of C-ism) per step, small enough to fail fast. A
+  step too large for that is split into its PRD's Implementation Chunks, one
+  per module group: a module's definitions together with all their callers.
+  Each chunk's verifier sees `make e2e` green with every `.json.sha256`
+  unchanged and the step's check, restricted to that group, holding before
+  the chunk is committed; the last chunk runs the full check.
 - The fixed-point format and the random generator stay: they are what makes
   the hashes match, not a C-ism.
 - Not this plan: new features, iOS.
@@ -95,11 +100,15 @@ phase 1 is written, rerun `/plan-converge` on this plan, then start
 
 1. `lua-test-modules` checks only that every module loads. Seen when
    `tests/lua/table_reference.txt` is gone and `make test` is green.
-2. Zones and allocators removed. Seen when `game/engine/zone.lua`,
-   `allocator.lua` and the other zone modules are gone and
-   `grep -r SIZEOF game/` finds nothing.
+2. Zones and allocators removed. Seen when
+   `grep -rE 'require\("engine\.(zone|zone_sizes|frame_zone|game_zone|allocator|slot_group|slot_tally)"\)|SIZEOF' game/`
+   finds nothing, those modules and the game-side pools (`ui_zone.lua`,
+   `particle_zone.lua`, `grab_arena.lua`) are gone, and the state dump
+   writes no `zone`, `budget` or `cap` line. The game-side pools go first.
 3. Entity ids as plain numbers. Seen when
-   `grep -rE 'generation|entity_id_equal|entity_id_none' game/` finds nothing.
+   `grep -rE 'index *=[^}]*generation|generations|entity_id_equal|entity_id_none' game/`
+   finds nothing (the registry's change counter `entity_registry_generation`
+   is not an id and stays).
 4. The four list kinds as plain arrays. Seen when `entity_list.lua`,
    `pointer_list.lua`, `entity_id_list.lua`, `value_list.lua` and
    `collect.lua` are gone and `grep -r last_count game/` finds nothing.
@@ -107,19 +116,25 @@ phase 1 is written, rerun `/plan-converge` on this plan, then start
 ### Phase 2 — The entity model
 
 1. Optional parts as `nil`-able fields. Seen when
-   `grep -rE 'ENTITY_HAS_|entity_has\(' game/` finds nothing.
+   `grep -rE '_HAS_|entity_has\(|\.has\b' game/` finds only bit sets that are
+   not an entity's optional parts, each listed in the step note.
 
 ### Phase 3 — The surface
 
-One kind per step, split by directory (`p8/`, `engine/`, `game/` with
-`devtools/`) when it is too large to fail fast.
+One kind per step.
 
-1. Booleans. Seen when `grep -rE 'and 1 or 0|~= 0 then' game/` finds only
-   tests on numbers that are not truth values, each listed in the step note.
-2. 1-based arrays. Seen when `grep -rE '\[0\] *=' game/` finds nothing.
+1. Booleans. Seen when
+   `grep -rE 'and 1 or 0|[~=]= 0( *(then|and|or|do|\))|$)' game/` finds only
+   tests on numbers that are not truth values, and no predicate (`is_*`,
+   `has_*`, `can_*`, or with those inside its name) returns `0` or `1`, each
+   exception listed in the step note. A predicate's `return 0` is truthy in
+   Lua: a missed one is a bug the replays may not see.
+2. 1-based arrays. Seen when `grep -rE '\[0\]|for [a-z_]+ = 0,' game/` finds
+   only loops over plain numbers, not indices, each listed in the step note.
 3. The C headers. Seen when `grep -r -- '-- Copy of' game/` finds nothing.
 4. Names without the module prefix, with `CLAUDE.md`'s naming rule. Seen
-   when no exported function of a module starts with the module's name.
+   when no exported name (`M.<name>`) of a module starts with the module's
+   name or, in `p8/`, with `p8_`.
 5. `design.md` § Conventions inherited from the C replaced. Seen when the
    section is gone and no convention left in `design.md` names a C construct.
 
