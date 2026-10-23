@@ -1,11 +1,7 @@
--- Copy of src/game/planet_display.h then src/game/planet_display.c.
---
 -- Include cycle: game.planet, game.planet_family, game.economy, game.message_box,
 -- game.research_display, game.slipway, game.ui, game.ui_button and game.probe (home of
 -- main_economy_typed and targeting_of) are required at call time, inside the functions that need
 -- them, so that this module loads before they exist.
---
--- down_t and layout_row_tuple_t zeroes are local.
 local bit = require("bit")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
@@ -35,7 +31,6 @@ local function down_zero()
   return { stop = false, held = nil }
 end
 
--- layout_row_tuple_t tuple = {0}.
 local function tuple_zero()
   return { count = 0, scalars = {} }
 end
@@ -159,7 +154,6 @@ function M.planet_release_method(self)
   M.planet_release_row(self)
 end
 
--- planet_inspection_panel_ctx_t: { received_needs }.
 local function planet_inspection_panel_filter_step(e, ctx_ptr)
   local ctx = ctx_ptr
   local gc = fixed.p8_fixed_from_int(0)
@@ -195,7 +189,6 @@ local function planet_open_box_frame(self)
   return frame
 end
 
--- A need_t's first member is its row: the C passes the need where a data_row_t is read.
 local function need_row(need)
   if need == nil then
     return nil
@@ -467,7 +460,7 @@ local function planet_draw_disc_image(gfx, mem, context)
   gfx_module.p8_circfill(gfx, mem, PLANET_DISC_RADIUS, PLANET_DISC_RADIUS, PLANET_DISC_RADIUS, 0)
 end
 
--- context is the ring colour itself, where the C passes a pointer to it.
+-- context is the ring colour itself.
 local function planet_draw_ring_image(gfx, mem, context)
   gfx_module.p8_circ(gfx, mem, PLANET_RING_RADIUS, PLANET_RING_RADIUS, PLANET_RING_RADIUS, context)
 end

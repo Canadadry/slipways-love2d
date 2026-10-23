@@ -1,14 +1,6 @@
--- Copy of src/game/planet_family.h then src/game/planet_family.c.
---
--- Shapes, with the C field names:
---   burst_keys_t: { planet, construct }, planet a planet_keys_t, construct a burst construct keys
---     table of game_data or nil.
---   entity_kind_t: { new_entity, record }, record the game_data kind record table.
---   planet_kinds: 1-based array of { class_name, kind }.
---
 -- Include cycle: game.planet, game.planet_display, game.planet_trade and game.probe are required
 -- at load, since their methods fill the class tables; game.probe's targeting methods are held by
--- identity (probe.c compares a class's drag with targeting_track_method), so this module does not
+-- identity (game.probe compares a class's drag with targeting_track_method), so this module does not
 -- load until game.probe exists. game.scroll and game.particle are required at call time.
 local bit = require("bit")
 local dispatch_context = require("engine.dispatch_context")
@@ -28,7 +20,7 @@ local gfx_module = require("p8.gfx")
 
 local M = {}
 
--- burst_keys_t keys = {0}.
+-- construct is a burst construct keys table of game_data, or nil.
 local function burst_keys_zero()
   return { planet = planet.planet_keys_zero(), construct = nil }
 end

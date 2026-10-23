@@ -1,13 +1,3 @@
--- Copy of src/game/wormhole.h then src/game/wormhole.c.
---
--- Shapes, with the C field names:
---   wormhole_too_far_target_t: the entity header plus { status_text }, one table.
---   wormhole_t: one table holding the entity header and { archetype, radius, anchors,
---     anchor, targeting }; targeting a targeting_t (game.targeting).
---
--- Declared in wormhole.h, defined in src/game/wormhole_display.c and ported there:
--- wormhole_draw_method.
---
 -- Include cycle: game.wormhole_display and game.probe are required at load, since
 -- wormhole_draw_method and targeting_tooltip_method fill wormhole_class_def; both must reach this
 -- module at call time only. game.planet is required at call time, inside the function that needs it.
@@ -244,7 +234,6 @@ local function wormhole_create()
 
   entity.entity_init_instance(self, M.wormhole_class_def, game_data.wormhole_archetype.state,
     game_data.wormhole_archetype.state_time)
-  -- Lua only: the inline sub-struct the C writes into in place.
   self.targeting = targeting_module.targeting_zero()
   self.archetype = game_data.wormhole_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)

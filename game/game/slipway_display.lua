@@ -1,9 +1,3 @@
--- Copy of src/game/slipway_display.h then src/game/slipway_display.c.
---
--- Shapes, with the C field names:
---   transit_dot_t: { pos, velocity, life }.
---   slipway_line_ends_t: { start, end_ }, passed by value; `end` is `end_` (a Lua keyword).
---
 -- Include cycle: game.slipway requires this module at load (slipway_draw_method fills
 -- slipway_class_def), so game.slipway, game.planet and game.probe (home of targeting_target) are
 -- required at call time, inside the functions that need them.

@@ -1,9 +1,3 @@
--- Copy of src/game/planet_trade.h then src/game/planet_trade.c.
---
--- Shapes, with the C field names:
---   trade_offer_t: { route, amount, accept, accepted_routes }, accept a function (offer, route),
---     accepted_routes a trade_route_list_t.
---
 -- Include cycle: game.planet and game.slipway are required at call time, inside the functions
 -- that need them, so that this module loads before they exist.
 local bit = require("bit")
@@ -17,7 +11,6 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
--- trade_keys_t keys = {0}.
 local function trade_keys_zero()
   return {
     planets = { items = nil, count = 0, capacity = 0 },
@@ -232,8 +225,7 @@ function M.planet_rebuild_trades(self)
 
     assert(w.class == slipway.slipway_class(), "a planet's slipways list holds slipways only: planet_attach_slipway adds to it")
     other = slipway.slipway_other_end(w, self)
-    -- The offer is on the stack: a callee that keeps a pointer to it dangles. The outgoing
-    -- routes keep their old contents until the offer returns.
+    -- The outgoing routes keep their old contents until the offer returns.
     if other ~= nil and other.class.offer_trade ~= nil then
       lw.accepted_routes = route_list_copy(self.outgoing_routes)
       other.class.offer_trade(other, lw)

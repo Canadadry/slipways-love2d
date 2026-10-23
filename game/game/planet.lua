@@ -1,23 +1,3 @@
--- Copy of src/game/planet.h then src/game/planet.c.
---
--- Shapes, with the C field names:
---   planet_keys_t: { planet_id, map_pos, pos }, planet_id a Lua string, each nil when not
---     given.
---   planet_row_signature_t: { output, amount, need_resources, route_count, needs_count, flags,
---     need_flags }, need_resources and need_flags 1-based, one entry per need.
---   planet_t: one table holding the entity header and { archetype, planet_id, slipways, project,
---     description, needs, planet_type, layout_row, layout_row_signature,
---     targeted_by, production_bonus, net_income, incoming_routes, outgoing_routes,
---     development_tier, production, sprite, palette_block, acceleration_factor, speed,
---     synthesizable_resources, targeting, emitter }. planet_id, needs, production_bonus,
---     net_income, incoming_routes, outgoing_routes, development_tier, production, targeting and
---     emitter are nil when the planet has none.
---
--- Declared in planet.h, defined elsewhere and ported there: planet_refresh_method,
--- planet_release_row, planet_release_method, planet_accept_drop_method, planet_draw_method,
--- planet_left_press_method, planet_left_press (game.planet_display); planet_attach_slipway_method,
--- planet_offer_trade_method (game.planet_trade); planet_kind_named (game.planet_family).
---
 -- Include cycle: game.planet_display and game.planet_trade are required at load, since their
 -- methods fill planet_class_def; neither requires this module at load. game.message_box is
 -- required at call time.
@@ -38,7 +18,6 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
--- production_t p = {0}.
 local function production_zero()
   return { amount = 0 }
 end
@@ -53,7 +32,7 @@ local function needs_refill(dst, src)
   end
 end
 
--- *copy = *input for a need_t: the row is copied, its items shared as the C copy shares the pointer.
+-- The row is copied, its items array shared with input's row.
 local function need_copy_into(copy, input)
   local row = input.row
   copy.row = map_tables.map_tables_make_data_row({
@@ -106,6 +85,8 @@ M.planet_class_def = {
   lineage = entity_class.LINEAGE(entity_class.LINEAGE_PLANET),
 }
 
+-- planet_id, needs, production_bonus, net_income, incoming_routes, outgoing_routes,
+-- development_tier, production, targeting and emitter are nil when the planet has none.
 function M.planet_init_instance(self, instance_class, archetype)
   assert(g_planet_up, "planet_init() must run first")
   entity.entity_init_instance(self, instance_class, archetype.state, archetype.state_time)
@@ -415,13 +396,12 @@ function M.planet_bob_total(state_time)
   return total
 end
 
--- Lua only: planet_keys_t keys = {0}.
+-- A planet's keys: { planet_id, map_pos, pos }, planet_id a string, each nil when not given.
 function M.planet_keys_zero()
   return {}
 end
 
--- Lua only: planet_row_signature_t signature = {0}, with no needs.
--- What planet_refresh's row is built from.
+-- What planet_refresh's row is built from; need_resources and need_flags hold one entry per need.
 function M.planet_row_signature_zero()
   return {
     output = 0,

@@ -1,12 +1,3 @@
--- Copy of src/game/trade.h then src/game/trade.c.
---
--- Shapes, with the C field names:
---   trade_route_t, trade_keys_t: { planets, slipways, resource, resource_is_bool }, planets
---     and slipways plain 1-based arrays of ids, resource nil when absent.
---   resource_t: { kind, number }, a new table at every creation.
---   trade_route_list_t: a plain 1-based array of trade_route_t.
--- The id lists are immutable once built: a value copy of a route is a new table with the four
--- fields whose two id arrays are shared.
 local entity_id = require("engine.entity_id")
 
 local M = {}
@@ -17,6 +8,8 @@ M.RESOURCE_FIXED = 2
 
 local g_trade_up = false
 
+-- planets and slipways are arrays of ids, never changed once built: a copied route shares them.
+-- resource is nil when absent.
 local function route_value(planets, slipways, resource, resource_is_bool)
   return {
     planets = planets,
@@ -30,6 +23,7 @@ local function copy_route(route)
   return route_value(route.planets, route.slipways, route.resource, route.resource_is_bool)
 end
 
+-- A new { kind, number } table at every call.
 function M.trade_resource(self)
   if self == nil or self.resource == nil then
     return { kind = M.RESOURCE_NIL, number = 0 }

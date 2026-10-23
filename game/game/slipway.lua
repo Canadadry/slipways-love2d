@@ -1,19 +1,3 @@
--- Copy of src/game/slipway.h then src/game/slipway.c, plus the Lua-only slipway_keys_zero.
---
--- Shapes, with the C field names:
---   slipway_keys_t: { start }.
---   slipway_served_planets_t: { count, ids }, ids 1-based Lua strings.
---   slipway_mouse_point_t: an entity header, one table.
---   slipway_t: one table holding the entity header and { archetype, fade_in_step, start,
---     transit_dots, served_planets, end_, end_is_point, targeted_by, targeting, point }; `end` is
---     `end_` (a Lua keyword), targeting a targeting_t (game.targeting).
---   slipway_too_far_t: the entity header plus { status_text, targeted_by }, one table.
---   slipway_obstruction_node_ctx_t: { start_point, end_point }.
---   slipway_obstruction_slipway_ctx_t: { start_point, end_point, self_infraspace }.
---
--- Declared in slipway.h, defined in src/game/slipway_display.c and ported there:
--- slipway_draw_method.
---
 -- Include cycle: game.slipway_display is required at load, since slipway_draw_method fills
 -- slipway_class_def; slipway_display must reach this module at call time only. game.economy,
 -- game.planet, game.probe and game.ui are required at call time, inside the functions that need
@@ -208,7 +192,7 @@ function M.slipway_drop(self, end_planet)
     return
   end
 
-  -- The charge spends credits: keep it behind the NULL test. The clock advances once, after both attaches.
+  -- The charge spends credits: keep it behind the nil test. The clock advances once, after both attaches.
   refused = (end_planet == nil) or not probe.targeting_confirm_without_clock(self)
   if refused then
     self.is_dead = true
@@ -342,7 +326,7 @@ function M.slipway_other_end(self, planet_instance)
     return nil
   end
 
-  -- A NULL end falls through to the start even when `planet_instance` is the start.
+  -- A nil end falls through to the start even when `planet_instance` is the start.
   if planet_instance == M.slipway_start(self) and M.slipway_end(self) ~= nil then
     return M.slipway_end(self)
   end
@@ -399,7 +383,6 @@ local function slipway_create(keys)
 
   entity.entity_init_instance(self, M.slipway_class_def, game_data.slipway_archetype.state,
     game_data.slipway_archetype.state_time)
-  -- Lua only: the inline sub-structs the C writes into in place.
   self.targeting = targeting_module.targeting_zero()
   self.served_planets = { count = 0, ids = {} }
   self.point = {}
@@ -458,7 +441,6 @@ function M.slipway_mouse_point_class()
   return M.slipway_mouse_point_class_def
 end
 
--- Lua only: slipway_keys_t keys = {0}.
 function M.slipway_keys_zero()
   return { start = nil }
 end

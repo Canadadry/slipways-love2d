@@ -1,11 +1,3 @@
--- Copy of src/game/planet_family_trade.h then src/game/planet_family_trade.c.
---
--- Shapes, with the C field names:
---   int_seq_t: { count, items }, items a 1-based array or nil.
---   entity_kind_t: { new_entity, record }, record the game_data kind record table.
---   down_t: { stop, held }.
---   slipgate_left_press_empty_t: the entity header only, one table.
---
 -- Include cycle: game.planet, game.planet_display, game.planet_trade, game.planet_family and
 -- game.probe are required at load, since their methods fill the class tables by identity.
 -- game.slipway, game.particle and game.trade are required at call time.
@@ -35,6 +27,7 @@ local function route_list_copy(list)
   return copy
 end
 
+-- items is a 1-based array or nil.
 M.synthesizer_synthesizable_resources_spent = { count = 0, items = nil }
 
 local g_family_trade_up = false

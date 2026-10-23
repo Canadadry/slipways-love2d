@@ -1,5 +1,3 @@
--- Copy of src/game/wormhole_display.h then src/game/wormhole_display.c.
---
 -- Include cycle: game.wormhole requires this module at load (wormhole_draw_method fills
 -- wormhole_class_def), so game.wormhole and game.probe (home of targeting_target) are required at
 -- call time, inside the function that needs them.
@@ -35,7 +33,7 @@ function M.wormhole_draw(graphics, memory, self, screen_pos)
       end
     end
 
-    -- Outside the NULL-target guard on purpose: the line runs whether or not a target was found.
+    -- Outside the nil-target guard on purpose: the line runs whether or not a target was found.
     -- No anchor (the cart would index nil): no line, not one to world (0,0).
     if graphics ~= nil and memory ~= nil then
       if anchor ~= nil then
