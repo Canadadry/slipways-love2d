@@ -137,3 +137,12 @@ One kind per step, split by directory (`p8/`, `engine/`, `game/` with
 - None.
 
 ## 6. Step notes
+
+### Step 0.1
+
+Grilling held with the user on 2026-10-22/23. The user wants the code clean
+for its own sake (no feature or port depends on it) and agreed to every
+decision under "Decisions of phase 0" and to the order of phases 1–3.
+Checked during the grilling: the save format depends on no memory layout;
+`end_state.sh` filters the `cap` lines, so removing the zones changes no
+`.end-state`.
