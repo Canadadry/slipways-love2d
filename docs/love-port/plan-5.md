@@ -204,3 +204,21 @@ helper are gone. Predicates kept their 0/1 results for step 3.1. No unit
 test added: ids reach no capture, save or end state; the replays are the net.
 Seen: the step's grep finds nothing. `make e2e` 20/20 in 5.2 s, `make
 end-state` 20/20, `make test` 0.65 s.
+
+### Step 1.4
+
+Five chunks: `value_list` with the trade route lists, `pointer_list` with
+`collect`, `entity_id_list`, `entity_list` with the registry buckets, then
+the exit queue. Every list of these kinds is a plain 1-based array; lists
+held by several owners are emptied or refilled in place, an offer's lists
+are copies taken at the same moment and assigned back. Reserves went with
+copy-on-grow. Every `last_count` walk became a numeric `for` (one class-2
+walk: remove then break); none needed a copy or a deferred removal. Each
+chunk ran a temporary check after every walk body (length and current
+element unchanged) once over the 20 replays: it fired on none of about 55
+walks, then was removed. The bootstrap update walk and the save loader's
+reverse walk keep their live-length forms. `collect_format_signed` moved to
+`economy_formulas`. The `{ items, count }` data tables stay 0-based for step
+3.2. Seen: the five modules are gone, `grep -r last_count game/` finds
+nothing. `make e2e` 20/20 in 4.9 s, `make end-state` 20/20, `make test`
+0.65 s.
