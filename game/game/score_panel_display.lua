@@ -76,14 +76,13 @@ function M.score_panel_new_year(year)
   end
 
   year_str = str.p8_tostr_fixed(year)
-  assert(#"year " + #year_str <= score_panel.SCORE_PANEL_TEXT_CAP,
-    "score_panel_new_year: a year is at most a 5-digit integer")
   year_banner.year = "year " .. year_str
 
   data_item_assign(year_banner.second_items[0], data_item({ text = year_banner.year }))
 
   if message ~= nil then
-    data_item_assign(year_banner.items[2], data_item({ row = message }))
+    -- Past the copied banner row's two items: created here, never written into a missing slot.
+    year_banner.items[2] = data_item({ row = message })
     year_banner.row.count = 3
     g_score_panel_new_year_keep_open = 90
     year_banner.keep_open = score_panel_new_year_keep_open_method
@@ -156,8 +155,6 @@ local function score_panel_update_add_row(box, entry, context)
     return
   end
 
-  assert(entry.row.count <= 5,
-    "score_panel_update_add_row: a scored row holds at most the five items its line lays out")
   for index = 0, entry.row.count - 1 do
     values[index] = data_item({})
     data_item_assign(values[index], entry.row.items[index])

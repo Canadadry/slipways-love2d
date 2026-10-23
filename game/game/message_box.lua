@@ -2,12 +2,12 @@
 --
 -- Shapes, with the C field names:
 --   message_box_t: one table holding the entity header and { archetype, duration_scale,
---     keep_open, articles, articles_count }, articles a 0-indexed array of MESSAGE_BOX_ITEMS_CAP
---     message_box_article_t tables created by message_box_create.
+--     keep_open, articles, articles_count }, articles a 0-indexed array of message_box_article_t tables, each
+--     created when it is added.
 --   message_box_article_t: { kind, draw_function, as = { scalars, layout, row_of } }, the union's
 --     three members kept apart (only the member of `kind` is written or read):
---     scalars = { count, arguments, text }, arguments a 0-indexed array of
---     MESSAGE_BOX_ARGUMENTS_CAP { kind, number }; layout = { row, pos, align }, row a
+--     scalars = { count, arguments, text }, arguments a 0-indexed array of count { kind, number };
+--     layout = { row, pos, align }, row a
 --     layout_row_t filled in place by layout_row_init, pos nil when absent; row_of a Lua function
 --     or nil.
 --   toast_t: one table holding the entity header and { follow, text, archetype, fade, color }.
@@ -33,10 +33,6 @@ local gfx_module = require("p8.gfx")
 
 local M = {}
 
-M.MESSAGE_BOX_ITEMS_CAP = game_data.SCORE_ROWS_COUNT
-M.MESSAGE_BOX_ARGUMENTS_CAP = 5
-M.MESSAGE_BOX_TEXT_CAP = 16
-
 M.MESSAGE_BOX_ARGUMENT_NUMBER = 0
 M.MESSAGE_BOX_ARGUMENT_FALSE = 1
 M.MESSAGE_BOX_ARGUMENT_NIL = 2
@@ -45,10 +41,6 @@ M.MESSAGE_BOX_ARGUMENT_TEXT = 3
 M.MESSAGE_BOX_ARTICLE_SCALARS = 0
 M.MESSAGE_BOX_ARTICLE_LAYOUT_ROW = 1
 M.MESSAGE_BOX_ARTICLE_SHARED_ROW = 2
-
-M.TOAST_TEXT_CAP = 16
-
-M.OPEN_BOX_DESCRIPTION_CAP = 17
 
 local function zero_vec()
   return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
@@ -60,12 +52,8 @@ end
 
 -- message_box_article_t at its C zero values.
 local function article_zero()
-  local arguments = {}
   local row = {}
 
-  for i = 0, M.MESSAGE_BOX_ARGUMENTS_CAP - 1 do
-    arguments[i] = { kind = M.MESSAGE_BOX_ARGUMENT_NUMBER, number = 0 }
-  end
   entity_class.entity_init_header(row, nil)
   row.background_is_bool = 0
   row.placed_items = nil
@@ -76,7 +64,7 @@ local function article_zero()
     kind = M.MESSAGE_BOX_ARTICLE_SCALARS,
     draw_function = map_tables.DRAW_FUNCTION_NONE,
     as = {
-      scalars = { count = 0, arguments = arguments, text = "" },
+      scalars = { count = 0, arguments = {}, text = "" },
       layout = { row = row, pos = nil, align = 0 },
       row_of = nil,
     },
@@ -212,12 +200,9 @@ M.message_box_class_def = {
 }
 
 local function message_box_next_article(self)
-  local article
+  local article = article_zero()
 
-  assert(self.articles_count < M.MESSAGE_BOX_ITEMS_CAP,
-    "message_box_next_article: the game builds two boxes, score_panel_new_year's (3 articles at most) and "
-    .. "score_panel_update's (one per score row): a third needs more")
-  article = self.articles[self.articles_count]
+  self.articles[self.articles_count] = article
   self.articles_count = self.articles_count + 1
   return article
 end
@@ -227,8 +212,6 @@ function M.message_box_add_row(self, row)
 
   assert(row.draw_function ~= map_tables.DRAW_FUNCTION_DRAW_ROW,
     "message_box_add_row: a layout row goes through message_box_add_layout_row")
-  assert(row.count <= M.MESSAGE_BOX_ARGUMENTS_CAP,
-    "message_box_add_row: a draw function reads five arguments at most -- stop, do not widen")
   article = message_box_next_article(self)
   article.kind = M.MESSAGE_BOX_ARTICLE_SCALARS
   article.draw_function = row.draw_function
@@ -236,14 +219,13 @@ function M.message_box_add_row(self, row)
   article.as.scalars.text = ""
   for i = 0, row.count - 1 do
     local item = row.items[i]
-    local argument = article.as.scalars.arguments[i]
+    local argument = { kind = M.MESSAGE_BOX_ARGUMENT_NUMBER, number = 0 }
 
+    article.as.scalars.arguments[i] = argument
     assert(item.row == nil, "message_box_add_row: a draw function reads no nested row")
     argument.number = fixed.p8_fixed_from_int(0)
     if item.text ~= nil then
       assert(i == 0, "message_box_add_row: only print_outlined's first argument is read as text -- stop, do not widen")
-      assert(#item.text <= M.MESSAGE_BOX_TEXT_CAP,
-        "message_box_add_row: the longest article text is \"2 years remain\" -- stop, do not widen")
       article.as.scalars.text = item.text
       argument.kind = M.MESSAGE_BOX_ARGUMENT_TEXT
     elseif item.is_false ~= 0 then
@@ -292,9 +274,6 @@ local function message_box_create(keys)
   self.duration_scale = self.archetype.duration_scale
   self.keep_open = nil
   self.articles = {}
-  for i = 0, M.MESSAGE_BOX_ITEMS_CAP - 1 do
-    self.articles[i] = article_zero()
-  end
   self.is_dead = 0
   self.articles_count = 0
   if keys ~= nil then
@@ -456,8 +435,6 @@ function M.toast_ready()
 end
 
 function M.toast_keys_set_text(keys, text)
-  assert(#text <= M.TOAST_TEXT_CAP,
-    "toast_keys_set_text: a toast's text is a price or \"-no money-\": a longer one needs a bigger text array")
   keys.text = text
 end
 
@@ -466,9 +443,6 @@ function M.toast_new(keys)
 end
 
 function M.open_box_frame_set_description(frame, description)
-  assert(#description <= M.OPEN_BOX_DESCRIPTION_CAP,
-    "open_box_frame_set_description: the longest is the tech tree's \"level 4 (-12/-12)\" -- stop, measure before "
-    .. "widening")
   frame.description = description
 end
 

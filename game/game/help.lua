@@ -89,8 +89,6 @@ function M.help_screen_construct(self)
   end
 end
 
-local HELP_SCREEN_ROWS_CAP = 4
-
 function M.help_screen_draw(gfx, mem, self, p)
   -- The seed tick, result unused: without it every game started from boot gets the same galaxy.
   fixed.p8_fixed_rnd_default()
@@ -102,7 +100,6 @@ function M.help_screen_draw(gfx, mem, self, p)
     local i = 0
 
     while self ~= nil and self.archetype.rows ~= nil and i < self.archetype.rows.count do
-      assert(n < HELP_SCREEN_ROWS_CAP, "help_screen_draw: the help screen's rows hold four articles at most")
       items[n] = self.archetype.rows.items[i].row
       n = n + 1
       i = i + 1

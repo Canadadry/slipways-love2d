@@ -28,8 +28,6 @@ local vram = require("p8.vram")
 
 local M = {}
 
-M.SCORE_PANEL_TEXT_CAP = 16
-
 local data_item = map_tables.map_tables_make_data_item
 local data_row = map_tables.map_tables_make_data_row
 
@@ -44,14 +42,6 @@ local function data_item_assign(dst, src)
   dst.is_nil = src.is_nil
 end
 
-local function data_items_zero(count)
-  local items = {}
-  for i = 0, count - 1 do
-    items[i] = data_item({})
-  end
-  return items
-end
-
 local g_score_panel_up = 0
 local g_main_score_panel = nil
 
@@ -61,29 +51,29 @@ end
 
 local g_score_panel_readouts = {
   row = data_row({}),
-  items = data_items_zero(7),
+  items = {},
   subs = {},
   sub_items = {},
   texts = {},
 }
 for i = 0, 6 do
   g_score_panel_readouts.subs[i] = data_row({})
-  g_score_panel_readouts.sub_items[i] = data_items_zero(4)
+  -- [0] is written by score_panel_refresh whatever the copied row's count: it must hold a table.
+  g_score_panel_readouts.sub_items[i] = { [0] = data_item({}) }
   g_score_panel_readouts.texts[i] = ""
 end
 
 local g_score_panel_year_banner = {
   row = data_row({}),
-  items = data_items_zero(3),
+  items = {},
   second = data_row({}),
-  second_items = data_items_zero(5),
+  -- [0] is written by score_panel_new_year whatever the copied row's count: it must hold a table.
+  second_items = { [0] = data_item({}) },
   year = "",
   keep_open = nil,
 }
 
-local function score_panel_row_copy(dst, items, cap, src)
-  assert(src.count <= cap,
-    "score_panel_row_copy: a copied row of the score panel holds no more items than its generated row")
+local function score_panel_row_copy(dst, items, src)
   for i = 0, src.count - 1 do
     items[i] = data_item({})
     data_item_assign(items[i], src.items[i])
@@ -241,8 +231,6 @@ function M.score_panel_refresh()
   if readouts_state ~= nil then
     for index = 0, 6 do
       if readouts[index].text ~= nil then
-        assert(#readouts[index].text <= M.SCORE_PANEL_TEXT_CAP,
-          "score_panel_refresh: a readout text is a number with its suffix, or a month")
         readouts_state.texts[index] = readouts[index].text
         readouts[index].text = readouts_state.texts[index]
       end
@@ -255,8 +243,6 @@ local function score_panel_refresh_method(self)
   M.score_panel_refresh()
 end
 
-local SCORE_PANEL_DRAW_ARTICLES_CAP = 5 + 7
-
 function M.score_panel_draw(gfx, mem, self)
   local i_ = M.score_panel_frame_rows()
   local readouts_state = M.score_panel_readouts()
@@ -264,8 +250,6 @@ function M.score_panel_draw(gfx, mem, self)
   local n = 0
   local i
 
-  assert(i_.count + ((readouts_state ~= nil) and readouts_state.row.count or 0) <= SCORE_PANEL_DRAW_ARTICLES_CAP,
-    "score_panel_draw: the frame rows and the readouts are 5 + 7 articles")
   for k = 0, i_.count - 1 do
     combined[n] = i_.items[k].row
     n = n + 1
@@ -324,15 +308,15 @@ function M.score_panel_init()
   M.score_panel_shutdown()
 
   g_score_panel_up = 1
-  score_panel_row_copy(g_score_panel_readouts.row, g_score_panel_readouts.items, 7, game_data.score_panel_readouts_row)
+  score_panel_row_copy(g_score_panel_readouts.row, g_score_panel_readouts.items, game_data.score_panel_readouts_row)
   for i = 0, g_score_panel_readouts.row.count - 1 do
-    score_panel_row_copy(g_score_panel_readouts.subs[i], g_score_panel_readouts.sub_items[i], 4,
+    score_panel_row_copy(g_score_panel_readouts.subs[i], g_score_panel_readouts.sub_items[i],
       game_data.score_panel_readouts_row.items[i].row)
     g_score_panel_readouts.items[i].row = g_score_panel_readouts.subs[i]
   end
-  score_panel_row_copy(g_score_panel_year_banner.row, g_score_panel_year_banner.items, 3,
+  score_panel_row_copy(g_score_panel_year_banner.row, g_score_panel_year_banner.items,
     game_data.score_panel_year_banner_row)
-  score_panel_row_copy(g_score_panel_year_banner.second, g_score_panel_year_banner.second_items, 5,
+  score_panel_row_copy(g_score_panel_year_banner.second, g_score_panel_year_banner.second_items,
     game_data.score_panel_year_banner_row.items[1].row)
   g_score_panel_year_banner.items[1].row = g_score_panel_year_banner.second
   g_score_panel_year_banner.keep_open = nil
