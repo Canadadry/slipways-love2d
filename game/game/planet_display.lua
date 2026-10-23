@@ -134,7 +134,7 @@ function M.refresh(self)
     return
   end
 
-  found, keys = research_display.research_display_planet_resource_row_keys(needs_list, output, mu,
+  found, keys = research_display.planet_resource_row_keys(needs_list, output, mu,
     fixed.from_int(route_count), fixed.from_int(0), layout.row_keys_zero())
   if found then
     layout_row_result = layout.row_new(keys)
@@ -245,7 +245,7 @@ function M.inspection_panel(self)
     local h_keys = layout.row_keys_zero()
     local signed
 
-    signed, discard_color = economy_formulas.economy_formulas_format_signed(self.net_income, 0, nil, discard_color)
+    signed, discard_color = economy_formulas.format_signed(self.net_income, 0, nil, discard_color)
     layout.row_keys_append(h_keys, layout.row_cell_string(planet_dollar(signed)))
     h_keys.background_is_bool = self.net_income < fixed.from_int(0)
     h_keys.background = (self.net_income >= fixed.from_int(0)) and fixed.from_int(1) or 0
@@ -382,13 +382,13 @@ local function planet_projects_panel_on_click_method(self)
     return
   end
   pt = entity_id.get(self.project_planet)
-  b = research.research_project_get(self.project)
+  b = research.project_get(self.project)
   if self.project_cost ~= nil then
     od = self.project_cost
   end
 
   assert(pt ~= nil and planet.is_family(pt), "the projects panel button lost its captured planet")
-  if economy.economy_spend(probe.main_economy_typed(), od) then
+  if economy.spend(probe.main_economy_typed(), od) then
     M.apply_project(pt, b)
   end
 end
@@ -396,14 +396,14 @@ end
 local function planet_projects_panel_keys(self, b, keys)
   local research_display = require("game.research_display")
   local ui_button = require("game.ui_button")
-  local od = research.research_project_cost(b)
+  local od = research.project_cost(b)
 
   ui_button.button_keys_zero(keys)
   if b.icon_sprite ~= nil then
-    keys.layout_row_keys = research_display.research_project_icon_row_keys(b)
+    keys.layout_row_keys = research_display.project_icon_row_keys(b)
   else
     local _
-    _, keys.layout_row_keys = research_display.research_project_layout_row_keys(b, keys.layout_row_keys)
+    _, keys.layout_row_keys = research_display.project_layout_row_keys(b, keys.layout_row_keys)
   end
 
   if od > fixed.from_int(0) then
@@ -414,10 +414,10 @@ local function planet_projects_panel_keys(self, b, keys)
   end
 
   keys.project_planet = entity_id.link(self)
-  keys.project = research.research_project_id_of(b)
+  keys.project = research.project_id_of(b)
   keys.project_cost = od
   keys.on_click = planet_projects_panel_on_click_method
-  ui_button.button_keys_set_tooltip_row(keys, research_display.research_project_tooltip(b))
+  ui_button.button_keys_set_tooltip_row(keys, research_display.project_tooltip(b))
 end
 
 function M.projects_panel(self)
@@ -434,7 +434,7 @@ function M.projects_panel(self)
     return
   end
 
-  available_projects_list = research_display.research_display_available_projects(self)
+  available_projects_list = research_display.available_projects(self)
   cap = (available_projects_list.count > 0) and available_projects_list.count or 1
   bs = {}
   for i = 1, cap do
@@ -442,7 +442,7 @@ function M.projects_panel(self)
   end
   for i = 1, available_projects_list.count do
     n = n + 1
-    planet_projects_panel_keys(self, research.research_project_get(available_projects_list.items[i]), bs[n])
+    planet_projects_panel_keys(self, research.project_get(available_projects_list.items[i]), bs[n])
   end
 
   frame = planet_open_box_frame(self)
@@ -630,7 +630,7 @@ function M.apply_project(self, research_project_instance)
   local result_planet
   local fp = fixed.from_int(2)
 
-  research.research_project_assert(research_project_instance)
+  research.project_assert(research_project_instance)
   if self == nil then
     return
   end
@@ -659,10 +659,10 @@ function M.apply_project(self, research_project_instance)
     entity.set_state(self, entity_class.STATE_SETTLED)
     planet.install_project(self, research_project_instance)
     self.fold_anchor = true
-    fp = tech_gate.tech_gate_if_unlocked("autoassemblers", fixed.from_int(3), fixed.from_int(2))
+    fp = tech_gate.if_unlocked("autoassemblers", fixed.from_int(3), fixed.from_int(2))
   end
 
-  require("game.economy").economy_advance_clock(require("game.probe").main_economy_typed(), fp)
+  require("game.economy").advance_clock(require("game.probe").main_economy_typed(), fp)
 
   planet.restart_shake(result_planet)
 end

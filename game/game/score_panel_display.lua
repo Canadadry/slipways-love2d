@@ -133,7 +133,7 @@ local function score_panel_final_score_text(s, i)
   elseif i == 3 then
     return str.tostr_fixed(s.technology)
   elseif i == 4 then
-    return economy_score.economy_score_percent_text(s.happiness)
+    return economy_score.percent_text(s.happiness)
   elseif i == 5 then
     return str.tostr_fixed(s.total)
   elseif i == 6 then
@@ -164,7 +164,7 @@ local function score_panel_update_add_row(box, entry, context)
   if score_i == 0 then
     local fm = require("game.probe").main_economy_typed()
     local end_status_str = "current score"
-    local dk = economy_score.economy_score_difficulty()
+    local dk = economy_score.difficulty()
     local px = ""
     local piece1
     local piece2
@@ -251,7 +251,7 @@ function M.score_panel_update(self)
     end
 
     if is_shown and not last_box_equals_shown_message_box then
-      local ctx = { final_score = economy_score.economy_score_final() }
+      local ctx = { final_score = economy_score.final() }
       local is_ready = score_panel.score_panel_ready()
       local keys = message_box_keys_zero()
       local made

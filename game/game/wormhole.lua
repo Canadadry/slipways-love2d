@@ -84,7 +84,7 @@ function M.drag(self, mouse)
   nq, nearest = entity_geom.nearest_in_ids(p_vec, self.anchors, nearest)
   self.anchor = entity_id.link(nearest)
 
-  threshold = tech_gate.tech_gate_if_unlocked("space folding", fixed.LIT(0x000030a3, 0.19),
+  threshold = tech_gate.if_unlocked("space folding", fixed.LIT(0x000030a3, 0.19),
     fixed.LIT(0x0000451e, 0.27))
 
   if nq > threshold then
@@ -108,7 +108,7 @@ function M.update_placing(self, t)
     return
   end
 
-  threshold = tech_gate.tech_gate_if_unlocked("space folding", fixed.from_int(29),
+  threshold = tech_gate.if_unlocked("space folding", fixed.from_int(29),
     fixed.from_int(35))
 
   one = fixed.from_int(1)

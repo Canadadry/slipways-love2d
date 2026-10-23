@@ -163,7 +163,7 @@ function M.drag(self, mouse)
     self.end_is_point = true
   end
 
-  self.targeting.cost = economy_formulas.economy_formulas_route_base_cost(
+  self.targeting.cost = economy_formulas.route_base_cost(
     M.end_map_pos(M.start_node(self)), M.end_map_pos(M.end_node(self)))
 
   slipway_inherit_infraspace(self)
@@ -216,7 +216,7 @@ function M.drop(self, end_planet)
     end
     assert(start_registered and end_registered,
       "slipway.drop: both endpoints must have attach_slipway, or the slipway never joins their slipways lists")
-    require("game.economy").economy_advance_clock(probe.main_economy_typed(), fixed.from_int(1))
+    require("game.economy").advance_clock(probe.main_economy_typed(), fixed.from_int(1))
   end
 end
 
@@ -262,7 +262,7 @@ function M.obstruction(self)
   start_point = M.end_map_pos(start_node)
   end_point = M.end_map_pos(end_node)
 
-  threshold = tech_gate.tech_gate_if_unlocked("space folding", fixed.LIT(0x00008000, 0.5),
+  threshold = tech_gate.if_unlocked("space folding", fixed.LIT(0x00008000, 0.5),
     fixed.LIT(0x0001147a, 1.08))
 
   if vec.length_squared(vec.sub(start_point, end_point)) > threshold then

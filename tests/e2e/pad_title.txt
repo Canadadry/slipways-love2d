@@ -41,7 +41,7 @@ The same file with X at f18 on each of the four rows gives end states
 that differ only in the difficulty line (planets included). The chosen
 difficulty also shows in the f17 dump above (reasonable is the only
 colour-12 row when X is pressed). The C game's pad navigation test,
-since removed, checked the started game's economy_score_difficulty().
+since removed, checked the started game's economy_score.difficulty().
 
 Covers no keyboard_* scenario: keyboard_menus is covered by
 pad_pause_restart (step 3.3).

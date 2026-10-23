@@ -85,7 +85,7 @@ In this order.
 | infraspace | i32 | always | any; 0 for a node without one, nonzero loads as one (capture writes 0x10000) |
 | planet_type | u8 | always | 0 = none, 1–11 the 1-based `planet_types_table` entry |
 | description_type | u8 | always | 0 = no description, 1–11 the 1-based `planet_types_table` entry whose `description` the node holds (terraform leaves the old type's) |
-| project | u8 | always | 0 = none, 1–42 the 1-based `research_projects_at` entry |
+| project | u8 | always | 0 = none, 1–42 the 1-based `research.projects_at` entry |
 | need count | u8 | if `HAS_NEEDS` | 0–8 |
 | need has_resource, × need count | u8 | if `HAS_NEEDS` | 0 or 1 |
 | need resource | i32 | after each need whose has_resource is 1 | one of the 13 `resource_codes` values, as an integer in 16.16 |

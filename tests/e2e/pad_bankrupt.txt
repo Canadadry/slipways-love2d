@@ -64,7 +64,7 @@ game_end_bankrupt. That is why the pan to the free spot runs during the
 hold.
 
 Replaces game_end_bankrupt (6 labs, $5 after 4 years, refused lab, -$31
-bankrupt). Same effects: `economy_spend` refusal, bankrupt at the year.
+bankrupt). Same effects: `economy.spend` refusal, bankrupt at the year.
 
 Dropped in plan 12 step 9, with the tab ring's years: R1 R1 to `end
 turn`, X seven times there, and L1 back to `build`.

@@ -72,7 +72,7 @@ function M.structure_icon_refresh(self)
 
   rr = M.structure_icon_kind_view(self).required_tech
 
-  if not require("game.tech_gate").tech_gate_is_unlocked(rr) then
+  if not require("game.tech_gate").is_unlocked(rr) then
     return
   end
 

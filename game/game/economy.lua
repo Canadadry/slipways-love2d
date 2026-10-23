@@ -14,26 +14,26 @@ local M = {}
 
 local g_economy_up = false
 
-M.economy_class_def = {
+M.class_def = {
   states = {},
   tags = 0,
   lineage = 0,
   skip_draw_off_screen = false,
 }
 
-M.economy_archetype = {
+M.archetype = {
   credits = 0x640000,
   era = 0x10000,
   year_ticks = 0x10000,
   year = 0xd490000,
 }
 
--- production, demand and happiness stay nil until the first economy_recompute.
+-- production, demand and happiness stay nil until the first economy.recompute.
 local function economy_create()
   local self = {}
 
-  entity_class.init_header(self, M.economy_class_def)
-  self.archetype = M.economy_archetype
+  entity_class.init_header(self, M.class_def)
+  self.archetype = M.archetype
   self.credits = fixed.from_int(0)
   self.income = fixed.from_int(0)
   self.research_points = fixed.from_int(0)
@@ -56,28 +56,28 @@ local function economy_create()
 end
 
 local function assert_economy(self)
-  assert(self == nil or self.class == M.economy_class_def,
+  assert(self == nil or self.class == M.class_def,
     "assert_economy: every measured call passes the main economy; anything else would be read through the wrong layout")
 end
 
-function M.economy_init()
-  M.economy_shutdown()
+function M.init()
+  M.shutdown()
   g_economy_up = true
 end
 
-function M.economy_shutdown()
+function M.shutdown()
   g_economy_up = false
 end
 
-function M.economy_ready()
+function M.ready()
   return g_economy_up
 end
 
-function M.economy_class()
-  return M.economy_class_def
+function M.class()
+  return M.class_def
 end
 
-function M.economy_new()
+function M.new()
   return economy_create()
 end
 
@@ -112,7 +112,7 @@ local function economy_add_ticks(self, hx, bring_up_to_date)
   end
   self.save_pending = true
 
-  kx = tech_gate.tech_gate_if_unlocked("time compression", fixed.from_int(12), fixed.from_int(15))
+  kx = tech_gate.if_unlocked("time compression", fixed.from_int(12), fixed.from_int(15))
 
   lo = fixed.add(self.year_ticks, hx)
   self.year_ticks = lo
@@ -121,22 +121,22 @@ local function economy_add_ticks(self, hx, bring_up_to_date)
 
   if lo > kx then
     self.year_ticks = fixed.sub(lo, kx)
-    M.economy_new_year(self)
+    M.new_year(self)
   end
 end
 
-function M.economy_advance_clock(self, hx)
-  economy_add_ticks(self, hx, M.economy_recompute)
+function M.advance_clock(self, hx)
+  economy_add_ticks(self, hx, M.recompute)
 end
 
--- economy_advance_clock without its recompute's figures, for a caller that
+-- economy.advance_clock without its recompute's figures, for a caller that
 -- changed only the credits since the last one: the end status and the refresh
 -- listeners are brought up to date. A new year still recomputes in full.
-function M.economy_tick_clock(self, hx)
+function M.tick_clock(self, hx)
   economy_add_ticks(self, hx, economy_refresh_after_figures)
 end
 
-function M.economy_new_year(self)
+function M.new_year(self)
   local credits
   local income
   local research_points
@@ -172,7 +172,7 @@ function M.economy_new_year(self)
   new_year = fixed.add(self.year, fixed.from_int(1))
   self.year = new_year
 
-  M.economy_recompute(self)
+  M.recompute(self)
 
   new_year_list = entity_registry.entities_by_message(entity_registry.MESSAGE_NEW_YEAR)
   for i = 1, #new_year_list do
@@ -183,7 +183,7 @@ function M.economy_new_year(self)
   end
 end
 
-function M.economy_spend(self, jt)
+function M.spend(self, jt)
   local message_box = require("game.message_box")
   local nz
   local keys = message_box.toast_keys_zero()
@@ -206,7 +206,7 @@ function M.economy_spend(self, jt)
   if jt ~= fixed.from_int(0) then
     local color = 0
     local text
-    text, color = economy_formulas.economy_formulas_format_signed(fixed.neg(jt), 10, "$", color)
+    text, color = economy_formulas.format_signed(fixed.neg(jt), 10, "$", color)
     message_box.toast_keys_set_text(keys, text)
     keys.color = fixed.from_int(color)
     message_box.toast_new(keys)
@@ -215,7 +215,7 @@ function M.economy_spend(self, jt)
   return true
 end
 
-function M.economy_recompute(self)
+function M.recompute(self)
   local economy_score = require("game.economy_score")
   local economy_tiers = require("game.economy_tiers")
   local trade_total = fixed.from_int(0)
@@ -231,8 +231,8 @@ function M.economy_recompute(self)
 
   -- Terminates only because update_tiers reports tier increases, capped at 4; a "changed" test spins forever.
   repeat
-    economy_tiers.economy_tiers_rebuild_incoming_routes()
-  until not economy_tiers.economy_tiers_update_tiers()
+    economy_tiers.rebuild_incoming_routes()
+  until not economy_tiers.update_tiers()
 
   -- Filled in place once created: a reader may hold either map across recomputes.
   if self.production == nil then
@@ -241,31 +241,31 @@ function M.economy_recompute(self)
   if self.demand == nil then
     self.demand = { count = 0, entries = {} }
   end
-  M.economy_total_production(self.production)
-  M.economy_crowding_penalty(self.demand)
+  M.total_production(self.production)
+  M.crowding_penalty(self.demand)
 
   planet_list = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
   if planet_list ~= nil then
     for i = 1, #planet_list do
-      local kr = economy_score.economy_score_net_income(planet_list[i])
+      local kr = economy_score.net_income(planet_list[i])
 
       trade_total = fixed.add(trade_total, kr)
     end
   end
 
-  skill_multiplier = tech_gate.tech_gate_if_unlocked("skill implants", fixed.from_int(1),
+  skill_multiplier = tech_gate.if_unlocked("skill implants", fixed.from_int(1),
     fixed.LIT(0x00012666, 1.15))
   income = fixed.sub(fixed.flr(fixed.mul(trade_total, skill_multiplier)),
-    economy_score.economy_score_colony_upkeep())
+    economy_score.colony_upkeep())
   self.income = income
 
-  happiness = economy_score.economy_score_happiness()
+  happiness = economy_score.happiness()
   self.happiness = happiness
 
   economy_refresh_after_figures(self)
 end
 
-function M.economy_invent(self, t)
+function M.invent(self, t)
   local jk
   local ew
   local count = 0
@@ -277,7 +277,7 @@ function M.economy_invent(self, t)
   self.save_pending = true
 
   jk = self.research_points
-  self.research_points = fixed.sub(jk, tech_gate.tech_gate_research_cost(t))
+  self.research_points = fixed.sub(jk, tech_gate.research_cost(t))
 
   if t ~= nil and t.name ~= nil then
     self.invented[#self.invented + 1] = t.name
@@ -295,7 +295,7 @@ function M.economy_invent(self, t)
     end
   end
 
-  M.economy_recompute(self)
+  M.recompute(self)
 end
 
 local function for_each_tagged(tag, fn, ctx)
@@ -332,8 +332,8 @@ local function total_production_visit(pt, ctx)
   economy_formulas.resource_map_set(p, kw.resource, fixed.add(current, kw.amount))
 end
 
-function M.economy_total_production(out)
-  economy_formulas.economy_formulas_fill_resource_map(out, fixed.from_int(0))
+function M.total_production(out)
+  economy_formulas.fill_resource_map(out, fixed.from_int(0))
   for_each_tagged(entity_class.TAG_PLANET, total_production_visit, out)
 end
 
@@ -372,8 +372,8 @@ local function crowding_penalty_visit(l, ctx)
     fixed.sub(current, fixed.LIT(0x00002666, 0.15)))
 end
 
-function M.economy_crowding_penalty(out)
-  economy_formulas.economy_formulas_fill_resource_map(out, fixed.from_int(1))
+function M.crowding_penalty(out)
+  economy_formulas.fill_resource_map(out, fixed.from_int(1))
   for_each_tagged(entity_class.TAG_STRUCTURE, crowding_penalty_visit, out)
 end
 

@@ -38,7 +38,7 @@ end
 local function test_fill_gives_every_resource_code_the_same_value()
   local map = new_map()
   economy_formulas.resource_map_set(map, resource(99), 1)
-  economy_formulas.economy_formulas_fill_resource_map(map, 9)
+  economy_formulas.fill_resource_map(map, 9)
   expect(map.count, map_tables.RESOURCE_CODE_COUNT, "count after fill")
   for i = 1, map_tables.RESOURCE_CODE_COUNT do
     local code = map_tables.resource_codes[i].resource
@@ -49,16 +49,16 @@ local function test_fill_gives_every_resource_code_the_same_value()
 end
 
 local function test_format_signed_prefixes_a_plus_and_keeps_the_color_from_zero_up()
-  local text, color = economy_formulas.economy_formulas_format_signed(resource(12), 10, "$", 3)
+  local text, color = economy_formulas.format_signed(resource(12), 10, "$", 3)
   expect(text, "+12$", "positive text")
   expect(color, 10, "positive color")
-  text, color = economy_formulas.economy_formulas_format_signed(resource(0), 0, nil, 3)
+  text, color = economy_formulas.format_signed(resource(0), 0, nil, 3)
   expect(text, "+0", "zero text")
   expect(color, 0, "zero color")
 end
 
 local function test_format_signed_gives_a_negative_value_color_8_and_no_plus()
-  local text, color = economy_formulas.economy_formulas_format_signed(fixed.neg(resource(5)), 10, "$", 3)
+  local text, color = economy_formulas.format_signed(fixed.neg(resource(5)), 10, "$", 3)
   expect(text, "-5$", "negative text")
   expect(color, 8, "negative color")
 end

@@ -89,7 +89,7 @@ local function load_production(planet, node)
     and node.production_resource or nil
   -- The routes rebuild of the first recompute reads the amount before update_tiers sets it.
   planet.production.amount = fixed.from_int(0)
-  local _, amount = economy_tiers.economy_tiers_compute_production_amount(planet, planet.production.amount)
+  local _, amount = economy_tiers.compute_production_amount(planet, planet.production.amount)
   planet.production.amount = amount
 end
 
@@ -141,7 +141,7 @@ local function load_node(node)
   end
   planet.planet_type = (node.planet_type ~= 0) and game_data.planet_types_table[node.planet_type] or nil
   if node.project ~= 0 then
-    planet_module.install_project(planet, research.research_projects_at(node.project))
+    planet_module.install_project(planet, research.projects_at(node.project))
   end
   -- After planet.install_project, which clears it.
   planet.description = (node.description_type ~= 0) and game_data.planet_types_table[node.description_type].description or nil
@@ -326,7 +326,7 @@ local function refresh_structure_icons()
 end
 
 -- One tech at a time, in saved order: an icon takes the shared cursor slot
--- when revealed. Never economy_invent: it spends research points and
+-- when revealed. Never economy.invent: it spends research points and
 -- recomputes routes against a half-restored list.
 local function load_invented(economy, saved)
   refresh_structure_icons()

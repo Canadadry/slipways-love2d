@@ -85,7 +85,7 @@ known e, p47 known f, planets 89, colonies 0, slipways 0.
 Replaces tech_nanomaterials_discount (6 years, "nanomaterials", a build
 menu at x0.85) and tech_xenofoods_recipes (cheat, "space folding",
 "geneseeds", "xenofoods", an earth-like menu with improved recipes and
-x1.5): `research_project_cost` x0.85 and x1.5, the upgraded production
+x1.5): `research.project_cost` x0.85 and x1.5, the upgraded production
 entry. Two era-1 inventions open era 2 here, so "geneseeds" is not
 needed.
 

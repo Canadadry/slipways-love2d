@@ -340,11 +340,11 @@ local function targeting_charge(self)
     else
       cost = fixed.from_int(0)
     end
-    spend_ok = require("game.economy").economy_spend(M.main_economy_typed(), cost)
+    spend_ok = require("game.economy").spend(M.main_economy_typed(), cost)
   end
 
   assert(target == nil or not spend_ok,
-    "targeting_confirm: economy_spend must stay short-circuited when a target is set")
+    "targeting_confirm: economy.spend must stay short-circuited when a target is set")
 
   if target == nil and spend_ok then
     local confirmed = targeting.archetype.confirmed_state
@@ -369,9 +369,9 @@ function M.targeting_confirm(self)
     return false
   end
   if targeting.archetype.clock_skips_recompute then
-    economy.economy_tick_clock(M.main_economy_typed(), targeting.archetype.clock_ticks)
+    economy.tick_clock(M.main_economy_typed(), targeting.archetype.clock_ticks)
   else
-    economy.economy_advance_clock(M.main_economy_typed(), targeting.archetype.clock_ticks)
+    economy.advance_clock(M.main_economy_typed(), targeting.archetype.clock_ticks)
   end
   return true
 end
@@ -537,7 +537,7 @@ function M.main_economy_typed()
   if g_main_economy_state == MAIN_ECONOMY_REAL then
     e = entity_id.get(g_main_economy)
   end
-  assert(e == nil or e.class == require("game.economy").economy_class(),
+  assert(e == nil or e.class == require("game.economy").class(),
     "main_economy_typed: only the placeholder or an economy is ever stored")
   return e
 end

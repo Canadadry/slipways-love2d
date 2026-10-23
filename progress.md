@@ -87,7 +87,7 @@
   - [x] Chunk 6 — layout and images
   - [x] Chunk 7 — planets
   - [x] Chunk 8 — slipways, wormholes, trade, probes
-  - [ ] Chunk 9 — economy and research
+  - [x] Chunk 9 — economy and research
   - [ ] Chunk 10 — UI core
   - [ ] Chunk 11 — boxes and panels
   - [ ] Chunk 12 — input and cart

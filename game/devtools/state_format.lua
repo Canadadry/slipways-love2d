@@ -128,7 +128,7 @@ end
 
 local function write_difficulty(sink)
   local line = line_start(sink)
-  local difficulty = economy_score.economy_score_difficulty()
+  local difficulty = economy_score.difficulty()
   local running = probe.main_economy_typed() ~= nil and difficulty ~= nil and difficulty.name ~= nil
   line_add(line, "difficulty %s", running and difficulty.name or "-")
   line_end(line)

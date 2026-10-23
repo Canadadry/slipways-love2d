@@ -231,7 +231,7 @@ function M.construct_in(self)
   end
 
   if bit.band(self.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)) ~= 0 then
-    local target = research.research_projects_at(fixed.flr_int(self.archetype.project_index))
+    local target = research.projects_at(fixed.flr_int(self.archetype.project_index))
 
     if target ~= nil then
       M.install_project(self, target)
@@ -257,13 +257,13 @@ function M.install_project(self, research_project_instance)
   local jy = {}
   local n
 
-  research.research_project_assert(research_project_instance)
+  research.project_assert(research_project_instance)
   if self == nil then
     return
   end
   n = planet_project_need_count(research_project_instance)
 
-  self.project = research.research_project_id_of(research_project_instance)
+  self.project = research.project_id_of(research_project_instance)
   self.description = nil
 
   if n > 0 then
@@ -363,7 +363,7 @@ function M.new_year(self)
     local text
 
     keys.source = entity_id.link(self)
-    text, color = economy_formulas.economy_formulas_format_signed(self.net_income, 10, "$", color)
+    text, color = economy_formulas.format_signed(self.net_income, 10, "$", color)
     message_box.toast_keys_set_text(keys, text)
     keys.color = fixed.from_int(color)
     message_box.toast_new(keys)

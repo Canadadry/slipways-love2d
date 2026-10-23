@@ -83,7 +83,7 @@ function M.cart_load()
   message_box.message_box_init()
   message_box.toast_init()
   probe.init()
-  economy_module.economy_init()
+  economy_module.init()
 
   memory = dispatch_context.mem()
   if memory ~= nil then
@@ -131,7 +131,7 @@ function M.cart_shutdown()
 
   data_init.shutdown()
 
-  economy_module.economy_shutdown()
+  economy_module.shutdown()
   probe.shutdown()
   message_box.toast_shutdown()
   message_box.message_box_shutdown()
@@ -178,7 +178,7 @@ function M.cart_init()
 
   g_loading_frame = 0
   bootstrap.reset_world()
-  research.research_expire_project_ids()
+  research.expire_project_ids()
 
   if structure_icon.structure_icon_rest_cursor() ~= nil then
     structure_icon.structure_icon_set_cursor(structure_icon.structure_icon_rest_cursor())
@@ -223,21 +223,21 @@ function M.cart_init_method(self)
 end
 
 local function start_world(difficulty)
-  assert(economy_module.economy_ready() and planet_family.structure_ready(),
+  assert(economy_module.ready() and planet_family.structure_ready(),
     "game start: cart_load() must run first")
 
-  economy_score.economy_score_set_difficulty(difficulty)
+  economy_score.set_difficulty(difficulty)
   g_title_built = false
 
   bootstrap.reset_world()
-  research.research_expire_project_ids()
+  research.expire_project_ids()
   background.new()
 end
 
 local function start_interface()
   local kind_table = {}
 
-  probe.set_main_economy(economy_module.economy_new())
+  probe.set_main_economy(economy_module.new())
   score_panel.score_panel_set_main(score_panel.score_panel_new())
 
   if menu.pause_menu_open_box() ~= nil then
@@ -265,8 +265,8 @@ end
 
 local function recompute_economy()
   assert(probe.main_economy_typed() ~= nil,
-    "game start: the main economy must be this game's economy before economy_recompute()")
-  economy_module.economy_recompute(probe.main_economy_typed())
+    "game start: the main economy must be this game's economy before economy.recompute()")
+  economy_module.recompute(probe.main_economy_typed())
 end
 
 function M.cart_start_game(chosen_option)
@@ -310,7 +310,7 @@ end
 local function save_at_frame_end()
   local economy = probe.main_economy_typed()
 
-  if economy == nil or not economy.save_pending or economy_score.economy_score_difficulty() == nil then return end
+  if economy == nil or not economy.save_pending or economy_score.difficulty() == nil then return end
   if economy.end_status ~= nil then
     save_storage.save_storage_erase()
     economy.save_pending = false

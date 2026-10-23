@@ -19,7 +19,7 @@ for i = 1, TECHNOLOGIES_COUNT do
   g_affordable_flags[i] = false
 end
 
-function M.tech_gate_is_unlocked(px)
+function M.is_unlocked(px)
   local fm = require("game.probe").main_economy_typed()
   local invented_list = nil
   if px == nil then
@@ -39,8 +39,8 @@ function M.tech_gate_is_unlocked(px)
   return false
 end
 
-function M.tech_gate_if_unlocked(px, lk, mc)
-  if M.tech_gate_is_unlocked(px) then
+function M.if_unlocked(px, lk, mc)
+  if M.is_unlocked(px) then
     return mc
   end
   return lk
@@ -59,7 +59,7 @@ local function research_cost_with_discount(od, nk)
   return fixed.flr(fixed.mul(od, factor))
 end
 
-function M.tech_gate_research_cost(t)
+function M.research_cost(t)
   if t == nil then
     return research_cost_with_discount(fixed.from_int(0), nil)
   end
@@ -78,8 +78,8 @@ local function available_technologies_predicate(t, bi)
   elseif provisional ~= nil and provisional.research_points ~= nil then
     jk = provisional.research_points
   end
-  affordable = M.tech_gate_research_cost(t) <= jk
-  -- Written for every entry, before any early return: tech_gate_affordable_flags() reads it back.
+  affordable = M.research_cost(t) <= jk
+  -- Written for every entry, before any early return: tech_gate.affordable_flags() reads it back.
   g_affordable_flags[technology_index_of[t]] = affordable
   if fm ~= nil then
     ew = fm.era
@@ -87,14 +87,14 @@ local function available_technologies_predicate(t, bi)
   if fixed.from_int(t.era) ~= ew then
     return false
   end
-  if M.tech_gate_is_unlocked(t.name) then
+  if M.is_unlocked(t.name) then
     return false
   end
   return affordable or bi
 end
 
-function M.tech_gate_available_technologies(bi)
-  assert(type(bi) == "boolean", "tech_gate_available_technologies: bi is a boolean, and 0 is truthy")
+function M.available_technologies(bi)
+  assert(type(bi) == "boolean", "tech_gate.available_technologies: bi is a boolean, and 0 is truthy")
   local result = { items = {}, count = 0 }
   for i = 1, TECHNOLOGIES_COUNT do
     if available_technologies_predicate(technologies_table[i], bi) then
@@ -106,14 +106,14 @@ function M.tech_gate_available_technologies(bi)
   return result
 end
 
-function M.tech_gate_affordable_flags(t)
+function M.affordable_flags(t)
   local index = technology_index_of[t]
   assert(index ~= nil and index >= 1 and index <= TECHNOLOGIES_COUNT,
-    "tech_gate_affordable_flags: the flag is kept for technologies_table entries only")
+    "tech_gate.affordable_flags: the flag is kept for technologies_table entries only")
   return g_affordable_flags[index]
 end
 
-function M.tech_gate_reset_affordable_flags()
+function M.reset_affordable_flags()
   for i = 1, TECHNOLOGIES_COUNT do
     g_affordable_flags[i] = false
   end

@@ -50,7 +50,7 @@ local function is_colonized_truthy(pt)
   return planet.is_colonized(pt)
 end
 
-function M.economy_score_planet_upkeep(pt)
+function M.planet_upkeep(pt)
   if pt ~= nil and bit.band(pt.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)) ~= 0
       and pt.archetype.is_structure then
     local structure_list = entity_registry.entities_by_tag(entity_class.TAG_STRUCTURE)
@@ -78,7 +78,7 @@ local function colony_upkeep_predicate(e, ctx)
   return is_colonized_truthy(e)
 end
 
-function M.economy_score_colony_upkeep()
+function M.colony_upkeep()
   local planet_list = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
   local mu = 0
   local result
@@ -93,17 +93,17 @@ function M.economy_score_colony_upkeep()
   return fixed.flr(result)
 end
 
-function M.economy_score_trade_income(entity)
+function M.trade_income(entity)
   local planet_module = require("game.planet")
   local total = fixed.from_int(0)
   local planet
   local outgoing
-  local difficulty = M.economy_score_difficulty()
+  local difficulty = M.difficulty()
 
   if entity == nil then
     return total
   end
-  assert(planet_module.is_family(entity), "economy_score_trade_income: the entity is a planet")
+  assert(planet_module.is_family(entity), "economy_score.trade_income: the entity is a planet")
   planet = entity
   outgoing = planet.outgoing_routes
 
@@ -114,7 +114,7 @@ function M.economy_score_trade_income(entity)
       found, partner = trade.last_planet(outgoing[i], partner)
       if found then
         local oz
-        assert(planet_module.is_family(partner), "economy_score_trade_income: a trade leads to a planet")
+        assert(planet_module.is_family(partner), "economy_score.trade_income: a trade leads to a planet")
         oz = partner
         if oz.archetype.is_planet then
           local trade_mult = fixed.from_int(0)
@@ -179,11 +179,11 @@ local function sum_by_development_tier_visit(pt, ctx)
   end
 end
 
-function M.economy_score_percent_text(value)
+function M.percent_text(value)
   return str.tostr_fixed(value) .. "%"
 end
 
-function M.economy_score_final()
+function M.final()
   local development_ctx = {}
   local population = fixed.from_int(0)
   local base
@@ -232,7 +232,7 @@ function M.economy_score_final()
   return result
 end
 
-function M.economy_score_happiness()
+function M.happiness()
   local fm = require("game.probe").main_economy_typed()
   local main_economy_production = (fm ~= nil) and fm.production or nil
   local r_h = fixed.from_int(0)
@@ -269,13 +269,13 @@ end
 -- The cart reads the difficulty all game long, after the menu button dies: keep a copy, never a link to the button.
 local g_difficulty = nil
 
-function M.economy_score_difficulty()
+function M.difficulty()
   return g_difficulty
 end
 
--- Written in place, every field, so that a holder of the table economy_score_difficulty returned
+-- Written in place, every field, so that a holder of the table economy_score.difficulty returned
 -- sees the new values.
-function M.economy_score_set_difficulty(dk)
+function M.set_difficulty(dk)
   local copy = ui_button.button_zero()
 
   if dk == nil then
@@ -296,12 +296,12 @@ function M.economy_score_set_difficulty(dk)
   end
 end
 
-function M.economy_score_net_income(p)
+function M.net_income(p)
   local planet = require("game.planet")
-  local kr = fixed.flr(fixed.sub(M.economy_score_trade_income(p), M.economy_score_planet_upkeep(p)))
+  local kr = fixed.flr(fixed.sub(M.trade_income(p), M.planet_upkeep(p)))
   local jo
 
-  assert(planet.is_family(p), "economy_score_net_income: the planet tag holds planets only")
+  assert(planet.is_family(p), "economy_score.net_income: the planet tag holds planets only")
   jo = p
   jo.net_income = kr
   return kr

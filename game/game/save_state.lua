@@ -847,7 +847,7 @@ local function vec_of(vec)
 end
 
 local function difficulty_index()
-  local difficulty = economy_score.economy_score_difficulty()
+  local difficulty = economy_score.difficulty()
   assert(difficulty ~= nil and difficulty.name ~= nil, "save_state_capture: a running game has a difficulty")
   for i = 1, game_data.DIFFICULTY_OPTIONS_COUNT do
     if game_data.difficulty_options_table[i].name == difficulty.name then
@@ -984,12 +984,12 @@ local function node_kind(cls)
 end
 
 local function project_index(id)
-  local project = research.research_project_get(id)
+  local project = research.project_get(id)
   if project == nil then
     return 0
   end
-  for k = 1, research.research_projects_count() do
-    if research.research_projects_at(k) == project then
+  for k = 1, research.projects_count() do
+    if research.projects_at(k) == project then
       return k
     end
   end

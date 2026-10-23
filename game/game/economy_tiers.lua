@@ -93,7 +93,7 @@ local function rebuild_incoming_routes_route_visit(entity, context)
   end
 end
 
-function M.economy_tiers_rebuild_incoming_routes()
+function M.rebuild_incoming_routes()
   for_each_tagged(entity_class.TAG_PLANET, rebuild_incoming_routes_reset_visit, nil)
   for_each_tagged(entity_class.TAG_PLANET, rebuild_incoming_routes_route_visit, nil)
 end
@@ -109,7 +109,7 @@ local function update_tiers_visit(entity, context)
   if entity == nil then
     return
   end
-  tier = M.economy_tiers_compute_tier(entity)
+  tier = M.compute_tier(entity)
   assert(planet_module.is_family(entity), "update_tiers_visit: the planet tag holds planets only")
   planet = entity
   if planet.development_tier ~= nil then
@@ -118,7 +118,7 @@ local function update_tiers_visit(entity, context)
 
   if planet.development_tier == nil or tier > development_tier then
     if planet.development_tier ~= nil and development_tier == fixed.from_int(1) then
-      local hn = research.research_project_get(planet.project)
+      local hn = research.project_get(planet.project)
       if hn ~= nil and hn.byproduct ~= nil then
         if planet.needs ~= nil then
           local entry = research.need_new(
@@ -134,11 +134,11 @@ local function update_tiers_visit(entity, context)
 
   production = planet_module.production(planet)
   local _
-  _, production.amount = M.economy_tiers_compute_production_amount(planet, production.amount)
+  _, production.amount = M.compute_production_amount(planet, production.amount)
 end
 
 -- Returns found, out: false and out unchanged when the tier or the project gives no amount.
-function M.economy_tiers_compute_production_amount(planet, out)
+function M.compute_production_amount(planet, out)
   local project
   local production_table
   local idx
@@ -150,8 +150,8 @@ function M.economy_tiers_compute_production_amount(planet, out)
   if planet.development_tier == nil or planet.development_tier == fixed.from_int(0) then
     return false, out
   end
-  project = research.research_project_get(planet.project)
-  production_table = (project ~= nil) and research.research_project_production(project) or nil
+  project = research.project_get(planet.project)
+  production_table = (project ~= nil) and research.project_production(project) or nil
   if production_table == nil then
     return false, out
   end
@@ -167,13 +167,13 @@ function M.economy_tiers_compute_production_amount(planet, out)
   return true, out
 end
 
-function M.economy_tiers_update_tiers()
+function M.update_tiers()
   local jg = { value = false }
   for_each_tagged(entity_class.TAG_PLANET, update_tiers_visit, jg)
   return jg.value
 end
 
-function M.economy_tiers_compute_tier(entity)
+function M.compute_tier(entity)
   local planet_module = require("game.planet")
   local planet
   local needs
@@ -183,7 +183,7 @@ function M.economy_tiers_compute_tier(entity)
   if entity == nil then
     return fixed.from_int(0)
   end
-  assert(planet_module.is_family(entity), "economy_tiers_compute_tier: the entity is a planet")
+  assert(planet_module.is_family(entity), "economy_tiers.compute_tier: the entity is a planet")
   planet = entity
   if planet.state ~= entity_class.STATE_SETTLED then
     return fixed.from_int(0)

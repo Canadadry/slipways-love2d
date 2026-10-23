@@ -869,11 +869,11 @@ sub-structs are copied by the caller. An entity id is a number handed out by
 table, which drops an entity when the exit queue flushes it; `nil` is "no
 link"; ids are compared with `==`. A research project id follows the same
 convention from `research`'s own counter and table, and goes stale when
-`research_expire_project_ids` runs. A re-init or `memset` of a table that another holder may
+`research.expire_project_ids` runs. A re-init or `memset` of a table that another holder may
 point at zeroes its fields in place and keeps its identity:
 `pad_nav_init` keeps its sub-tables and bindings table,
 `input_step_init` zeroes `played` and `played_frame` in place,
-`economy_score_set_difficulty` clears and refills `g_difficulty`. A
+`economy_score.set_difficulty` clears and refills `g_difficulty`. A
 static struct, or inline array of structs, is a table (or array of
 tables) with every field at its C zero value (0, or `nil` for a pointer),
 except an optional value, which is `nil` when absent and tested with

@@ -41,25 +41,25 @@ function M.resource_map_set(map, qe, v)
   map.count = n
 end
 
-function M.economy_formulas_fill_resource_map(out, jm)
+function M.fill_resource_map(out, jm)
   out.count = 0
   for i = 1, map_tables.RESOURCE_CODE_COUNT do
     M.resource_map_set(out, fixed.from_int(map_tables.resource_codes[i].resource), jm)
   end
 end
 
-function M.economy_formulas_route_base_cost(from_pos, to_pos)
+function M.route_base_cost(from_pos, to_pos)
   local diff = vec.sub(to_pos, from_pos)
   local length_squared = vec.length_squared(diff)
   local x = fixed.div(length_squared, game_data.route_length_factor())
   local ec = fixed.pow075(x)
   local clamped = fixed_max(fixed.LIT(0x00008000, 0.5), ec)
-  local scale = fixed.mul(game_data.route_cost_factor(), M.economy_formulas_cost_scale())
+  local scale = fixed.mul(game_data.route_cost_factor(), M.cost_scale())
   local cost = fixed.flr(fixed.mul(scale, clamped))
   return cost
 end
 
-function M.economy_formulas_cost_scale()
+function M.cost_scale()
   local jc = entity_registry.entities_by_tag(entity_class.TAG_SLIPWAY)
   local count = (jc ~= nil) and #jc or 0
   local sq = fixed.sqrt(fixed.from_int(count))
@@ -69,7 +69,7 @@ function M.economy_formulas_cost_scale()
 end
 
 -- Returns text, color: out_color is ignored, the color is c from zero up and 8 below.
-function M.economy_formulas_format_signed(d, c, ku, out_color)
+function M.format_signed(d, c, ku, out_color)
   local num_str = str.tostr_fixed(d)
   local suffix = (ku ~= nil) and ku or ""
   local result

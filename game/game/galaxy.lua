@@ -52,7 +52,7 @@ end
 -- Draws nothing from the RNG: a resume builds them the same way.
 function M.install_rolls()
   local planet = require("game.planet")
-  local difficulty = require("game.economy_score").economy_score_difficulty()
+  local difficulty = require("game.economy_score").difficulty()
   local difficulty_type_bias = fixed.from_int(0)
   local type_picker_random
   local type_picker_state

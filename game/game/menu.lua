@@ -50,7 +50,7 @@ local function tech_tree_screen_row_on_click_method(self)
     return
   end
   if self.technology ~= nil then
-    economy_module.economy_invent(probe.main_economy_typed(), self.technology)
+    economy_module.invent(probe.main_economy_typed(), self.technology)
   end
 end
 
@@ -66,7 +66,7 @@ local function tech_tree_screen_step(t, b)
   layout.row_keys_append(b.layout_row_keys, layout.row_cell_string(t.name))
   b.layout_row_keys.color = fixed.from_int(6)
 
-  research_cost_result = tech_gate.tech_gate_research_cost(t)
+  research_cost_result = tech_gate.research_cost(t)
   research_cost_str = str.tostr_fixed(research_cost_result)
 
   b.side_tooltip_row = layout.row_keys_zero()
@@ -75,7 +75,7 @@ local function tech_tree_screen_step(t, b)
 
   ui_button.button_keys_set_tooltip_row(b, t.tooltip_rows)
 
-  if tech_gate.tech_gate_affordable_flags(t) then
+  if tech_gate.affordable_flags(t) then
     b.technology = t
     b.on_click = tech_tree_screen_row_on_click_method
   end
@@ -127,7 +127,7 @@ function M.menu_show_tech_tree_screen()
   end
 
   -- true lists every tech of the era, affordable or not; the galaxy row's refresh must pass false.
-  available_technologies_list = tech_gate.tech_gate_available_technologies(true)
+  available_technologies_list = tech_gate.available_technologies(true)
   buttons = {}
   for i = 1, available_technologies_list.count + 1 do
     buttons[i] = ui_button.button_keys_zero({})
@@ -194,7 +194,7 @@ local function galaxy_menu_button1_on_click_method(self)
   if fm ~= nil then
     fm.year_ticks = fixed.from_int(1)
   end
-  economy_module.economy_new_year(fm)
+  economy_module.new_year(fm)
 end
 
 local function galaxy_menu_button2_on_click_method(self)
@@ -211,7 +211,7 @@ local function galaxy_menu_button2_refresh_method(self)
   end
 
   -- Passing true here would light the icon whenever any tech of the era is left.
-  available_technologies_list = tech_gate.tech_gate_available_technologies(false)
+  available_technologies_list = tech_gate.available_technologies(false)
   available_technologies_count = available_technologies_list.count
 
   layout.row_keys_append(keys,

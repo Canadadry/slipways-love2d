@@ -16,7 +16,7 @@ Good interfaces make testing natural. Functions marked real are in `game/`; the 
 
    ```lua
    -- Testable (real signature): returns the cost
-   function M.economy_formulas_route_base_cost(from_pos, to_pos)
+   function M.route_base_cost(from_pos, to_pos)
 
    -- Hard to test: adds into the global credits
    function M.economy_formulas_pay_route(from_pos, to_pos)

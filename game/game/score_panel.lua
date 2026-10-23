@@ -181,7 +181,7 @@ function M.score_panel_refresh()
     end
   end
 
-  text, income_color = economy_formulas.economy_formulas_format_signed(main_economy_income, 0, nil, income_color)
+  text, income_color = economy_formulas.format_signed(main_economy_income, 0, nil, income_color)
 
   credits_str = str.tostr_fixed(main_economy_credits)
   readouts[1] = data_item({ text = str.concat2(credits_str, "$") })

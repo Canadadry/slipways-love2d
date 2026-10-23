@@ -52,10 +52,10 @@ local function research_project_tooltip_join(self)
   return names
 end
 
-function M.research_project_tooltip(self)
+function M.project_tooltip(self)
   local jb
 
-  research.research_project_assert(self)
+  research.project_assert(self)
   if self == nil then
     return nil
   end
@@ -213,22 +213,22 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
 end
 
 -- Fills `out_keys` and returns true; returns false, keys untouched, when there is no output.
-function M.research_display_planet_resource_row_keys(inputs, output, amount, used, spacing, out_keys)
+function M.planet_resource_row_keys(inputs, output, amount, used, spacing, out_keys)
   return planet_resource_row_keys(inputs, output, amount, used, spacing, out_keys)
 end
 
 -- Fills `out_keys` and returns true; returns false, keys untouched, when the project has no output.
-function M.research_project_layout_row_keys(self, out_keys)
+function M.project_layout_row_keys(self, out_keys)
   local jq
   local po
   local found
 
-  research.research_project_assert(self)
-  if self == nil or not research.research_project_ready() then
+  research.project_assert(self)
+  if self == nil or not research.project_ready() then
     return false, out_keys
   end
 
-  po = research.research_project_production(self)
+  po = research.project_production(self)
   jq = fixed.from_int(1)
   if po ~= nil and po.count >= 1 then
     local first_production = fixed.from_int(po.values[1])
@@ -241,7 +241,7 @@ function M.research_project_layout_row_keys(self, out_keys)
     return false, out_keys
   end
 
-  layout.row_keys_append(out_keys, layout.row_cell_row(research.research_project_row_tail()))
+  layout.row_keys_append(out_keys, layout.row_cell_row(research.project_row_tail()))
   if self.name ~= nil then
     layout.row_keys_append(out_keys, layout.row_cell_string(self.name))
   end
@@ -249,13 +249,13 @@ function M.research_project_layout_row_keys(self, out_keys)
 end
 
 -- Keys of the row {name, 32, {icon_sprite, 8}}, for a project with an icon sprite.
-function M.research_project_icon_row_keys(self)
+function M.project_icon_row_keys(self)
   local keys = layout.row_keys_zero()
   local icon = tuple_zero()
 
   icon.count = 2
   assert(self.icon_sprite ~= nil,
-    "research_project_icon_row_keys: the row {name, 32, {icon_sprite, 8}} is a project with an icon sprite's")
+    "research_display.project_icon_row_keys: the row {name, 32, {icon_sprite, 8}} is a project with an icon sprite's")
   icon.scalars[1] = layout.row_scalar_fixed(self.icon_sprite)
   icon.scalars[2] = layout.row_scalar_fixed(fixed.from_int(8))
   layout.row_keys_append(keys, layout.row_cell_string(self.name))
@@ -268,9 +268,9 @@ local function available_projects_predicate(b, planet_instance)
   local name_str = nil
   local mg = false
 
-  research.research_project_assert(b)
+  research.project_assert(b)
 
-  if not tech_gate.tech_gate_is_unlocked(b.required_tech) then
+  if not tech_gate.is_unlocked(b.required_tech) then
     return false
   end
 
@@ -299,16 +299,16 @@ local function available_projects_predicate(b, planet_instance)
   return mg
 end
 
-function M.research_display_available_projects(planet_instance)
+function M.available_projects(planet_instance)
   local result = { items = {}, count = 0 }
 
   result.count = 0
-  for k = 1, research.research_projects_count() do
-    local b = research.research_projects_at(k)
+  for k = 1, research.projects_count() do
+    local b = research.projects_at(k)
 
     if available_projects_predicate(b, planet_instance) then
       local n = result.count + 1
-      result.items[n] = research.research_project_id_of(b)
+      result.items[n] = research.project_id_of(b)
       result.count = n
     end
   end

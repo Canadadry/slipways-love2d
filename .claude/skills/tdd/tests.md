@@ -53,7 +53,7 @@ For a path only a player reaches (a click, a rendered frame), drive it headless 
 
 ```lua
 -- BAD: digs a local helper out of the module through the debug library
-local _, fixed_max = debug.getupvalue(economy_formulas.economy_formulas_route_base_cost, 2)
+local _, fixed_max = debug.getupvalue(economy_formulas.route_base_cost, 2)
 check.expect(fixed_max(1, 2), 2, "max")
 ```
 
