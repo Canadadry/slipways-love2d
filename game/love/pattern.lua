@@ -1,4 +1,4 @@
--- Fill pattern images: the LÖVE side of src/p8/gfx_software.c's fillp_color.
+-- Fill pattern images: the LÖVE side of p8.gfx_software's fillp_color.
 local bit = require("bit")
 local draw_cost = require("p8.draw_cost")
 local screen = require("love.screen")
@@ -29,7 +29,7 @@ local function build_image(pattern, col, transparent)
   return love.graphics.newImage(data)
 end
 
--- The image whose pixel (i, j) is the C's fillp_color at world (i, j) for the
+-- The image whose pixel (i, j) is p8.gfx_software's fillp_color at world (i, j) for the
 -- current pattern of gfx, alpha 0 where it returns -1. Built on first use per
 -- p8_draw_cost_pattern_key, kept for the run: never draw into it.
 function M.pattern_image(gfx, col)

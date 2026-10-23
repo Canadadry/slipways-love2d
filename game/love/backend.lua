@@ -1,6 +1,6 @@
--- The LÖVE draw backend: a p8_draw_backend_t (see p8/gfx.lua) drawing onto
--- the game canvas of love.screen. Like a C backend it reads gfx and mem and
--- never writes them; it applies the camera and clips to the screen itself.
+-- The LÖVE draw backend (see p8/gfx.lua) drawing onto the game canvas of
+-- love.screen. Like p8.gfx_software it reads gfx and mem and never writes
+-- them; it applies the camera and clips to the screen itself.
 local bit = require("bit")
 local cint = require("p8.cint")
 local fatal = require("p8.fatal")
@@ -15,8 +15,7 @@ local text = require("love.text")
 
 local M = {}
 
--- The C stores any byte and only devtools/dump.c's assert catches one above
--- 15; a LÖVE colour has to be one of the 16.
+-- p8.gfx_software stores any byte; a LÖVE colour has to be one of the 16.
 local function check_color(call, col)
   if col < 0 or col > 15 or col ~= math.floor(col) then
     fatal.p8_fatal(string.format("love backend %s: colour %s is not 0..15", call, tostring(col)))
@@ -86,7 +85,7 @@ local function append_point(gfx, coordinates, x, y)
   end
 end
 
--- src/p8/gfx_software.c's software_line loop, copied: appends the on-screen
+-- p8.gfx_software's software_line loop, copied: appends the on-screen
 -- pixels of one segment to coordinates as point centres.
 local function line_points(gfx, coordinates, x1, y1, x2, y2)
   local dx = math.abs(x2 - x1)
@@ -130,7 +129,7 @@ local function love_lines(gfx, mem, segments, count, col)
   end
 end
 
--- src/p8/gfx_software.c's software_circ loop and circ_plot8, copied: one
+-- p8.gfx_software's software_circ loop and circ_plot8, copied: one
 -- points call for the whole circle.
 local function love_circ(gfx, mem, cx, cy, r, col)
   check_color("circ", col)
@@ -194,7 +193,7 @@ local function fill_rectangle(gfx, x0, y0, x1, y1)
   love.graphics.rectangle("fill", sx0, sy0, sx1 - sx0 + 1, sy1 - sy0 + 1)
 end
 
--- Selects how fill_span draws, as the C's fillp_color: returns the pattern
+-- Selects how fill_span draws, as p8.gfx_software's fillp_color: returns the pattern
 -- image (colour set to white), or nil after setting the colour col & 0x0F.
 local function begin_fill(gfx, col)
   if gfx.fillp_pattern == 0 then
@@ -207,7 +206,7 @@ end
 
 -- The world rectangle (x0, y0) <= (x1, y1) as begin_fill chose: one integer
 -- rectangle, or one quad of the pattern image cut at the world phase of its
--- first pixel, since the C aligns the pattern before the camera.
+-- first pixel, since p8.gfx_software aligns the pattern before the camera.
 local function fill_span(gfx, image, x0, y0, x1, y1)
   if image == nil then
     fill_rectangle(gfx, x0, y0, x1, y1)
@@ -240,7 +239,7 @@ local function love_rect(gfx, mem, x1, y1, x2, y2, col)
   fill_rectangle(gfx, xmax, ymin, xmax, ymax)
 end
 
--- src/p8/gfx_software.c's software_circfill loop, copied: each span is one
+-- p8.gfx_software's software_circfill loop, copied: each span is one
 -- fill_span.
 local function love_circfill(gfx, mem, cx, cy, r, col)
   if r < 0 then
@@ -266,7 +265,7 @@ local function love_circfill(gfx, mem, cx, cy, r, col)
   end
 end
 
--- src/p8/gfx_software.c's software_spr: the part of the box on the sheet is
+-- p8.gfx_software's software_spr: the part of the box on the sheet is
 -- one quad of the recoloured sheet; the part off it reads colour 0 (sheet_get),
 -- so it is up to four rectangles of draw palette entry 0, or nothing.
 local function love_spr(gfx, mem, n, x, y, w, h)
@@ -317,7 +316,7 @@ local function love_print(gfx, mem, str, x, y, col)
   text.text_draw(str, x - gfx.camera_x, y - gfx.camera_y)
 end
 
--- src/p8/gfx_software.c's software_print_outlined order, copied.
+-- p8.gfx_software's software_print_outlined order, copied.
 local function love_print_outlined(gfx, mem, str, x, y, col)
   for dy = -1, 1 do
     for dx = -1, 1 do

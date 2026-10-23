@@ -1,6 +1,5 @@
--- Copy of src/p8/gfx_software.c. A C pointer into image_store is its index
--- in image_store here: slot_pixels returns one, target holds one (nil while
--- drawing to the screen).
+-- slot_pixels returns an index into image_store and target holds one (nil
+-- while drawing to the screen).
 local bit = require("bit")
 local cint = require("p8.cint")
 local gfx_module = require("p8.gfx")
@@ -9,7 +8,7 @@ local vram = require("p8.vram")
 
 local M = {}
 
--- Holds only while callers draw colours 0..15: pset, line, rect, circ and print store col unmasked, and only dump.c asserts it.
+-- Holds only while callers draw colours 0..15: pset, line, rect, circ and print store col unmasked, and only love.backend's check_color refuses one above 15, outside image builds.
 local IMAGE_EMPTY = 0xFF
 
 local SLOT_PIXELS = {}
@@ -93,7 +92,7 @@ local function fillp_bit_set(gfx, x, y)
   return bit.band(bit.rshift(gfx.fillp_pattern, bit_index), 1) ~= 0
 end
 
--- Masked here, not in p8_pset, so devtools/dump.c's assert still catches a primitive storing an index above 0x0f.
+-- Masked here, not in p8_pset, so love.backend's check_color still refuses a primitive drawing an index above 0x0f.
 local function fillp_color(gfx, x, y, col)
   if not fillp_bit_set(gfx, x, y) then
     return bit.band(col, 0x0F)
@@ -486,7 +485,7 @@ function M.p8_gfx_software_backend()
   return SOFTWARE_BACKEND
 end
 
--- Lua only, for love.slot: the slot store, the store index of the slot's
+-- For love.slot: the slot store, the store index of the slot's
 -- pixel (0, 0), the width and height of its last build, and the byte of a
 -- pixel the build never wrote. Pixel (x, y) is at first + y * width + x.
 -- Never write the store.

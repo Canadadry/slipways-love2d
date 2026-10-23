@@ -70,3 +70,11 @@
   - [x] Chunk 8 — research, tech gate, economy and slipway lists
   - [x] Chunk 9 — input and pad
   - [x] Chunk 10 — save, docs and full check
+- [ ] Step 3.3 chunks
+  - [x] Chunk 1 — runtime and LÖVE
+  - [ ] Chunk 2 — engine and devtools
+  - [ ] Chunk 3 — data tables and generation
+  - [ ] Chunk 4 — planets, slipways, wormholes, trade
+  - [ ] Chunk 5 — economy, research, probes
+  - [ ] Chunk 6 — UI
+  - [ ] Chunk 7 — input, cart, save, pad, docs, full check

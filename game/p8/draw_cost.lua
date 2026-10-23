@@ -1,6 +1,4 @@
--- Copy of src/p8/draw_cost.h then src/p8/draw_cost.c. A p8_draw_cost_t is
--- { bytes, primitives }, returned as a new table; a p8_draw_cost_window_t is
--- { patterned, pattern_key }, passed by reference and updated in place.
+-- Each cost is returned as a new table; the window is updated in place.
 local bit = require("bit")
 local gfx_module = require("p8.gfx")
 local vram = require("p8.vram")
@@ -131,7 +129,7 @@ function M.p8_draw_cost_rectfill(window, gfx, x1, y1, x2, y2, col)
   return { bytes = FREE.bytes, primitives = FREE.primitives }
 end
 
--- Must count the iterations of gfx_software.c's midpoint loop, or circles go undercounted.
+-- Must count the iterations of p8.gfx_software's midpoint loop, or circles go undercounted.
 local function circle_iterations(r)
   local x = r
   local y = 0

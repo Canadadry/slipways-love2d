@@ -1,5 +1,3 @@
--- Copy of src/p8/str.h then src/p8/str.c.
-
 local M = {}
 
 function M.p8_sub(s, i, j)

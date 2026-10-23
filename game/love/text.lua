@@ -1,5 +1,4 @@
--- Text from font.png: the LÖVE side of src/p8/gfx_software.c's
--- software_print, cell for cell as src/devtools/asset_image.c lays it out.
+-- Text from font.png: the LÖVE side of p8.gfx_software's software_print.
 local cint = require("p8.cint")
 local gfx_module = require("p8.gfx")
 local palette = require("p8.palette")
@@ -35,7 +34,7 @@ end
 
 -- Draws str's glyphs in the current colour from x, y in screen coordinates:
 -- byte b is cell b when 32 <= b <= 126, else cell 127, the placeholder (the
--- C's signed char sends bytes above 127 to it too).
+-- p8.gfx_software's p8_font_glyph_rows sends bytes above 127 to it too).
 function M.text_draw(str, x, y)
   if font_image == nil then
     font_image = build_font_image()

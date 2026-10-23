@@ -1,5 +1,3 @@
--- Copy of src/p8/image.h then src/p8/image.c. A p8_image_size_t is
--- { width, height }. The width-multiple-of-16 rule is not ported.
 local fatal = require("p8.fatal")
 local gfx_module = require("p8.gfx")
 local vram = require("p8.vram")
@@ -73,7 +71,7 @@ local function check_slot(slot)
   if slot < 0 or slot >= M.P8_IMAGE_SLOT_COUNT then slot_fatal(slot, "no such slot") end
 end
 
--- Returns a new p8_image_size_t.
+-- Returns a new { width, height } table.
 function M.p8_image_size(slot)
   check_slot(slot)
   return { width = SLOT_SIZES[slot].width, height = SLOT_SIZES[slot].height }

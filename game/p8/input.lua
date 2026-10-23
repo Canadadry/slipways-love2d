@@ -1,8 +1,6 @@
--- Copy of src/p8/input.h then src/p8/input.c. p8_input_load, p8_input_save,
--- p8_input_append and p8_input_free are defined in src/devtools/ (not ported).
--- A p8_input_t is { frames, frame_count, current_frame }, frames indexed from
--- 1, each { mouse_x, mouse_y, mouse_buttons, pad_buttons }; current_frame is
--- the position of the frame read, past frame_count when there is none.
+-- frames is indexed from 1, each { mouse_x, mouse_y, mouse_buttons,
+-- pad_buttons }; current_frame is the position of the frame read, past
+-- frame_count when there is none.
 local M = {}
 
 M.P8_PAD_BUTTON_1 = 1

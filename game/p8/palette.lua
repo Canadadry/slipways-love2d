@@ -1,4 +1,3 @@
--- Copy of src/p8/palette.h then src/p8/palette.c.
 local M = {}
 
 M.P8_PALETTE_COLORS = 16

@@ -1,5 +1,5 @@
--- The game canvas and the assets every backend module reads. Not a C copy:
--- the LÖVE side of src/p8/vram.c's screen and src/p8/palette.c's colours.
+-- The game canvas and the assets every backend module reads: the LÖVE side
+-- of p8.vram's screen and p8.palette's colours.
 local palette = require("p8.palette")
 local vram = require("p8.vram")
 

@@ -1,4 +1,4 @@
--- Recoloured copies of sprites.png: the LÖVE side of src/p8/gfx_software.c's
+-- Recoloured copies of sprites.png: the LÖVE side of p8.gfx_software's
 -- software_spr.
 local bit = require("bit")
 local cint = require("p8.cint")

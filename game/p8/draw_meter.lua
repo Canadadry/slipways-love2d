@@ -1,7 +1,5 @@
--- Copy of src/p8/draw_meter.h then src/p8/draw_meter.c. A
--- p8_draw_meter_counts_t is { bytes, build_bytes, primitives, cluts,
--- patterns }; build_bytes is what image builds emit, in their own buffer,
--- which bytes and primitives leave out.
+-- build_bytes is what image builds emit, in their own buffer, which bytes
+-- and primitives leave out.
 local bit = require("bit")
 local draw_cost = require("p8.draw_cost")
 local gfx_module = require("p8.gfx")
@@ -9,7 +7,6 @@ local image = require("p8.image")
 
 local M = {}
 
--- src/p8/gpu_sizes.h's two table sizes; gpu_sizes.h itself is not ported.
 local GPU_CLUT_SLOTS = 6
 local GPU_PATTERN_SLOTS = 4
 

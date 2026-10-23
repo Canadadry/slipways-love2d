@@ -1,4 +1,4 @@
--- The loop of src/cmd/replay.c without its devtools: one love.update is one game frame.
+-- One love.update is one game frame.
 local bit = require("bit")
 local draw_meter = require("p8.draw_meter")
 local fatal = require("p8.fatal")
@@ -113,7 +113,7 @@ function love.draw()
   screen.screen_present()
 end
 
--- replay.c's write_state: called by tmp/fake_love after the last frame, never by real LÖVE.
+-- Called by tmp/fake_love after the last frame, never by real LÖVE.
 function debug_state()
   local lines = {}
   local sink = {

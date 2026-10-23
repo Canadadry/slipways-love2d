@@ -1,4 +1,4 @@
--- Image slots: the LÖVE side of src/p8/gfx_software.c's slot store. Each
+-- Image slots: the LÖVE side of p8.gfx_software's slot store. Each
 -- build becomes one image: a canvas is never read back.
 local fatal = require("p8.fatal")
 local gfx_software = require("p8.gfx_software")

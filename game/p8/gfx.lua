@@ -1,8 +1,7 @@
--- Copy of src/p8/gfx.h, src/p8/draw_backend.h then src/p8/gfx.c.
--- A p8_graphics_t is { camera_x, camera_y, fillp_pattern, fillp_transparent,
--- pen_color }. A p8_point_t list is { { x, y, col }, ... } and a
--- p8_segment_t list { { x1, y1, x2, y2 }, ... }, each passed with its
--- count and read from 1 to count. A p8_draw_backend_t is a table of the 16 C fields: cls, pset, line,
+-- gfx is { camera_x, camera_y, fillp_pattern, fillp_transparent, pen_color }.
+-- A point list is { { x, y, col }, ... } and a segment list
+-- { { x1, y1, x2, y2 }, ... }, each passed with its count and read from 1 to
+-- count. A draw backend is a table of 16 functions: cls, pset, line,
 -- rect, rectfill, circ, circfill, spr, print, print_outlined, image_begin,
 -- image_window, image_end, image_draw, lines, psets.
 local bit = require("bit")

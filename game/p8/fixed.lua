@@ -1,5 +1,4 @@
--- Copy of src/p8/fixed.h then src/p8/fixed.c, in the C order. A fixed is a
--- number holding the signed 32-bit raw value of the C p8_fixed_t.
+-- A fixed is a number holding a signed 32-bit 16.16 raw value.
 local bit = require("bit")
 local p8_quarter_wave = require("p8.quarter_wave")
 
@@ -137,12 +136,11 @@ local P8_RND_LCG_MULTIPLIER = 1664525
 local P8_RND_LCG_INCREMENT = 1013904223
 local P8_RND_DEFAULT_SEED = 0x2545F491
 
--- A uint32_t: a number in 0 .. 2^32 - 1, never a signed bit result.
+-- A number in 0 .. 2^32 - 1, never a signed bit result.
 local rnd_state = P8_RND_DEFAULT_SEED
 
--- The C uint32_t *state is an argument plus a second return value: the new
--- state. The 64-bit magnitude * state (up to 2^63) does not fit a double:
--- the state is split into 16-bit halves.
+-- Returns the new state as a second value. The 64-bit magnitude * state
+-- (up to 2^63) does not fit a double: the state is split into 16-bit halves.
 function M.p8_fixed_rnd_from_state(state, x)
   if x == 0 then
     return 0, state

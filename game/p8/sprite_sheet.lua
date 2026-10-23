@@ -1,4 +1,3 @@
--- Copy of src/p8/sprite_sheet.h then src/p8/sprite_sheet.c.
 local bit = require("bit")
 local cint = require("p8.cint")
 local p8_sprite_sheet_packed_bytes = require("p8.sprite_sheet_packed")

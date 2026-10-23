@@ -1,6 +1,3 @@
--- Copy of src/p8/vram.h then src/p8/vram.c. A p8_vram_t is a table with the
--- C fields: draw_palette[16], sprite_sheet[y][x], map_cells[y][x],
--- screen[y][x] (keyed by colour or pixel coordinate, from 0) and map_version.
 local bit = require("bit")
 
 local M = {}
