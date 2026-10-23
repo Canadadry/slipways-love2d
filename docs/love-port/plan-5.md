@@ -161,3 +161,14 @@ decision under "Decisions of phase 0" and to the order of phases 1–3.
 Checked during the grilling: the save format depends on no memory layout;
 `end_state.sh` filters the `cap` lines, so removing the zones changes no
 `.end-state`.
+
+### Step 1.1
+
+`tests/lua/test_modules.lua` only requires every module of `game/` (116
+loaded) and clears the sentinels of a failed `require`;
+`tests/lua/table_reference.txt`, `--defer` and `LUA_DEFERRED_MODULES` are
+gone, `tests/test_lua_modules.c` covers loading only. `design.md` describes
+the new check; its `SIZEOF` sentence stays for step 1.2. Seen: the reference
+is gone, `make test` green (0.58 s). `make e2e` 20/20 in 5.8 s, `make
+end-state` 20/20. The PRD agent dropped `--defer` without asking `guideline`:
+the list was empty and the step keeps "only" the load check.
