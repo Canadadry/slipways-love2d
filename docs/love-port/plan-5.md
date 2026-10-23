@@ -309,3 +309,26 @@ asserts, cuts at a NUL or delimiter. Instruments counted 0 hits of every
 removed cut or refusal; the planet row signature's more-than-4-needs
 refusal was never reached (at most 4 needs in any replay). `make e2e` 20/20
 in 4.8 s, `make end-state` 20/20, `make test` 0.65 s.
+
+### Step 3.1
+
+Nine chunks by module group: runtime, engine (with `is_dead`), class
+callbacks, data lookups, planets/slipways/wormholes, economy/research/
+targeting, UI, input/cart/save, pad layer. Every predicate returns exactly
+`true`/`false`, every truth-valued field and local is a boolean, `nil`
+reads as false, no `== true`/`== false` is written; counters became
+`if c then n = n + 1 end`. A predicate still used across a later chunk got
+a temporary `and 1 or 0` wrapper, removed by its own chunk. 0/1 stays only
+at format boundaries: the save record's flag fields (with `fold_anchor` and
+`infraspace` saved as `0x10000`/`0`) in the builder and loader, the dump's
+`visible` column, the draw-cost key's transparency bit. `fold_anchor` and
+`infraspace` are `true` or `nil` in the game. Each chunk ran a static scan
+and a type assert on every converted return, write and read over one
+`make e2e`: none fired; the save records stayed byte-identical (133
+encoded) and the decoder's accept/reject unchanged under fuzzing. Remaining
+grep hits, by kind (none a truth value): bit-mask tests, counts and lengths,
+divisors and arithmetic, colors and pixels, fixed-point values (`satisfied`,
+a route's resource), save format fields, the layer key, the dump and
+cost-key formats; every `return 0/1` left is in a function returning
+numbers. design.md § Truth values and warn-review rule 20 match. `make e2e`
+20/20 in 4.9 s, `make end-state` 20/20, `make test` 0.7 s.

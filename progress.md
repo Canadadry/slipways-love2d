@@ -23,7 +23,7 @@
 - [x] Phase 2 — The entity model
   - [x] Step 2.1 — optional parts as nil-able fields
 - [ ] Phase 3 — The surface
-  - [ ] Step 3.1 — booleans
+  - [x] Step 3.1 — booleans
   - [ ] Step 3.2 — 1-based arrays
   - [ ] Step 3.3 — the C headers
   - [ ] Step 3.4 — names without the module prefix
@@ -49,7 +49,7 @@
   - [x] Chunk 3 — boxes and panels
   - [x] Chunk 4 — planets, slipways and the economy
   - [x] Chunk 5 — research and tech gate, full check
-- [ ] Step 3.1 chunks
+- [x] Step 3.1 chunks
   - [x] Chunk 1 — runtime
   - [x] Chunk 2 — engine
   - [x] Chunk 3 — class callbacks
