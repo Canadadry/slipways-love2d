@@ -1,6 +1,4 @@
--- Copy of src/engine/vec.h then src/engine/vec.c.
--- A vec_t is { x, y } passed by value: every function returns a new table and
--- never changes the ones it receives.
+-- Every function returns a new { x, y } table and never changes the ones it receives.
 local fixed = require("p8.fixed")
 
 local M = {}

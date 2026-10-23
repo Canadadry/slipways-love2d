@@ -1,4 +1,3 @@
--- Copy of src/engine/entity.h then src/engine/entity.c.
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_registry = require("engine.entity_registry")
@@ -35,7 +34,7 @@ function M.entity_init_instance(self, cls, state, t)
   self.state_time = t
 end
 
--- Indexed from 0; nil at ENTITY_STATE_NONE, as the C array leaves it NULL.
+-- Indexed from 0; nil at ENTITY_STATE_NONE.
 local names = {
   [entity_class.ENTITY_STATE_NORMAL] = "normal",
   [entity_class.ENTITY_STATE_SETTLED] = "settled",

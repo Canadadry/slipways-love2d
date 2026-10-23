@@ -1,4 +1,3 @@
--- Copy of src/engine/entity_geom.h then src/engine/entity_geom.c.
 -- Include cycle with engine.entity_registry: each requires the other at call
 -- time only (entity_geom_is_on_screen here); neither needs a value of the
 -- other at load.
@@ -110,7 +109,7 @@ function M.entity_geom_nearest(p, j_, out_nearest)
   return mk, out_nearest
 end
 
--- Answers entity_geom_nearest(p, list, &n) <= threshold for any threshold under its 32767 bound; false for a NULL list.
+-- Answers entity_geom_nearest(p, list) <= threshold for any threshold under its 32767 bound; false for a nil list.
 function M.entity_geom_any_within(p, list, threshold)
   if list == nil then
     return false

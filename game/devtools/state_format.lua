@@ -1,7 +1,5 @@
--- Copy of src/devtools/state_format.h then src/devtools/state_format.c.
---
--- A state_sink_t is a table { write_line, context }: write_line(context, line) receives one whole
--- line, its "\n" included. A line_t is a table { sink, text }.
+-- A sink is a table { write_line, context }: write_line(context, line) receives one whole
+-- line, its "\n" included.
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")

@@ -1,5 +1,3 @@
--- Copy of src/engine/dispatch_context.h then src/engine/dispatch_context.c.
-
 local M = {}
 
 local g_gfx = nil

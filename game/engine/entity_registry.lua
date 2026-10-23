@@ -1,10 +1,5 @@
--- Copy of src/engine/entity_registry.h then src/engine/entity_registry.c.
 -- Include cycle with engine.entity_geom: each requires the other at call time
 -- only (draw_layers here); neither needs a value of the other at load.
---
--- Shapes, with the C field names:
---   entity_layer_view_t: { items, first, count }: the layer's members are
---     items[first .. first + count - 1], first a 1-based position.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
@@ -157,7 +152,7 @@ function M.entity_registry_forget_registries()
   end
 end
 
--- Changes on every register, unregister and registry reset (an unsigned counter that wraps).
+-- Changes on every register, unregister and registry reset (wraps to 0 after 2^32 - 1).
 function M.entity_registry_generation()
   return g_generation
 end
@@ -255,8 +250,8 @@ local function layer_order_remove(order, e)
   g_layer_order_mutations = (g_layer_order_mutations + 1) % UINT_WRAP
 end
 
--- The draw or draw_overlay members whose floored layer is layer (1..15), in registration order;
--- the view is invalidated by the next register, unregister or layer change.
+-- The draw or draw_overlay members whose floored layer is layer (1..15), items[first .. first + count - 1]
+-- in registration order; the view is invalidated by the next register, unregister or layer change.
 function M.entity_registry_layer(message, layer)
   assert(is_drawn_message(message), "entity_registry_layer: only draw and draw_overlay keep a layer order")
   assert(layer >= 1 and layer <= ENTITY_REGISTRY_LAYERS, "entity_registry_layer: layers run 1..15")

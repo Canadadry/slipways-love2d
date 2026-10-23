@@ -2,7 +2,7 @@
 
 ## The game
 
-- A Lua game in `game/`, played by LÖVE 11.5 and, headless, by the fake LÖVE (`tools/fake_love/`, C). The 20 replays of `tests/e2e/` and their hashes, set by the C game before plan 4 deleted it, are the reference. The C is in history only: `git show 60e62c1:src/<path>`. The cart's decompiled source is in the history of `slipways-psx` only: `git show 536ddd4:pico8/lua.lua` there. Game objects are flat Lua tables: a shared header (the fields of `entity_t` in `game/engine/entity_class.lua`), one class table per kind, optional parts as fields that are `nil` when absent, and links to other entities held as plain number ids (`nil` for none). The design is `docs/love-port/design.md`.
+- A Lua game in `game/`, played by LÖVE 11.5 and, headless, by the fake LÖVE (`tools/fake_love/`, C). The 20 replays of `tests/e2e/` and their hashes, set by the C game before plan 4 deleted it, are the reference. The C is in history only: `git show 60e62c1:src/<path>`. The cart's decompiled source is in the history of `slipways-psx` only: `git show 536ddd4:pico8/lua.lua` there. Game objects are flat Lua tables: a shared header (the header fields listed at the top of `game/engine/entity_class.lua`), one class table per kind, optional parts as fields that are `nil` when absent, and links to other entities held as plain number ids (`nil` for none). The design is `docs/love-port/design.md`.
 - Audio (`sfx`, `music`) is **out of scope**, not postponed.
 - **The e2e replays are the source of truth, not the unit tests.** A change that improves the game and keeps every `*.sha256` in `tests/e2e/` unchanged may break a unit test that froze the old behavior: update that test.
 

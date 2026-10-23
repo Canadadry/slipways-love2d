@@ -1,6 +1,4 @@
--- Copy of src/engine/geom.h then src/engine/geom.c.
--- A box_t is { left, top, right, bottom }; box_contains receives it by value
--- and leaves it unchanged.
+-- box_contains leaves the box unchanged.
 local fixed = require("p8.fixed")
 local vec = require("engine.vec")
 

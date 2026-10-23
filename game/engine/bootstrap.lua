@@ -1,7 +1,5 @@
--- Copy of src/engine/bootstrap.h then src/engine/bootstrap.c.
---
--- An engine module requiring game modules at load (game.mouse, game.scroll, game.ui), as the C
--- includes them: nothing requires bootstrap back, so it is in no include cycle.
+-- An engine module requiring game modules at load (game.mouse, game.scroll, game.ui): nothing
+-- requires bootstrap back, so it is in no include cycle.
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_registry = require("engine.entity_registry")

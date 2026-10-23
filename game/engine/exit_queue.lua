@@ -1,4 +1,3 @@
--- Copy of src/engine/exit_queue.h then src/engine/exit_queue.c.
 local entity_id = require("engine.entity_id")
 
 local M = {}
@@ -19,8 +18,8 @@ function M.exit_queue_flush()
     entity_id.entity_id_release(e)
     if release ~= nil then release(e) end
   end
-  -- An entity queued by a release during this flush is dropped unreleased,
-  -- as in the C: releasing it here would move the replays.
+  -- An entity queued by a release during this flush is dropped unreleased:
+  -- releasing it here would move the replays.
   for i = #g_queue, 1, -1 do g_queue[i] = nil end
 end
 

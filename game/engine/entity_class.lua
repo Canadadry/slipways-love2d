@@ -1,23 +1,18 @@
--- Copy of src/engine/entity_class.h.
--- slipway_class() and probe_class(), declared there, are defined in
--- src/game/slipway.c and src/game/probe.c and ported with those files.
---
--- Shapes, with the C field names (a pointer is the table, NULL is nil):
---   entity_t: { class, state, state_time, layer, pos, map_pos, hit_box,
---     infraspace, shake, fold_anchor, is_dead, is_hovered, id }; a game object
---     whose first member is the header is that same table. Every field but
+-- An entity's header: { class, state, state_time, layer, pos, map_pos, hit_box,
+--     infraspace, shake, fold_anchor, is_dead, is_hovered, id }, held in the
+--     game object's own table. Every field but
 --     class, state, state_time and is_dead is nil when the entity lacks it.
 --     infraspace and fold_anchor are true or nil, never false: a slipway
 --     compares two infraspaces.
---   entity_class_t: { draw, draw_overlay, hit_test, new_year, refresh,
+-- A class table: { draw, draw_overlay, hit_test, new_year, refresh,
 --     has_refresh, left_press, accept_drop, drag, drop, attach_slipway,
 --     offer_trade, draw_at, spawn_particle, states (keyed by ENTITY_STATE_*, from 0,
 --     STATE_COUNT entries), tags, lineage, apply_camera, release, skip_draw_off_screen }.
 --     skip_draw_off_screen true: draw_layers calls draw only when
 --     entity_geom_is_on_screen holds, so draw may trust it.
---   down_t: { stop, held } (held an entity id).
---   mouse_pos_t: { world, screen, has }.
---   entity_kind_t: { new_entity, record }.
+-- A left_press answer: { stop, held } (held an entity id).
+-- A mouse position: { world, screen, has }.
+-- A kind: { new_entity, record }.
 -- pos and map_pos are owned by the entity, nil when absent: set copies them
 -- in, get copies them out, because game code changes self.pos.y in place.
 local bit_module = require("bit")
