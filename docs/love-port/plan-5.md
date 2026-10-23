@@ -287,3 +287,20 @@ project a fresh number, so an id kept past it resolves to `nil` as before.
 instrument over one `make e2e` compared old and new lookups: 552 live,
 11839 `nil`, 0 stale, never different. Seen: `grep -rn epoch game/` finds
 nothing. `make e2e` 20/20 in 5.0 s, `make end-state` 20/20.
+
+### Step 2.3
+
+Five chunks: startup/devtools/storage, layout and image caches, boxes and
+panels, planets/slipways/economy, research and tech gate. 31 limits went,
+each the size of a deleted C array or buffer; inline arrays are created as
+written and read below their count. Kept as game rules, each named in the
+code: the save format's 8192-byte record, its 255 nodes and slipways, its
+field ranges (planet id 7 bytes, 8 needs, magic, 3 recent types), its pool
+caps and u8/u16 field widths, and the weighted picker's 66 tickets; the
+cart's 3 slipways per slipgate; `draw_meter`'s PSX GPU slots (a measured
+machine). Not limits: data table sizes, the image slot table and its
+evicting caches, saturating counters, flushed batches, offsets, contract
+asserts, cuts at a NUL or delimiter. Instruments counted 0 hits of every
+removed cut or refusal; the planet row signature's more-than-4-needs
+refusal was never reached (at most 4 needs in any replay). `make e2e` 20/20
+in 4.8 s, `make end-state` 20/20, `make test` 0.65 s.

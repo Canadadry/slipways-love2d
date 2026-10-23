@@ -20,7 +20,7 @@
     - [x] Chunk 3 — entity_id_list
     - [x] Chunk 4 — entity_list and the registry buckets
     - [x] Chunk 5 — the exit queue, design.md and the tdd examples
-- [ ] Phase 2 — The entity model
+- [x] Phase 2 — The entity model
   - [x] Step 2.1 — optional parts as nil-able fields
 - [ ] Phase 3 — The surface
   - [ ] Step 3.1 — booleans
@@ -28,10 +28,10 @@
   - [ ] Step 3.3 — the C headers
   - [ ] Step 3.4 — names without the module prefix
   - [ ] Step 3.5 — design.md conventions replaced
-- [ ] Added after the phase 1 review
+- [x] Added after the phase 1 review
   - [x] Decisions reopened with the user
   - [x] Step 2.2 — research project ids as plain numbers
-  - [ ] Step 2.3 — capacity limits that are not a game rule removed
+  - [x] Step 2.3 — capacity limits that are not a game rule removed
 - [x] Step 2.1 chunks
   - [x] Chunk 1 — display rows
   - [x] Chunk 2 — resources
@@ -43,7 +43,7 @@
   - [x] Chunk 8 — boxes and panels
   - [x] Chunk 9 — positions
   - [x] Chunk 10 — the header's other parts, docs and skills
-- [ ] Step 2.3 chunks
+- [x] Step 2.3 chunks
   - [x] Chunk 1 — startup, devtools and storage
   - [x] Chunk 2 — layout, row image and text image
   - [x] Chunk 3 — boxes and panels
