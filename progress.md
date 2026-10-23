@@ -48,4 +48,4 @@
   - [x] Chunk 2 — layout, row image and text image
   - [x] Chunk 3 — boxes and panels
   - [x] Chunk 4 — planets, slipways and the economy
-  - [ ] Chunk 5 — research and tech gate, full check
+  - [x] Chunk 5 — research and tech gate, full check

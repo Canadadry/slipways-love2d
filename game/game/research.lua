@@ -8,8 +8,8 @@
 --     base_cost, output, upgrade_tech, byproduct and icon_sprite nil when absent.
 --   research_project_id_t: a number never reused, nil for none, stale once research_expire_project_ids runs.
 --   research_project_keys_t: { record, required_tech }.
--- g_project_table holds PROJECT_RECORDS_COUNT tables created once at load: a project is always
--- the same table, which project_create zeroes in place, as the C reuses the bytes.
+-- g_project_table grows when a project is created and is never emptied: the project at an index
+-- is always the same table, which project_create zeroes in place, as the C reuses the bytes.
 -- research_project_cost and research_project_production read the main economy through
 -- tech_gate: they cannot run before game.probe exists.
 local entity_class = require("engine.entity_class")
@@ -17,7 +17,6 @@ local game_data = require("game.game_data")
 local map_tables = require("game.map_tables")
 local tech_gate = require("game.tech_gate")
 local trade = require("game.trade")
-local fatal = require("p8.fatal")
 local fixed = require("p8.fixed")
 
 local M = {}
@@ -28,9 +27,6 @@ local g_research_project_up = 0
 
 -- Built in place: a project's layout_row items point into the project itself.
 local g_project_table = {}
-for i = 0, PROJECT_RECORDS_COUNT - 1 do
-  g_project_table[i] = { inputs = {} }
-end
 local g_project_table_count = 0
 local g_project_id_counter = 0
 local g_project_by_id = {}
@@ -38,20 +34,11 @@ local g_project_id_by_project = {}
 
 -- Lua only: project - g_project_table, the C index of each table.
 local project_index_of = {}
-for i = 0, PROJECT_RECORDS_COUNT - 1 do
-  project_index_of[g_project_table[i]] = i
-end
 
 local g_projects = {}
-for i = 0, PROJECT_RECORDS_COUNT - 1 do
-  g_projects[i] = 0
-end
 local g_projects_count = 0
 -- The name is borrowed, never copied: it must outlive the project.
 local g_projects_by_name = {}
-for i = 0, PROJECT_RECORDS_COUNT - 1 do
-  g_projects_by_name[i] = { name = nil, project = 0 }
-end
 local g_projects_by_name_count = 0
 local g_projects_up = 0
 local g_required_tech = nil
@@ -105,10 +92,7 @@ local function projects_register(index)
       return
     end
   end
-  assert(g_projects_by_name_count < PROJECT_RECORDS_COUNT,
-    "projects_register: every name comes from the project records, which have fewer names than records")
-  g_projects_by_name[g_projects_by_name_count].name = name
-  g_projects_by_name[g_projects_by_name_count].project = index
+  g_projects_by_name[g_projects_by_name_count] = { name = name, project = index }
   g_projects_by_name_count = g_projects_by_name_count + 1
 end
 
@@ -224,12 +208,14 @@ local function project_create(keys)
   local input_codes = ""
   local index
 
-  if g_project_table_count >= PROJECT_RECORDS_COUNT then
-    fatal.p8_fatal("research project table full")
-  end
   index = g_project_table_count
   g_project_table_count = g_project_table_count + 1
   self = g_project_table[index]
+  if self == nil then
+    self = { inputs = {} }
+    g_project_table[index] = self
+    project_index_of[self] = index
+  end
   project_id_issue(self)
   project_zero(self)
   entity_class.entity_init_header(self, M.research_project_class_def)

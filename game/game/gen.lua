@@ -56,8 +56,9 @@ local function weighted_picker_fill(state)
     local count = fixed.p8_fixed_flr_int(fixed.p8_fixed_mul(entity.weight, state.multiplier))
 
     for _ = 1, count do
-      assert(state.tickets_count < M.WEIGHTED_PICKER_TICKETS_CAP, "weighted_picker_fill: the ticket pool is sized for "
-        .. "planet_types_table at a multiplier of 2; a larger table or multiplier needs a larger WEIGHTED_PICKER_TICKETS_CAP")
+      assert(state.tickets_count < M.WEIGHTED_PICKER_TICKETS_CAP, "weighted_picker_fill: the save format holds 0 to "
+        .. "WEIGHTED_PICKER_TICKETS_CAP tickets (docs/save-format.md) and the decoder refuses more -- a picker past it "
+        .. "cannot be saved")
       state.tickets[state.tickets_count] = entity
       state.tickets_count = state.tickets_count + 1
     end

@@ -103,8 +103,6 @@ function M.tech_gate_available_technologies(bi)
   local result = { items = {}, count = 0 }
   for i = 0, TECHNOLOGIES_COUNT - 1 do
     if available_technologies_predicate(technologies_table[i], bi) ~= 0 then
-      assert(result.count < TECHNOLOGIES_COUNT,
-        "tech_gate_available_technologies: it keeps technologies_table entries only, so their count bounds the result")
       result.items[result.count] = technologies_table[i]
       result.count = result.count + 1
     end

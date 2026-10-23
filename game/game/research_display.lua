@@ -313,8 +313,6 @@ end
 function M.research_display_available_projects(planet_instance)
   local result = { items = {}, count = 0 }
 
-  assert(research.research_projects_count() <= map_tables.PROJECT_RECORDS_COUNT,
-    "research_display_available_projects: one project per record at most, so the record count bounds the result")
   result.count = 0
   for k = 1, research.research_projects_count() do
     local b = research.research_projects_at(k)
