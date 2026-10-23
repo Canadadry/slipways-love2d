@@ -41,8 +41,7 @@ function M.entity_id_table_init(zone)
   g_table.free_count = ENTITY_TABLE_CAP
 end
 
--- Drops the table without touching its block, for after the game zone
--- was reset.
+-- Drops the table, for after a game is quit.
 function M.entity_id_table_forget()
   g_table.entities = nil
   g_table.generations = nil

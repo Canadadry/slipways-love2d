@@ -15,7 +15,6 @@
 local bit = require("bit")
 local allocator = require("engine.allocator")
 local entity_class = require("engine.entity_class")
-local game_zone = require("engine.game_zone")
 local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
@@ -250,7 +249,6 @@ local function project_zero(self)
 end
 
 local function project_create(keys)
-  local load_zone = game_zone.game_zone_load_zone()
   local self
   local input_codes = ""
   local index
@@ -310,9 +308,9 @@ local function project_create(keys)
 
   -- A character that is no resource code still makes a need, with no resource.
   if #input_codes == 0 then
-    pointer_list.pointer_list_init(self.inputs, load_zone)
+    pointer_list.pointer_list_init(self.inputs, nil)
   else
-    pointer_list.pointer_list_init_reserve(self.inputs, load_zone, #input_codes)
+    pointer_list.pointer_list_init_reserve(self.inputs, nil, #input_codes)
   end
   for input_count = 1, #input_codes do
     local key = input_codes:sub(input_count, input_count)
@@ -320,9 +318,9 @@ local function project_create(keys)
 
     if found ~= 0 then
       pointer_list.pointer_list_add(self.inputs,
-        M.need_new(load_zone, { kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(r_resource) }))
+        M.need_new(nil, { kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(r_resource) }))
     else
-      pointer_list.pointer_list_add(self.inputs, M.need_new(load_zone, { kind = trade.RESOURCE_NIL, number = 0 }))
+      pointer_list.pointer_list_add(self.inputs, M.need_new(nil, { kind = trade.RESOURCE_NIL, number = 0 }))
     end
   end
   return self

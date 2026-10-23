@@ -21,7 +21,6 @@ local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
 local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
-local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
 local mouse_module = require("game.mouse")
@@ -181,7 +180,7 @@ local function ui_create()
   local self
 
   assert(g_ui_up ~= 0, "ui_init() must run first")
-  self = allocator.allocator_alloc(game_zone.game_zone(), SIZEOF.ui_t)
+  self = allocator.allocator_alloc(nil, SIZEOF.ui_t)
   entity.entity_init_instance(self, M.ui_class_def, game_data.ui_archetype.state, game_data.ui_archetype.state_time)
   self.archetype = game_data.ui_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)

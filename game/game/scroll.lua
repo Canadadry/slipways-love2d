@@ -12,7 +12,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_registry = require("engine.entity_registry")
-local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
 local cint = require("p8.cint")
@@ -51,7 +50,7 @@ M.camera_class_def = {
 }
 
 local function camera_create()
-  local self = allocator.allocator_alloc(game_zone.game_zone(), SIZEOF.camera_t)
+  local self = allocator.allocator_alloc(nil, SIZEOF.camera_t)
 
   entity.entity_init_instance(self, M.camera_class_def, game_data.camera_archetype.state,
     game_data.camera_archetype.state_time)

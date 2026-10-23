@@ -8,7 +8,6 @@ local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
-local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
 local mouse_button = require("game.mouse_button")
@@ -37,7 +36,7 @@ M.mouse_class_def = {
 }
 
 local function mouse_create()
-  local self = allocator.allocator_alloc(game_zone.game_zone(), SIZEOF.mouse_t)
+  local self = allocator.allocator_alloc(nil, SIZEOF.mouse_t)
 
   entity.entity_init_instance(self, M.mouse_class_def, game_data.mouse_archetype.state,
     game_data.mouse_archetype.state_time)

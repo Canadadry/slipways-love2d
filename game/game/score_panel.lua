@@ -19,7 +19,6 @@ local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
-local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local draw_functions = require("game.draw_functions")
 local economy_formulas = require("game.economy_formulas")
@@ -333,7 +332,7 @@ local function score_panel_create()
   local self
 
   assert(g_score_panel_up ~= 0, "score_panel_init() must run first")
-  self = allocator.allocator_alloc(game_zone.game_zone(), SIZEOF.score_panel_t)
+  self = allocator.allocator_alloc(nil, SIZEOF.score_panel_t)
   entity.entity_init_instance(self, M.score_panel_class_def, game_data.score_panel_archetype.state,
     game_data.score_panel_archetype.state_time)
   self.archetype = game_data.score_panel_archetype

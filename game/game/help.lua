@@ -9,7 +9,6 @@ local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
-local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local draw_functions = require("game.draw_functions")
 local game_data = require("game.game_data")
@@ -151,7 +150,7 @@ local function screen_create()
   local hit_box
 
   assert(g_help_screen_up ~= 0, "help_init() must run first")
-  self = allocator.allocator_alloc(game_zone.game_zone(), SIZEOF.probe_t)
+  self = allocator.allocator_alloc(nil, SIZEOF.probe_t)
   probe.probe_init_instance(self, M.help_screen_class_def, game_data.help_screen_archetype)
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_HIT_BOX)
   hit_box = self.archetype.hit_box

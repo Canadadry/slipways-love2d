@@ -14,7 +14,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_registry = require("engine.entity_registry")
-local game_zone = require("engine.game_zone")
 local game_data = require("game.game_data")
 local gen = require("game.gen")
 local image_slot = require("game.image_slot")
@@ -60,7 +59,7 @@ M.background_class_def = {
 }
 
 local function background_create()
-  local self = allocator.allocator_alloc(game_zone.game_zone(), SIZEOF.background_t)
+  local self = allocator.allocator_alloc(nil, SIZEOF.background_t)
 
   entity.entity_init_instance(self, M.background_class_def, game_data.background_archetype.state,
     game_data.background_archetype.state_time)

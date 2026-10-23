@@ -13,7 +13,6 @@ local collect = require("engine.collect")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
-local game_zone = require("engine.game_zone")
 local pointer_list = require("engine.pointer_list")
 local game_data = require("game.game_data")
 local map_tables = require("game.map_tables")
@@ -76,9 +75,7 @@ local function planet_rebuild_trades_attach_slipway_closure(self, a)
   if contains_trade(self.accepted_routes, a) == 0 then
     local kept
 
-    assert(self.accepted_routes.values.zone == game_zone.game_zone(),
-      "planet_rebuild_trades: a kept route is copied into the game zone; a list of another zone would outlive it")
-    kept = trade.trade_copy(game_zone.game_zone(), a)
+    kept = trade.trade_copy(nil, a)
     trade.trade_route_list_add(self.accepted_routes, kept)
     self.amount = fixed.p8_fixed_sub(self.amount, fixed.p8_fixed_from_int(1))
   end
@@ -162,12 +159,12 @@ function M.planet_offer_trade(self, trade_offer)
     end
 
     do
-      local fresh = research.need_new(game_zone.game_zone(), bonus_resource)
+      local fresh = research.need_new(nil, bonus_resource)
       local prefix = {}
 
       pointer_list.pointer_list_init(prefix, nil)
       pointer_list.pointer_list_add(prefix, fresh)
-      pointer_list_assign(self.needs, collect.collect_concat_pointer_list(game_zone.game_zone(), prefix, needs))
+      pointer_list_assign(self.needs, collect.collect_concat_pointer_list(nil, prefix, needs))
     end
     self.production_bonus = fixed.p8_fixed_from_int(1)
     self.has_production_bonus = 1
@@ -231,7 +228,7 @@ function M.planet_rebuild_trades(self)
   end
 
   if bit.band(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES) == 0 then
-    trade.trade_route_list_init(self.outgoing_routes, game_zone.game_zone())
+    trade.trade_route_list_init(self.outgoing_routes, nil)
     self.has_ = bit.bor(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES)
   end
 

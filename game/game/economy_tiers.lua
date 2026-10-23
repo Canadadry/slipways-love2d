@@ -10,7 +10,6 @@ local entity_class = require("engine.entity_class")
 local entity_id_list = require("engine.entity_id_list")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
-local game_zone = require("engine.game_zone")
 local pointer_list = require("engine.pointer_list")
 local research = require("game.research")
 local trade = require("game.trade")
@@ -54,7 +53,7 @@ local function rebuild_incoming_routes_reset_visit(pt, ctx)
     trade.trade_route_list_clear(jo.incoming_routes)
     return
   end
-  trade.trade_route_list_init(jo.incoming_routes, game_zone.game_zone())
+  trade.trade_route_list_init(jo.incoming_routes, nil)
   jo.has_ = bit.bor(jo.has_, planet.PLANET_HAS_INCOMING_ROUTES)
 end
 
@@ -140,7 +139,7 @@ local function update_tiers_visit(entity, context)
       local hn = research.research_project_get(planet.project)
       if hn ~= nil and hn.has_byproduct ~= 0 then
         if bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) ~= 0 then
-          local entry = research.need_new(game_zone.game_zone(),
+          local entry = research.need_new(nil,
             { kind = trade.RESOURCE_FIXED, number = hn.byproduct })
           pointer_list.pointer_list_add(planet.needs, entry)
         end

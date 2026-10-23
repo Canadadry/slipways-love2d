@@ -13,7 +13,6 @@ local entity_id = require("engine.entity_id")
 local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local exit_queue = require("engine.exit_queue")
-local game_zone = require("engine.game_zone")
 local zone_sizes = require("engine.zone_sizes")
 local game_data = require("game.game_data")
 local fatal = require("p8.fatal")
@@ -121,16 +120,16 @@ function M.entity_registry_init(reserve)
 
   M.entity_registry_shutdown()
 
-  entity_id.entity_id_table_init(game_zone.game_zone())
+  entity_id.entity_id_table_init(nil)
 
-  entity_list.entity_list_init_reserve(g_live_entities, game_zone.game_zone(), reserve.live)
+  entity_list.entity_list_init_reserve(g_live_entities, nil, reserve.live)
 
   for i = 0, ENTITY_MESSAGE_COUNT - 1 do
-    entity_list.entity_list_init_reserve(g_entities_by_message[i], game_zone.game_zone(), reserve.by_message[i])
+    entity_list.entity_list_init_reserve(g_entities_by_message[i], nil, reserve.by_message[i])
   end
 
   for i = 0, TAG_COUNT - 1 do
-    entity_list.entity_list_init_reserve(g_entities_by_tag[i].list, game_zone.game_zone(), reserve.by_tag[i])
+    entity_list.entity_list_init_reserve(g_entities_by_tag[i].list, nil, reserve.by_tag[i])
   end
 
   g_main_camera = M.g_main_camera_placeholder

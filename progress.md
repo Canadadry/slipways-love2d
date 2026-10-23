@@ -8,7 +8,7 @@
     - [x] Chunk 2 — particle pool, slot groups and slot zones
     - [x] Chunk 3 — grab arena and arenas
     - [x] Chunk 4 — frame zone
-    - [ ] Chunk 5 — game zone and load zone
+    - [x] Chunk 5 — game zone and load zone
     - [ ] Chunk 6 — engine containers and helpers without a zone
     - [ ] Chunk 7 — game modules without a zone; allocator and zones deleted
   - [ ] Step 1.3 — entity ids as plain numbers

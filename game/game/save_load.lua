@@ -9,7 +9,6 @@ local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
 local entity_registry = require("engine.entity_registry")
-local game_zone = require("engine.game_zone")
 local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
 local economy_tiers = require("game.economy_tiers")
@@ -232,10 +231,9 @@ local function undo_attach_side_effects(state, node_ids)
   end
 end
 
--- A new list in the game zone: the route outlives the frame.
 local function route_id_list(state, first, count, ids)
   local list = {}
-  entity_id_list.entity_id_list_init(list, game_zone.game_zone())
+  entity_id_list.entity_id_list_init(list, nil)
   for i = 0, count - 1 do
     entity_id_list.entity_id_list_add(list, ids[state.route_indices[first + i]])
   end
@@ -250,7 +248,7 @@ local function load_outgoing_routes(state, node_ids, slipway_ids)
     if has(node, save_state.SAVE_NODE_HAS_OUTGOING_ROUTES) == 0 then
       goto continue
     end
-    trade.trade_route_list_init(planet.outgoing_routes, game_zone.game_zone())
+    trade.trade_route_list_init(planet.outgoing_routes, nil)
     planet.has_ = bit.bor(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES)
     for k = 0, node.route_count - 1 do
       local saved = state.routes[node.first_route + k]

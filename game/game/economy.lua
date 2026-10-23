@@ -14,7 +14,6 @@ local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
-local game_zone = require("engine.game_zone")
 local pointer_list = require("engine.pointer_list")
 local economy_formulas = require("game.economy_formulas")
 local main_economy = require("game.main_economy")
@@ -47,7 +46,7 @@ M.economy_archetype = {
 }
 
 local function economy_create()
-  local self = allocator.allocator_alloc(game_zone.game_zone(), SIZEOF.economy_t)
+  local self = allocator.allocator_alloc(nil, SIZEOF.economy_t)
 
   entity_class.entity_init_header(self, M.economy_class_def)
   self.archetype = M.economy_archetype
@@ -74,7 +73,7 @@ local function economy_create()
   self.income = fixed.p8_fixed_from_int(0)
   self.research_points = fixed.p8_fixed_from_int(0)
   self.era = self.archetype.era
-  pointer_list.pointer_list_init(self.invented, game_zone.game_zone())
+  pointer_list.pointer_list_init(self.invented, nil)
   self.year_ticks = self.archetype.year_ticks
   self.year = self.archetype.year
 

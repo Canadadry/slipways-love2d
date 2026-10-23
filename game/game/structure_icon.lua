@@ -16,7 +16,6 @@ local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
 local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
-local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
 local targeting = require("game.targeting")
@@ -221,7 +220,7 @@ M.structure_icon_class_def = {
 }
 
 local function structure_icon_create(keys)
-  local self = allocator.allocator_alloc(game_zone.game_zone(), SIZEOF.structure_icon_t)
+  local self = allocator.allocator_alloc(nil, SIZEOF.structure_icon_t)
   local archetype = game_data.structure_icon_archetype
   local hit_box
 

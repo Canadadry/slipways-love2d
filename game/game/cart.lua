@@ -8,7 +8,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_registry = require("engine.entity_registry")
 local exit_queue = require("engine.exit_queue")
-local game_zone = require("engine.game_zone")
 local background = require("game.background")
 local button_image = require("game.button_image")
 local data_init = require("game.data_init")
@@ -62,10 +61,9 @@ local g_loading_frame = 0
 local g_requested_option = ui_button.button_zero()
 local g_has_requested_option = 0
 
-local function quit_game_zone()
+local function quit_game()
   entity_registry.entity_registry_abandon_live_entities()
   M.cart_flush_exit_queue()
-  game_zone.game_zone_reset()
   entity_registry.entity_registry_forget_registries()
 end
 
@@ -73,7 +71,7 @@ end
 function M.cart_load()
   local memory
 
-  quit_game_zone()
+  quit_game()
   g_title_built = 0
   g_save_cut = 0
   g_demo_frame = M.CART_NO_DEMO_FRAME
@@ -124,13 +122,10 @@ end
 
 function M.cart_flush_exit_queue()
   exit_queue.exit_queue_flush()
-  if game_zone.game_zone_pending() ~= 0 then
-    game_zone.game_zone_release()
-  end
 end
 
 function M.cart_shutdown()
-  quit_game_zone()
+  quit_game()
   menu.menu_shutdown()
   structure_icon.structure_icon_shutdown()
   score_panel.score_panel_shutdown()
@@ -190,7 +185,6 @@ function M.cart_init()
       .. "install them afterwards: every button copies the value when it is built")
 
   g_loading_frame = 0
-  if game_zone.game_zone_pending() == 0 and game_zone.game_zone_used() > 0 then game_zone.game_zone_flip() end
   bootstrap.reset_world(nil)
   research.research_expire_project_ids()
 
@@ -264,7 +258,6 @@ local function start_world(difficulty)
 
   economy_score.economy_score_set_difficulty(difficulty)
   g_title_built = 0
-  game_zone.game_zone_flip()
 
   bootstrap.reset_world(M.cart_game_registry_reserve)
   research.research_expire_project_ids()
@@ -295,7 +288,7 @@ local function start_interface()
     local keys = { kind = nil, tooltip = nil }
 
     keys.kind = kind_table[index]
-    keys.tooltip = layout.tooltip_new(game_zone.game_zone(), map_tables.icon_tooltips_table[index])
+    keys.tooltip = layout.tooltip_new(nil, map_tables.icon_tooltips_table[index])
     structure_icon.structure_icon_new(keys)
   end
 end

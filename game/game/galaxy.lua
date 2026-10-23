@@ -5,7 +5,6 @@
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_registry = require("engine.entity_registry")
-local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local gen = require("game.gen")
 local fixed = require("p8.fixed")
@@ -67,12 +66,12 @@ function M.galaxy_install_rolls()
     difficulty_type_bias = difficulty.type_bias
   end
 
-  type_picker_random = gen.random_walk_new(game_zone.game_zone(), fixed.P8_FIXED_LIT(0x00008000, 0.5), difficulty_type_bias)
-  type_picker_state = gen.weighted_picker_new(game_zone.game_zone(), fixed.p8_fixed_from_int(2), gen.random_walk_draw,
+  type_picker_random = gen.random_walk_new(nil, fixed.P8_FIXED_LIT(0x00008000, 0.5), difficulty_type_bias)
+  type_picker_state = gen.weighted_picker_new(nil, fixed.p8_fixed_from_int(2), gen.random_walk_draw,
     type_picker_random)
   planet.planet_set_type_picker(type_picker_state)
 
-  vanish_roll_state = gen.random_walk_new(game_zone.game_zone(), fixed.P8_FIXED_LIT(0x0000cccc, 0.8),
+  vanish_roll_state = gen.random_walk_new(nil, fixed.P8_FIXED_LIT(0x0000cccc, 0.8),
     fixed.P8_FIXED_LIT(0x00008000, 0.5))
   planet.planet_set_vanish_roll(vanish_roll_state)
 end
