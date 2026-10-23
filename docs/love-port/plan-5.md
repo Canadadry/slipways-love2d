@@ -57,9 +57,71 @@ phase 1 is written, rerun `/plan-converge` on this plan, then start
    in the same attended session, by writing its `### Step 0.1` note: the
    decisions and the user's agreement. Verified by that note.
 
-### Phases 1..N — The steps decided in phase 0
+### Decisions of phase 0
 
-(written by step 1)
+- The Lua no longer mirrors the C: files, functions, order and names may
+  diverge freely. Comparing with the C side by side is given up; the hashes
+  and end states are the only net.
+- Memory zones and allocators go entirely, with no Lua stand-in, and their
+  `SIZEOF` entries and the `cap` lines of the state dump with them (the
+  `.end-state` files filter `cap` out). A capacity limit stays only where it
+  is a game rule (the save format's 255 nodes and slipways).
+- Entity ids become plain numbers, never reused, resolved through one
+  `id → entity` table that drops an entity at its death. The
+  `{ index, generation }` tables, `entity_id_none()` and `entity_id_equal`
+  go.
+- `entity_list`, `pointer_list`, `entity_id_list` and `value_list` become
+  plain 1-based Lua arrays. A traversal that tolerates changes says so (a
+  copy, or a removal deferred to the exit queue) instead of the `last_count`
+  iterator. `collect` becomes local loops; the exit queue stays, as a plain
+  array.
+- Every array is 1-based, data tables included.
+- Predicates return booleans; `x ~= 0` tests and `and 1 or 0` on truth
+  values go.
+- An entity's optional parts are fields that are `nil` when absent; the `has`
+  bits go.
+- Exported names drop the repeated module prefix (`planet.init_instance`,
+  `p8_` inside `p8/` too); `CLAUDE.md`'s naming rule changes with them.
+- `lua-test-modules` keeps only "every module loads": the comparison with
+  `tests/lua/table_reference.txt` and the file go. `lua-guard` stays. Each
+  `tests/lua/game/` test changes with the module it tests.
+- The `-- Copy of src/...` headers go. `cint.div` and `cint.mod` stay (LuaJIT
+  has no integer division), as do `goto continue` and the call-time
+  `require` of include cycles.
+- `design.md` § Conventions inherited from the C is replaced by the
+  conventions the code follows.
+
+### Phase 1 — The engine foundation
+
+1. `lua-test-modules` checks only that every module loads. Seen when
+   `tests/lua/table_reference.txt` is gone and `make test` is green.
+2. Zones and allocators removed. Seen when `game/engine/zone.lua`,
+   `allocator.lua` and the other zone modules are gone and
+   `grep -r SIZEOF game/` finds nothing.
+3. Entity ids as plain numbers. Seen when
+   `grep -rE 'generation|entity_id_equal|entity_id_none' game/` finds nothing.
+4. The four list kinds as plain arrays. Seen when `entity_list.lua`,
+   `pointer_list.lua`, `entity_id_list.lua`, `value_list.lua` and
+   `collect.lua` are gone and `grep -r last_count game/` finds nothing.
+
+### Phase 2 — The entity model
+
+1. Optional parts as `nil`-able fields. Seen when
+   `grep -rE 'ENTITY_HAS_|entity_has\(' game/` finds nothing.
+
+### Phase 3 — The surface
+
+One kind per step, split by directory (`p8/`, `engine/`, `game/` with
+`devtools/`) when it is too large to fail fast.
+
+1. Booleans. Seen when `grep -rE 'and 1 or 0|~= 0 then' game/` finds only
+   tests on numbers that are not truth values, each listed in the step note.
+2. 1-based arrays. Seen when `grep -rE '\[0\] *=' game/` finds nothing.
+3. The C headers. Seen when `grep -r -- '-- Copy of' game/` finds nothing.
+4. Names without the module prefix, with `CLAUDE.md`'s naming rule. Seen
+   when no exported function of a module starts with the module's name.
+5. `design.md` § Conventions inherited from the C replaced. Seen when the
+   section is gone and no convention left in `design.md` names a C construct.
 
 ## 4. Done when
 
@@ -72,6 +134,6 @@ phase 1 is written, rerun `/plan-converge` on this plan, then start
 
 ## 5. Open questions
 
-- The whole of phase 0.
+- None.
 
 ## 6. Step notes
