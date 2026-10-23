@@ -126,7 +126,7 @@ local function update_tiers_visit(entity, context)
   if has_development_tier == 0 or tier > development_tier then
     if has_development_tier ~= 0 and development_tier == fixed.p8_fixed_from_int(1) then
       local hn = research.research_project_get(planet.project)
-      if hn ~= nil and hn.has_byproduct ~= 0 then
+      if hn ~= nil and hn.byproduct ~= nil then
         if bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) ~= 0 then
           local entry = research.need_new(
             { kind = trade.RESOURCE_FIXED, number = hn.byproduct })

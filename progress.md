@@ -35,7 +35,7 @@
 - [ ] Step 2.1 chunks
   - [x] Chunk 1 — display rows
   - [x] Chunk 2 — resources
-  - [ ] Chunk 3 — research projects
+  - [x] Chunk 3 — research projects
   - [ ] Chunk 4 — the planet's parts
   - [ ] Chunk 5 — particles, probes and targeting
   - [ ] Chunk 6 — the economy

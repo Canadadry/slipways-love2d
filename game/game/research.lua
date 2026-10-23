@@ -3,9 +3,9 @@
 -- Shapes, with the C field names:
 --   need_t: { row, satisfied }, row a data_row_t of map_tables, satisfied nil until counted.
 --   research_project_t: one table holding the entity header and { archetype, name,
---     planet_codes, base_cost, has_base_cost, production_key, inputs, output (nil when absent),
---     upgrade_tech, has_upgrade_tech, byproduct, has_byproduct, required_tech, icon_sprite,
---     has_icon_sprite, class_name, next_type }, inputs an array of need_t.
+--     planet_codes, base_cost, production_key, inputs, output, upgrade_tech, byproduct,
+--     required_tech, icon_sprite, class_name, next_type }, inputs an array of need_t;
+--     base_cost, output, upgrade_tech, byproduct and icon_sprite nil when absent.
 --   research_project_id_t: { index, epoch }, both 16-bit, a new table at every creation.
 --   research_project_keys_t: { record, required_tech }.
 -- g_project_table holds PROJECT_RECORDS_COUNT tables created once at load: a project is always
@@ -151,7 +151,6 @@ local function research_project_positions(self, ri, input_codes)
   end
   if n >= 3 then
     self.base_cost = fixed.p8_fixed_from_int(ri.base_cost)
-    self.has_base_cost = 1
   end
   if n >= 4 then
     self.production_key = research_project_string(ri.production_key)
@@ -168,11 +167,9 @@ local function research_project_positions(self, ri, input_codes)
     else
       self.upgrade_tech = ri.upgrade_tech
     end
-    self.has_upgrade_tech = 1
   end
   if n >= 8 then
     self.byproduct = resource_code_of(ri.byproduct)
-    self.has_byproduct = 1
   end
   return input_codes
 end
@@ -217,20 +214,16 @@ local function project_zero(self)
   self.archetype = nil
   self.name = nil
   self.planet_codes = nil
-  self.base_cost = 0
-  self.has_base_cost = 0
+  self.base_cost = nil
   self.production_key = nil
   for i = #inputs, 1, -1 do
     inputs[i] = nil
   end
   self.output = nil
   self.upgrade_tech = nil
-  self.has_upgrade_tech = 0
-  self.byproduct = 0
-  self.has_byproduct = 0
+  self.byproduct = nil
   self.required_tech = nil
-  self.icon_sprite = 0
-  self.has_icon_sprite = 0
+  self.icon_sprite = nil
   self.class_name = nil
   self.next_type = nil
 end
@@ -250,16 +243,12 @@ local function project_create(keys)
   entity_class.entity_init_header(self, M.research_project_class_def)
   self.name = nil
   self.planet_codes = nil
-  self.base_cost = 0
-  self.has_base_cost = 0
+  self.base_cost = nil
   self.production_key = nil
   self.upgrade_tech = nil
-  self.has_upgrade_tech = 0
-  self.byproduct = 0
-  self.has_byproduct = 0
+  self.byproduct = nil
   self.required_tech = nil
-  self.icon_sprite = 0
-  self.has_icon_sprite = 0
+  self.icon_sprite = nil
   self.class_name = nil
   self.next_type = nil
   self.archetype = game_data.research_project_archetype
@@ -268,9 +257,8 @@ local function project_create(keys)
     local ri = keys.record
 
     input_codes = research_project_positions(self, ri, input_codes)
-    if ri.has_icon_sprite ~= 0 then
+    if ri.icon_sprite ~= nil then
       self.icon_sprite = fixed.p8_fixed_from_int(ri.icon_sprite)
-      self.has_icon_sprite = 1
     end
     self.class_name = ri.class_name
     self.next_type = ri.next_type
@@ -285,7 +273,7 @@ local function project_create(keys)
     projects_register(index)
   end
 
-  if self.has_icon_sprite ~= 0 then
+  if self.icon_sprite ~= nil then
     assert(self.name ~= nil,
       "project_create: the row {name, 32, {icon_sprite, 8}} has no hole; a project with an icon_sprite and no name "
       .. "does not fit the row -- stop, do not widen the member")
@@ -307,7 +295,7 @@ local function project_create(keys)
 end
 
 function M.research_project_upgrade_tech(self)
-  if self == nil or self.has_upgrade_tech == 0 then
+  if self == nil then
     return nil
   end
   return self.upgrade_tech
@@ -414,18 +402,16 @@ end
 function M.research_project_cost(self)
   local od = fixed.p8_fixed_from_int(0)
   local il
-  local has_icon_sprite
 
   M.research_project_assert(self)
   il = M.research_project_upgrade_tech(self)
-  if self ~= nil and self.has_base_cost ~= 0 then
+  if self ~= nil and self.base_cost ~= nil then
     od = self.base_cost
   end
   if self ~= nil and il ~= nil and tech_gate.tech_gate_is_unlocked(il) ~= 0 then
     od = fixed.p8_fixed_mul(od, fixed.P8_FIXED_LIT(0x00018000, 1.5))
   end
-  has_icon_sprite = self ~= nil and self.has_icon_sprite ~= 0
-  if not has_icon_sprite and tech_gate.tech_gate_is_unlocked("nanomaterials") ~= 0 then
+  if (self == nil or self.icon_sprite == nil) and tech_gate.tech_gate_is_unlocked("nanomaterials") ~= 0 then
     od = fixed.p8_fixed_mul(od, fixed.P8_FIXED_LIT(0x0000d999, 0.85))
   end
   return fixed.p8_fixed_flr(od)

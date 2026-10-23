@@ -409,7 +409,7 @@ local function planet_projects_panel_keys(self, b, keys)
   local od = research.research_project_cost(b)
 
   ui_button.button_keys_zero(keys)
-  if b.has_icon_sprite ~= 0 then
+  if b.icon_sprite ~= nil then
     keys.layout_row_keys = research_display.research_project_icon_row_keys(b)
   else
     local _

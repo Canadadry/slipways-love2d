@@ -10,7 +10,8 @@
 --     when absent.
 --   project_records_entry_t: { header, npos, name, planet_codes, base_cost,
 --     production_key, inputs, output, upgrade_tech, byproduct,
---     upgrade_tech_false, has_icon_sprite, icon_sprite, next_type, class_name }.
+--     upgrade_tech_false, icon_sprite, next_type, class_name }, base_cost and icon_sprite
+--     nil when absent.
 --   technologies_entry_t: { name, era, icon_key, icon, cost, tooltip_rows }.
 -- Every data table is a module field, also the C statics: a local per table
 -- would pass LuaJIT's 200 locals per function.
@@ -78,15 +79,14 @@ local function project_record(fields)
     npos = fields.npos or 0,
     name = fields.name,
     planet_codes = fields.planet_codes,
-    base_cost = fields.base_cost or 0,
+    base_cost = fields.base_cost,
     production_key = fields.production_key,
     inputs = fields.inputs,
     output = fields.output,
     upgrade_tech = fields.upgrade_tech,
     byproduct = fields.byproduct,
     upgrade_tech_false = fields.upgrade_tech_false or 0,
-    has_icon_sprite = fields.has_icon_sprite or 0,
-    icon_sprite = fields.icon_sprite or 0,
+    icon_sprite = fields.icon_sprite,
     next_type = fields.next_type,
     class_name = fields.class_name,
   }, "project_records_entry_t")
@@ -224,22 +224,22 @@ M.project_records_table = {
   }),
   project_record({ header = "replication" }),
   project_record({
-    npos = 3, name = "mechanize", planet_codes = "mrsoijx", base_cost = 20, has_icon_sprite = 1, icon_sprite = 38,
+    npos = 3, name = "mechanize", planet_codes = "mrsoijx", base_cost = 20, icon_sprite = 38,
     next_type = "f",
   }),
   project_record({ header = "biome hacking" }),
   project_record({
-    npos = 3, name = "terraform", planet_codes = "xisoj", base_cost = 20, has_icon_sprite = 1, icon_sprite = 39,
+    npos = 3, name = "terraform", planet_codes = "xisoj", base_cost = 20, icon_sprite = 39,
     next_type = "e",
   }),
   project_record({ header = "starbirth" }),
   project_record({
-    npos = 3, name = "collapse", planet_codes = "gm", base_cost = 30, has_icon_sprite = 1, icon_sprite = 41,
+    npos = 3, name = "collapse", planet_codes = "gm", base_cost = 30, icon_sprite = 41,
     class_name = "protostar",
   }),
   project_record({ header = "geoharvesting" }),
   project_record({
-    npos = 3, name = "harvest", planet_codes = "efmorxjisg", base_cost = -20, has_icon_sprite = 1, icon_sprite = 23,
+    npos = 3, name = "harvest", planet_codes = "efmorxjisg", base_cost = -20, icon_sprite = 23,
     class_name = "burst",
   }),
 }

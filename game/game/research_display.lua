@@ -74,7 +74,7 @@ function M.research_project_tooltip(self)
   if self == nil then
     return nil
   end
-  if self.has_icon_sprite ~= 0 then
+  if self.icon_sprite ~= nil then
     return nil
   end
 
@@ -281,7 +281,7 @@ function M.research_project_icon_row_keys(self)
   local icon = tuple_zero()
 
   icon.count = 2
-  assert(self.has_icon_sprite ~= 0,
+  assert(self.icon_sprite ~= nil,
     "research_project_icon_row_keys: the row {name, 32, {icon_sprite, 8}} is a project with an icon sprite's")
   icon.scalars[0] = layout.layout_row_scalar_fixed(self.icon_sprite)
   icon.scalars[1] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(8))
