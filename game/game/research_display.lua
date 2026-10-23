@@ -21,11 +21,7 @@ local M = {}
 
 -- layout_row_tuple_t tuple = {0}.
 local function tuple_zero()
-  local scalars = {}
-  for i = 0, layout.LAYOUT_ROW_TUPLE_CAP - 1 do
-    scalars[i] = layout.layout_row_scalar_nothing()
-  end
-  return { count = 0, scalars = scalars }
+  return { count = 0, scalars = {} }
 end
 
 local function research_project_tooltip_join(self)
@@ -124,7 +120,6 @@ local tail_row = map_tables.map_tables_make_data_row({ count = 2, items = tail_r
 
 local function planet_resource_row_keys(inputs, output, amount, used, spacing, out_keys)
   local planet = require("game.planet")
-  local l_cap
   local keys = layout.layout_row_keys_zero()
   local crowded
   local is_count = (inputs ~= nil) and #inputs or 0
@@ -153,14 +148,6 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
   end
 
   wide = (fixed.p8_fixed_mul(amount, fixed.p8_fixed_from_int(outputs_count)) >= fixed.p8_fixed_from_int(3)) and 1 or 0
-
-  do
-    local amount_drawn = (amount > fixed.p8_fixed_from_int(5)) and fixed.p8_fixed_from_int(1) or amount
-    local loop_bound = (amount_drawn > fixed.p8_fixed_from_int(1)) and amount_drawn or fixed.p8_fixed_from_int(1)
-
-    l_cap = is_count + ((is_count > 0) and 2 or 0) + ((amount > fixed.p8_fixed_from_int(5)) and 2 or 0)
-      + outputs_count * (fixed.p8_fixed_flr_int(loop_bound) + 1)
-  end
 
   if inputs ~= nil then
     for index = 1, #inputs do
@@ -232,9 +219,6 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
     layout.layout_row_keys_append(keys, layout.layout_row_cell_row(planet.planet_spacer()))
   end
 
-  assert(keys.count == l_cap,
-    "planet_resource_row_keys: the row is sized at entry from the inputs, the amount and the outputs; a positional more or less "
-    .. "is a miscount of that size")
   out_keys = keys
   return 1, out_keys
 end

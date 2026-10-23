@@ -13,7 +13,6 @@ local M = {}
 -- The outline's pixel on each side of the glyphs: 4 a character plus 1 wide, 7 high.
 local OUTLINE = 1
 local TEXT_IMAGE_HEIGHT = gfx.P8_FONT_GLYPH_HEIGHT + 2 * OUTLINE
-local TEXT_CAP = 31
 
 local g_slots = {}
 for i = 0, image_slot.IMAGE_SLOT_TEXT_COUNT - 1 do
@@ -28,11 +27,7 @@ end
 
 -- strlen: a NUL byte ends the text.
 local function text_length(str)
-  local length = (string.find(str, "\0", 1, true) or #str + 1) - 1
-  if length > TEXT_CAP then
-    return -1
-  end
-  return length
+  return (string.find(str, "\0", 1, true) or #str + 1) - 1
 end
 
 -- 1 when str fits a text slot: text_image_print_outlined then copies it, unless every slot was

@@ -37,11 +37,7 @@ end
 
 -- layout_row_tuple_t tuple = {0}.
 local function tuple_zero()
-  local scalars = {}
-  for i = 0, layout.LAYOUT_ROW_TUPLE_CAP - 1 do
-    scalars[i] = layout.layout_row_scalar_nothing()
-  end
-  return { count = 0, scalars = scalars }
+  return { count = 0, scalars = {} }
 end
 
 local function lineage_has(self, l)

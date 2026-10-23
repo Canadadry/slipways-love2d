@@ -45,7 +45,7 @@
   - [x] Chunk 10 — the header's other parts, docs and skills
 - [ ] Step 2.3 chunks
   - [x] Chunk 1 — startup, devtools and storage
-  - [ ] Chunk 2 — layout, row image and text image
+  - [x] Chunk 2 — layout, row image and text image
   - [ ] Chunk 3 — boxes and panels
   - [ ] Chunk 4 — planets, slipways and the economy
   - [ ] Chunk 5 — research and tech gate, full check

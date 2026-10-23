@@ -3,11 +3,11 @@
 -- Shapes, with the C field names:
 --   layout_row_item_t: { kind, text, color, sprite_id, sprite_palette_block, offset }.
 --   layout_row_scalar_t: { kind, value }.
---   layout_row_tuple_t: { count, scalars }, scalars 0-indexed of LAYOUT_ROW_TUPLE_CAP.
+--   layout_row_tuple_t: { count, scalars }, scalars 0-indexed, below count only.
 --   layout_row_cell_t: { kind, as }, the union as a table holding the member the kind uses
 --     (fixed, text or tuple).
 --   layout_row_keys_t: { items, count, color, background_is_bool, background, score, pos },
---     items 0-indexed of LAYOUT_ROW_KEYS_CAP cells; color, background, score and pos nil when
+--     items 0-indexed cells, below count only; color, background, score and pos nil when
 --     absent, background_is_bool read only with a background.
 --   layout_row_t: one table holding the entity header and { color, background,
 --     background_is_bool, score, placed_items, placed_items_count, width, serial }, placed_items
@@ -41,10 +41,6 @@ M.LAYOUT_ROW_CELL_TRUE = 4
 
 M.LAYOUT_ROW_SCALAR_NOTHING = 0
 M.LAYOUT_ROW_SCALAR_FIXED = 1
-
-M.LAYOUT_ROW_TUPLE_CAP = 4
-
-M.LAYOUT_ROW_KEYS_CAP = 16
 
 local g_layout_up = 0
 local g_row_serial = 0
@@ -85,18 +81,13 @@ end
 function M.layout_row_cell_tuple(tuple)
   local cell = { kind = M.LAYOUT_ROW_CELL_TUPLE, as = { tuple = tuple } }
 
-  assert(tuple.count >= 0 and tuple.count <= M.LAYOUT_ROW_TUPLE_CAP,
-    "layout_row_cell_tuple: row_measure_item reads four scalars at most")
+  assert(tuple.count >= 0, "layout_row_cell_tuple: a negative count")
   return cell
 end
 
 -- layout_row_tuple_t tuple = {0}.
 local function tuple_zero()
-  local scalars = {}
-  for i = 0, M.LAYOUT_ROW_TUPLE_CAP - 1 do
-    scalars[i] = M.layout_row_scalar_nothing()
-  end
-  return { count = 0, scalars = scalars }
+  return { count = 0, scalars = {} }
 end
 
 local function tuple_scalar_of_item(item)
@@ -124,8 +115,6 @@ function M.layout_row_cell_row(row)
     tuple.scalars[1] = M.layout_row_scalar_fixed(fixed.p8_fixed_from_int(5))
     return M.layout_row_cell_tuple(tuple)
   end
-  assert(row.count <= M.LAYOUT_ROW_TUPLE_CAP,
-    "layout_row_cell_row: a tuple has four scalars at most; row_measure_item never read a fifth -- stop, do not widen")
   tuple.count = row.count
   for i = 0, row.count - 1 do
     tuple.scalars[i] = tuple_scalar_of_item(row.items[i])
@@ -168,6 +157,15 @@ local function item_zero(item)
   item.offset = vec.vec_make(0, 0)
 end
 
+-- Positions 0-3 are sprite, width, palette block and spacing; nil for a nothing scalar or one at or past count.
+local function tuple_fixed_at(tuple, i)
+  local scalar = i < tuple.count and tuple.scalars[i] or nil
+  if scalar ~= nil and scalar.kind == M.LAYOUT_ROW_SCALAR_FIXED then
+    return scalar.value
+  end
+  return nil
+end
+
 local function row_measure_item(self, cell, out_item, out_w, out_spacing)
   local width = fixed.p8_fixed_from_int(6)
   local palette_block = fixed.p8_fixed_from_int(0)
@@ -177,29 +175,18 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
   item_zero(out_item)
   if cell.kind == M.LAYOUT_ROW_CELL_TUPLE then
     local t = cell.as.tuple
-    local f = {}
+    local sprite = tuple_fixed_at(t, 0)
 
-    for i = 0, M.LAYOUT_ROW_TUPLE_CAP - 1 do
-      if i < t.count then
-        f[i] = t.scalars[i]
-      else
-        f[i] = M.layout_row_scalar_nothing()
-      end
-    end
-    if f[0].kind == M.LAYOUT_ROW_SCALAR_FIXED then
-      cell = M.layout_row_cell_fixed(f[0].value)
+    if sprite ~= nil then
+      cell = M.layout_row_cell_fixed(sprite)
     else
       cell = M.layout_row_cell_nothing()
     end
-    if f[1].kind == M.LAYOUT_ROW_SCALAR_FIXED then
-      width = f[1].value
-    end
-    if f[2].kind == M.LAYOUT_ROW_SCALAR_FIXED then
-      palette_block = f[2].value
-    end
-    if f[3].kind == M.LAYOUT_ROW_SCALAR_FIXED then
+    width = tuple_fixed_at(t, 1) or width
+    palette_block = tuple_fixed_at(t, 2) or palette_block
+    if tuple_fixed_at(t, 3) ~= nil then
       have_spacing = 1
-      spacing = f[3].value
+      spacing = tuple_fixed_at(t, 3)
     end
   end
 
@@ -331,12 +318,8 @@ end
 
 -- layout_row_keys_t keys = {0}.
 local function keys_zero()
-  local items = {}
-  for i = 0, M.LAYOUT_ROW_KEYS_CAP - 1 do
-    items[i] = M.layout_row_cell_nothing()
-  end
   return {
-    items = items,
+    items = {},
     count = 0,
     background_is_bool = 0,
   }
@@ -465,8 +448,6 @@ function M.layout_row_init(self, keys)
 end
 
 function M.layout_row_keys_append(keys, cell)
-  assert(keys.count >= 0 and keys.count < M.LAYOUT_ROW_KEYS_CAP,
-    "layout_row_keys_append: a row's cells are measured: stop, raise LAYOUT_ROW_KEYS_CAP after measuring")
   keys.items[keys.count] = cell
   keys.count = keys.count + 1
 end

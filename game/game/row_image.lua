@@ -1,7 +1,7 @@
 -- Copy of src/game/row_image.h then src/game/row_image.c.
 --
 -- Shapes, with the C field names:
---   row_image_key_t: { mem, hash, count, extent, entries }, entries 0-indexed of uint32_t.
+--   row_image_key_t: { mem, hash, count, extent, entries }, entries 0-indexed uint32_t, below count only.
 --   row_image_slot_t: { key, stamp }.
 -- The hash mixes in 0 where the C mixes in the p8_vram_t address: same_key also compares mem by
 -- identity and every entry, so two keys are equal in Lua exactly when they are in C.
@@ -18,7 +18,6 @@ local image = require("p8.image")
 local M = {}
 
 local ROW_IMAGE_HEIGHT = gfx_module.P8_SPRITE_SIZE
-local ROW_IMAGE_KEY_CAP = layout.LAYOUT_ROW_KEYS_CAP
 local SPRITE_COUNT = 256
 local BLOCK_COUNT = 16
 
@@ -35,11 +34,7 @@ end
 
 -- row_image_key_t key, every field at its C zero.
 local function key_zero()
-  local entries = {}
-  for i = 0, ROW_IMAGE_KEY_CAP - 1 do
-    entries[i] = 0
-  end
-  return { mem = nil, hash = 0, count = 0, extent = 0, entries = entries }
+  return { mem = nil, hash = 0, count = 0, extent = 0, entries = {} }
 end
 
 local function key_copy(key)
@@ -48,7 +43,7 @@ local function key_copy(key)
   copy.hash = key.hash
   copy.count = key.count
   copy.extent = key.extent
-  for i = 0, ROW_IMAGE_KEY_CAP - 1 do
+  for i = 0, key.count - 1 do
     copy.entries[i] = key.entries[i]
   end
   return copy
@@ -96,7 +91,6 @@ local function key_of(row, mem, key)
         or block >= BLOCK_COUNT then
         return 0
       end
-      assert(key.count < ROW_IMAGE_KEY_CAP, "a row holds at most LAYOUT_ROW_KEYS_CAP items")
       key.entries[key.count] = entry_of(item)
       key.count = key.count + 1
       if x + gfx_module.P8_SPRITE_SIZE > key.extent then
