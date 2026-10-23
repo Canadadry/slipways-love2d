@@ -1,0 +1,15 @@
+- [x] Phase 0 — Decide what "natural" means
+  - [x] Step 0.1 — grilling with the user
+- [ ] Phase 1 — The engine foundation
+  - [ ] Step 1.1 — lua-test-modules checks only that every module loads
+  - [ ] Step 1.2 — zones and allocators removed
+  - [ ] Step 1.3 — entity ids as plain numbers
+  - [ ] Step 1.4 — the four list kinds as plain arrays
+- [ ] Phase 2 — The entity model
+  - [ ] Step 2.1 — optional parts as nil-able fields
+- [ ] Phase 3 — The surface
+  - [ ] Step 3.1 — booleans
+  - [ ] Step 3.2 — 1-based arrays
+  - [ ] Step 3.3 — the C headers
+  - [ ] Step 3.4 — names without the module prefix
+  - [ ] Step 3.5 — design.md conventions replaced
