@@ -238,7 +238,7 @@ local function write_structures(sink, camera)
     line_add(line, "structure %s %s", id_of(g),
              (g.class == planet_family_trade.infraspace_gate_class()) and "infragate" or "slipgate")
     add_position(line, g, camera)
-    line_add(line, " links %d", g.slipways.count)
+    line_add(line, " links %d", #g.slipways)
     line_end(line)
   end
 end

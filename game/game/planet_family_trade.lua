@@ -16,7 +16,6 @@ local bit = require("bit")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_id_list = require("engine.entity_id_list")
 local game_data = require("game.game_data")
 local planet = require("game.planet")
 local planet_display = require("game.planet_display")
@@ -44,7 +43,7 @@ M.synthesizer_synthesizable_resources_spent = { count = 0, items = nil }
 local g_family_trade_up = 0
 
 function M.slipgate_takes_slipway(self)
-  return (self.slipways.count < 3) and 1 or 0
+  return (#self.slipways < 3) and 1 or 0
 end
 
 function M.slipgate_accept_drop(self, s)
@@ -112,7 +111,7 @@ function M.slipgate_refresh(self)
     return
   end
 
-  slipways_count = self.slipways.count
+  slipways_count = #self.slipways
 
   if self.archetype.link_sprites ~= nil then
     local found, entry = game_data.int_seq_at(self.archetype.link_sprites.items, self.archetype.link_sprites.count,
@@ -134,8 +133,6 @@ function M.slipgate_offer_trade(self, trade_offer)
   local trade = require("game.trade")
   local route
   local slipways = nil
-  local iter
-  local slipway
 
   if self == nil or trade_offer == nil then
     return
@@ -144,19 +141,24 @@ function M.slipgate_offer_trade(self, trade_offer)
 
   slipways = self.slipways
 
-  iter = entity_id_list.entity_id_list_all(slipways)
-  while true do
-    local more
-    more, slipway = entity_id_list.entity_id_list_iter_next(iter, slipway)
-    if more == 0 then
-      break
-    end
+  for i = 1, #slipways do
+    local slipway = entity_id.entity_id_resolve(slipways[i])
     if trade_offer.amount <= fixed.p8_fixed_from_int(0) then
       goto continue
     end
 
-    if entity_id_list.entity_id_list_has(route.slipways, entity_id.entity_id_of(slipway)) ~= 0 then
-      goto continue
+    do
+      local slipway_id = entity_id.entity_id_of(slipway)
+      local on_route = false
+      for j = 1, #route.slipways do
+        if route.slipways[j] == slipway_id then
+          on_route = true
+          break
+        end
+      end
+      if on_route then
+        goto continue
+      end
     end
 
     do

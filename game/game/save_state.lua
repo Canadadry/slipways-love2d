@@ -1064,12 +1064,12 @@ end
 -- Returns first, then the C's *added.
 local function add_route_indices(out, list, ids, count)
   local first = out.route_index_count
-  assert(list.count <= 0xFF and first + list.count <= M.SAVE_STATE_ROUTE_INDICES_CAP)
-  for i = 0, list.count - 1 do
-    out.route_indices[out.route_index_count] = index_of(ids, count, list.items[i])
+  assert(#list <= 0xFF and first + #list <= M.SAVE_STATE_ROUTE_INDICES_CAP)
+  for i = 1, #list do
+    out.route_indices[out.route_index_count] = index_of(ids, count, list[i])
     out.route_index_count = out.route_index_count + 1
   end
-  return first, list.count
+  return first, #list
 end
 
 local function capture_node_links(out, node, planet, ids)
@@ -1092,12 +1092,12 @@ local function capture_node_links(out, node, planet, ids)
     node.route_count = count
   end
   node.first_slipway = out.node_slipway_count
-  assert(planet.slipways.count <= 0xFF and out.node_slipway_count + planet.slipways.count <= M.SAVE_STATE_NODE_SLIPWAYS_CAP)
-  for i = 0, planet.slipways.count - 1 do
-    out.node_slipways[out.node_slipway_count] = index_of(ids.slipways, ids.slipway_count, planet.slipways.items[i])
+  assert(#planet.slipways <= 0xFF and out.node_slipway_count + #planet.slipways <= M.SAVE_STATE_NODE_SLIPWAYS_CAP)
+  for i = 1, #planet.slipways do
+    out.node_slipways[out.node_slipway_count] = index_of(ids.slipways, ids.slipway_count, planet.slipways[i])
     out.node_slipway_count = out.node_slipway_count + 1
   end
-  node.slipway_count = planet.slipways.count
+  node.slipway_count = #planet.slipways
 end
 
 local function capture_world(out, ids)

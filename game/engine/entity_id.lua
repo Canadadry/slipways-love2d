@@ -41,6 +41,12 @@ function M.entity_get(id)
   return g_entities[id]
 end
 
+function M.entity_id_resolve(id)
+  local e = M.entity_get(id)
+  assert(e ~= nil, "a game id list holds no dead id: remove it where the entity dies")
+  return e
+end
+
 -- nil when e holds no entry of the current table.
 function M.entity_id_of(e)
   assert(e ~= nil)

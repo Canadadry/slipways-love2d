@@ -7,7 +7,6 @@ local bit = require("bit")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_id_list = require("engine.entity_id_list")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local economy_tiers = require("game.economy_tiers")
@@ -228,9 +227,10 @@ end
 
 local function route_id_list(state, first, count, ids)
   local list = {}
-  entity_id_list.entity_id_list_init(list)
   for i = 0, count - 1 do
-    entity_id_list.entity_id_list_add(list, ids[state.route_indices[first + i]])
+    local id = ids[state.route_indices[first + i]]
+    assert(id ~= nil, "route_id_list: a saved route index names a loaded node or slipway")
+    list[#list + 1] = id
   end
   return list
 end

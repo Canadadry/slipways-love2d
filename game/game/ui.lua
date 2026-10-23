@@ -4,9 +4,8 @@
 --   ui_t: one table holding the entity header and its own fields; its own `has`
 --     (UI_HAS_* bits) is `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
 --   ui_hovered_by_layer_t: { layer_count, written, layers }, layers a 0-indexed array of
---     UI_HOVER_LAYERS entity_id_list_t tables created by ui_create.
---   entity_id_list_t by value (ui_set_ephemerals' argument, ui_ephemerals_new's result,
---     ephemerals_before): a new table holding the four fields, sharing `items`.
+--     UI_HOVER_LAYERS plain 1-based arrays of ids created by ui_create.
+--   ephemerals: a plain 1-based array of ids.
 --   mouse_pos_t: { world, screen, has }; down_t: { stop, held }.
 --
 -- Include cycle: game.scroll, game.planet, game.planet_family, game.probe, game.slipway and
@@ -17,7 +16,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
-local entity_id_list = require("engine.entity_id_list")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
@@ -30,7 +28,6 @@ local vram = require("p8.vram")
 local M = {}
 
 M.UI_HOVER_LAYERS = 16
-M.UI_EPHEMERALS_RESERVE = 8
 
 M.MOUSE_SIDE_LEFT = 0
 
@@ -44,16 +41,6 @@ M.UI_PAD_CROSSHAIR_COLOUR = 7
 
 M.SEND_TO_HOVERED_LEFT_PRESS = 0
 M.SEND_TO_HOVERED_ACCEPT_DROP = 1
-
--- (entity_id_list_t){0}.
-local function entity_id_list_zero()
-  return { items = nil, count = 0, capacity = 0 }
-end
-
--- An entity_id_list_t assigned by value: the C struct copy shares `items`.
-local function entity_id_list_copy(list)
-  return { items = list.items, count = list.count, capacity = list.capacity }
-end
 
 local function zero_vec()
   return vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
@@ -76,14 +63,11 @@ function M.ui_panel_box()
 end
 
 function M.ui_ephemerals_new()
-  local list = entity_id_list_zero()
-
-  entity_id_list.entity_id_list_init_reserve(list, M.UI_EPHEMERALS_RESERVE)
-  return list
+  return {}
 end
 
 function M.ui_set_ephemerals(self, list)
-  self.ephemerals = entity_id_list_copy(list)
+  self.ephemerals = list
   self.has_ = bit.bor(self.has_, M.UI_HAS_OWN_EPHEMERALS)
   self.ephemerals_serial = bit.band(self.ephemerals_serial + 1, 0xFFFF)
 end
@@ -144,7 +128,7 @@ end
 
 local function ui_ephemerals_release(self)
   self.has_ = bit.band(bit.band(self.has_, bit.bnot(M.UI_HAS_OWN_EPHEMERALS)), 0xFFFF)
-  self.ephemerals = entity_id_list_zero()
+  self.ephemerals = {}
 end
 
 local function ui_release_method(self)
@@ -170,11 +154,11 @@ local function ui_create()
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
   self.has_ = 0
   self.ephemerals_serial = 0
-  self.ephemerals = entity_id_list_zero()
+  self.ephemerals = {}
   self.mouse_world = vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0))
   self.hovered_by_layer = { layer_count = 0, written = 0, layers = {} }
   for layer = 0, M.UI_HOVER_LAYERS - 1 do
-    self.hovered_by_layer.layers[layer] = entity_id_list_zero()
+    self.hovered_by_layer.layers[layer] = {}
   end
   self.hovered_by_layer.layer_count = M.UI_HOVER_LAYERS
   self.hovered_by_layer.written = 0
@@ -268,12 +252,15 @@ end
 -- entities of the world reset_world() abandons.
 function M.ui_forget_world(self)
   if bit.band(self.has_, M.UI_HAS_OWN_EPHEMERALS) ~= 0 then
-    entity_id_list.entity_id_list_clear(self.ephemerals)
+    local ephemerals = self.ephemerals
+    for i = #ephemerals, 1, -1 do
+      ephemerals[i] = nil
+    end
   end
   self.hovered_by_layer.written = 0
 end
 
-local empty = entity_id_list_zero()
+local empty = {}
 
 -- The layer's list from the last hover pass; a shared empty list for a layer that pass did not
 -- write, or after ui_forget_world.
@@ -346,7 +333,10 @@ function M.ui_update(mem, self)
     return
   end
 
-  ephemerals_before = entity_id_list_copy(self.ephemerals)
+  ephemerals_before = {}
+  for i = 1, #self.ephemerals do
+    ephemerals_before[i] = self.ephemerals[i]
+  end
   serial_before = self.ephemerals_serial
 
   je = M.main_mouse_typed()
@@ -357,7 +347,13 @@ function M.ui_update(mem, self)
 
   M.ui_update_hover(self)
 
-  hit = (ephemerals_before.count == 0) or entity_id_list.entity_id_list_has(ephemerals_before, self.hovered) ~= 0
+  hit = (#ephemerals_before == 0)
+  for i = 1, #ephemerals_before do
+    if ephemerals_before[i] == self.hovered then
+      hit = true
+      break
+    end
+  end
   if hit then
     M.ui_handle_button(self, M.MOUSE_SIDE_LEFT)
   end
@@ -427,10 +423,14 @@ function M.ui_update_hover(self)
         assert(fa >= 0 and fa < M.UI_HOVER_LAYERS,
           "ui_update_hover: a hovered entity's layer outside 0..15, the layers ui_send_to_hovered walks -- stop, do not widen")
         if bit.band(self.hovered_by_layer.written, bit.lshift(1, fa)) == 0 then
-          entity_id_list.entity_id_list_init(self.hovered_by_layer.layers[fa])
+          local layer_ids = self.hovered_by_layer.layers[fa]
+          for i = #layer_ids, 1, -1 do
+            layer_ids[i] = nil
+          end
           self.hovered_by_layer.written = bit.band(bit.bor(self.hovered_by_layer.written, bit.lshift(1, fa)), 0xFFFF)
         end
-        entity_id_list.entity_id_list_add(self.hovered_by_layer.layers[fa], entity_id.entity_id_link(e))
+        local layer_ids = self.hovered_by_layer.layers[fa]
+        layer_ids[#layer_ids + 1] = entity_id.entity_id_link(e)
       end
       hovered = e
       self.hovered = entity_id.entity_id_link(e)
@@ -533,15 +533,10 @@ function M.ui_send_to_hovered(self, message, mouse, held, out_target, out_down)
   end
 
   for layer = M.UI_HOVER_LAYERS - 1, 0, -1 do
-    local it = entity_id_list.entity_id_list_all(M.ui_hovered_layer(self, layer))
-    local h
+    local hovered_ids = M.ui_hovered_layer(self, layer)
 
-    while true do
-      local more
-      more, h = entity_id_list.entity_id_list_iter_next(it, h)
-      if more == 0 then
-        break
-      end
+    for i = 1, #hovered_ids do
+      local h = entity_id.entity_id_resolve(hovered_ids[i])
       local kn = { stop = 0, held = nil }
 
       if message == M.SEND_TO_HOVERED_LEFT_PRESS then
@@ -568,15 +563,9 @@ function M.ui_clear_ephemerals(self)
   end
 
   do
-    local it = entity_id_list.entity_id_list_all(self.ephemerals)
-    local e
-    while true do
-      local more
-      more, e = entity_id_list.entity_id_list_iter_next(it, e)
-      if more == 0 then
-        break
-      end
-      entity_registry.entity_unregister(e)
+    local ephemerals = self.ephemerals
+    for i = 1, #ephemerals do
+      entity_registry.entity_unregister(entity_id.entity_id_resolve(ephemerals[i]))
     end
   end
 

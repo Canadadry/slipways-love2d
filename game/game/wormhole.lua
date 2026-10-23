@@ -17,7 +17,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
-local entity_id_list = require("engine.entity_id_list")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
@@ -31,11 +30,6 @@ local fixed = require("p8.fixed")
 local M = {}
 
 M.WORMHOLE_HAS_TOO_FAR_TARGET = bit.lshift(1, 0)
-
--- entity_id_list_t list = {0}.
-local function id_list_zero()
-  return { items = nil, count = 0, capacity = 0 }
-end
 
 local g_wormhole_up = 0
 
@@ -84,7 +78,9 @@ function M.wormhole_construct(self)
 
   n = wormhole_anchor_count()
   ox = self.anchors
-  entity_id_list.entity_id_list_init_reserve(ox, n)
+  for i = #ox, 1, -1 do
+    ox[i] = nil
+  end
   it = entity_list.entity_list_all(entity_registry.live_entities())
   while true do
     more, p = entity_list.entity_list_iter_next(it, p)
@@ -92,10 +88,10 @@ function M.wormhole_construct(self)
       break
     end
     if wormhole_is_anchor(p) ~= 0 then
-      entity_id_list.entity_id_list_add(ox, entity_id.entity_id_link(p))
+      ox[#ox + 1] = entity_id.entity_id_link(p)
     end
   end
-  assert(ox.count == n and ox.capacity == n)
+  assert(#ox == n)
 end
 
 function M.wormhole_drag(self, mouse)
@@ -272,7 +268,7 @@ local function wormhole_create()
   self.targeting.cost = self.archetype.targeting.cost
   self.targeting.has_cost = self.archetype.targeting.has_cost
   self.has_ = M.WORMHOLE_HAS_TOO_FAR_TARGET
-  self.anchors = id_list_zero()
+  self.anchors = {}
   probe.targeting_set_target(self.targeting, nil)
   self.anchor = nil
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)

@@ -6,7 +6,7 @@
 --   box_t: { left, top, right, bottom }; mouse_pos_t: { world, screen, has }; both by value.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
-local entity_id_list = require("engine.entity_id_list")
+local entity_id = require("engine.entity_id")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local pad_direction = require("game.pad_direction")
@@ -25,7 +25,7 @@ local SCREEN_SPACE_LAYER = 10
 
 function M.pad_panel_box_open()
   local ui = ui_module.main_ui()
-  return (ui ~= nil and ui.ephemerals.count > 0) and 1 or 0
+  return (ui ~= nil and #ui.ephemerals > 0) and 1 or 0
 end
 
 local function mouse_at(x, y)
@@ -60,7 +60,7 @@ local function panel_open_now(ui, economy)
   end
   assert(ui_button.modal_backdrop_class().hit_test == entity_registry.entity_registry_hit_test_always,
     "pad_panel_open: the backdrop is found at (0, 0) only because its hit test always holds")
-  return (economy == nil or ui.ephemerals.count > 0 or
+  return (economy == nil or #ui.ephemerals > 0 or
     M.pad_panel_entity_under(0, 0, M.PAD_PANEL_ANY_LAYER, is_modal_backdrop) ~= nil) and 1 or 0
 end
 
@@ -93,7 +93,7 @@ function M.pad_panel_open()
   local key = {
     ui = ui ~= nil and ui.id or nil,
     economy = economy ~= nil and economy.id or nil,
-    ephemerals_count = ui ~= nil and ui.ephemerals.count or 0,
+    ephemerals_count = ui ~= nil and #ui.ephemerals or 0,
     generation = entity_registry.entity_registry_generation(),
   }
   if g_memo.known == 0 or g_memo.key.ui ~= key.ui or
@@ -124,10 +124,10 @@ local function candidates_next(it)
   while true do
     local e
     if it.from_ephemerals ~= 0 then
-      if it.index >= ui.ephemerals.count then
+      if it.index >= #ui.ephemerals then
         return nil
       end
-      e = entity_id_list.entity_id_list_at(ui.ephemerals, it.index)
+      e = entity_id.entity_id_resolve(ui.ephemerals[it.index + 1])
       it.index = it.index + 1
     else
       local bucket = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_HIT_TEST)

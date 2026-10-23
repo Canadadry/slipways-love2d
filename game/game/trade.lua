@@ -2,13 +2,12 @@
 --
 -- Shapes, with the C field names:
 --   trade_route_t, trade_keys_t: { planets, slipways, resource, has_resource,
---     resource_is_bool }, planets and slipways entity_id_list_t tables.
+--     resource_is_bool }, planets and slipways plain 1-based arrays of ids.
 --   resource_t: { kind, number }, a new table at every creation.
 --   trade_route_list_t: a plain 1-based array of trade_route_t.
 -- The id lists are immutable once built: a value copy of a route is a new table with the five
--- fields whose two list tables are shared, as the C copies share their items.
+-- fields whose two id arrays are shared.
 local entity_id = require("engine.entity_id")
-local entity_id_list = require("engine.entity_id_list")
 
 local M = {}
 
@@ -26,10 +25,6 @@ local function route_value(planets, slipways, resource, has_resource, resource_i
     has_resource = has_resource,
     resource_is_bool = resource_is_bool,
   }
-end
-
-local function empty_id_list()
-  return { items = nil, count = 0, capacity = 0 }
 end
 
 local function copy_route(route)
@@ -68,7 +63,7 @@ end
 -- nil keys give a route with empty lists and no resource; the route shares the keys' lists.
 function M.trade_new(keys)
   if keys == nil then
-    return route_value(empty_id_list(), empty_id_list(), 0, 0, 0)
+    return route_value({}, {}, 0, 0, 0)
   end
   assert(keys.resource_is_bool == 0 or keys.resource == 0 or keys.resource == 1,
     "trade_new: a boolean key holds 0 or 1; trade_resource would read any other as a fixed")
@@ -79,20 +74,15 @@ end
 
 -- The ids of list, then extra unless it is nil, in a new list; an empty list when there is no id.
 local function id_list_extended(list, extra)
-  local count = list.count + ((extra ~= nil) and 1 or 0)
-  local out = empty_id_list()
-  if count == 0 then
-    return out
-  end
-  entity_id_list.entity_id_list_init_reserve(out, count)
-  for i = 0, list.count - 1 do
-    entity_id_list.entity_id_list_add(out, list.items[i])
+  local out = {}
+  for i = 1, #list do
+    out[i] = list[i]
   end
   if extra ~= nil then
     local id = entity_id.entity_id_of(extra)
     assert(id ~= nil,
       "trade_extend: a route holds constructed planets and slipways only")
-    entity_id_list.entity_id_list_add(out, id)
+    out[#out + 1] = id
   end
   return out
 end
@@ -108,17 +98,17 @@ end
 
 -- Returns found, out.
 function M.trade_last_planet(self, out)
-  if self == nil or self.planets.count == 0 then
+  if self == nil or #self.planets == 0 then
     return 0, out
   end
-  out = entity_id_list.entity_id_list_at(self.planets, self.planets.count - 1)
+  out = entity_id.entity_id_resolve(self.planets[#self.planets])
   return 1, out
 end
 
 -- The new route's id lists are new lists; a nil node or slipway adds nothing.
 function M.trade_extend(self, node, slipway)
   assert(self ~= nil, "trade_extend: a route value is always there to extend")
-  local extended = route_value(empty_id_list(), empty_id_list(), 0, 0, 0)
+  local extended = route_value({}, {}, 0, 0, 0)
   extended.has_resource = 1
   extended.resource_is_bool = (self.has_resource ~= 0) and self.resource_is_bool or 1
   extended.resource = (self.has_resource ~= 0) and self.resource or 0
@@ -128,10 +118,10 @@ function M.trade_extend(self, node, slipway)
 end
 
 function M.trade_equal(l, r)
-  if l == nil or r == nil or l.planets.count == 0 or r.planets.count == 0 then
+  if l == nil or r == nil or #l.planets == 0 or #r.planets == 0 then
     return 0
   end
-  if entity_id_list.entity_id_list_at(l.planets, 0) ~= entity_id_list.entity_id_list_at(r.planets, 0) then
+  if entity_id.entity_id_resolve(l.planets[1]) ~= entity_id.entity_id_resolve(r.planets[1]) then
     return 0
   end
   local l_found, l_last = M.trade_last_planet(l, nil)

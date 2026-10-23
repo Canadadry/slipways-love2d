@@ -20,7 +20,6 @@ local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_id_list = require("engine.entity_id_list")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local draw_functions = require("game.draw_functions")
@@ -523,7 +522,8 @@ end
 
 local function open_box_add(le, has_list, button)
   if has_list ~= 0 then
-    entity_id_list.entity_id_list_add(le, entity_id.entity_id_link(button))
+    assert(button ~= nil, "open_box_add: the ephemerals list holds button ids")
+    le[#le + 1] = entity_id.entity_id_link(button)
   end
 end
 
@@ -532,7 +532,7 @@ function M.message_box_open_box(frame, buttons, button_count)
   local ui_button = require("game.ui_button")
   local box_pos
   local step_context = {}
-  local ephemerals = { items = nil, count = 0, capacity = 0 }
+  local ephemerals = {}
   local dispatcher
   local description_row = ui_button.button_keys_zero({})
   local has_dispatcher

@@ -7,7 +7,7 @@
 -- inside the functions that need them, so that this module loads before they exist.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
-local entity_id_list = require("engine.entity_id_list")
+local entity_id = require("engine.entity_id")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local research = require("game.research")
@@ -79,11 +79,11 @@ local function rebuild_incoming_routes_route_visit(entity, context)
     local to_val
     local found
 
-    for index = 0, slipways.count - 1 do
-      local w_val = entity_id_list.entity_id_list_at(slipways, index)
+    for index = 1, #slipways do
+      local w_val = entity_id.entity_id_resolve(slipways[index])
 
-      if not (index + 1 >= planets.count) then
-        local planet_val = entity_id_list.entity_id_list_at(planets, index + 1)
+      if index + 1 <= #planets then
+        local planet_val = entity_id.entity_id_resolve(planets[index + 1])
         assert(planet_module.planet_is_family(planet_val) ~= 0,
           "rebuild_incoming_routes_route_visit: a trade's planets list holds planets only")
         local planet = planet_val

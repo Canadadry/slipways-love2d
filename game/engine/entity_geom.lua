@@ -5,7 +5,7 @@
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_list = require("engine.entity_list")
-local entity_id_list = require("engine.entity_id_list")
+local entity_id = require("engine.entity_id")
 local vec = require("engine.vec")
 local geom = require("engine.geom")
 local vram = require("p8.vram")
@@ -164,16 +164,11 @@ end
 
 function M.entity_geom_nearest_in_ids(p, ids, out_nearest)
   local best = fixed.p8_fixed_from_int(32767)
-  local o
-  local more
 
   out_nearest = nil
   if ids == nil then return best, out_nearest end
-  local it = entity_id_list.entity_id_list_all(ids)
-  more, o = entity_id_list.entity_id_list_iter_next(it, o)
-  while more ~= 0 do
-    best, out_nearest = nearest_step(p, o, best, out_nearest)
-    more, o = entity_id_list.entity_id_list_iter_next(it, o)
+  for i = 1, #ids do
+    best, out_nearest = nearest_step(p, entity_id.entity_id_resolve(ids[i]), best, out_nearest)
   end
   return best, out_nearest
 end

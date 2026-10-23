@@ -4,7 +4,7 @@
 -- own `has` (PAUSE_MENU_OPEN_BOX_HAS_* bits) is `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
-local entity_id_list = require("engine.entity_id_list")
+local entity_id = require("engine.entity_id")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local economy_module = require("game.economy")
@@ -359,14 +359,9 @@ function M.pause_menu_shown()
   if ui == nil then
     return 0
   end
-  local it = entity_id_list.entity_id_list_all(ui.ephemerals)
-  local e
-  while true do
-    local more
-    more, e = entity_id_list.entity_id_list_iter_next(it, e)
-    if more == 0 then
-      break
-    end
+  local ephemerals = ui.ephemerals
+  for i = 1, #ephemerals do
+    local e = entity_id.entity_id_resolve(ephemerals[i])
     if e.class == ui_button.button_class() and e.on_click == pause_menu_row2_on_click_method then
       return 1
     end

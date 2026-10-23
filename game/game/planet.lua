@@ -26,7 +26,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
-local entity_id_list = require("engine.entity_id_list")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local economy_formulas = require("game.economy_formulas")
@@ -57,11 +56,6 @@ M.PLANET_HAS_ID = bit.lshift(1, 6)
 -- production_t p = {0}.
 local function production_zero()
   return { has_resource = 0, resource = 0, amount = 0 }
-end
-
--- entity_id_list_t list = {0}.
-local function list_zero()
-  return { items = nil, count = 0, capacity = 0 }
 end
 
 -- In place: whoever holds dst sees src's elements.
@@ -146,7 +140,7 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.shake = self.archetype.shake
   self.planet_id = ""
-  self.slipways = list_zero()
+  self.slipways = {}
   self.project = { index = research.RESEARCH_PROJECT_ID_NONE.index, epoch = research.RESEARCH_PROJECT_ID_NONE.epoch }
   self.description = nil
   self.needs = {}
@@ -303,7 +297,9 @@ function M.planet_construct_in(self)
     return
   end
 
-  entity_id_list.entity_id_list_init(self.slipways)
+  for i = #self.slipways, 1, -1 do
+    self.slipways[i] = nil
+  end
 
   if bit.band(self.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)) ~= 0 then
     local target = research.research_projects_at(fixed.p8_fixed_flr_int(self.archetype.project_index))
@@ -384,7 +380,7 @@ function M.planet_update_vanishing(self, t)
     return
   end
   self.is_dead = (t > fixed.p8_fixed_from_int(60)) and 1 or 0
-  assert(self.is_dead == 0 or self.slipways.count == 0,
+  assert(self.is_dead == 0 or #self.slipways == 0,
     "a linked planet never dies: the routes kept in outgoing_routes would name it, and the cart never drops them")
 end
 

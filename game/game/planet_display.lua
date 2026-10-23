@@ -658,7 +658,7 @@ function M.planet_apply_project(self, research_project_instance)
     local target_kind = nil
     local keys = planet.planet_keys_zero()
 
-    assert(self.slipways.count == 0,
+    assert(#self.slipways == 0,
       "a linked planet never dies: the routes kept in outgoing_routes would name it, and the cart never drops them")
     self.is_dead = 1
 

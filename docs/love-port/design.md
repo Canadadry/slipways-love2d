@@ -819,8 +819,11 @@ elsewhere (`planet_keys_zero`). `game/love/` names follow
 on one, and `memcpy`/`memcmp` are loops over the C length. A pointer into an
 array is an integer index, `NULL` is `nil`; a pointer difference into a
 table goes through a Lua-only reverse map built at load
-(`project_index_of` in `research.lua`). Lists handed to LÖVE and the trade
-route lists are plain 1-based arrays without holes. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
+(`project_index_of` in `research.lua`). Lists handed to LÖVE, the trade
+route lists, the id lists (a planet's slipways, a route's planets and
+slipways, the UI's ephemerals and hover layers, a wormhole's anchors),
+needs, project inputs, invented technologies, particles and transit dots
+are plain 1-based arrays without holes. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
 `%` is `cint.mod` (the dividend's sign); `math.floor` and Lua `%` appear only
 where the C floors. `(unsigned char)x` is `bit.band(x, 0xFF)`; a `bit`
 result above 2^31 − 1 is brought back to unsigned where it is compared or
@@ -833,7 +836,7 @@ a pointer to it is that table, and an init on `T *` fills the caller's table.
 A by-value struct (passed, returned, assigned, a constant) is a new table
 built by a constructor listing every field, copied at each use; a table
 received by value is never mutated. The copy is shallow as in C: pointer
-members are shared (`entity_id_list_copy` shares `items`), inline mutable
+members are shared, inline mutable
 sub-structs are copied by the caller. An entity id is a number handed out by
 `entity_id_take`, never reused, resolved by `entity_get` through the current
 table, which drops an entity when the exit queue flushes it; `nil` is "no
@@ -855,12 +858,15 @@ whose new value comes back after the C return value, several in C order, a
 p8_fixed_rnd_from_state(state, x)`; `pad_panel_step` returns `at, x, y,
 mouse_buttons`).
 
-**Memory.** A new object is a table built where it is needed. A list that
-grows gets a fresh items table holding a copy of its items, and copies of a
-list header share that table. A trade route list is a plain 1-based array of
-route values: a list held by several owners is emptied in place, and an
-offer's routes are a copy of the source list, assigned back when the offer
-returns. Strings are Lua strings, compared with `==`.
+**Memory.** A new object is a table built where it is needed. An
+`entity_list` that grows gets a fresh items table holding a copy of its
+items, and copies of its header share that table. The plain-array lists are
+emptied or refilled in place when several owners hold them; a list that
+outlives a copy point is copied, never shared by accident (an offer's routes
+are a copy of the source list, assigned back when the offer returns); a
+route's id arrays are never changed once built, so route copies share them.
+An id list is read through `entity_id_resolve`, which asserts the id is
+alive. Strings are Lua strings, compared with `==`.
 
 **Truth values.** A C int predicate returns 1 or 0, never a Lua boolean;
 `if (x)` on an int is `if x ~= 0`, `!x` is `x == 0` as a test and

@@ -24,7 +24,6 @@ local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_id_list = require("engine.entity_id_list")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local geom = require("engine.geom")
@@ -308,14 +307,8 @@ function M.slipway_obstruction(self)
       oe = start_node.slipways
     end
     if oe ~= nil then
-      local it = entity_id_list.entity_id_list_all(oe)
-      local w
-      while true do
-        local more
-        more, w = entity_id_list.entity_id_list_iter_next(it, w)
-        if more == 0 then
-          break
-        end
+      for i = 1, #oe do
+        local w = entity_id.entity_id_resolve(oe[i])
         assert(w.class == M.slipway_class(),
           "the start's slipways list holds slipways: only planet_attach_slipway adds to it, and only slipways")
         if M.slipway_other_end(w, start_node) == end_node then

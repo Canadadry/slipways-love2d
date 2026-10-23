@@ -3,7 +3,7 @@
 -- Shapes, with the C field names:
 --   pad_slipway_t: { start, target, phase, linked_before }, start and target entity ids (nil for none).
 local entity_class = require("engine.entity_class")
-local entity_id_list = require("engine.entity_id_list")
+local entity_id = require("engine.entity_id")
 local entity_list = require("engine.entity_list")
 local planet = require("game.planet")
 local planet_family_trade = require("game.planet_family_trade")
@@ -45,14 +45,9 @@ end
 
 function M.pad_slipway_between(start, target)
   assert(start ~= nil and planet.planet_is_family(start) ~= 0, "pad_slipway_between: only a planet holds a slipways list")
-  local it = entity_id_list.entity_id_list_all(start.slipways)
-  local slipway
-  while true do
-    local more
-    more, slipway = entity_id_list.entity_id_list_iter_next(it, slipway)
-    if more == 0 then
-      break
-    end
+  local slipways = start.slipways
+  for i = 1, #slipways do
+    local slipway = entity_id.entity_id_resolve(slipways[i])
     assert(slipway.is_dead == 0,
       "pad_slipway_between: a slipway dies only when its drop is refused, before it joins a planet's list")
     if slipway_module.slipway_other_end(slipway, start) == target then

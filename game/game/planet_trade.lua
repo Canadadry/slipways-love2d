@@ -11,7 +11,6 @@
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_id_list = require("engine.entity_id_list")
 local game_data = require("game.game_data")
 local map_tables = require("game.map_tables")
 local research = require("game.research")
@@ -88,7 +87,8 @@ function M.planet_attach_slipway(self, slipway)
     return
   end
 
-  entity_id_list.entity_id_list_add(self.slipways, entity_id.entity_id_link(slipway))
+  assert(slipway ~= nil, "planet_attach_slipway: a planet's slipways list holds slipway ids")
+  self.slipways[#self.slipways + 1] = entity_id.entity_id_link(slipway)
 
   if slipway ~= nil then
     local slipway_module = require("game.slipway")
@@ -207,8 +207,6 @@ function M.planet_rebuild_trades(self)
   local slipway = require("game.slipway")
   local keys = trade_keys_zero()
   local amount = fixed.p8_fixed_from_int(0)
-  local iter
-  local w
 
   if self == nil then
     return nil
@@ -228,25 +226,17 @@ function M.planet_rebuild_trades(self)
     amount = kw.amount
   end
 
-  iter = entity_id_list.entity_id_list_all(self.slipways)
-  while true do
-    local more
+  local slipways = self.slipways
+  for i = 1, #slipways do
+    local w = entity_id.entity_id_resolve(slipways[i])
     local lw = {}
     local other
 
-    more, w = entity_id_list.entity_id_list_iter_next(iter, w)
-    if more == 0 then
-      break
-    end
-
-    -- New list tables: the route of the previous offer shares the old ones, as its C copy kept
-    -- its own list headers.
-    keys.planets = {}
-    keys.slipways = {}
-    entity_id_list.entity_id_list_init(keys.planets)
-    entity_id_list.entity_id_list_add(keys.planets, entity_id.entity_id_of(self))
-    entity_id_list.entity_id_list_init(keys.slipways)
-    entity_id_list.entity_id_list_add(keys.slipways, entity_id.entity_id_of(w))
+    -- New arrays: the route of the previous offer shares the old ones.
+    local self_id = entity_id.entity_id_of(self)
+    assert(self_id ~= nil, "planet_rebuild_trades: a route starts at a constructed planet")
+    keys.planets = { self_id }
+    keys.slipways = { entity_id.entity_id_of(w) }
 
     lw.route = trade.trade_new(keys)
     -- Recomputed each iteration: an earlier offer's accept may have grown the outgoing routes.
