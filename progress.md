@@ -61,7 +61,7 @@
   - [x] Chunk 9 — pad layer, docs, full check
 - [ ] Step 3.2 chunks
   - [x] Chunk 1 — runtime lists
-  - [ ] Chunk 2 — registry
+  - [x] Chunk 2 — registry
   - [ ] Chunk 3 — game_data sequences and lookups
   - [ ] Chunk 4 — map_tables lookups
   - [ ] Chunk 5 — data rows

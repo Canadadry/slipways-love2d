@@ -3,8 +3,8 @@
 -- only (draw_layers here); neither needs a value of the other at load.
 --
 -- Shapes, with the C field names:
---   entity_layer_view_t: { items, first, count }: the C pointer into the
---     layer order is the index first into its items; read items[first + i].
+--   entity_layer_view_t: { items, first, count }: the layer's members are
+--     items[first .. first + count - 1], first a 1-based position.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
@@ -14,11 +14,11 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
-M.ENTITY_MESSAGE_DRAW = 0
-M.ENTITY_MESSAGE_DRAW_OVERLAY = 1
-M.ENTITY_MESSAGE_HIT_TEST = 2
-M.ENTITY_MESSAGE_NEW_YEAR = 3
-M.ENTITY_MESSAGE_REFRESH = 4
+M.ENTITY_MESSAGE_DRAW = 1
+M.ENTITY_MESSAGE_DRAW_OVERLAY = 2
+M.ENTITY_MESSAGE_HIT_TEST = 3
+M.ENTITY_MESSAGE_NEW_YEAR = 4
+M.ENTITY_MESSAGE_REFRESH = 5
 M.ENTITY_MESSAGE_COUNT = 5
 
 M.ENTITY_REGISTRY_LAYERS = 15
@@ -51,7 +51,7 @@ local function remove_first(list, e)
 end
 
 local g_entities_by_message = {}
-for i = 0, ENTITY_MESSAGE_COUNT - 1 do
+for i = 1, ENTITY_MESSAGE_COUNT do
   g_entities_by_message[i] = {}
 end
 
@@ -60,7 +60,8 @@ for i = 0, TAG_COUNT - 1 do
   g_entities_by_tag[i] = { seen = false, list = {} }
 end
 
--- Group g (1..15) is items[start[g - 1] .. start[g]); start[ENTITY_REGISTRY_LAYERS] is the count.
+-- Layer g (1..15) is items[start[g - 1] + 1 .. start[g]]: start is keyed by layer
+-- value 0..15, start[0] = 0 the empty prefix, start[ENTITY_REGISTRY_LAYERS] the count.
 local function zero_layer_order()
   local start = {}
   for g = 0, ENTITY_REGISTRY_LAYERS do
@@ -69,7 +70,7 @@ local function zero_layer_order()
   return { items = {}, start = start }
 end
 
-local g_layer_orders = { [0] = zero_layer_order(), zero_layer_order() }
+local g_layer_orders = { zero_layer_order(), zero_layer_order() }
 local g_layer_order_mutations = 0
 
 local g_live_entities = {}
@@ -84,8 +85,8 @@ entity_class.entity_init_header(M.g_main_camera_placeholder, M.main_camera_place
 
 local function layer_orders_reset()
   for g = 0, ENTITY_REGISTRY_LAYERS do
-    g_layer_orders[0].start[g] = 0
     g_layer_orders[1].start[g] = 0
+    g_layer_orders[2].start[g] = 0
   end
 end
 
@@ -98,7 +99,7 @@ function M.entity_registry_shutdown()
 
   empty_list(g_live_entities)
 
-  for i = 0, ENTITY_MESSAGE_COUNT - 1 do
+  for i = 1, ENTITY_MESSAGE_COUNT do
     empty_list(g_entities_by_message[i])
   end
 
@@ -121,7 +122,7 @@ function M.entity_registry_init()
 
   empty_list(g_live_entities)
 
-  for i = 0, ENTITY_MESSAGE_COUNT - 1 do
+  for i = 1, ENTITY_MESSAGE_COUNT do
     empty_list(g_entities_by_message[i])
   end
 
@@ -147,7 +148,7 @@ function M.entity_registry_forget_registries()
   layer_orders_reset()
   g_generation = (g_generation + 1) % UINT_WRAP
   empty_list(g_live_entities)
-  for i = 0, ENTITY_MESSAGE_COUNT - 1 do
+  for i = 1, ENTITY_MESSAGE_COUNT do
     empty_list(g_entities_by_message[i])
   end
   for i = 0, TAG_COUNT - 1 do
@@ -207,7 +208,7 @@ local function is_drawn_message(message)
 end
 
 local function layer_order_of(message)
-  return g_layer_orders[(message == ENTITY_MESSAGE_DRAW) and 0 or 1]
+  return g_layer_orders[(message == ENTITY_MESSAGE_DRAW) and 1 or 2]
 end
 
 -- 0 for no layer or one outside 1..15: such an entity is never drawn.
@@ -219,12 +220,13 @@ local function layer_key(e)
   return (layer < 1 or layer > ENTITY_REGISTRY_LAYERS) and 0 or layer
 end
 
-local function layer_order_insert(order, e, key, index)
+-- position is 1-based.
+local function layer_order_insert(order, e, key, position)
   local count = order.start[ENTITY_REGISTRY_LAYERS]
-  for j = count - 1, index, -1 do
+  for j = count, position, -1 do
     order.items[j + 1] = order.items[j]
   end
-  order.items[index] = e
+  order.items[position] = e
   for g = key, ENTITY_REGISTRY_LAYERS do
     order.start[g] = order.start[g] + 1
   end
@@ -233,19 +235,20 @@ end
 
 local function layer_order_remove(order, e)
   local count = order.start[ENTITY_REGISTRY_LAYERS]
-  local index = 0
+  local position = 1
 
-  while index < count and order.items[index] ~= e do
-    index = index + 1
+  while position <= count and order.items[position] ~= e do
+    position = position + 1
   end
-  if index == count then
+  if position > count then
     return
   end
-  for j = index, count - 2 do
+  for j = position, count - 1 do
     order.items[j] = order.items[j + 1]
   end
+  order.items[count] = nil
   local g = ENTITY_REGISTRY_LAYERS
-  while g >= 1 and order.start[g] > index do
+  while g >= 1 and order.start[g] >= position do
     order.start[g] = order.start[g] - 1
     g = g - 1
   end
@@ -260,7 +263,7 @@ function M.entity_registry_layer(message, layer)
   local order = layer_order_of(message)
   return {
     items = order.items,
-    first = order.start[layer - 1],
+    first = order.start[layer - 1] + 1,
     count = order.start[layer] - order.start[layer - 1],
   }
 end
@@ -272,7 +275,7 @@ function M.entity_register(e)
   assert(e ~= nil, "entity_register: an entity")
   g_live_entities[#g_live_entities + 1] = e
 
-  for i = 0, ENTITY_MESSAGE_COUNT - 1 do
+  for i = 1, ENTITY_MESSAGE_COUNT do
     if is_message_name(e, i) then
       local bucket = g_entities_by_message[i]
       bucket[#bucket + 1] = e
@@ -280,13 +283,13 @@ function M.entity_register(e)
   end
 
   local key = layer_key(e)
-  local i = 0
-  while i < ENTITY_MESSAGE_COUNT and key ~= 0 do
-    if is_drawn_message(i) and is_message_name(e, i) then
-      local order = layer_order_of(i)
-      layer_order_insert(order, e, key, order.start[key])
+  if key ~= 0 then
+    for i = 1, ENTITY_MESSAGE_COUNT do
+      if is_drawn_message(i) and is_message_name(e, i) then
+        local order = layer_order_of(i)
+        layer_order_insert(order, e, key, order.start[key] + 1)
+      end
     end
-    i = i + 1
   end
 
   for t = 0, TAG_COUNT - 1 do
@@ -308,7 +311,7 @@ function M.entity_unregister(e)
     exit_queue.exit_queue_put(e)
   end
 
-  for i = 0, ENTITY_MESSAGE_COUNT - 1 do
+  for i = 1, ENTITY_MESSAGE_COUNT do
     if is_message_name(e, i) then
       remove_first(g_entities_by_message[i], e)
       if is_drawn_message(i) then
@@ -344,7 +347,7 @@ local function layer_order_reinsert(message, e, key)
   if index > #bucket then
     return
   end
-  layer_order_insert(order, e, key, order.start[key - 1] + rank)
+  layer_order_insert(order, e, key, order.start[key - 1] + rank + 1)
 end
 
 -- Re-sorts the draw order only for a constructed entity whose floored
@@ -359,7 +362,7 @@ function M.entity_registry_set_layer(e, layer)
   if new_key == old_key or entity_id.entity_id_of(e) == nil then
     return
   end
-  for i = 0, ENTITY_MESSAGE_COUNT - 1 do
+  for i = 1, ENTITY_MESSAGE_COUNT do
     if is_drawn_message(i) and is_message_name(e, i) then
       layer_order_reinsert(i, e, new_key)
     end
@@ -382,8 +385,8 @@ function M.draw_layers(message)
       end
     end
 
-    for index = 0, group.count - 1 do
-      local qc = group.items[group.first + index]
+    for index = group.first, group.first + group.count - 1 do
+      local qc = group.items[index]
       local draw
       if is_draw then
         draw = qc.class.draw
