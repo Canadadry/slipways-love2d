@@ -813,7 +813,7 @@ elsewhere (`planet_keys_zero`). `game/love/` names follow
 `module_verb[_object]`.
 
 **Arrays and integers.** A C array keeps its C index, from 0
-(`{ [0] = 1, 0, 1, 2 }`), 2-D as `t[y][x]`; `#t` and `ipairs` are never used
+(`values = { [0] = 0, 1, 2, 3 }`), 2-D as `t[y][x]`; `#t` and `ipairs` are never used
 on one, and `memcpy`/`memcmp` are loops over the C length. A pointer into an
 array is an integer index, `NULL` is `nil`; a pointer difference into a
 table goes through a Lua-only reverse map built at load
@@ -823,8 +823,10 @@ slipways, the UI's ephemerals and hover layers, a wormhole's anchors),
 needs, project inputs, invented technologies, particles, transit dots, the
 registry's buckets (live, per-message, per-tag) and the exit queue are plain
 1-based arrays without holes; the runtime's point, segment and input-frame
-lists and the draw meter's caches are 1-based, read up to their count; the data tables shaped `{ items, count }`
-stay 0-based until the 1-based step. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
+lists and the draw meter's caches are 1-based, read up to their count; so are `game_data`'s integer
+sequences (`int_seq_at` reads `seq[i]`) and its lookup tables (planet types, difficulty options, menus,
+score rows, mood rows) and `planet_kinds`; the data rows' `items` and the `map_tables` lookups stay
+0-based until the rest of the 1-based step. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
 `%` is `cint.mod` (the dividend's sign); `math.floor` and Lua `%` appear only
 where the C floors. `(unsigned char)x` is `bit.band(x, 0xFF)`; a `bit`
 result above 2^31 − 1 is brought back to unsigned where it is compared or
@@ -911,7 +913,7 @@ LuaJIT `bit` only, no FFI. Statics are module-level `local`s initialised as
 the C does; a forward-declared `static` is a `local name` filled later by
 `name = function`, never `local function name`, and a table entry naming
 one is stored right after its definition
-(`M.galaxy_menu_on_click_table[3]` in `menu.lua`). Modules of a C include
+(`M.galaxy_menu_on_click_table[4]` in `menu.lua`). Modules of a C include
 cycle require each other at call time, inside the function that needs the
 partner, and read a partner's constants there, never cached at module level.
 A partner needed at load (a class holding its methods by identity, a table

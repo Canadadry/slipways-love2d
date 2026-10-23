@@ -233,7 +233,7 @@ function M.planet_inspection_panel(self)
     local mi = fixed.p8_fixed_flr_int(self.development_tier)
 
     if mi >= 1 and mi <= game_data.PLANET_MOOD_ROWS_COUNT then
-      icon_row = planet.planet_mood_rows()[mi - 1]
+      icon_row = planet.planet_mood_rows()[mi]
     end
   end
   if icon_row ~= nil then
@@ -473,8 +473,8 @@ local function planet_build_images(gfx, mem)
   image.p8_image_build(gfx, mem, image_slot.IMAGE_SLOT_PLANET_DISC, 2 * PLANET_DISC_RADIUS + 1, 2 * PLANET_DISC_RADIUS + 1,
     planet_draw_disc_image, nil)
   assert(ring_colors.count == game_data.PLANET_RING_COLORS_COUNT)
-  for index = 0, game_data.PLANET_RING_COLORS_COUNT - 1 do
-    image.p8_image_build(gfx, mem, image_slot.IMAGE_SLOT_PLANET_RING_FIRST + index, 2 * PLANET_RING_RADIUS + 1,
+  for index = 1, game_data.PLANET_RING_COLORS_COUNT do
+    image.p8_image_build(gfx, mem, image_slot.IMAGE_SLOT_PLANET_RING_FIRST + index - 1, 2 * PLANET_RING_RADIUS + 1,
       2 * PLANET_RING_RADIUS + 1, planet_draw_ring_image, ring_colors.items[index])
   end
   planet_images_built = true

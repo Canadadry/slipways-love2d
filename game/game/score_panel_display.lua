@@ -258,12 +258,12 @@ function M.score_panel_update(self)
       local is_ready = score_panel.score_panel_ready()
       local keys = message_box_keys_zero()
       local made
-      local i = 0
+      local i = 1
 
       keys.duration_scale = fixed.p8_fixed_from_int(3)
       keys.keep_open = score_panel_update_keep_open_method
       made = message_box.message_box_new(keys)
-      while is_ready and i < game_data.SCORE_ROWS_COUNT do
+      while is_ready and i <= game_data.SCORE_ROWS_COUNT do
         score_panel_update_add_row(made, game_data.score_rows_table[i], ctx)
         i = i + 1
       end

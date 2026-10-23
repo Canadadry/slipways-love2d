@@ -219,7 +219,7 @@ function M.score_panel_refresh()
   do
     local lo = fixed.p8_fixed_flr_int(main_economy_year_ticks)
     if lo >= 1 and lo <= game_data.PERIOD_NAMES_COUNT then
-      readouts[5] = data_item({ text = game_data.period_names_table[lo - 1] })
+      readouts[5] = data_item({ text = game_data.period_names_table[lo] })
     else
       readouts[5] = data_item({ is_nil = true })
     end

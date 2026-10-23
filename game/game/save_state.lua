@@ -75,8 +75,8 @@ M.SAVE_NODE_KNOWN_FLAGS = bit.lshift(1, 11) - 1
 -- terraform leaves on the old type. The route and slipway
 -- slices index the state's pools.
 -- Both route slices index route_indices: node indices, then slipway indices.
--- Every fixed-point value is its raw 16.16 int32_t; every reference is a
--- 0-based table index, except difficulty (1-based in difficulty_options_table).
+-- Every fixed-point value is its raw 16.16 int32_t; every other reference is
+-- a 0-based rank, except difficulty (its difficulty_options_table position).
 
 local MAGIC_LENGTH = 4
 local NODE_PLANET_ID_LENGTH = 8
@@ -848,9 +848,9 @@ end
 local function difficulty_index()
   local difficulty = economy_score.economy_score_difficulty()
   assert(difficulty ~= nil and difficulty.name ~= nil, "save_state_capture: a running game has a difficulty")
-  for i = 0, game_data.DIFFICULTY_OPTIONS_COUNT - 1 do
+  for i = 1, game_data.DIFFICULTY_OPTIONS_COUNT do
     if game_data.difficulty_options_table[i].name == difficulty.name then
-      return i + 1
+      return i
     end
   end
   assert(false, "save_state_capture: the difficulty is not a difficulty_options_table entry")
@@ -867,9 +867,9 @@ local function technology_index(name)
   return 0
 end
 
--- Lua only: planet_types_table entry -> its C index.
+-- Lua only: planet_types_table entry -> its position, the 1-based planet_type on disk.
 local planet_type_index_of = {}
-for i = 0, game_data.PLANET_TYPES_COUNT - 1 do
+for i = 1, game_data.PLANET_TYPES_COUNT do
   planet_type_index_of[game_data.planet_types_table[i]] = i
 end
 
@@ -886,11 +886,11 @@ local function description_type_index(planet)
     return 0
   end
   if planet.planet_type ~= nil and planet.description == planet.planet_type.description then
-    return planet_type_index(planet.planet_type) + 1
+    return planet_type_index(planet.planet_type)
   end
-  for i = 0, game_data.PLANET_TYPES_COUNT - 1 do
+  for i = 1, game_data.PLANET_TYPES_COUNT do
     if planet.description == game_data.planet_types_table[i].description then
-      return i + 1
+      return i
     end
   end
   assert(false, "save_state_capture: a planet description is not a planet_types_table entry's")
@@ -920,11 +920,11 @@ local function capture_type_picker(out)
   assert(walk ~= nil, "save_state_capture: the type picker draws from a random walk")
   out.tickets_count = picker.tickets_count
   for i = 0, picker.tickets_count - 1 do
-    out.tickets[i] = planet_type_index(picker.tickets[i])
+    out.tickets[i] = planet_type_index(picker.tickets[i]) - 1
   end
   for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
     out.recent_set[i] = picker.recent_set[i] and 1 or 0
-    out.recent[i] = picker.recent_set[i] and planet_type_index(picker.recent[i]) or 0
+    out.recent[i] = picker.recent_set[i] and planet_type_index(picker.recent[i]) - 1 or 0
   end
   out.multiplier = picker.multiplier
   out.walk_step = walk.step
@@ -1031,7 +1031,7 @@ local function capture_node_fields(node, planet)
   node.fold_anchor = header.fold_anchor and 0x10000 or 0
   node.infraspace = header.infraspace and 0x10000 or 0
   if planet.planet_type ~= nil then
-    node.planet_type = planet_type_index(planet.planet_type) + 1
+    node.planet_type = planet_type_index(planet.planet_type)
   end
   node.description_type = description_type_index(planet)
   node.project = project_index(planet.project)

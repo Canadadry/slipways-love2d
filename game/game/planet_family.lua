@@ -628,15 +628,14 @@ function M.burst_new(keys)
 end
 
 M.planet_kinds = {
-  [0] = { class_name = "protostar", kind = M.protostar_kind },
+  { class_name = "protostar", kind = M.protostar_kind },
   { class_name = "burst", kind = M.burst_kind },
 }
 local PLANET_KINDS_COUNT = 2
-assert(M.planet_kinds[PLANET_KINDS_COUNT - 1] ~= nil and M.planet_kinds[PLANET_KINDS_COUNT] == nil,
-  "planet_kinds: PLANET_KINDS_COUNT is the C sizeof planet_kinds / sizeof planet_kinds[0]")
+assert(#M.planet_kinds == PLANET_KINDS_COUNT, "planet_kinds: PLANET_KINDS_COUNT is the C sizeof planet_kinds / sizeof planet_kinds[0]")
 
 function M.planet_kind_named(fz)
-  for i = 0, PLANET_KINDS_COUNT - 1 do
+  for i = 1, PLANET_KINDS_COUNT do
     if M.planet_kinds[i].class_name == fz then
       return M.planet_kinds[i].kind()
     end

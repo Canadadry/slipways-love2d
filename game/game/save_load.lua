@@ -41,7 +41,7 @@ function M.save_load_difficulty(state, out)
   local option
   assert(state ~= nil and out ~= nil)
   local zero = ui_button.button_zero()
-  option = game_data.difficulty_options_table[state.difficulty - 1]
+  option = game_data.difficulty_options_table[state.difficulty]
   for key in pairs(out) do
     out[key] = nil
   end
@@ -140,12 +140,12 @@ local function load_node(node)
   if has(node, save_state.SAVE_NODE_HAS_STATE_TIME) then
     planet.state_time = node.state_time
   end
-  planet.planet_type = (node.planet_type ~= 0) and game_data.planet_types_table[node.planet_type - 1] or nil
+  planet.planet_type = (node.planet_type ~= 0) and game_data.planet_types_table[node.planet_type] or nil
   if node.project ~= 0 then
     planet_module.planet_install_project(planet, research.research_projects_at(node.project))
   end
   -- After planet_install_project, which clears it.
-  planet.description = (node.description_type ~= 0) and game_data.planet_types_table[node.description_type - 1].description or nil
+  planet.description = (node.description_type ~= 0) and game_data.planet_types_table[node.description_type].description or nil
   load_needs(planet, node)
   planet.development_tier = nil
   if has(node, save_state.SAVE_NODE_HAS_DEVELOPMENT_TIER) then
@@ -279,11 +279,11 @@ local function load_rolls(state)
 
   picker.tickets_count = saved.tickets_count
   for i = 0, saved.tickets_count - 1 do
-    picker.tickets[i] = game_data.planet_types_table[saved.tickets[i]]
+    picker.tickets[i] = game_data.planet_types_table[saved.tickets[i] + 1]
   end
   for i = 0, save_state.SAVE_STATE_RECENT_COUNT - 1 do
     picker.recent_set[i] = saved.recent_set[i] ~= 0
-    picker.recent[i] = (saved.recent_set[i] ~= 0) and game_data.planet_types_table[saved.recent[i]] or nil
+    picker.recent[i] = (saved.recent_set[i] ~= 0) and game_data.planet_types_table[saved.recent[i] + 1] or nil
   end
   picker.multiplier = saved.multiplier
   walk.step = saved.walk_step

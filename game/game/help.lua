@@ -61,7 +61,7 @@ function M.help_screen_construct(self)
     return
   end
   for i = 0, game_data.DIFFICULTY_OPTIONS_COUNT - 1 do
-    local e = game_data.difficulty_options_table[i]
+    local e = game_data.difficulty_options_table[i + 1]
 
     bs[i] = ui_button.button_keys_zero({})
     bs[i].layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)

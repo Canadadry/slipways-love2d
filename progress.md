@@ -62,7 +62,7 @@
 - [ ] Step 3.2 chunks
   - [x] Chunk 1 — runtime lists
   - [x] Chunk 2 — registry
-  - [ ] Chunk 3 — game_data sequences and lookups
+  - [x] Chunk 3 — game_data sequences and lookups
   - [ ] Chunk 4 — map_tables lookups
   - [ ] Chunk 5 — data rows
   - [ ] Chunk 6 — layout values and image caches

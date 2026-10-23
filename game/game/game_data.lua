@@ -1,7 +1,7 @@
 -- Copy of src/game/game_data.h then src/game/game_data.c.
 --
 -- Shapes, with the C field names (a pointer is the table, NULL is nil, arrays
--- indexed from 0):
+-- indexed from 1 except the data rows' items, still from 0):
 --   int_seq_t: { count, items }.
 --   planet_types_entry_t: { name, sprite, weight, description, state }.
 --   galaxy_menu_entry_t: { pos_x, pos_y, layout_row }.
@@ -60,28 +60,28 @@ local function score_row(fields)
   }, "score_rows_entry_t")
 end
 
-M.upkeep_by_tier_table = { [0] = 1, 0, 1, 2 }
+M.upkeep_by_tier_table = { 1, 0, 1, 2 }
 
-M.partner_bonus_by_tier_table = { [0] = -0x5540, 0x0, 0x4000, 0x8000 }
+M.partner_bonus_by_tier_table = { -0x5540, 0x0, 0x4000, 0x8000 }
 
-M.development_score_by_tier_table = { [0] = 0, 100, 200, 400 }
+M.development_score_by_tier_table = { 0, 100, 200, 400 }
 
-M.happiness_by_tier_table = { [0] = -5, 0, 1, 1 }
+M.happiness_by_tier_table = { -5, 0, 1, 1 }
 
-M.tier_thresholds_table = { [0] = 2, 4, 7, 12 }
+M.tier_thresholds_table = { 2, 4, 7, 12 }
 
 M.layer_fades_table = {
-  [0] = 0x8000, 0x10000, 0x10000, 0x10000, 0x10000, 0x10000, 0x10000, 0x10000, 0x10000, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+  0x8000, 0x10000, 0x10000, 0x10000, 0x10000, 0x10000, 0x10000, 0x10000, 0x10000, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
 }
 
 M.period_names_table = {
-  [0] = "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", "UND", "DUO", "TER",
+  "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", "UND", "DUO", "TER",
 }
 
 local NONE = entity_class.ENTITY_STATE_NONE
 
 M.planet_types_table = {
-  [0] = {
+  {
     name = "vanishing", sprite = 45, weight = 0x0, description = nil, state = entity_class.ENTITY_STATE_VANISHING,
   },
   { name = "e", sprite = 160, weight = 0x48000, description = "earth-like", state = NONE },
@@ -114,7 +114,7 @@ M.galaxy_menu_4_layout_row_items = { [0] = data_item({ row = M.galaxy_menu_4_lay
 M.galaxy_menu_4_layout_row = data_row({ count = 1, items = M.galaxy_menu_4_layout_row_items })
 
 M.galaxy_menu_table = {
-  [0] = { pos_x = vram.P8_SCREEN_WIDTH - 10, pos_y = 0, layout_row = M.galaxy_menu_1_layout_row },
+  { pos_x = vram.P8_SCREEN_WIDTH - 10, pos_y = 0, layout_row = M.galaxy_menu_1_layout_row },
   { pos_x = 0, pos_y = 0, layout_row = M.galaxy_menu_2_layout_row },
   { pos_x = HALF_WIDTH - 17, pos_y = 0, layout_row = M.galaxy_menu_3_layout_row },
   { pos_x = 0, pos_y = vram.P8_SCREEN_HEIGHT - 11, layout_row = M.galaxy_menu_4_layout_row },
@@ -130,7 +130,7 @@ M.pause_menu_4_layout_row_items = { [0] = data_item({ number = 26 }), data_item(
 M.pause_menu_4_layout_row = data_row({ count = 2, items = M.pause_menu_4_layout_row_items })
 
 M.pause_menu_table = {
-  [0] = { layout_row = M.pause_menu_1_layout_row },
+  { layout_row = M.pause_menu_1_layout_row },
   { layout_row = M.pause_menu_2_layout_row },
   { layout_row = M.pause_menu_3_layout_row },
   { layout_row = M.pause_menu_4_layout_row },
@@ -153,7 +153,7 @@ M.difficulty_options_4_layout_row_items = { [0] = data_item({ number = 52 }), da
 M.difficulty_options_4_layout_row = data_row({ count = 2, items = M.difficulty_options_4_layout_row_items })
 
 M.difficulty_options_table = {
-  [0] = { layout_row = M.difficulty_options_1_layout_row, name = "forgiving", trade = 7, type_bias = -0xfd70 },
+  { layout_row = M.difficulty_options_1_layout_row, name = "forgiving", trade = 7, type_bias = -0xfd70 },
   { layout_row = M.difficulty_options_2_layout_row, name = "reasonable", trade = 6, type_bias = -0x999a },
   { layout_row = M.difficulty_options_3_layout_row, name = "challenging", trade = 5, type_bias = -0x6666 },
   { layout_row = M.difficulty_options_4_layout_row, name = "tough", trade = 4, type_bias = -0x3334 },
@@ -206,7 +206,7 @@ M.score_rows_11_items = { [0] = data_item({ text = "total:" }), data_item({ text
 local DRAW_BAR = map_tables.DRAW_FUNCTION_DRAW_BAR
 
 M.score_rows_table = {
-  [0] = score_row({ row = data_row({ count = 3, items = M.score_rows_1_items, draw_function = DRAW_BAR }) }),
+  score_row({ row = data_row({ count = 3, items = M.score_rows_1_items, draw_function = DRAW_BAR }) }),
   score_row({ row = data_row({ count = 3, items = M.score_rows_2_items, draw_function = DRAW_BAR }) }),
   score_row({ row = data_row({ count = 3, items = M.score_rows_3_items, draw_function = DRAW_BAR }) }),
   score_row({ row = data_row({ count = 3, items = M.score_rows_4_items, draw_function = DRAW_BAR }) }),
@@ -241,20 +241,20 @@ M.score_rows_table = {
   }),
 }
 
-M.planet_ring_colors_items = { [0] = 2, 3, 9, 12 }
-assert(#M.planet_ring_colors_items + 1 == M.PLANET_RING_COLORS_COUNT, "planet_ring_colors_count_matches")
+M.planet_ring_colors_items = { 2, 3, 9, 12 }
+assert(#M.planet_ring_colors_items == M.PLANET_RING_COLORS_COUNT, "planet_ring_colors_count_matches")
 M.planet_ring_colors_seq = { count = M.PLANET_RING_COLORS_COUNT, items = M.planet_ring_colors_items }
 M.planet_mood_rows_1_items = { [0] = data_item({ text = "unhappy" }) }
 M.planet_mood_rows_2_items = { [0] = data_item({ text = "content" }) }
 M.planet_mood_rows_3_items = { [0] = data_item({ text = "prosperous" }) }
 M.planet_mood_rows_4_items = { [0] = data_item({ text = "rich" }) }
 M.planet_mood_rows_rows = {
-  [0] = data_row({ count = 1, items = M.planet_mood_rows_1_items, color = 8 }),
+  data_row({ count = 1, items = M.planet_mood_rows_1_items, color = 8 }),
   data_row({ count = 1, items = M.planet_mood_rows_2_items, color = 3 }),
   data_row({ count = 1, items = M.planet_mood_rows_3_items, color = 9 }),
   data_row({ count = 1, items = M.planet_mood_rows_4_items, color = 12 }),
 }
-M.planet_made_resources_items = { [0] = 12, 36, 24, 25 }
+M.planet_made_resources_items = { 12, 36, 24, 25 }
 M.planet_made_resources_seq = { count = 4, items = M.planet_made_resources_items }
 M.planet_spacer_items = {
   [0] = data_item({ is_false = true }),
@@ -275,35 +275,35 @@ M.protostar_name_items = { [0] = data_item({ text = "protostar" }) }
 M.protostar_name_row = data_row({ count = 1, items = M.protostar_name_items, color = 13 })
 M.synthesizer_name_items = { [0] = data_item({ text = "synthesizer" }) }
 M.synthesizer_name_row = data_row({ count = 1, items = M.synthesizer_name_items, color = 13 })
-M.structure_accepted_resources_items = { [0] = 28, 18, 20, 21, 22, 48 }
+M.structure_accepted_resources_items = { 28, 18, 20, 21, 22, 48 }
 M.structure_accepted_resources_seq = { count = 6, items = M.structure_accepted_resources_items }
-M.trading_hub_accepted_resources_items = { [0] = 28, 48, 18, 20, 21, 22 }
+M.trading_hub_accepted_resources_items = { 28, 48, 18, 20, 21, 22 }
 M.trading_hub_accepted_resources_seq = { count = 6, items = M.trading_hub_accepted_resources_items }
-M.ascension_trail_colors_items = { [0] = 1, 13, 12, 12, 12, 13, 13, 5, 1, 1, 1 }
+M.ascension_trail_colors_items = { 1, 13, 12, 12, 12, 13, 13, 5, 1, 1, 1 }
 M.ascension_trail_colors_seq = { count = 11, items = M.ascension_trail_colors_items }
-M.protostar_trail_colors_items = { [0] = 1, 2, 4, 9, 10, 7 }
+M.protostar_trail_colors_items = { 1, 2, 4, 9, 10, 7 }
 M.protostar_trail_colors_seq = { count = 6, items = M.protostar_trail_colors_items }
-M.synthesizer_trail_colors_items = { [0] = 1, 1, 5, 5, 3, 3, 3, 5, 5, 1 }
+M.synthesizer_trail_colors_items = { 1, 1, 5, 5, 3, 3, 3, 5, 5, 1 }
 M.synthesizer_trail_colors_seq = { count = 10, items = M.synthesizer_trail_colors_items }
-M.burst_trail_colors_items = { [0] = 1, 2, 4, 9, 9, 10, 10, 7, 7, 7, 7, 7 }
+M.burst_trail_colors_items = { 1, 2, 4, 9, 9, 10, 10, 7, 7, 7, 7, 7 }
 M.burst_trail_colors_seq = { count = 12, items = M.burst_trail_colors_items }
-M.protostar_burst_trail_colors_items = { [0] = 1, 2, 8, 14, 14, 14, 14, 8, 8, 2, 2, 1, 1 }
+M.protostar_burst_trail_colors_items = { 1, 2, 8, 14, 14, 14, 14, 8, 8, 2, 2, 1, 1 }
 M.protostar_burst_trail_colors_seq = { count = 13, items = M.protostar_burst_trail_colors_items }
-M.slipgate_link_sprites_items = { [0] = 170, 170, 170, 168 }
+M.slipgate_link_sprites_items = { 170, 170, 170, 168 }
 M.slipgate_link_sprites_seq = { count = 4, items = M.slipgate_link_sprites_items }
-M.infraspace_gate_link_sprites_items = { [0] = 78, 78, 78, 76 }
+M.infraspace_gate_link_sprites_items = { 78, 78, 78, 76 }
 M.infraspace_gate_link_sprites_seq = { count = 4, items = M.infraspace_gate_link_sprites_items }
-M.synthesizer_synthesizable_resources_items = { [0] = 28, 20, 21, 22 }
+M.synthesizer_synthesizable_resources_items = { 28, 20, 21, 22 }
 M.synthesizer_synthesizable_resources_seq = { count = 4, items = M.synthesizer_synthesizable_resources_items }
-M.probe_trail_colors_items = { [0] = 1, 1, 5, 13, 6 }
+M.probe_trail_colors_items = { 1, 1, 5, 13, 6 }
 M.probe_trail_colors_seq = { count = 5, items = M.probe_trail_colors_items }
-M.help_screen_trail_colors_items = { [0] = 0, 1, 1, 2, 4, 9, 10, 9, 4, 2, 1, 1, 1 }
+M.help_screen_trail_colors_items = { 0, 1, 1, 2, 4, 9, 10, 9, 4, 2, 1, 1, 1 }
 M.help_screen_trail_colors_seq = { count = 13, items = M.help_screen_trail_colors_items }
-M.slipway_trail_colors_items = { [0] = 0, 0, 7, 7, 10, 10, 9, 9, 9, 9, 9, 9, 9, 9, 4, 4, 4, 2, 2, 1 }
+M.slipway_trail_colors_items = { 0, 0, 7, 7, 10, 10, 9, 9, 9, 9, 9, 9, 9, 9, 4, 4, 4, 2, 2, 1 }
 M.slipway_trail_colors_seq = { count = 20, items = M.slipway_trail_colors_items }
-M.wormhole_color_ramp_items = { [0] = 7, 7, 6, 13, 5, 1, 1, 1, 0 }
+M.wormhole_color_ramp_items = { 7, 7, 6, 13, 5, 1, 1, 1, 0 }
 M.wormhole_color_ramp_seq = { count = 9, items = M.wormhole_color_ramp_items }
-M.background_tile_choices_items = { [0] = 0, 0, 0, 72, 73, 74, 75, 88, 89, 90, 91, 88, 91, 89, 91 }
+M.background_tile_choices_items = { 0, 0, 0, 72, 73, 74, 75, 88, 89, 90, 91, 88, 91, 89, 91 }
 M.background_tile_choices_seq = { count = 15, items = M.background_tile_choices_items }
 M.help_screen_rows_1_items = {
   [0] = data_item({ number = 192 }),
@@ -1137,13 +1137,12 @@ M.synthesizer_kind_record = kind_record(
   M.synthesizer_required_tech_text, 0x420000, PLACING, 0x280000, M.synthesizer_archetype
 )
 
--- seq is the 0-indexed array, i 1-based as in the cart.
 function M.int_seq_at(seq, count, i, out)
   assert(seq ~= nil and count >= 0, "a sequence is an array and its length")
   if i < 1 or i > count then
     return false, out
   end
-  out = seq[i - 1]
+  out = seq[i]
   return true, out
 end
 
@@ -1152,12 +1151,12 @@ function M.game_data_fixed_seq_at(seq, count, i, out)
   if i < 1 or i > count then
     return false, out
   end
-  out = seq[i - 1]
+  out = seq[i]
   return true, out
 end
 
 function M.int_seq_has_fixed(seq, v)
-  for i = 0, seq.count - 1 do
+  for i = 1, seq.count do
     if fixed.p8_fixed_from_int(seq.items[i]) == v then
       return true
     end
@@ -1169,7 +1168,7 @@ function M.planet_types_lookup(px)
   if px == nil then
     return nil
   end
-  for i = 0, M.PLANET_TYPES_COUNT - 1 do
+  for i = 1, M.PLANET_TYPES_COUNT do
     if M.planet_types_table[i].name == px then
       return M.planet_types_table[i]
     end

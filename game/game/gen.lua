@@ -52,7 +52,7 @@ end
 
 local function weighted_picker_fill(state)
   state.tickets_count = 0
-  for i = 0, game_data.PLANET_TYPES_COUNT - 1 do
+  for i = 1, game_data.PLANET_TYPES_COUNT do
     local entity = game_data.planet_types_table[i]
     local count = fixed.p8_fixed_flr_int(fixed.p8_fixed_mul(entity.weight, state.multiplier))
 

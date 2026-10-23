@@ -33,7 +33,7 @@ end
 
 local g_menu_up = false
 local g_galaxy_menu_pos = {}
-for i = 0, game_data.GALAXY_MENU_COUNT - 1 do
+for i = 1, game_data.GALAXY_MENU_COUNT do
   g_galaxy_menu_pos[i] = vec.vec_make(0, 0)
 end
 
@@ -245,17 +245,17 @@ end
 local function pause_menu_row4_on_click_method(self)
 end
 
--- Entry 3 is set once galaxy_menu_button4_on_click_method is defined: here it is still nil.
+-- Entry 4 is set once galaxy_menu_button4_on_click_method is defined: here it is still nil.
 M.galaxy_menu_on_click_table = {
-  [0] = galaxy_menu_button1_on_click_method,
+  galaxy_menu_button1_on_click_method,
   galaxy_menu_button2_on_click_method,
   galaxy_menu_button3_on_click_method,
 }
-M.galaxy_menu_refresh_table = { [1] = galaxy_menu_button2_refresh_method }
+M.galaxy_menu_refresh_table = { [2] = galaxy_menu_button2_refresh_method }
 
 galaxy_menu_button4_on_click_method = function(self)
   local my = {
-    [0] = score_panel.score_panel_init_field_value(),
+    score_panel.score_panel_init_field_value(),
     pause_menu_row2_on_click_method,
     pause_menu_row3_on_click_method,
     pause_menu_row4_on_click_method,
@@ -267,18 +267,18 @@ galaxy_menu_button4_on_click_method = function(self)
     return
   end
   for i = 0, game_data.PAUSE_MENU_COUNT - 1 do
-    local e = game_data.pause_menu_table[i]
+    local e = game_data.pause_menu_table[i + 1]
 
     bs[i] = ui_button.button_keys_zero({})
     bs[i].layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
-    bs[i].on_click = my[i]
+    bs[i].on_click = my[i + 1]
   end
   frame.fixed_pos = M.g_pause_menu_open_box.fixed_pos and vec_copy(M.g_pause_menu_open_box.fixed_pos)
   frame.back_color = M.g_pause_menu_open_box.back_color
   frame.row_step = M.g_pause_menu_open_box.row_step and vec_copy(M.g_pause_menu_open_box.row_step)
   message_box.message_box_open_box(frame, bs, game_data.PAUSE_MENU_COUNT)
 end
-M.galaxy_menu_on_click_table[3] = galaxy_menu_button4_on_click_method
+M.galaxy_menu_on_click_table[4] = galaxy_menu_button4_on_click_method
 
 function M.galaxy_menu_button(i)
   local e
@@ -286,17 +286,17 @@ function M.galaxy_menu_button(i)
 
   assert(g_menu_up and i >= 1 and i <= game_data.GALAXY_MENU_COUNT,
     "galaxy_menu_button: the galaxy menu has GALAXY_MENU_COUNT rows, after menu_init()")
-  e = game_data.galaxy_menu_table[i - 1]
+  e = game_data.galaxy_menu_table[i]
   keys.layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
-  keys.pos = vec_copy(g_galaxy_menu_pos[i - 1])
-  keys.on_click = M.galaxy_menu_on_click_table[i - 1]
-  keys.refresh = M.galaxy_menu_refresh_table[i - 1]
+  keys.pos = vec_copy(g_galaxy_menu_pos[i])
+  keys.on_click = M.galaxy_menu_on_click_table[i]
+  keys.refresh = M.galaxy_menu_refresh_table[i]
   return ui_button.button_new(keys)
 end
 
 function M.galaxy_menu_on_click(i)
   assert(i >= 1 and i <= game_data.GALAXY_MENU_COUNT)
-  return M.galaxy_menu_on_click_table[i - 1]
+  return M.galaxy_menu_on_click_table[i]
 end
 
 -- The live HUD button whose on_click is galaxy_menu_on_click(i); nil when there is none.
@@ -342,7 +342,7 @@ end
 function M.menu_init()
   M.menu_shutdown()
 
-  for i = 0, game_data.GALAXY_MENU_COUNT - 1 do
+  for i = 1, game_data.GALAXY_MENU_COUNT do
     g_galaxy_menu_pos[i] = vec.vec_make(fixed.p8_fixed_from_int(game_data.galaxy_menu_table[i].pos_x),
       fixed.p8_fixed_from_int(game_data.galaxy_menu_table[i].pos_y))
   end

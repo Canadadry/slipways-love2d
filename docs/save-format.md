@@ -51,7 +51,7 @@ In this order.
 | `rnd_state` | u32 | any; the game stream, which only game decisions draw from |
 | `background_seed` | u32 | any; the `rnd_state` the galaxy background drew its tile map from |
 | type picker tickets count | u8 | 0–66 (`WEIGHTED_PICKER_TICKETS_CAP`) |
-| ticket, × tickets count | u8 each | 0–10, a `planet_types_table` index |
+| ticket, × tickets count | u8 each | 0–10, the 0-based rank of a `planet_types_table` entry (its position − 1) |
 | recent, × 3 | u8 each | 0–10 when its recent_set is 1; anything when 0 (capture writes 0) |
 | recent_set, × 3 | u8 each | 0 or 1 |
 | type picker multiplier | i32 | any |
