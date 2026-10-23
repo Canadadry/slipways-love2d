@@ -4,7 +4,7 @@
 --   random_walk_t: { step, bias }.
 --   weighted_picker_t: { tickets, tickets_count, recent, recent_set,
 --     multiplier, random, random_ctx }; tickets, recent and recent_set
---     indexed from 0, created when first written; recent_set[i] is true once
+--     1-based, created when first written; recent_set[i] is true once
 --     slot i is written, nil before. A ticket and a recent entry
 --     are the very planet_types_table entry; random is a function taking
 --     random_ctx (a random_walk_t when random is M.random_walk_draw).
@@ -39,7 +39,7 @@ M.WEIGHTED_PICKER_TICKETS_CAP = 66
 
 -- Return, not continue, at the first unwritten slot: slots fill out of order.
 local function weighted_picker_recent_contains(state, e)
-  for i = 0, 2 do
+  for i = 1, 3 do
     if not state.recent_set[i] then
       return false
     end
@@ -60,8 +60,9 @@ local function weighted_picker_fill(state)
       assert(state.tickets_count < M.WEIGHTED_PICKER_TICKETS_CAP, "weighted_picker_fill: the save format holds 0 to "
         .. "WEIGHTED_PICKER_TICKETS_CAP tickets (docs/save-format.md) and the decoder refuses more -- a picker past it "
         .. "cannot be saved")
-      state.tickets[state.tickets_count] = entity
-      state.tickets_count = state.tickets_count + 1
+      local n = state.tickets_count + 1
+      state.tickets[n] = entity
+      state.tickets_count = n
     end
   end
 end
@@ -71,9 +72,6 @@ function M.weighted_picker_new(multiplier, r, r_ctx)
 
   state.recent = {}
   state.recent_set = {}
-  for i = 0, 2 do
-    state.recent[i] = nil
-  end
   state.multiplier = multiplier
   state.random = r
   state.random_ctx = r_ctx
@@ -83,7 +81,7 @@ function M.weighted_picker_new(multiplier, r, r_ctx)
 end
 
 local function weighted_picker_has_drawable_ticket(state)
-  for i = 0, state.tickets_count - 1 do
+  for i = 1, state.tickets_count do
     if not weighted_picker_recent_contains(state, state.tickets[i]) then
       return true
     end
@@ -92,16 +90,16 @@ local function weighted_picker_has_drawable_ticket(state)
 end
 
 local function weighted_picker_tickets_del(state, e)
-  local i = 0
+  local i = 1
 
   while state.tickets[i] ~= e do
     i = i + 1
   end
-  state.tickets_count = state.tickets_count - 1
-  while i < state.tickets_count do
-    state.tickets[i] = state.tickets[i + 1]
-    i = i + 1
+  for j = i, state.tickets_count - 1 do
+    state.tickets[j] = state.tickets[j + 1]
   end
+  state.tickets[state.tickets_count] = nil
+  state.tickets_count = state.tickets_count - 1
 end
 
 function M.weighted_picker_next(state)
@@ -116,9 +114,9 @@ function M.weighted_picker_next(state)
     local len_fixed = fixed.p8_fixed_from_int(state.tickets_count)
     local idx_fixed =
       fixed.p8_fixed_flr(fixed.p8_fixed_add(fixed.p8_fixed_mul(r_val, len_fixed), fixed.p8_fixed_from_int(1)))
-    local idx0 = fixed.p8_fixed_flr_int(idx_fixed) - 1
+    local idx = fixed.p8_fixed_flr_int(idx_fixed)
 
-    e = state.tickets[idx0]
+    e = state.tickets[idx]
     if not weighted_picker_recent_contains(state, e) then
       break
     end
@@ -127,8 +125,8 @@ function M.weighted_picker_next(state)
   weighted_picker_tickets_del(state, e)
   do
     local slot = 3 - cint.mod(state.tickets_count, 3)
-    state.recent[slot - 1] = e
-    state.recent_set[slot - 1] = true
+    state.recent[slot] = e
+    state.recent_set[slot] = true
   end
   return e
 end

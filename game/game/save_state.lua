@@ -1,17 +1,20 @@
 -- Copy of src/game/save_state.h then src/game/save_state.c.
 --
 -- Shapes, with the C field names:
---   A byte buffer is a 0-indexed array of integers 0 .. 255, owned and filled in place as the C's.
---   cursor_t: { position, end_, failed }.
+--   A byte buffer is a 1-based array of integers 0 .. 255, like a Lua string's bytes, owned and
+--     filled in place as the C's.
+--   cursor_t: { position, end_, failed }: position is that of the next byte, end_ that of the last
+--     readable one, so a record's byte count is the writer's position - 1.
 --   save_vec_t: { x, y }; save_need_t: { resource }, nil when absent. A save_route_t's resource
 --     is nil when absent too, and so is save_state_t's probe { pos, map_pos, fold_anchor }; the
 --     flag bytes are written from presence.
 --   save_state_t: { difficulty, economy, rnd_state, background_seed, type_picker, vanish_walk,
 --     structure_id_counter, probe, camera_map_pos, node_count, nodes, slipway_count,
 --     slipways, route_count, routes, route_index_count, route_indices, node_slipway_count,
---     node_slipways }, every array 0-indexed. memset leaves nodes, slipways, routes,
---     route_indices and node_slipways empty: an element is created at its C zero value when the
---     C first writes into it, and nothing reads one past its count.
+--     node_slipways }, every array 1-based; first_route, first_slipway and first_planet are
+--     positions in their pool, a slice being pool[first .. first + count - 1]. memset leaves
+--     nodes, slipways, routes, route_indices and node_slipways empty: an element is created at
+--     its C zero value when the C first writes into it, and nothing reads one past its count.
 --   save_node_t.planet_id is a Lua string; u32 values (rnd_state, background_seed, the CRC) are
 --     unsigned 0 .. 2^32-1, i32 values the signed raw value.
 local bit = require("bit")
@@ -74,7 +77,7 @@ M.SAVE_NODE_KNOWN_FLAGS = bit.lshift(1, 11) - 1
 -- description_type is the type whose description the planet holds, which
 -- terraform leaves on the old type. The route and slipway
 -- slices index the state's pools.
--- Both route slices index route_indices: node indices, then slipway indices.
+-- Both route slices are positions in route_indices, which holds node ranks, then slipway ranks.
 -- Every fixed-point value is its raw 16.16 int32_t; every other reference is
 -- a 0-based rank, except difficulty (its difficulty_options_table position).
 
@@ -85,14 +88,14 @@ local HEADER_BYTES = 8
 local TRAILER_BYTES = 4
 local LENGTH_OFFSET = 6
 
-M.magic = { [0] = string.byte("S"), string.byte("L"), string.byte("W"), string.byte("Y") }
+M.magic = { string.byte("S"), string.byte("L"), string.byte("W"), string.byte("Y") }
 local magic = M.magic
 
 local crc32_table
 
 local function zero_array(count)
   local array = {}
-  for i = 0, count - 1 do
+  for i = 1, count do
     array[i] = 0
   end
   return array
@@ -140,7 +143,7 @@ end
 -- Lua only: a save_node_t at its C zero value.
 local function save_node_zero()
   local needs = {}
-  for i = 0, M.SAVE_STATE_NEEDS_CAP - 1 do
+  for i = 1, M.SAVE_STATE_NEEDS_CAP do
     needs[i] = {}
   end
   return {
@@ -161,9 +164,9 @@ local function save_node_zero()
     production_bonus = 0,
     production_resource = 0,
     state_time = 0,
-    first_route = 0,
+    first_route = 1,
     route_count = 0,
-    first_slipway = 0,
+    first_slipway = 1,
     slipway_count = 0,
   }
 end
@@ -171,9 +174,9 @@ end
 -- Lua only: a save_route_t at its C zero value.
 local function save_route_zero()
   return {
-    first_planet = 0,
+    first_planet = 1,
     planet_count = 0,
-    first_slipway = 0,
+    first_slipway = 1,
     slipway_count = 0,
     resource_is_bool = 0,
   }
@@ -188,7 +191,7 @@ end
 -- returns 0, so a parser checks failed once at the end.
 
 local function write_u8(bytes, writer, value)
-  assert(writer.position >= 0 and writer.position < M.SAVE_STATE_MAX_BYTES, "save_state_encode: the record must fit SAVE_STATE_MAX_BYTES, 8 KiB")
+  assert(writer.position >= 1 and writer.position <= M.SAVE_STATE_MAX_BYTES, "save_state_encode: the record must fit SAVE_STATE_MAX_BYTES, 8 KiB")
   bytes[writer.position] = bit.band(value, 0xFF)
   writer.position = writer.position + 1
 end
@@ -213,7 +216,7 @@ local function write_vec(bytes, writer, vec)
 end
 
 local function read_u8(bytes, reader)
-  if reader.position >= reader.end_ then
+  if reader.position > reader.end_ then
     reader.failed = true
     return 0
   end
@@ -244,10 +247,10 @@ local function read_vec(bytes, reader)
 end
 
 local function write_indices(bytes, writer, state, first, count)
-  assert(count >= 0 and count <= 0xFF and first >= 0 and first + count <= state.route_index_count)
+  assert(count >= 0 and count <= 0xFF and first >= 1 and first + count - 1 <= state.route_index_count)
   write_u8(bytes, writer, count)
-  for i = 0, count - 1 do
-    write_u8(bytes, writer, state.route_indices[first + i])
+  for i = first, first + count - 1 do
+    write_u8(bytes, writer, state.route_indices[i])
   end
 end
 
@@ -276,8 +279,8 @@ local function write_node(bytes, writer, state, node)
       length = length + 1
     end
     write_u8(bytes, writer, length)
-    for i = 0, length - 1 do
-      write_u8(bytes, writer, string.byte(node.planet_id, i + 1))
+    for i = 1, length do
+      write_u8(bytes, writer, string.byte(node.planet_id, i))
     end
   end
   write_i32(bytes, writer, node.fold_anchor)
@@ -288,8 +291,8 @@ local function write_node(bytes, writer, state, node)
   if bit.band(node.flags, M.SAVE_NODE_HAS_NEEDS) ~= 0 then
     assert(node.need_count >= 0 and node.need_count <= 0xFF)
     write_u8(bytes, writer, node.need_count)
-    local i = 0
-    while i < node.need_count and i < M.SAVE_STATE_NEEDS_CAP do
+    local i = 1
+    while i <= node.need_count and i <= M.SAVE_STATE_NEEDS_CAP do
       write_u8(bytes, writer, (node.needs[i].resource ~= nil) and 1 or 0)
       if node.needs[i].resource ~= nil then
         write_i32(bytes, writer, node.needs[i].resource)
@@ -312,20 +315,20 @@ local function write_node(bytes, writer, state, node)
     write_i32(bytes, writer, node.state_time)
   end
   if bit.band(node.flags, M.SAVE_NODE_HAS_OUTGOING_ROUTES) ~= 0 then
-    assert(node.route_count >= 0 and node.route_count <= 0xFFFF and node.first_route >= 0 and
-           node.first_route + node.route_count <= state.route_count)
+    assert(node.route_count >= 0 and node.route_count <= 0xFFFF and node.first_route >= 1 and
+           node.first_route + node.route_count - 1 <= state.route_count)
     write_u16(bytes, writer, node.route_count)
-    for i = 0, node.route_count - 1 do
-      write_route(bytes, writer, state, state.routes[node.first_route + i])
+    for i = node.first_route, node.first_route + node.route_count - 1 do
+      write_route(bytes, writer, state, state.routes[i])
     end
   else
     assert(node.route_count == 0, "save_state_encode: routes without SAVE_NODE_HAS_OUTGOING_ROUTES would be dropped")
   end
-  assert(node.slipway_count >= 0 and node.slipway_count <= 0xFF and node.first_slipway >= 0 and
-         node.first_slipway + node.slipway_count <= state.node_slipway_count)
+  assert(node.slipway_count >= 0 and node.slipway_count <= 0xFF and node.first_slipway >= 1 and
+         node.first_slipway + node.slipway_count - 1 <= state.node_slipway_count)
   write_u8(bytes, writer, node.slipway_count)
-  for i = 0, node.slipway_count - 1 do
-    write_u8(bytes, writer, state.node_slipways[node.first_slipway + i])
+  for i = node.first_slipway, node.first_slipway + node.slipway_count - 1 do
+    write_u8(bytes, writer, state.node_slipways[i])
   end
 end
 
@@ -344,7 +347,7 @@ local function write_payload(bytes, writer, state)
   write_i32(bytes, writer, economy.year)
   write_i32(bytes, writer, economy.year_ticks)
   write_u8(bytes, writer, economy.invented_count)
-  for i = 0, economy.invented_count - 1 do
+  for i = 1, economy.invented_count do
     write_u8(bytes, writer, economy.invented[i])
   end
 
@@ -352,13 +355,13 @@ local function write_payload(bytes, writer, state)
   write_u32(bytes, writer, state.background_seed)
 
   write_u8(bytes, writer, picker.tickets_count)
-  for i = 0, picker.tickets_count - 1 do
+  for i = 1, picker.tickets_count do
     write_u8(bytes, writer, picker.tickets[i])
   end
-  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
+  for i = 1, M.SAVE_STATE_RECENT_COUNT do
     write_u8(bytes, writer, picker.recent[i])
   end
-  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
+  for i = 1, M.SAVE_STATE_RECENT_COUNT do
     write_u8(bytes, writer, picker.recent_set[i])
   end
   write_i32(bytes, writer, picker.multiplier)
@@ -381,13 +384,13 @@ local function write_payload(bytes, writer, state)
 
   assert(state.node_count >= 0 and state.node_count <= M.SAVE_STATE_NODES_CAP, "save_state_encode: node indices are one byte")
   write_u8(bytes, writer, state.node_count)
-  for i = 0, state.node_count - 1 do
+  for i = 1, state.node_count do
     write_node(bytes, writer, state, state.nodes[i])
   end
 
   assert(state.slipway_count >= 0 and state.slipway_count <= M.SAVE_STATE_SLIPWAYS_CAP, "save_state_encode: slipway indices are one byte")
   write_u8(bytes, writer, state.slipway_count)
-  for i = 0, state.slipway_count - 1 do
+  for i = 1, state.slipway_count do
     write_u8(bytes, writer, state.slipways[i].start)
     write_u8(bytes, writer, state.slipways[i].end_)
     write_i32(bytes, writer, state.slipways[i].state_time)
@@ -397,17 +400,17 @@ end
 -- Returns the record's byte count; the caller owns buffer. Writes what it is
 -- given: only save_state_decode validates.
 function M.save_state_encode(state, buffer)
-  local writer = { position = 0, end_ = M.SAVE_STATE_MAX_BYTES, failed = false }
-  local length = { position = LENGTH_OFFSET, end_ = LENGTH_OFFSET + 2, failed = false }
-  for i = 0, MAGIC_LENGTH - 1 do
+  local writer = { position = 1, end_ = M.SAVE_STATE_MAX_BYTES, failed = false }
+  local length = { position = LENGTH_OFFSET + 1, end_ = LENGTH_OFFSET + 2, failed = false }
+  for i = 1, MAGIC_LENGTH do
     write_u8(buffer, writer, magic[i])
   end
   write_u16(buffer, writer, M.SAVE_STATE_VERSION)
   write_u16(buffer, writer, 0)
   write_payload(buffer, writer, state)
-  write_u16(buffer, length, writer.position - HEADER_BYTES)
-  write_u32(buffer, writer, M.save_state_crc32(buffer, writer.position))
-  return writer.position
+  write_u16(buffer, length, writer.position - 1 - HEADER_BYTES)
+  write_u32(buffer, writer, M.save_state_crc32(buffer, writer.position - 1))
+  return writer.position - 1
 end
 
 local function read_economy(bytes, reader, economy)
@@ -421,7 +424,7 @@ local function read_economy(bytes, reader, economy)
     reader.failed = true
     return
   end
-  for i = 0, economy.invented_count - 1 do
+  for i = 1, economy.invented_count do
     economy.invented[i] = read_u8(bytes, reader)
   end
 end
@@ -432,13 +435,13 @@ local function read_type_picker(bytes, reader, picker)
     reader.failed = true
     return
   end
-  for i = 0, picker.tickets_count - 1 do
+  for i = 1, picker.tickets_count do
     picker.tickets[i] = read_u8(bytes, reader)
   end
-  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
+  for i = 1, M.SAVE_STATE_RECENT_COUNT do
     picker.recent[i] = read_u8(bytes, reader)
   end
-  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
+  for i = 1, M.SAVE_STATE_RECENT_COUNT do
     picker.recent_set[i] = read_u8(bytes, reader)
   end
   picker.multiplier = read_i32(bytes, reader)
@@ -446,18 +449,19 @@ local function read_type_picker(bytes, reader, picker)
   picker.walk_bias = read_i32(bytes, reader)
 end
 
--- Returns the slice's first index into route_indices, then count.
+-- Returns the slice's first position in route_indices, then count.
 local function read_indices(bytes, reader, out, count)
-  local first = out.route_index_count
+  local first = out.route_index_count + 1
   count = read_u8(bytes, reader)
-  if first + count > M.SAVE_STATE_ROUTE_INDICES_CAP then
+  if first + count - 1 > M.SAVE_STATE_ROUTE_INDICES_CAP then
     reader.failed = true
     count = 0
     return first, count
   end
-  for _ = 0, count - 1 do
-    out.route_indices[out.route_index_count] = read_u8(bytes, reader)
-    out.route_index_count = out.route_index_count + 1
+  for _ = 1, count do
+    local n = out.route_index_count + 1
+    out.route_indices[n] = read_u8(bytes, reader)
+    out.route_index_count = n
   end
   return first, count
 end
@@ -492,7 +496,7 @@ local function read_node(bytes, reader, out, node)
       reader.failed = true
       return
     end
-    for _ = 0, length - 1 do
+    for _ = 1, length do
       local character = read_u8(bytes, reader)
       if character < 0x21 or character > 0x7E then
         reader.failed = true
@@ -512,7 +516,7 @@ local function read_node(bytes, reader, out, node)
       reader.failed = true
       return
     end
-    for i = 0, node.need_count - 1 do
+    for i = 1, node.need_count do
       local resource_flag = read_u8(bytes, reader)
       if resource_flag > 1 then
         reader.failed = true
@@ -535,31 +539,33 @@ local function read_node(bytes, reader, out, node)
   if bit.band(node.flags, M.SAVE_NODE_HAS_STATE_TIME) ~= 0 then
     node.state_time = read_i32(bytes, reader)
   end
-  node.first_route = out.route_count
+  node.first_route = out.route_count + 1
   if bit.band(node.flags, M.SAVE_NODE_HAS_OUTGOING_ROUTES) ~= 0 then
     node.route_count = read_u16(bytes, reader)
-    if node.first_route + node.route_count > M.SAVE_STATE_ROUTES_CAP then
+    if node.first_route + node.route_count - 1 > M.SAVE_STATE_ROUTES_CAP then
       reader.failed = true
       return
     end
-    local i = 0
-    while i < node.route_count and not reader.failed do
+    local i = 1
+    while i <= node.route_count and not reader.failed do
       local route = save_route_zero()
-      out.routes[out.route_count] = route
-      out.route_count = out.route_count + 1
+      local n = out.route_count + 1
+      out.routes[n] = route
+      out.route_count = n
       read_route(bytes, reader, out, route)
       i = i + 1
     end
   end
-  node.first_slipway = out.node_slipway_count
+  node.first_slipway = out.node_slipway_count + 1
   node.slipway_count = read_u8(bytes, reader)
-  if node.first_slipway + node.slipway_count > M.SAVE_STATE_NODE_SLIPWAYS_CAP then
+  if node.first_slipway + node.slipway_count - 1 > M.SAVE_STATE_NODE_SLIPWAYS_CAP then
     reader.failed = true
     return
   end
-  for _ = 0, node.slipway_count - 1 do
-    out.node_slipways[out.node_slipway_count] = read_u8(bytes, reader)
-    out.node_slipway_count = out.node_slipway_count + 1
+  for _ = 1, node.slipway_count do
+    local n = out.node_slipway_count + 1
+    out.node_slipways[n] = read_u8(bytes, reader)
+    out.node_slipway_count = n
   end
 end
 
@@ -591,14 +597,14 @@ local function read_payload(bytes, reader, out)
   end
   out.camera_map_pos = read_vec(bytes, reader)
   out.node_count = read_u8(bytes, reader)
-  local i = 0
-  while i < out.node_count and not reader.failed do
+  local i = 1
+  while i <= out.node_count and not reader.failed do
     out.nodes[i] = save_node_zero()
     read_node(bytes, reader, out, out.nodes[i])
     i = i + 1
   end
   out.slipway_count = read_u8(bytes, reader)
-  for k = 0, out.slipway_count - 1 do
+  for k = 1, out.slipway_count do
     out.slipways[k] = save_slipway_zero()
     out.slipways[k].start = read_u8(bytes, reader)
     out.slipways[k].end_ = read_u8(bytes, reader)
@@ -612,7 +618,7 @@ end
 
 local function economy_is_valid(economy)
   local seen = {}
-  for i = 0, economy.invented_count - 1 do
+  for i = 1, economy.invented_count do
     local tech = economy.invented[i]
     if tech >= map_tables.TECHNOLOGIES_COUNT or seen[tech] then
       return false
@@ -623,12 +629,12 @@ local function economy_is_valid(economy)
 end
 
 local function type_picker_is_valid(picker)
-  for i = 0, picker.tickets_count - 1 do
+  for i = 1, picker.tickets_count do
     if picker.tickets[i] >= game_data.PLANET_TYPES_COUNT then
       return false
     end
   end
-  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
+  for i = 1, M.SAVE_STATE_RECENT_COUNT do
     if not is_flag(picker.recent_set[i]) or (picker.recent_set[i] ~= 0 and picker.recent[i] >= game_data.PLANET_TYPES_COUNT) then
       return false
     end
@@ -673,7 +679,7 @@ local function is_resource_code(resource)
 end
 
 local function resources_are_valid(node)
-  for i = 0, node.need_count - 1 do
+  for i = 1, node.need_count do
     local need = node.needs[i]
     if need.resource ~= nil and not is_resource_code(need.resource) then
       return false
@@ -689,7 +695,7 @@ local function node_is_valid(node)
 end
 
 local function nodes_are_valid(state)
-  for i = 0, state.node_count - 1 do
+  for i = 1, state.node_count do
     if not node_is_valid(state.nodes[i]) then
       return false
     end
@@ -698,8 +704,8 @@ local function nodes_are_valid(state)
 end
 
 local function indices_are_below(state, first, count, limit)
-  for i = 0, count - 1 do
-    if state.route_indices[first + i] >= limit then
+  for i = first, first + count - 1 do
+    if state.route_indices[i] >= limit then
       return false
     end
   end
@@ -707,7 +713,7 @@ local function indices_are_below(state, first, count, limit)
 end
 
 local function routes_are_valid(state)
-  for i = 0, state.route_count - 1 do
+  for i = 1, state.route_count do
     local route = state.routes[i]
     if not indices_are_below(state, route.first_planet, route.planet_count, state.node_count) or
        not indices_are_below(state, route.first_slipway, route.slipway_count, state.slipway_count) then
@@ -718,7 +724,7 @@ local function routes_are_valid(state)
 end
 
 local function slipways_are_valid(state)
-  for i = 0, state.slipway_count - 1 do
+  for i = 1, state.slipway_count do
     local slipway = state.slipways[i]
     if slipway.start >= state.node_count or slipway.end_ >= state.node_count or slipway.start == slipway.end_ then
       return false
@@ -727,17 +733,22 @@ local function slipways_are_valid(state)
   return true
 end
 
+-- Compares ranks with ranks: node_slipways and a slipway's start and end_ hold 0-based ranks.
 local function node_slipways_are_valid(state)
-  for i = 0, state.node_count - 1 do
+  for i = 1, state.node_count do
     local node = state.nodes[i]
+    local node_rank = i - 1
     local seen = {}
-    for k = 0, node.slipway_count - 1 do
-      local index = state.node_slipways[node.first_slipway + k]
-      if index >= state.slipway_count or seen[index] or
-         (state.slipways[index].start ~= i and state.slipways[index].end_ ~= i) then
+    for k = node.first_slipway, node.first_slipway + node.slipway_count - 1 do
+      local rank = state.node_slipways[k]
+      if rank >= state.slipway_count or seen[rank] then
         return false
       end
-      seen[index] = true
+      local slipway = state.slipways[rank + 1]
+      if slipway.start ~= node_rank and slipway.end_ ~= node_rank then
+        return false
+      end
+      seen[rank] = true
     end
   end
   return true
@@ -752,12 +763,12 @@ end
 -- Returns true for a valid record, false otherwise, never asserts on the bytes.
 -- On false, out is unspecified.
 function M.save_state_decode(bytes, count, out)
-  local reader = { position = MAGIC_LENGTH, end_ = count, failed = false }
-  local trailer = { position = count - TRAILER_BYTES, end_ = count, failed = false }
+  local reader = { position = MAGIC_LENGTH + 1, end_ = count, failed = false }
+  local trailer = { position = count - TRAILER_BYTES + 1, end_ = count, failed = false }
   if count < HEADER_BYTES + TRAILER_BYTES or count > M.SAVE_STATE_MAX_BYTES then
     return false
   end
-  for i = 0, MAGIC_LENGTH - 1 do
+  for i = 1, MAGIC_LENGTH do
     if bytes[i] ~= magic[i] then
       return false
     end
@@ -774,7 +785,7 @@ function M.save_state_decode(bytes, count, out)
   end
   save_state_zero(out)
   read_payload(bytes, reader, out)
-  return not reader.failed and reader.position == reader.end_ and state_is_valid(out)
+  return not reader.failed and reader.position == reader.end_ + 1 and state_is_valid(out)
 end
 
 M.crc32_table = {
@@ -827,7 +838,7 @@ crc32_table = M.crc32_table
 -- CRC-32 IEEE 802.3, reflected: "123456789" gives 0xCBF43926.
 function M.save_state_crc32(bytes, count)
   local crc = 0xFFFFFFFF
-  for i = 0, count - 1 do
+  for i = 1, count do
     crc = bit.bxor(crc32_table[bit.band(bit.bxor(crc, bytes[i]), 0xFF)], bit.rshift(crc, 8))
   end
   crc = bit.bxor(crc, 0xFFFFFFFF)
@@ -908,8 +919,8 @@ local function capture_economy(out)
   out.year = economy.year
   out.year_ticks = economy.year_ticks
   out.invented_count = #economy.invented
-  for i = 0, #economy.invented - 1 do
-    out.invented[i] = technology_index(economy.invented[i + 1]) - 1
+  for i = 1, #economy.invented do
+    out.invented[i] = technology_index(economy.invented[i]) - 1
   end
 end
 
@@ -920,10 +931,10 @@ local function capture_type_picker(out)
   walk = gen.weighted_picker_walk(picker)
   assert(walk ~= nil, "save_state_capture: the type picker draws from a random walk")
   out.tickets_count = picker.tickets_count
-  for i = 0, picker.tickets_count - 1 do
+  for i = 1, picker.tickets_count do
     out.tickets[i] = planet_type_index(picker.tickets[i]) - 1
   end
-  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
+  for i = 1, M.SAVE_STATE_RECENT_COUNT do
     out.recent_set[i] = picker.recent_set[i] and 1 or 0
     out.recent[i] = picker.recent_set[i] and planet_type_index(picker.recent[i]) - 1 or 0
   end
@@ -997,12 +1008,13 @@ local function project_index(id)
 end
 
 -- The ids of the captured nodes and slipways, in save order:
--- { nodes, node_count, slipways, slipway_count }, both id arrays 0-indexed.
+-- { nodes, node_count, slipways, slipway_count }, both id arrays 1-based.
 
+-- Returns id's 0-based rank in ids, the reference the format writes.
 local function index_of(ids, count, id)
-  for i = 0, count - 1 do
+  for i = 1, count do
     if ids[i] == id then
-      return i
+      return i - 1
     end
   end
   assert(false, "save_state_capture: a route, slipway or slipway list names an entity the save did not capture")
@@ -1040,8 +1052,8 @@ local function capture_node_fields(node, planet)
     assert(#planet.needs <= M.SAVE_STATE_NEEDS_CAP)
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_NEEDS)
     node.need_count = #planet.needs
-    for i = 0, #planet.needs - 1 do
-      local need = planet.needs[i + 1]
+    for i = 1, #planet.needs do
+      local need = planet.needs[i]
       assert(need ~= nil)
       node.needs[i].resource = need.row.resource
     end
@@ -1072,17 +1084,18 @@ end
 
 -- Returns first, then the C's *added.
 local function add_route_indices(out, list, ids, count)
-  local first = out.route_index_count
-  assert(#list <= 0xFF and first + #list <= M.SAVE_STATE_ROUTE_INDICES_CAP)
+  local first = out.route_index_count + 1
+  assert(#list <= 0xFF and out.route_index_count + #list <= M.SAVE_STATE_ROUTE_INDICES_CAP)
   for i = 1, #list do
-    out.route_indices[out.route_index_count] = index_of(ids, count, list[i])
-    out.route_index_count = out.route_index_count + 1
+    local n = out.route_index_count + 1
+    out.route_indices[n] = index_of(ids, count, list[i])
+    out.route_index_count = n
   end
   return first, #list
 end
 
 local function capture_node_links(out, node, planet, ids)
-  node.first_route = out.route_count
+  node.first_route = out.route_count + 1
   if planet.outgoing_routes ~= nil then
     local count = #planet.outgoing_routes
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_OUTGOING_ROUTES)
@@ -1090,8 +1103,9 @@ local function capture_node_links(out, node, planet, ids)
     for i = 1, count do
       local route = planet.outgoing_routes[i]
       local saved = save_route_zero()
-      out.routes[out.route_count] = saved
-      out.route_count = out.route_count + 1
+      local n = out.route_count + 1
+      out.routes[n] = saved
+      out.route_count = n
       saved.first_planet, saved.planet_count = add_route_indices(out, route.planets, ids.nodes, ids.node_count)
       saved.first_slipway, saved.slipway_count = add_route_indices(out, route.slipways, ids.slipways, ids.slipway_count)
       saved.resource_is_bool = route.resource_is_bool and 1 or 0
@@ -1099,11 +1113,12 @@ local function capture_node_links(out, node, planet, ids)
     end
     node.route_count = count
   end
-  node.first_slipway = out.node_slipway_count
+  node.first_slipway = out.node_slipway_count + 1
   assert(#planet.slipways <= 0xFF and out.node_slipway_count + #planet.slipways <= M.SAVE_STATE_NODE_SLIPWAYS_CAP)
   for i = 1, #planet.slipways do
-    out.node_slipways[out.node_slipway_count] = index_of(ids.slipways, ids.slipway_count, planet.slipways[i])
-    out.node_slipway_count = out.node_slipway_count + 1
+    local n = out.node_slipway_count + 1
+    out.node_slipways[n] = index_of(ids.slipways, ids.slipway_count, planet.slipways[i])
+    out.node_slipway_count = n
   end
   node.slipway_count = #planet.slipways
 end
@@ -1113,33 +1128,37 @@ local function capture_world(out, ids)
     local e = tagged_at(entity_class.TAG_NODE, i)
     if is_saved(e) then
       assert(ids.node_count < M.SAVE_STATE_NODES_CAP, "save_state_capture: node indices are one byte")
-      ids.nodes[ids.node_count] = entity_id.entity_id_link(e)
-      ids.node_count = ids.node_count + 1
+      local n = ids.node_count + 1
+      ids.nodes[n] = entity_id.entity_id_link(e)
+      ids.node_count = n
     end
   end
   for i = 1, tagged_count(entity_class.TAG_SLIPWAY) do
     local e = tagged_at(entity_class.TAG_SLIPWAY, i)
     local slipway = e
-    local saved
+    local saved, n
     if not is_saved(e) or slipway.end_is_point then
       goto continue
     end
     assert(ids.slipway_count < M.SAVE_STATE_SLIPWAYS_CAP, "save_state_capture: slipway indices are one byte")
-    ids.slipways[ids.slipway_count] = entity_id.entity_id_link(e)
-    ids.slipway_count = ids.slipway_count + 1
+    n = ids.slipway_count + 1
+    ids.slipways[n] = entity_id.entity_id_link(e)
+    ids.slipway_count = n
     saved = save_slipway_zero()
-    out.slipways[out.slipway_count] = saved
-    out.slipway_count = out.slipway_count + 1
+    n = out.slipway_count + 1
+    out.slipways[n] = saved
+    out.slipway_count = n
     saved.start = index_of(ids.nodes, ids.node_count, slipway.start)
     saved.end_ = index_of(ids.nodes, ids.node_count, slipway.end_)
     saved.state_time = e.state_time
     ::continue::
   end
-  for i = 0, ids.node_count - 1 do
+  for i = 1, ids.node_count do
     local planet = entity_id.entity_get(ids.nodes[i])
     local node = save_node_zero()
-    out.nodes[out.node_count] = node
-    out.node_count = out.node_count + 1
+    local n = out.node_count + 1
+    out.nodes[n] = node
+    out.node_count = n
     capture_node_fields(node, planet)
     capture_node_links(out, node, planet, ids)
   end

@@ -812,31 +812,37 @@ needs it, exported after the C functions as `M.p8_<file>_<what>` in
 elsewhere (`planet_keys_zero`). `game/love/` names follow
 `module_verb[_object]`.
 
-**Arrays and integers.** A C array keeps its C index, from 0
-(`values = { [0] = 0, 1, 2, 3 }`), 2-D as `t[y][x]`; `#t` and `ipairs` are never used
-on one, and `memcpy`/`memcmp` are loops over the C length. A pointer into an
-array is an integer index, `NULL` is `nil`; a pointer difference into a
-table goes through a Lua-only reverse map built at load
-(`project_index_of` in `research.lua`). Lists handed to LÖVE, the trade
-route lists, the id lists (a planet's slipways, a route's planets and
-slipways, the UI's ephemerals and hover layers, a wormhole's anchors),
-needs, project inputs, invented technologies, particles, transit dots, the
-registry's buckets (live, per-message, per-tag) and the exit queue are plain
-1-based arrays without holes; the runtime's point, segment and input-frame
-lists and the draw meter's caches are 1-based, read up to their count; so are `game_data`'s integer
-sequences (`int_seq_at` reads `seq[i]`) and its lookup tables (planet types, difficulty options, menus,
-score rows, mood rows) and `planet_kinds`, and `map_tables`' lookup tables (resource codes and names,
-production tables and their values, project records, icon tooltips, technologies), and every data row's `items`
-(data files and rows built at run time), read up to the row's count; so are the layout's tuple scalars, row keys,
-placed items and tooltip rows, a planet's row signature, and the row, text and button image caches (cache slot `i`
-is image slot `FIRST + i - 1`, image slot handles staying 0-based) with their keys; so are the message box's
-buttons argument and articles, the menus' and panels' button lists, the score panel's readouts and the demo
-captions (`demo_overlay_find_caption` returns a position or `nil`); so are research's project table, project
-order and projects by name (`project_index_of` gives a position), the available-projects and
-available-technologies lists, a resource map's entries and a slipway's served planets; so are the bindings
-(`BINDINGS_MODE_*` and `BINDINGS_ACTION_*` numbered from 1, the masks, names and mode-action rows,
-`bindings_default`) and the pad's direction tables (`pad_jump_direction` takes 1 to 4); the other C arrays stay 0-based
-until the rest of the 1-based step. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
+**Arrays and integers.** Every array is 1-based: a table whose integer key only
+says "the k-th element" (a list, a sequence, a cache's slots, a ring, a pool, a data
+file's rows read by position, the cart's 1-based index) starts at 1, its loops run
+`for i = 1, count`, and 2-D data is `t[y][x]`. A list without holes (the trade route lists,
+the id lists, needs, particles, the registry's buckets, the exit queue) is a plain Lua
+array, appended with `t[#t + 1] = x`. An array with its own count (`{ items, count }`,
+`tickets_count`, `placed_items_count`, `rows_count`, the save state's pools) keeps it:
+elements past the count may be stale or absent, so `#` and `ipairs` are never used on
+it, reads stop at the count, and an append names its new position
+(`local n = list.count + 1; list.items[n] = x; list.count = n`); an array with holes
+(the type picker's `recent` and `recent_set` until the ring fills, the galaxy menu's
+refresh and on-click tables) is read by position only. A table keyed by a value
+that has its own meaning, 0 included, is a map and keeps its keys: a colour
+(`p8.palette`, `mem.draw_palette`, the CLUT entries, `hud`'s palette blocks), a pixel
+coordinate or offset (`mem.screen[y][x]`, the sprite sheet, the map cells, the glyph
+rows, every pixel loop), an address or angle (`p8.sprite_sheet_packed`,
+`p8.quarter_wave`), an image slot handle (from 0, like a PICO-8 sprite number; the
+game's own caches compute slot `FIRST + i - 1`), a byte (`crc32_table`), a disk code
+(`SAVE_NODE_*` in `node_constructors` and `node_kind`), a saved state
+(`ENTITY_STATE_*`), a tag's bit position (the registry's tag buckets), a layer
+value (the layer order's `start`, `start[0]` the empty prefix; `ui`'s hover layers),
+a draw-function code, a disk rank (the save validators' `seen` sets) and a demo frame
+(`demo_data_pad_buttons`). An enum that only indexes tables is numbered from 1
+(`ENTITY_MESSAGE_*`, `BINDINGS_MODE_*`, `BINDINGS_ACTION_*`). The save state mirrors the
+bytes: its arrays are 1-based but every reference it holds keeps its on-disk value, a
+0-based rank, converted to a position only where the capture writes it
+(`position - 1`) and where the loader and the decoder's node-slipway check read it
+(`rank + 1`) (`docs/save-format.md`). `memcpy`/`memcmp` are loops over the C length.
+A pointer into an array is an integer index, `NULL` is `nil`; a pointer difference
+into a table goes through a Lua-only reverse map built at load (`project_index_of` in
+`research.lua`). C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
 `%` is `cint.mod` (the dividend's sign); `math.floor` and Lua `%` appear only
 where the C floors. `(unsigned char)x` is `bit.band(x, 0xFF)`; a `bit`
 result above 2^31 − 1 is brought back to unsigned where it is compared or
@@ -860,7 +866,7 @@ point at zeroes its fields in place and keeps its identity:
 `pad_nav_init` keeps its sub-tables and bindings table,
 `input_step_init` zeroes `played` and `played_frame` in place,
 `economy_score_set_difficulty` clears and refills `g_difficulty`. A
-static struct, or inline array of structs, is a table (or 0-indexed array of
+static struct, or inline array of structs, is a table (or array of
 tables) with every field at its C zero value (0, or `nil` for a pointer),
 except an optional value, which is `nil` when absent and tested with
 `~= nil`; no `has` bit or `has_<x>` number marks it (the by-value

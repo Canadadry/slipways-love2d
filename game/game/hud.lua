@@ -1,5 +1,5 @@
 -- Copy of src/game/hud.h then src/game/hud.c.
--- palette_blocks is 0-indexed, palette_blocks[block][colour].
+-- palette_blocks[block][colour] is keyed by the cart's block number and a colour, both from 0.
 local bit = require("bit")
 local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")

@@ -69,4 +69,4 @@
   - [x] Chunk 7 — message box, menus and panels
   - [x] Chunk 8 — research, tech gate, economy and slipway lists
   - [x] Chunk 9 — input and pad
-  - [ ] Chunk 10 — save, docs and full check
+  - [x] Chunk 10 — save, docs and full check

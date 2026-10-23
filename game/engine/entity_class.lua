@@ -11,8 +11,8 @@
 --     compares two infraspaces.
 --   entity_class_t: { draw, draw_overlay, hit_test, new_year, refresh,
 --     has_refresh, left_press, accept_drop, drag, drop, attach_slipway,
---     offer_trade, draw_at, spawn_particle, states (indexed from 0, STATE_COUNT
---     entries), tags, lineage, apply_camera, release, skip_draw_off_screen }.
+--     offer_trade, draw_at, spawn_particle, states (keyed by ENTITY_STATE_*, from 0,
+--     STATE_COUNT entries), tags, lineage, apply_camera, release, skip_draw_off_screen }.
 --     skip_draw_off_screen true: draw_layers calls draw only when
 --     entity_geom_is_on_screen holds, so draw may trust it.
 --   down_t: { stop, held } (held an entity id).

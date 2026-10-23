@@ -22,7 +22,7 @@ function M.p8_sprite_sheet_load(mem)
   end
 end
 
--- The table shared by every caller, indexed from 0: never write it. Pixel
+-- The table shared by every caller, keyed by byte address from 0: never write it. Pixel
 -- (x, y) is in byte y * 64 + x / 2: low nibble for an even x, high for odd.
 function M.p8_sprite_sheet_packed()
   return p8_sprite_sheet_packed_bytes

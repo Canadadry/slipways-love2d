@@ -153,7 +153,7 @@ end
 local g_save_state = {}
 save_state.save_state_zero(g_save_state)
 local g_save_bytes = {}
-for i = 0, save_state.SAVE_STATE_MAX_BYTES - 1 do
+for i = 1, save_state.SAVE_STATE_MAX_BYTES do
   g_save_bytes[i] = 0
 end
 

@@ -3,8 +3,8 @@
 -- Shapes, with the C field names:
 --   ui_t: one table holding the entity header and its own fields; mouse_world and
 --     hovered_by_layer nil until the first ui_update and hover pass write them.
---   ui_hovered_by_layer_t: { layer_count, written, layers }, layers a 0-indexed array of
---     UI_HOVER_LAYERS plain 1-based arrays of ids created by the first hover pass.
+--   ui_hovered_by_layer_t: { layer_count, written, layers }, layers keyed by floored layer
+--     0 .. UI_HOVER_LAYERS - 1, each a plain 1-based array of ids created by the first hover pass.
 --   ephemerals: a plain 1-based array of ids.
 --   mouse_pos_t: { world, screen, has }; down_t: { stop, held }.
 --

@@ -51,6 +51,7 @@ Allowed table references: `self` and other tables as parameters (borrowed for th
 18. A game concept (`targeting`, `emitter`, or any new one) named in `game/engine/`.
 19. A regenerated e2e `*.sha256` or `*.end-state`, or a relaxed `assert`, in a change that removes references.
 20. A truth value held as a `0`/`1` number, or a predicate tested against `0` or `1`.
+21. An array indexed from 0, or a `[0]` key that is a position rather than a value (a colour, a pixel coordinate, an address, a byte, a disk code or rank, a layer, a bit position, an image slot handle).
 
 ## Output format
 

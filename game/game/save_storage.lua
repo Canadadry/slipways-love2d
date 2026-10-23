@@ -1,8 +1,8 @@
 -- Lua only: the storage backend of src/game/save_storage.h, over love.filesystem.
 --
 -- One opaque record of at most SAVE_STATE_MAX_BYTES bytes in save.bin, never decoded here; a
--- byte buffer is a 0-indexed array of integers 0 .. 255. The design's love.filesystem has no
--- remove: an empty save.bin is "no record".
+-- byte buffer is a 1-based array of integers 0 .. 255, byte i of the file at position i. The
+-- design's love.filesystem has no remove: an empty save.bin is "no record".
 local save_state = require("game.save_state")
 
 local M = {}
@@ -13,8 +13,8 @@ local SAVE_FILE = "save.bin"
 function M.save_storage_write(bytes, count)
   local chars = {}
   assert(count >= 1 and count <= save_state.SAVE_STATE_MAX_BYTES, "to clear the save, call save_storage_erase")
-  for i = 0, count - 1 do
-    chars[i + 1] = string.char(bytes[i])
+  for i = 1, count do
+    chars[i] = string.char(bytes[i])
   end
   return love.filesystem.write(SAVE_FILE, table.concat(chars)) == true
 end
@@ -27,7 +27,7 @@ function M.save_storage_read(bytes)
     return 0
   end
   for i = 1, #content do
-    bytes[i - 1] = string.byte(content, i)
+    bytes[i] = string.byte(content, i)
   end
   return #content
 end

@@ -355,7 +355,7 @@ for _, case in ipairs(FONT_CASES) do
 end
 
 -- character is a byte value. The P8_FONT_GLYPH_HEIGHT row bytes print draws
--- for it, indexed from 0, bit 2 the leftmost column: the placeholder's for a
+-- for it, keyed by row offset from 0, bit 2 the leftmost column: the placeholder's for a
 -- character with no glyph. Shared by every caller: never write it.
 function M.p8_font_glyph_rows(character)
   return FONT_ROWS_BY_CHARACTER[character] or FONT_ROWS_PLACEHOLDER

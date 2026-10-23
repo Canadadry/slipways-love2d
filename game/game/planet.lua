@@ -408,7 +408,7 @@ function M.planet_bob_total(state_time)
   local frames = bit.rshift(state_time, 16)
   local total = 0
   local t = 0
-  for _ = 0, frames - 1 do
+  for _ = 1, frames do
     total = fixed.p8_fixed_add(total, bob_delta(t))
     t = fixed.p8_fixed_add(t, fixed.p8_fixed_from_int(1))
   end

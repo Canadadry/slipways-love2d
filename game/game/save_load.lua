@@ -1,8 +1,9 @@
 -- Copy of src/game/save_load.h then src/game/save_load.c.
 --
 -- Every state came out of a save_state_decode that returned true: nothing is validated again.
--- node_constructors is 0-indexed by SAVE_NODE_* kind. The ids in node_ids and slipway_ids are
--- new tables from entity_id_link.
+-- node_constructors is keyed by the SAVE_NODE_* kind, a disk code from 0. node_ids and
+-- slipway_ids are 1-based by save position and hold new tables from entity_id_link; a saved
+-- rank r names position r + 1.
 local bit = require("bit")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -67,7 +68,7 @@ local function load_needs(planet, node)
     planet.needs = nil
     return
   end
-  for i = 0, node.need_count - 1 do
+  for i = 1, node.need_count do
     local resource = { kind = trade.RESOURCE_NIL, number = 0 }
     if node.needs[i].resource ~= nil then
       resource.kind = trade.RESOURCE_FIXED
@@ -185,13 +186,13 @@ local function load_probe(saved)
 end
 
 local function load_slipways(state, node_ids, out)
-  for i = 0, state.slipway_count - 1 do
+  for i = 1, state.slipway_count do
     local keys = slipway_module.slipway_keys_zero()
-    local start = node_ids[state.slipways[i].start]
+    local start = node_ids[state.slipways[i].start + 1]
     local slipway
     keys.start = start
     slipway = slipway_module.slipway_new(keys)
-    slipway_module.slipway_connect(slipway, entity_id.entity_get(node_ids[state.slipways[i].end_]))
+    slipway_module.slipway_connect(slipway, entity_id.entity_get(node_ids[state.slipways[i].end_ + 1]))
     slipway.state_time = state.slipways[i].state_time
     out[i] = entity_id.entity_id_link(slipway)
   end
@@ -199,12 +200,12 @@ end
 
 -- Node-major, each list in its saved order: every list comes out as saved.
 local function load_attach_order(state, node_ids, slipway_ids)
-  for i = 0, state.node_count - 1 do
+  for i = 1, state.node_count do
     local node = state.nodes[i]
     local header = entity_id.entity_get(node_ids[i])
     assert(header.class.attach_slipway ~= nil, "save_load: every saved node takes slipways")
-    for k = 0, node.slipway_count - 1 do
-      header.class.attach_slipway(header, entity_id.entity_get(slipway_ids[state.node_slipways[node.first_slipway + k]]))
+    for k = node.first_slipway, node.first_slipway + node.slipway_count - 1 do
+      header.class.attach_slipway(header, entity_id.entity_get(slipway_ids[state.node_slipways[k] + 1]))
     end
   end
 end
@@ -214,7 +215,7 @@ end
 -- satisfied yet, so may make another resource and spend itself when the
 -- saved game did not.
 local function undo_attach_side_effects(state, node_ids)
-  for i = 0, state.node_count - 1 do
+  for i = 1, state.node_count do
     local node = state.nodes[i]
     local planet = entity_id.entity_get(node_ids[i])
     planet.fold_anchor = node.fold_anchor ~= 0 or nil
@@ -228,8 +229,8 @@ end
 
 local function route_id_list(state, first, count, ids)
   local list = {}
-  for i = 0, count - 1 do
-    local id = ids[state.route_indices[first + i]]
+  for i = first, first + count - 1 do
+    local id = ids[state.route_indices[i] + 1]
     assert(id ~= nil, "route_id_list: a saved route index names a loaded node or slipway")
     list[#list + 1] = id
   end
@@ -238,7 +239,7 @@ end
 
 -- Never recomputed: a partner chosen long ago stays the same.
 local function load_outgoing_routes(state, node_ids, slipway_ids)
-  for i = 0, state.node_count - 1 do
+  for i = 1, state.node_count do
     local node = state.nodes[i]
     local planet = entity_id.entity_get(node_ids[i])
     if not has(node, save_state.SAVE_NODE_HAS_OUTGOING_ROUTES) then
@@ -250,8 +251,8 @@ local function load_outgoing_routes(state, node_ids, slipway_ids)
     for r = #planet.outgoing_routes, 1, -1 do
       planet.outgoing_routes[r] = nil
     end
-    for k = 0, node.route_count - 1 do
-      local saved = state.routes[node.first_route + k]
+    for k = node.first_route, node.first_route + node.route_count - 1 do
+      local saved = state.routes[k]
       local keys = { planets = nil, slipways = nil, resource = nil, resource_is_bool = false }
       local route
       keys.planets = route_id_list(state, saved.first_planet, saved.planet_count, node_ids)
@@ -278,10 +279,10 @@ local function load_rolls(state)
   assert(picker ~= nil and walk ~= nil and vanish_walk ~= nil)
 
   picker.tickets_count = saved.tickets_count
-  for i = 0, saved.tickets_count - 1 do
+  for i = 1, saved.tickets_count do
     picker.tickets[i] = game_data.planet_types_table[saved.tickets[i] + 1]
   end
-  for i = 0, save_state.SAVE_STATE_RECENT_COUNT - 1 do
+  for i = 1, save_state.SAVE_STATE_RECENT_COUNT do
     picker.recent_set[i] = saved.recent_set[i] ~= 0
     picker.recent[i] = (saved.recent_set[i] ~= 0) and game_data.planet_types_table[saved.recent[i] + 1] or nil
   end
@@ -299,7 +300,7 @@ local slipway_ids = {}
 -- type picker and vanish walk.
 function M.save_load_world(state)
   assert(state ~= nil)
-  for i = 0, state.node_count - 1 do
+  for i = 1, state.node_count do
     node_ids[i] = entity_id.entity_id_link(load_node(state.nodes[i]))
   end
   -- A protostar's constructor bursts; the save never holds a burst.
@@ -331,7 +332,7 @@ end
 -- recomputes routes against a half-restored list.
 local function load_invented(economy, saved)
   refresh_structure_icons()
-  for i = 0, saved.invented_count - 1 do
+  for i = 1, saved.invented_count do
     local name = map_tables.technologies_table[saved.invented[i] + 1].name
     assert(name ~= nil, "economy.invented holds technology names")
     economy.invented[#economy.invented + 1] = name
