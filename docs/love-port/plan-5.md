@@ -172,3 +172,22 @@ the new check; its `SIZEOF` sentence stays for step 1.2. Seen: the reference
 is gone, `make test` green (0.58 s). `make e2e` 20/20 in 5.8 s, `make
 end-state` 20/20. The PRD agent dropped `--defer` without asking `guideline`:
 the list was empty and the step keeps "only" the load check.
+
+### Step 1.2
+
+Done in 7 chunks, game-side pools first: UI pool, particle pool with slot
+groups and slot zones, grab arena and arenas, frame zone, game and load
+zones, engine lists and helpers, then the game modules with the allocator,
+`zone` and `zone_sizes` deleted. Ten modules gone; every allocation is a
+plain table. Kept to hold the hashes: a growing list still gets a fresh
+items table holding a copy at the same moments (copies of a list header
+share it), every deep copy, every call order. Real lengths read from
+`SIZEOF` became named constants with the same values. The entity table cap
+(512) now lives in `engine.entity_id`; the exit queue keeps its cap. The dump
+writes no `zone`, `budget` or `cap` line. Seen: the step's grep finds
+nothing, the ten modules are gone, no `make e2e` state holds such a line.
+`make e2e` 20/20 in 5.3 s, `make end-state` 20/20, `make test` 0.6 s. The
+e2e notes quoting dump peaks were rewritten; notes quoting per-pool live
+counts as game state (`pad_message_box.txt`, `pad_pause_restart.txt`,
+`pad_game_end.txt`, `pad_bankrupt.txt`, `pad_planet_projects.txt`) were left
+as they are.

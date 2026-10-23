@@ -3,7 +3,7 @@
 - [ ] Phase 1 — The engine foundation
   - [x] Step 1.1 — lua-test-modules checks only that every module loads
     - [x] PRD phase1-step1-module-load-check
-  - [ ] Step 1.2 — zones and allocators removed
+  - [x] Step 1.2 — zones and allocators removed
     - [x] Chunk 1 — UI pool
     - [x] Chunk 2 — particle pool, slot groups and slot zones
     - [x] Chunk 3 — grab arena and arenas
