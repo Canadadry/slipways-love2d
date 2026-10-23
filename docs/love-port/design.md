@@ -838,7 +838,7 @@ coordinate or offset (`mem.screen[y][x]`, the sprite sheet, the map cells, the g
 rows, every pixel loop), an address or angle (`p8.sprite_sheet_packed`,
 `p8.quarter_wave`), an image slot handle (from 0, like a PICO-8 sprite number; the
 game's own caches compute slot `FIRST + i - 1`), a byte (`crc32_table`), a disk code
-(`SAVE_NODE_*` in `node_constructors` and `node_kind`), a saved state
+(`save_state.NODE_*` in `node_constructors` and `node_kind`), a saved state
 (`entity_class.STATE_*`), a tag's bit position (the registry's tag buckets), a layer
 value (the layer order's `start`, `start[0]` the empty prefix; `ui`'s hover layers),
 a draw-function code, a disk rank (the save validators' `seen` sets) and a demo frame

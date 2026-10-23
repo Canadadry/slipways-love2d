@@ -74,7 +74,7 @@ end
 
 -- Returns the module's save state, refilled on each call.
 function M.demo_record()
-  local decoded = save_state.save_state_decode(demo_data.record, demo_data.record_count,
+  local decoded = save_state.decode(demo_data.record, demo_data.record_count,
     g_demo_record)
   assert(decoded, "the compiled demo record decodes: test_demo_data proves it")
   return g_demo_record

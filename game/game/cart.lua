@@ -149,9 +149,9 @@ function M.shutdown()
 end
 
 local g_save_state = {}
-save_state.save_state_zero(g_save_state)
+save_state.zero(g_save_state)
 local g_save_bytes = {}
-for i = 1, save_state.SAVE_STATE_MAX_BYTES do
+for i = 1, save_state.MAX_BYTES do
   g_save_bytes[i] = 0
 end
 
@@ -160,9 +160,9 @@ local function resume_saved_game(self)
 end
 
 local function title_resume_handler()
-  local count = save_storage.save_storage_read(g_save_bytes)
+  local count = save_storage.read(g_save_bytes)
 
-  if count > 0 and save_state.save_state_decode(g_save_bytes, count, g_save_state) then
+  if count > 0 and save_state.decode(g_save_bytes, count, g_save_state) then
     return resume_saved_game
   else
     return nil
@@ -296,14 +296,14 @@ end
 function M.resume_game(state)
   local difficulty = {}
 
-  save_load.save_load_difficulty(state, difficulty)
-  save_load.save_load_background_seed(state)
+  save_load.difficulty(state, difficulty)
+  save_load.background_seed(state)
   start_world(difficulty)
   assert(background.live().seed == state.background_seed,
     "cart.resume_game: the RNG moved between the reseed and the background")
-  save_load.save_load_world(state)
+  save_load.world(state)
   start_interface()
-  save_load.save_load_globals(state)
+  save_load.globals(state)
   recompute_economy()
 end
 
@@ -312,11 +312,11 @@ local function save_at_frame_end()
 
   if economy == nil or not economy.save_pending or economy_score.difficulty() == nil then return end
   if economy.end_status ~= nil then
-    save_storage.save_storage_erase()
+    save_storage.erase()
     economy.save_pending = false
   elseif wormhole.live_count() == 0 then
-    save_state.save_state_capture(g_save_state)
-    save_storage.save_storage_write(g_save_bytes, save_state.save_state_encode(g_save_state, g_save_bytes))
+    save_state.capture(g_save_state)
+    save_storage.write(g_save_bytes, save_state.encode(g_save_state, g_save_bytes))
     economy.save_pending = false
   end
 end

@@ -271,7 +271,7 @@ function M.dump(sink)
   write_count(sink, "nodes", count_of(entity_registry.entities_by_tag(entity_class.TAG_NODE)))
 end
 
--- Reads only state, which came out of a save_state_decode that returned true: its difficulty, clock
+-- Reads only state, which came out of a save_state.decode that returned true: its difficulty, clock
 -- year, resources credits and count nodes lines in state_format.dump's format, each after prefix.
 function M.save_summary(sink, state, prefix)
   assert(state ~= nil and prefix ~= nil)

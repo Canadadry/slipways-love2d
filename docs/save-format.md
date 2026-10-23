@@ -1,15 +1,15 @@
 # Save format
 
-The binary record that `game/game/save_state.lua` writes and reads: one save of a running game, pointer-free, at most `SAVE_STATE_MAX_BYTES` = 8192 bytes. This page describes version 1 as the code has it. Any change to the encoder or the decoder updates this page in the same commit.
+The binary record that `game/game/save_state.lua` writes and reads: one save of a running game, pointer-free, at most `save_state.MAX_BYTES` = 8192 bytes. This page describes version 1 as the code has it. Any change to the encoder or the decoder updates this page in the same commit.
 
 The module (`require("game.save_state")`) has four entry points. A byte buffer is a 1-based array of integers 0–255, filled in place: byte `i` of the record, counted from 1 as in a Lua string, is `buffer[i]`, so the offsets below are those of `buffer[offset + 1]`.
 
-- `save_state_capture(out)` reads the live game into the save state table `out`, changing nothing else;
-- `save_state_encode(state, buffer)` writes a save state table to `buffer` and returns the record's byte count, asserting that the record fits 8 KiB; it writes what it is given and validates nothing;
-- `save_state_decode(bytes, count, out)` reads `count` bytes back into the table `out` and returns true for a valid record, false otherwise, never asserting on the bytes;
-- `save_state_crc32(bytes, count)` is the trailer checksum.
+- `save_state.capture(out)` reads the live game into the save state table `out`, changing nothing else;
+- `save_state.encode(state, buffer)` writes a save state table to `buffer` and returns the record's byte count, asserting that the record fits 8 KiB; it writes what it is given and validates nothing;
+- `save_state.decode(bytes, count, out)` reads `count` bytes back into the table `out` and returns true for a valid record, false otherwise, never asserting on the bytes;
+- `save_state.crc32(bytes, count)` is the trailer checksum.
 
-`save_state_zero(out)` resets a table to the empty save state. The module exports the constants this page names as `M.SAVE_STATE_*` fields (`M.SAVE_STATE_MAX_BYTES`) and `M.SAVE_NODE_*` fields (`M.SAVE_NODE_HAS_POS` for the flag `HAS_POS`).
+`save_state.zero(out)` resets a table to the empty save state. The module exports the constants this page names as fields: a limit by its own name (`save_state.MAX_BYTES`), a node flag with `NODE_` before it (`save_state.NODE_HAS_POS` for the flag `HAS_POS`).
 
 The largest record of the `worst-case/` games, measured with the C game before plan 4 deleted it, is 4519 bytes (`worst-case/full_game.json`, frame 5964), 3673 bytes under the limit. If the size assert ever fires, the encoding gets more compact; the limit never moves.
 
@@ -141,11 +141,11 @@ The CRC is CRC-32 IEEE 802.3, reflected: polynomial `0xEDB88320`, initial value 
 
 ## In memory: the save state table
 
-Decode fills one flat table, with the field names listed at the head of `game/game/save_state.lua`; `background_seed`, like `rnd_state`, is an unsigned 32-bit value (0 to 2^32 − 1), every `i32` its signed raw value. Each node's routes and slipway list live in shared pools, filled in node order (`routes`, `route_indices` for the route planet and slipway ranks, `node_slipways`); a node or route holds a first position and a count into them, its slice being `pool[first .. first + count - 1]`. Those positions never appear in the bytes: the encoder writes each slice inline in its node record. Pool caps, exceeded means invalid: `SAVE_STATE_ROUTES_CAP` = 8192 / 3 routes, `SAVE_STATE_ROUTE_INDICES_CAP` = 8192 indices, `SAVE_STATE_NODE_SLIPWAYS_CAP` = 510 node slipway entries. A decoded planet id is a Lua string. Every array of the table is 1-based; every value it holds is the value on disk, so a node, slipway, technology or ticket reference stays its 0-based rank: `save_state_capture` writes `position - 1`, and `save_load` and the decoder's node-slipway check look rank `r` up at position `r + 1`.
+Decode fills one flat table, with the field names listed at the head of `game/game/save_state.lua`; `background_seed`, like `rnd_state`, is an unsigned 32-bit value (0 to 2^32 − 1), every `i32` its signed raw value. Each node's routes and slipway list live in shared pools, filled in node order (`routes`, `route_indices` for the route planet and slipway ranks, `node_slipways`); a node or route holds a first position and a count into them, its slice being `pool[first .. first + count - 1]`. Those positions never appear in the bytes: the encoder writes each slice inline in its node record. Pool caps, exceeded means invalid: `save_state.ROUTES_CAP` = 8192 / 3 routes, `save_state.ROUTE_INDICES_CAP` = 8192 indices, `save_state.NODE_SLIPWAYS_CAP` = 510 node slipway entries. A decoded planet id is a Lua string. Every array of the table is 1-based; every value it holds is the value on disk, so a node, slipway, technology or ticket reference stays its 0-based rank: `save_state.capture` writes `position - 1`, and `save_load` and the decoder's node-slipway check look rank `r` up at position `r + 1`.
 
 ## Validation
 
-`save_state_decode` returns false on the first failure, in this order:
+`save_state.decode` returns false on the first failure, in this order:
 
 1. the byte count is below 12 (header and trailer) or above 8192;
 2. the magic is not `SLWY`;
