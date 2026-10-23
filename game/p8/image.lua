@@ -60,7 +60,7 @@ M.SLOT_SIZES = SLOT_SIZES
 
 local built = {}
 for slot = 0, M.P8_IMAGE_SLOT_COUNT - 1 do
-  built[slot] = 0
+  built[slot] = false
 end
 local building_slot = -1
 local guarded = nil
@@ -183,7 +183,7 @@ function M.p8_image_build(gfx, mem, slot, w, h, draw, context)
   guarded.image_end(slot)
   building_slot = -1
   gfx_module.p8_draw_backend_set(guarded)
-  built[slot] = 1
+  built[slot] = true
   gfx_module.p8_camera(gfx, camera_x, camera_y)
 end
 
@@ -193,7 +193,7 @@ end
 function M.p8_image_draw(gfx, mem, slot, x, y)
   check_slot(slot)
   if building_slot >= 0 then slot_fatal(slot, "draw during a build") end
-  if built[slot] == 0 then slot_fatal(slot, "drawn before any build") end
+  if not built[slot] then slot_fatal(slot, "drawn before any build") end
   gfx_module.p8_draw_backend_get().image_draw(gfx, mem, slot, x, y)
 end
 

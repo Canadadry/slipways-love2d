@@ -186,7 +186,7 @@ function play_call(call)
     gfx_module.p8_rectfill(gfx, mem, v[0], v[1], v[2], v[3], v[4])
   elseif operation == "palt" then
     require_count(call, 2)
-    gfx_module.p8_palt(mem, v[0], v[1])
+    gfx_module.p8_palt(mem, v[0], v[1] ~= 0)
   elseif operation == "palette" then
     require_count(call, 2)
     if v[0] < 0 or v[0] > 15 then

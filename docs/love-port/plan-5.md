@@ -143,16 +143,21 @@ One kind per step.
 
 1. Booleans. Seen when
    `grep -rE 'and 1 or 0|[~=]= [01]( *(then|and|or|do|\))|$)' game/` finds
-   only tests on numbers that are not truth values, and no function whose
-   returns are all `0`/`1` (`grep -rnE 'return [01]$' game/`) is still used
-   as a truth value, whatever its name, each exception listed in the step
-   note. A predicate's `return 0` is truthy in
+   only tests on numbers that are not truth values and 0/1 numbers written
+   to a format (the save's flag bytes), and no function whose returns are
+   all `0`/`1` (`grep -rnE 'return [01]$' game/`) is still used as a truth
+   value, whatever its name, each exception listed in the step note. A predicate's `return 0` is truthy in
    Lua: a missed one is a bug the replays may not see.
 2. 1-based arrays. Seen when
-   `grep -rE '\[0\]|for [a-z_]+ = 0,|\[[a-z_.]+ *\+ *1\]|while [a-z_]+ < ' game/`
+   `grep -rE '\[0\]|for [a-z_]+ = 0,|\[[a-z_.]+ *\+ *1\]|while [a-z_]+ < |\[[a-z_.]*count\] *=' game/`
    finds only plain numbers or genuine element shifts, not 0-based indices,
-   each listed in the step note.
-3. The C headers. Seen when `grep -r -- '-- Copy of' game/` finds nothing.
+   each listed in the step note. An array with holes keeps an explicit count
+   or index loop; never `#` or `ipairs` on it.
+3. The C headers. Seen when
+   `grep -rnE -- '--.*(Copy of|\bC\b|memset|\b[a-z0-9_]+_t\b|\{0\})' game/`
+   finds only lines that are not about the C, each listed in the step note.
+   A comment that states a trap through the C is reworded to state the trap
+   without it, not deleted.
 4. Names without the module prefix, with `CLAUDE.md`'s naming rule. Seen
    when no exported name (`M.<name>`) of a module starts with the module's
    name or with its first word followed by `_` (`entity_get` in

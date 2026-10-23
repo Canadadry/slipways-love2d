@@ -43,7 +43,7 @@ function M.p8_gfx_init(gfx)
   gfx.camera_x = 0
   gfx.camera_y = 0
   gfx.fillp_pattern = 0
-  gfx.fillp_transparent = 0
+  gfx.fillp_transparent = false
   gfx.pen_color = 6
 end
 
@@ -70,10 +70,11 @@ function M.p8_camera_reset(gfx)
 end
 
 function M.p8_palt(mem, col, transparent)
+  assert(type(transparent) == "boolean", "p8_palt: transparent is a boolean, as in PICO-8; 0 would be truthy")
   if col < 0 or col > 15 then
     return
   end
-  if transparent ~= 0 then
+  if transparent then
     mem.draw_palette[col] = bit.band(bit.bor(mem.draw_palette[col], vram.P8_DRAW_PALETTE_TRANSPARENT_BIT), 0xFF)
   else
     mem.draw_palette[col] = bit.band(mem.draw_palette[col], bit.bnot(vram.P8_DRAW_PALETTE_TRANSPARENT_BIT), 0xFF)
@@ -82,9 +83,9 @@ end
 
 function M.p8_gfx_is_transparent(mem, col)
   if col < 0 or col > 15 then
-    return 0
+    return false
   end
-  return bit.band(mem.draw_palette[col], vram.P8_DRAW_PALETTE_TRANSPARENT_BIT) ~= 0 and 1 or 0
+  return bit.band(mem.draw_palette[col], vram.P8_DRAW_PALETTE_TRANSPARENT_BIT) ~= 0
 end
 
 function M.p8_line(gfx, mem, x1, y1, x2, y2, col)
@@ -114,12 +115,12 @@ end
 
 function M.p8_fillp(gfx, pattern)
   gfx.fillp_pattern = bit.band(pattern, 0xFFFF)
-  gfx.fillp_transparent = 0
+  gfx.fillp_transparent = false
 end
 
 function M.p8_fillp_transparent(gfx, pattern)
   gfx.fillp_pattern = bit.band(pattern, 0xFFFF)
-  gfx.fillp_transparent = 1
+  gfx.fillp_transparent = true
 end
 
 function M.p8_fillp_reset(gfx)
@@ -142,11 +143,11 @@ function M.p8_spr_default(gfx, mem, n, x, y)
 end
 
 local function map_cell_in_range(x, y)
-  return (x >= 0 and x < vram.P8_MAP_WIDTH and y >= 0 and y < vram.P8_MAP_HEIGHT) and 1 or 0
+  return x >= 0 and x < vram.P8_MAP_WIDTH and y >= 0 and y < vram.P8_MAP_HEIGHT
 end
 
 function M.p8_mset(mem, x, y, val)
-  if map_cell_in_range(x, y) == 0 then
+  if not map_cell_in_range(x, y) then
     return
   end
   mem.map_cells[y][x] = bit.band(val, 0xFF)
@@ -154,7 +155,7 @@ function M.p8_mset(mem, x, y, val)
 end
 
 local function map_cell_get(mem, x, y)
-  if map_cell_in_range(x, y) == 0 then
+  if not map_cell_in_range(x, y) then
     return 0
   end
   return mem.map_cells[y][x]

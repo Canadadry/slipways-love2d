@@ -20,8 +20,8 @@ function M.p8_sub(s, i, j)
 end
 
 function M.p8_tostr_fixed(x)
-  local negative = (x < 0) and 1 or 0
-  local mag = (negative ~= 0) and -x or x
+  local negative = x < 0
+  local mag = negative and -x or x
   local ip = math.floor(mag / 0x10000)
   local p = (mag % 0x10000) * 625
   local q = math.floor(p / 4096)
@@ -33,7 +33,7 @@ function M.p8_tostr_fixed(x)
     ip = ip + 1
     q = 0
   end
-  local buf = string.format("%s%d.%04d", (negative ~= 0) and "-" or "", ip, q)
+  local buf = string.format("%s%d.%04d", negative and "-" or "", ip, q)
   local dot = string.find(buf, ".", 1, true)
   if dot ~= nil then
     local last = #buf

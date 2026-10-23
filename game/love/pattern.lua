@@ -21,7 +21,7 @@ local function build_image(pattern, col, transparent)
       local bit_index = 15 - ((j % 4) * 4 + i % 4)
       if bit.band(bit.rshift(pattern, bit_index), 1) == 0 then
         data:setPixel(i, j, clear_color.red, clear_color.green, clear_color.blue)
-      elseif transparent == 0 then
+      elseif not transparent then
         data:setPixel(i, j, set_color.red, set_color.green, set_color.blue)
       end
     end

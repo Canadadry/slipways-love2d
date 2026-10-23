@@ -90,15 +90,15 @@ local function fillp_bit_set(gfx, x, y)
   local row = cint.mod(cint.mod(y, 4) + 4, 4)
   local col = cint.mod(cint.mod(x, 4) + 4, 4)
   local bit_index = 15 - (row * 4 + col)
-  return bit.band(bit.rshift(gfx.fillp_pattern, bit_index), 1)
+  return bit.band(bit.rshift(gfx.fillp_pattern, bit_index), 1) ~= 0
 end
 
 -- Masked here, not in p8_pset, so devtools/dump.c's assert still catches a primitive storing an index above 0x0f.
 local function fillp_color(gfx, x, y, col)
-  if fillp_bit_set(gfx, x, y) == 0 then
+  if not fillp_bit_set(gfx, x, y) then
     return bit.band(col, 0x0F)
   end
-  if gfx.fillp_transparent ~= 0 then
+  if gfx.fillp_transparent then
     return -1
   end
   return bit.band(bit.arshift(col, 4), 0x0F)
@@ -362,7 +362,7 @@ function M.p8_font_glyph_rows(character)
 end
 
 function M.p8_font_has_glyph(character)
-  return M.p8_font_glyph_rows(character) ~= FONT_ROWS_PLACEHOLDER and 1 or 0
+  return M.p8_font_glyph_rows(character) ~= FONT_ROWS_PLACEHOLDER
 end
 
 local function software_print(gfx, mem, str, x, y, col)

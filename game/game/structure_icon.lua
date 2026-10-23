@@ -151,7 +151,7 @@ function M.structure_icon_draw(gfx, mem, self, p)
     return
   end
 
-  gfx_module.p8_palt(mem, 3, 0)
+  gfx_module.p8_palt(mem, 3, false)
 
   view = M.structure_icon_kind_view(self)
   gfx_module.p8_spr_default(gfx, mem, (view.sprite ~= nil) and structure_icon_to_int(view.sprite) or 0,
@@ -171,7 +171,7 @@ function M.structure_icon_draw(gfx, mem, self, p)
     end
   end
 
-  gfx_module.p8_palt(mem, 3, 1)
+  gfx_module.p8_palt(mem, 3, true)
 end
 
 local function structure_icon_draw_method(self, screen_pos)

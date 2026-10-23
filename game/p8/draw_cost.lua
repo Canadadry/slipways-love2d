@@ -39,7 +39,7 @@ local function on_screen(gfx, xmin, ymin, xmax, ymax)
   xmax = xmax - gfx.camera_x
   ymin = ymin - gfx.camera_y
   ymax = ymax - gfx.camera_y
-  return (xmax >= 0 and xmin < vram.P8_SCREEN_WIDTH and ymax >= 0 and ymin < vram.P8_SCREEN_HEIGHT) and 1 or 0
+  return xmax >= 0 and xmin < vram.P8_SCREEN_WIDTH and ymax >= 0 and ymin < vram.P8_SCREEN_HEIGHT
 end
 
 local function min(a, b)
@@ -73,13 +73,13 @@ local function window_switch(window, patterned, pattern_key)
 end
 
 local function unpatterned_window(window)
-  return window_switch(window, 0, 0)
+  return window_switch(window, false, 0)
 end
 
 -- Resets window to the frame's initial state and returns the fixed per-frame
 -- overhead (draw environments, texture state, x2 upscale quad).
 function M.p8_draw_cost_frame_begin(window)
-  window.patterned = 0
+  window.patterned = false
   window.pattern_key = 0
   local overhead = cost_add(cost_of(M.P8_GPU_DR_ENV_BYTES, 2), window_pair())
   return cost_add(overhead, cost_of(M.P8_GPU_POLY_FT4_BYTES, 1))
@@ -88,14 +88,14 @@ end
 -- What tells two pattern slots apart: the pattern, the colour byte and the transparent flag.
 function M.p8_draw_cost_pattern_key(gfx, col)
   return bit.bor(bit.band(gfx.fillp_pattern, 0xFFFF), bit.lshift(bit.band(col, 0xFF), 16),
-    bit.lshift(gfx.fillp_transparent ~= 0 and 1 or 0, 24))
+    bit.lshift(gfx.fillp_transparent and 1 or 0, 24))
 end
 
 local function fill_spans(window, gfx, col, spans)
   if bit.band(gfx.fillp_pattern, 0xFFFF) == 0 then
     return cost_of(M.P8_GPU_TILE_BYTES, spans)
   end
-  local pair = window_switch(window, 1, M.p8_draw_cost_pattern_key(gfx, col))
+  local pair = window_switch(window, true, M.p8_draw_cost_pattern_key(gfx, col))
   return cost_add(pair, cost_of(M.P8_GPU_SPRT_BYTES, spans))
 end
 
@@ -104,28 +104,28 @@ function M.p8_draw_cost_cls()
 end
 
 function M.p8_draw_cost_pset(gfx, x, y)
-  if on_screen(gfx, x, y, x, y) ~= 0 then
+  if on_screen(gfx, x, y, x, y) then
     return cost_of(M.P8_GPU_TILE_1_BYTES, 1)
   end
   return { bytes = FREE.bytes, primitives = FREE.primitives }
 end
 
 function M.p8_draw_cost_line(gfx, x1, y1, x2, y2)
-  if box_on_screen(gfx, x1, y1, x2, y2) ~= 0 then
+  if box_on_screen(gfx, x1, y1, x2, y2) then
     return cost_of(M.P8_GPU_LINE_F2_BYTES, 1)
   end
   return { bytes = FREE.bytes, primitives = FREE.primitives }
 end
 
 function M.p8_draw_cost_rect(gfx, x1, y1, x2, y2)
-  if box_on_screen(gfx, x1, y1, x2, y2) ~= 0 then
+  if box_on_screen(gfx, x1, y1, x2, y2) then
     return cost_of(M.P8_GPU_TILE_BYTES, 4)
   end
   return { bytes = FREE.bytes, primitives = FREE.primitives }
 end
 
 function M.p8_draw_cost_rectfill(window, gfx, x1, y1, x2, y2, col)
-  if box_on_screen(gfx, x1, y1, x2, y2) ~= 0 then
+  if box_on_screen(gfx, x1, y1, x2, y2) then
     return fill_spans(window, gfx, col, 1)
   end
   return { bytes = FREE.bytes, primitives = FREE.primitives }
@@ -152,18 +152,18 @@ local function circle_iterations(r)
 end
 
 local function circle_on_screen(gfx, cx, cy, r)
-  return (r >= 0 and on_screen(gfx, cx - r, cy - r, cx + r, cy + r) ~= 0) and 1 or 0
+  return r >= 0 and on_screen(gfx, cx - r, cy - r, cx + r, cy + r)
 end
 
 function M.p8_draw_cost_circ(gfx, cx, cy, r)
-  if circle_on_screen(gfx, cx, cy, r) ~= 0 then
+  if circle_on_screen(gfx, cx, cy, r) then
     return cost_of(M.P8_GPU_TILE_1_BYTES, 8 * circle_iterations(r))
   end
   return { bytes = FREE.bytes, primitives = FREE.primitives }
 end
 
 function M.p8_draw_cost_circfill(window, gfx, cx, cy, r, col)
-  if circle_on_screen(gfx, cx, cy, r) ~= 0 then
+  if circle_on_screen(gfx, cx, cy, r) then
     return fill_spans(window, gfx, col, 4 * circle_iterations(r))
   end
   return { bytes = FREE.bytes, primitives = FREE.primitives }
@@ -171,7 +171,7 @@ end
 
 function M.p8_draw_cost_spr(window, gfx, n, x, y, w, h)
   if w <= 0 or h <= 0
-    or on_screen(gfx, x, y, x + w * gfx_module.P8_SPRITE_SIZE - 1, y + h * gfx_module.P8_SPRITE_SIZE - 1) == 0 then
+    or not on_screen(gfx, x, y, x + w * gfx_module.P8_SPRITE_SIZE - 1, y + h * gfx_module.P8_SPRITE_SIZE - 1) then
     return { bytes = FREE.bytes, primitives = FREE.primitives }
   end
   return cost_add(unpatterned_window(window), cost_of(M.P8_GPU_SPRT_BYTES, 1))
@@ -183,11 +183,13 @@ local function text_cost(window, gfx, str, x, y, margin)
   local glyphs = 0
   for p = 1, #str do
     length = length + 1
-    glyphs = glyphs + (string.byte(str, p) ~= string.byte(" ") and 1 or 0)
+    if string.byte(str, p) ~= string.byte(" ") then
+      glyphs = glyphs + 1
+    end
   end
   local right = x + (length - 1) * gfx_module.P8_FONT_CELL_WIDTH + gfx_module.P8_FONT_GLYPH_WIDTH - 1
   if glyphs == 0
-    or on_screen(gfx, x - margin, y - margin, right + margin, y + gfx_module.P8_FONT_GLYPH_HEIGHT - 1 + margin) == 0 then
+    or not on_screen(gfx, x - margin, y - margin, right + margin, y + gfx_module.P8_FONT_GLYPH_HEIGHT - 1 + margin) then
     return { bytes = FREE.bytes, primitives = FREE.primitives }
   end
   return cost_add(unpatterned_window(window), cost_of(M.P8_GPU_SPRT_BYTES, glyphs))
@@ -225,10 +227,10 @@ end
 
 -- The copy of a w x h image at world (x, y); it leaves no texture window.
 function M.p8_draw_cost_image_draw(window, gfx, x, y, w, h)
-  if w <= 0 or h <= 0 or on_screen(gfx, x, y, x + w - 1, y + h - 1) == 0 then
+  if w <= 0 or h <= 0 or not on_screen(gfx, x, y, x + w - 1, y + h - 1) then
     return { bytes = FREE.bytes, primitives = FREE.primitives }
   end
-  window.patterned = 0
+  window.patterned = false
   window.pattern_key = 0
   local cost = { bytes = M.P8_GPU_DR_TWIN_BYTES + 2 * M.P8_GPU_DR_TPAGE_BYTES + M.P8_GPU_SPRT_BYTES, primitives = 4 }
   return cost

@@ -518,8 +518,8 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
 
   hud.hud_select_palette_block(memory,
     lineage_has(self, entity_class.LINEAGE_TRADING_HUB) and self.palette_block or fixed.p8_fixed_from_int(0))
-  gfx_module.p8_palt(memory, 3, 0)
-  gfx_module.p8_palt(memory, 0, 1)
+  gfx_module.p8_palt(memory, 3, false)
+  gfx_module.p8_palt(memory, 0, true)
 
   if self.planet_type ~= nil then
     spr_index = self.planet_type.sprite

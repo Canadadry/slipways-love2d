@@ -14,11 +14,11 @@ local GPU_CLUT_SLOTS = 6
 local GPU_PATTERN_SLOTS = 4
 
 local wrapped = nil
-local window = { patterned = 0, pattern_key = 0 }
+local window = { patterned = false, pattern_key = 0 }
 local frame = { bytes = 0, build_bytes = 0, primitives = 0, cluts = 0, patterns = 0 }
 local last_frame = { bytes = 0, build_bytes = 0, primitives = 0, cluts = 0, patterns = 0 }
 local peak = { bytes = 0, build_bytes = 0, primitives = 0, cluts = 0, patterns = 0 }
-local building = 0
+local building = false
 local built = {}
 for slot = 0, image.P8_IMAGE_SLOT_COUNT - 1 do
   built[slot] = { width = 0, height = 0 }
@@ -77,7 +77,7 @@ local function count_pattern(gfx, col)
 end
 
 local function add(cost)
-  if building ~= 0 then
+  if building then
     frame.build_bytes = frame.build_bytes + cost.bytes
     return
   end
@@ -148,7 +148,7 @@ local function meter_print_outlined(gfx, mem, str, x, y, col)
 end
 
 local function meter_image_begin(slot, w, h)
-  building = 1
+  building = true
   built[slot].width = w
   built[slot].height = h
   add(draw_cost.p8_draw_cost_image_begin())
@@ -162,7 +162,7 @@ end
 
 local function meter_image_end(slot)
   add(draw_cost.p8_draw_cost_image_end())
-  building = 0
+  building = false
   wrapped.image_end(slot)
 end
 
@@ -212,7 +212,7 @@ function M.p8_draw_meter_install()
   peak.primitives = 0
   peak.cluts = 0
   peak.patterns = 0
-  building = 0
+  building = false
   frame_begin()
   gfx_module.p8_draw_backend_set(METER)
   return wrapped

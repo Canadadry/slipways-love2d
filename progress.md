@@ -49,3 +49,13 @@
   - [x] Chunk 3 — boxes and panels
   - [x] Chunk 4 — planets, slipways and the economy
   - [x] Chunk 5 — research and tech gate, full check
+- [ ] Step 3.1 chunks
+  - [x] Chunk 1 — runtime
+  - [ ] Chunk 2 — engine
+  - [ ] Chunk 3 — class callbacks
+  - [ ] Chunk 4 — data lookups
+  - [ ] Chunk 5 — planets, slipways, wormholes
+  - [ ] Chunk 6 — economy, research, targeting
+  - [ ] Chunk 7 — UI
+  - [ ] Chunk 8 — input, cart and save
+  - [ ] Chunk 9 — pad layer, docs, full check
