@@ -357,3 +357,28 @@ hits, by kind: the value-keyed maps above, genuine element shifts (registry
 insert/remove, ticket removal), neighbour reads, save-rank conversions,
 plain numbers. warn-review rule 21 matches. `make e2e` 20/20 in 4.9 s,
 `make end-state` 20/20, `make test` 0.65 s.
+
+### Step 3.3
+
+Seven chunks by module group, comments only (plus `game.main_economy`
+deleted: it held only a shapes comment and nothing required it). Every
+`-- Copy of` header, "Shapes, with the C field names" block, `-- Lua only`
+marker, `{0}`/memset note and port-status claim is gone; a shape stays only
+where no constructor lists the fields (the entity header and class table).
+Contracts and traps stay, reworded in Lua terms next to their code; two
+"copy on the stack" warnings went, their tables being fresh per iteration.
+The two hand-kept data modules (`sprite_sheet_packed`, `bindings_default`)
+name the file they follow. Proof per file: the `-U0` diff holds only comment
+and blank lines, and the stripped bytecode of HEAD and of the edit share a
+byte-identical compile (this LuaJIT seeds its string hash at random, so a
+single compile can differ even for an unchanged file). Seen: the step's
+grep finds nothing in `game/`; the wider grep finds only three "structure"
+words. Left byte for byte, being code: assert and error strings naming
+`NULL`, `_t` types, `struct`, "dereferences" or the C (`entity_id`,
+`slipway`, `slipway_display`, `bindings`, `pad_nav`, `probe`, `layout`,
+`hud`, `map_tables`, `gfx`, `cart`, `game_data`, `draw_functions`,
+`pad_cycle`, `fixed`, `trade`, `planet_family`, `mouse_button`,
+`loading_screen`), and attract's assert citing a `test_demo_data` that no
+longer exists. design.md's `-- Lua only` and generated-header sentences
+match; warn-review rule 22 added. `make e2e` 20/20 in 4.5 s,
+`make end-state` 20/20, `make test` 0.66 s.

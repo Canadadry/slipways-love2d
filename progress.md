@@ -25,7 +25,7 @@
 - [ ] Phase 3 — The surface
   - [x] Step 3.1 — booleans
   - [x] Step 3.2 — 1-based arrays
-  - [ ] Step 3.3 — the C headers
+  - [x] Step 3.3 — the C headers
   - [ ] Step 3.4 — names without the module prefix
   - [ ] Step 3.5 — design.md conventions replaced
 - [x] Added after the phase 1 review
@@ -70,7 +70,7 @@
   - [x] Chunk 8 — research, tech gate, economy and slipway lists
   - [x] Chunk 9 — input and pad
   - [x] Chunk 10 — save, docs and full check
-- [ ] Step 3.3 chunks
+- [x] Step 3.3 chunks
   - [x] Chunk 1 — runtime and LÖVE
   - [x] Chunk 2 — engine and devtools
   - [x] Chunk 3 — data tables and generation
