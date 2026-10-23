@@ -17,7 +17,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
-local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
@@ -50,27 +49,19 @@ local function wormhole_is_anchor(p)
 end
 
 local function wormhole_anchor_count()
-  local it = entity_list.entity_list_all(entity_registry.live_entities())
-  local p
+  local live = entity_registry.live_entities()
   local n = 0
-  local more
 
-  while true do
-    more, p = entity_list.entity_list_iter_next(it, p)
-    if more == 0 then
-      break
-    end
-    n = n + wormhole_is_anchor(p)
+  for i = 1, #live do
+    n = n + wormhole_is_anchor(live[i])
   end
   return n
 end
 
 function M.wormhole_construct(self)
   local ox
-  local it
-  local p
+  local live
   local n
-  local more
 
   if self == nil then
     return
@@ -81,12 +72,9 @@ function M.wormhole_construct(self)
   for i = #ox, 1, -1 do
     ox[i] = nil
   end
-  it = entity_list.entity_list_all(entity_registry.live_entities())
-  while true do
-    more, p = entity_list.entity_list_iter_next(it, p)
-    if more == 0 then
-      break
-    end
+  live = entity_registry.live_entities()
+  for i = 1, #live do
+    local p = live[i]
     if wormhole_is_anchor(p) ~= 0 then
       ox[#ox + 1] = entity_id.entity_id_link(p)
     end
@@ -194,8 +182,8 @@ function M.wormhole_update_unfolding(self, t)
   self_p = entity_class.entity_map_pos(self)
   planet_list = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
   if planet_list ~= nil then
-    for i = 0, planet_list.count - 1 do
-      local e = planet_list.items[i]
+    for i = 1, #planet_list do
+      local e = planet_list[i]
       local pt
 
       if e ~= nil then
@@ -304,7 +292,7 @@ end
 function M.wormhole_live_count()
   local wormholes = entity_registry.entities_by_tag(entity_class.TAG_WORMHOLE)
   if wormholes ~= nil then
-    return wormholes.count
+    return #wormholes
   end
   return 0
 end

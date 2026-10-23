@@ -113,7 +113,7 @@ end
 
 local function count_of(l)
   if l ~= nil then
-    return l.count
+    return #l
   end
   return 0
 end
@@ -197,8 +197,8 @@ end
 local function write_planets(sink, camera)
   local line = line_start(sink)
   local planets = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
-  for i = 0, count_of(planets) - 1 do
-    local p = planets.items[i]
+  for i = 1, count_of(planets) do
+    local p = planets[i]
     local cls = class_of(p)
     local type_name = "-"
     if p.planet_type ~= nil and p.planet_type.name ~= nil then
@@ -218,8 +218,8 @@ local function write_slipways(sink)
   local line = line_start(sink)
   local jc = entity_registry.entities_by_tag(entity_class.TAG_SLIPWAY)
   local n = 0
-  for i = 0, count_of(jc) - 1 do
-    local s = jc.items[i]
+  for i = 1, count_of(jc) do
+    local s = jc[i]
     if slipway_placed(s) == 0 then goto continue end
     line_add(line, "slipway %s %s %s", id_of(slipway.slipway_start(s)), id_of(slipway.slipway_end(s)),
              (entity_class.entity_has(s, entity_class.ENTITY_HAS_INFRASPACE) ~= 0 and s.infraspace ~= 0) and "infragate" or "normal")
@@ -233,8 +233,8 @@ end
 local function write_structures(sink, camera)
   local line = line_start(sink)
   local nr = entity_registry.entities_by_tag(entity_class.TAG_SLIPGATE)
-  for i = 0, count_of(nr) - 1 do
-    local g = nr.items[i]
+  for i = 1, count_of(nr) do
+    local g = nr[i]
     line_add(line, "structure %s %s", id_of(g),
              (g.class == planet_family_trade.infraspace_gate_class()) and "infragate" or "slipgate")
     add_position(line, g, camera)
@@ -247,8 +247,8 @@ end
 local function count_colonies()
   local planets = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
   local n = 0
-  for i = 0, count_of(planets) - 1 do
-    n = n + ((planets.items[i].state == entity_class.ENTITY_STATE_SETTLED) and 1 or 0)
+  for i = 1, count_of(planets) do
+    n = n + ((planets[i].state == entity_class.ENTITY_STATE_SETTLED) and 1 or 0)
   end
   return n
 end

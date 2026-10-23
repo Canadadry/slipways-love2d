@@ -10,7 +10,6 @@
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local economy_formulas = require("game.economy_formulas")
 local main_economy = require("game.main_economy")
@@ -101,7 +100,6 @@ end
 
 local function economy_refresh_after_figures(self)
   local refresh_list
-  local iter
   local qc
 
   if self.year >= fixed.p8_fixed_from_int(3426) then
@@ -114,17 +112,10 @@ local function economy_refresh_after_figures(self)
   self.has_end_status = 1
 
   refresh_list = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_REFRESH)
-  iter = entity_list.entity_list_all(refresh_list)
-  while true do
-    local more
-    more, qc = entity_list.entity_list_iter_next(iter, qc)
-    if more == 0 then
-      break
-    end
-    if qc ~= nil then
-      if qc.class.refresh ~= nil then
-        qc.class.refresh(qc)
-      end
+  for i = 1, #refresh_list do
+    qc = refresh_list[i]
+    if qc.class.refresh ~= nil then
+      qc.class.refresh(qc)
     end
   end
 end
@@ -170,7 +161,6 @@ function M.economy_new_year(self)
   local new_year
   local science_production = fixed.p8_fixed_from_int(0)
   local new_year_list
-  local it
   local qc
 
   assert_economy(self)
@@ -203,17 +193,10 @@ function M.economy_new_year(self)
   M.economy_recompute(self)
 
   new_year_list = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_NEW_YEAR)
-  it = entity_list.entity_list_all(new_year_list)
-  while true do
-    local more
-    more, qc = entity_list.entity_list_iter_next(it, qc)
-    if more == 0 then
-      break
-    end
-    if qc ~= nil then
-      if qc.class.new_year ~= nil then
-        qc.class.new_year(qc, new_year)
-      end
+  for i = 1, #new_year_list do
+    qc = new_year_list[i]
+    if qc.class.new_year ~= nil then
+      qc.class.new_year(qc, new_year)
     end
   end
 end
@@ -258,8 +241,6 @@ function M.economy_recompute(self)
   local happiness
   local skill_multiplier
   local planet_list
-  local iter
-  local planet
 
   assert_economy(self)
   if self == nil then
@@ -277,18 +258,10 @@ function M.economy_recompute(self)
 
   planet_list = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
   if planet_list ~= nil then
-    iter = entity_list.entity_list_all(planet_list)
-    while true do
-      local more
-      more, planet = entity_list.entity_list_iter_next(iter, planet)
-      if more == 0 then
-        break
-      end
-      if planet ~= nil then
-        local kr = economy_score.economy_score_net_income(planet)
+    for i = 1, #planet_list do
+      local kr = economy_score.economy_score_net_income(planet_list[i])
 
-        trade_total = fixed.p8_fixed_add(trade_total, kr)
-      end
+      trade_total = fixed.p8_fixed_add(trade_total, kr)
     end
   end
 
@@ -340,21 +313,11 @@ end
 
 local function for_each_tagged(tag, fn, ctx)
   local list = entity_registry.entities_by_tag(tag)
-  local it
-  local e
   if list == nil then
     return
   end
-  it = entity_list.entity_list_all(list)
-  while true do
-    local more
-    more, e = entity_list.entity_list_iter_next(it, e)
-    if more == 0 then
-      break
-    end
-    if e ~= nil then
-      fn(e, ctx)
-    end
+  for i = 1, #list do
+    fn(list[i], ctx)
   end
 end
 

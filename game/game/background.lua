@@ -93,8 +93,8 @@ end
 -- The live background, or nil when none is up.
 function M.background_live()
   local live = entity_registry.live_entities()
-  for i = 0, live.count - 1 do
-    local candidate = live.items[i]
+  for i = 1, #live do
+    local candidate = live[i]
     if candidate.class == M.background_class_def then
       return candidate
     end
@@ -211,7 +211,7 @@ function M.background_left_press(self)
   local out = {}
 
   g_tag = entity_registry.entities_by_tag(entity_class.TAG_PROBE)
-  count = (g_tag ~= nil) and g_tag.count or 0
+  count = (g_tag ~= nil) and #g_tag or 0
   if count > 0 then
     local wormhole = require("game.wormhole")
     assert(wormhole.wormhole_ready() ~= 0,

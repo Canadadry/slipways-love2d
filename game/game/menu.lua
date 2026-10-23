@@ -333,8 +333,8 @@ end
 function M.galaxy_menu_find_button(i)
   local on_click = M.galaxy_menu_on_click(i)
   local bucket = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_HIT_TEST)
-  for k = 0, bucket.count - 1 do
-    local e = bucket.items[k]
+  for k = 1, #bucket do
+    local e = bucket[k]
     if e.is_dead == 0 and e.class == ui_button.button_class() and e.on_click == on_click then
       return e
     end

@@ -68,7 +68,7 @@ end
 
 function M.economy_formulas_cost_scale()
   local jc = entity_registry.entities_by_tag(entity_class.TAG_SLIPWAY)
-  local count = (jc ~= nil) and jc.count or 0
+  local count = (jc ~= nil) and #jc or 0
   local sq = fixed.p8_fixed_sqrt(fixed.p8_fixed_from_int(count))
   local val = fixed.p8_fixed_sub(fixed.p8_fixed_mul(sq, fixed.P8_FIXED_LIT(0x0000451e, 0.27)),
     fixed.P8_FIXED_LIT(0x00001999, 0.1))

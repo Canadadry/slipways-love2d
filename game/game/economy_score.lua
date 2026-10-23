@@ -9,7 +9,6 @@
 -- ui_button's load-time requires reaches economy_score.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
-local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local economy_formulas = require("game.economy_formulas")
 local main_economy = require("game.main_economy")
@@ -40,21 +39,11 @@ end
 
 local function for_each_tagged(tag, fn, ctx)
   local list = entity_registry.entities_by_tag(tag)
-  local it
-  local e
   if list == nil then
     return
   end
-  it = entity_list.entity_list_all(list)
-  while true do
-    local more
-    more, e = entity_list.entity_list_iter_next(it, e)
-    if more == 0 then
-      break
-    end
-    if e ~= nil then
-      fn(e, ctx)
-    end
+  for i = 1, #list do
+    fn(list[i], ctx)
   end
 end
 
@@ -71,7 +60,7 @@ function M.economy_score_planet_upkeep(pt)
   if pt ~= nil and bit.band(pt.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)) ~= 0
       and pt.archetype.is_structure ~= 0 then
     local structure_list = entity_registry.entities_by_tag(entity_class.TAG_STRUCTURE)
-    return fixed.p8_fixed_from_int(structure_list ~= nil and structure_list.count or 0)
+    return fixed.p8_fixed_from_int(structure_list ~= nil and #structure_list or 0)
   end
   if is_colonized_truthy(pt) ~= 0 then
     local jo = pt
@@ -97,9 +86,15 @@ end
 
 function M.economy_score_colony_upkeep()
   local planet_list = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
-  local filtered = entity_list.entity_list_filter(planet_list, colony_upkeep_predicate, nil)
-  local mu = filtered.count
+  local mu = 0
   local result
+  if planet_list ~= nil then
+    for i = 1, #planet_list do
+      if colony_upkeep_predicate(planet_list[i], nil) ~= 0 then
+        mu = mu + 1
+      end
+    end
+  end
   result = fixed.p8_fixed_mul(fixed.P8_FIXED_LIT(0x00002e14, 0.18), fixed.p8_fixed_from_int(mu * mu))
   return fixed.p8_fixed_flr(result)
 end

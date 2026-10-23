@@ -4,7 +4,6 @@
 --   pad_slipway_t: { start, target, phase, linked_before }, start and target entity ids (nil for none).
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_list = require("engine.entity_list")
 local planet = require("game.planet")
 local planet_family_trade = require("game.planet_family_trade")
 local slipway_module = require("game.slipway")
@@ -35,12 +34,18 @@ function M.pad_slipway_can_start(e)
     planet_family_trade.slipgate_takes_slipway(e) ~= 0) and 1 or 0
 end
 
-local function is_not_start(e, start)
-  return (e ~= start) and 1 or 0
-end
-
+-- An empty array for a nil list.
 function M.pad_slipway_candidates(candidates, start)
-  return entity_list.entity_list_filter(candidates, is_not_start, start)
+  local targets = {}
+  if candidates == nil then
+    return targets
+  end
+  for i = 1, #candidates do
+    if candidates[i] ~= start then
+      targets[#targets + 1] = candidates[i]
+    end
+  end
+  return targets
 end
 
 function M.pad_slipway_between(start, target)

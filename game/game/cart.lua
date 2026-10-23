@@ -182,7 +182,7 @@ function M.cart_init()
       .. "install them afterwards: every button copies the value when it is built")
 
   g_loading_frame = 0
-  bootstrap.reset_world(nil)
+  bootstrap.reset_world()
   research.research_expire_project_ids()
 
   if structure_icon.structure_icon_rest_cursor() ~= nil then
@@ -227,28 +227,6 @@ function M.cart_init_method(self)
   M.cart_init()
 end
 
-M.cart_game_registry_reserve = { live = 329, by_message = {}, by_tag = {} }
-for i = 0, entity_registry.ENTITY_MESSAGE_COUNT - 1 do
-  M.cart_game_registry_reserve.by_message[i] = 0
-end
-for i = 0, entity_class.TAG_COUNT - 1 do
-  M.cart_game_registry_reserve.by_tag[i] = 0
-end
-M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_DRAW] = 322
-M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_DRAW_OVERLAY] = 265
-M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_HIT_TEST] = 125
-M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_NEW_YEAR] = 111
-M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_REFRESH] = 120
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_STRUCTURE] = 8
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_ASCENSION] = 3
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_SLIPGATE] = 14
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_PROBE] = 2
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_MESSAGE_BOX] = 4
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_SLIPWAY] = 216
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_WORMHOLE] = 3
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_PLANET] = 110
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_NODE] = 110
-
 local function start_world(difficulty)
   assert(economy_module.economy_ready() ~= 0 and planet_family.structure_ready() ~= 0,
     "game start: cart_load() must run first")
@@ -256,7 +234,7 @@ local function start_world(difficulty)
   economy_score.economy_score_set_difficulty(difficulty)
   g_title_built = 0
 
-  bootstrap.reset_world(M.cart_game_registry_reserve)
+  bootstrap.reset_world()
   research.research_expire_project_ids()
   background.background_new()
 end

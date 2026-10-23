@@ -412,9 +412,9 @@ function M.ui_update_hover(self)
   mouse = ui_mouse_pos(self, M.main_mouse_typed())
 
   hit_test_bucket = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_HIT_TEST)
-  local index = 0
-  while index < hit_test_bucket.count do
-    local e = hit_test_bucket.items[index]
+  local index = 1
+  while index <= #hit_test_bucket do
+    local e = hit_test_bucket[index]
 
     if ui_hit_test(e, mouse) ~= 0 then
       if entity_class.entity_has(e, entity_class.ENTITY_HAS_LAYER) ~= 0 then

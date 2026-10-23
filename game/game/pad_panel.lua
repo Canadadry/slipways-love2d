@@ -40,8 +40,8 @@ end
 function M.pad_panel_entity_under(x, y, above, accept)
   local mouse = mouse_at(x, y)
   local bucket = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_HIT_TEST)
-  for i = 0, bucket.count - 1 do
-    local e = bucket.items[i]
+  for i = 1, #bucket do
+    local e = bucket[i]
     if e.is_dead == 0 and (above == M.PAD_PANEL_ANY_LAYER or fixed.p8_fixed_flr_int(e.layer) > above) and
       accept(e) ~= 0 and e.class.hit_test ~= nil and e.class.hit_test(e, mouse) ~= 0 then
       return e
@@ -108,7 +108,7 @@ end
 
 -- Mirrors ui_update: while a box is open, a left press reaches only its ephemerals.
 local function candidates_all()
-  local it = { from_ephemerals = M.pad_panel_box_open(), index = 0 }
+  local it = { from_ephemerals = M.pad_panel_box_open(), index = 1 }
   return it
 end
 
@@ -124,17 +124,17 @@ local function candidates_next(it)
   while true do
     local e
     if it.from_ephemerals ~= 0 then
-      if it.index >= #ui.ephemerals then
+      if it.index > #ui.ephemerals then
         return nil
       end
-      e = entity_id.entity_id_resolve(ui.ephemerals[it.index + 1])
+      e = entity_id.entity_id_resolve(ui.ephemerals[it.index])
       it.index = it.index + 1
     else
       local bucket = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_HIT_TEST)
-      if it.index >= bucket.count then
+      if it.index > #bucket then
         return nil
       end
-      e = bucket.items[it.index]
+      e = bucket[it.index]
       it.index = it.index + 1
     end
     if M.pad_panel_is_candidate(e) ~= 0 then

@@ -2,7 +2,6 @@
 --
 -- Shapes, with the C field names:
 --   offset_t: { along, perpendicular }, by value: a new table each time.
---   an entity_list_t is { items, count, capacity }, items indexed from 0.
 local entity_class = require("engine.entity_class")
 local pad_direction = require("game.pad_direction")
 local planet = require("game.planet")
@@ -47,8 +46,8 @@ function M.pad_target_pick(origin, direction, candidates)
   local best = nil
   local best_offset = { along = 0, perpendicular = 0 }
   local best_score = 0
-  for i = 0, candidates.count - 1 do
-    local e = candidates.items[i]
+  for i = 1, #candidates do
+    local e = candidates[i]
     if e == origin then
       goto continue
     end

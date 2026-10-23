@@ -3,14 +3,11 @@
 -- only (draw_layers here); neither needs a value of the other at load.
 --
 -- Shapes, with the C field names:
---   entity_registry_reserve_t: { live, by_message, by_tag } (by_message and
---     by_tag indexed from 0).
 --   entity_layer_view_t: { items, first, count }: the C pointer into the
 --     layer order is the index first into its items; read items[first + i].
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_list = require("engine.entity_list")
 local exit_queue = require("engine.exit_queue")
 local game_data = require("game.game_data")
 local fixed = require("p8.fixed")
@@ -35,18 +32,32 @@ local ENTITY_REGISTRY_LAYERS = M.ENTITY_REGISTRY_LAYERS
 local TAG_COUNT = entity_class.TAG_COUNT
 local UINT_WRAP = 4294967296
 
-local function zero_list()
-  return { items = nil, count = 0, capacity = 0 }
+-- Emptied in place: every bucket is held by its readers between frames.
+local function empty_list(list)
+  for i = #list, 1, -1 do
+    list[i] = nil
+  end
+end
+
+-- 1 when e was in the list.
+local function remove_first(list, e)
+  for i = 1, #list do
+    if list[i] == e then
+      table.remove(list, i)
+      return 1
+    end
+  end
+  return 0
 end
 
 local g_entities_by_message = {}
 for i = 0, ENTITY_MESSAGE_COUNT - 1 do
-  g_entities_by_message[i] = zero_list()
+  g_entities_by_message[i] = {}
 end
 
 local g_entities_by_tag = {}
 for i = 0, TAG_COUNT - 1 do
-  g_entities_by_tag[i] = { seen = 0, list = zero_list() }
+  g_entities_by_tag[i] = { seen = 0, list = {} }
 end
 
 -- Group g (1..15) is items[start[g - 1] .. start[g]); start[ENTITY_REGISTRY_LAYERS] is the count.
@@ -61,7 +72,7 @@ end
 local g_layer_orders = { [0] = zero_layer_order(), zero_layer_order() }
 local g_layer_order_mutations = 0
 
-local g_live_entities = zero_list()
+local g_live_entities = {}
 local g_main_camera = nil
 local g_initialized = 0
 local g_generation = 0
@@ -85,14 +96,14 @@ function M.entity_registry_shutdown()
     return
   end
 
-  entity_list.entity_list_free(g_live_entities)
+  empty_list(g_live_entities)
 
   for i = 0, ENTITY_MESSAGE_COUNT - 1 do
-    entity_list.entity_list_free(g_entities_by_message[i])
+    empty_list(g_entities_by_message[i])
   end
 
   for i = 0, TAG_COUNT - 1 do
-    entity_list.entity_list_free(g_entities_by_tag[i].list)
+    empty_list(g_entities_by_tag[i].list)
     g_entities_by_tag[i].seen = 0
   end
 
@@ -103,29 +114,19 @@ function M.entity_registry_shutdown()
   g_initialized = 0
 end
 
-local no_reserve = { live = 0, by_message = {}, by_tag = {} }
-for i = 0, ENTITY_MESSAGE_COUNT - 1 do
-  no_reserve.by_message[i] = 0
-end
-for i = 0, TAG_COUNT - 1 do
-  no_reserve.by_tag[i] = 0
-end
-
-function M.entity_registry_init(reserve)
-  if reserve == nil then reserve = no_reserve end
-
+function M.entity_registry_init()
   M.entity_registry_shutdown()
 
   entity_id.entity_id_table_init()
 
-  entity_list.entity_list_init_reserve(g_live_entities, reserve.live)
+  empty_list(g_live_entities)
 
   for i = 0, ENTITY_MESSAGE_COUNT - 1 do
-    entity_list.entity_list_init_reserve(g_entities_by_message[i], reserve.by_message[i])
+    empty_list(g_entities_by_message[i])
   end
 
   for i = 0, TAG_COUNT - 1 do
-    entity_list.entity_list_init_reserve(g_entities_by_tag[i].list, reserve.by_tag[i])
+    empty_list(g_entities_by_tag[i].list)
   end
 
   g_main_camera = M.g_main_camera_placeholder
@@ -134,29 +135,23 @@ function M.entity_registry_init(reserve)
 end
 
 function M.entity_registry_abandon_live_entities()
-  for i = 0, g_live_entities.count - 1 do
-    if g_live_entities.items[i].class.release ~= nil then
-      exit_queue.exit_queue_put(g_live_entities.items[i])
+  for i = 1, #g_live_entities do
+    if g_live_entities[i].class.release ~= nil then
+      exit_queue.exit_queue_put(g_live_entities[i])
     end
   end
-end
-
-local function forget_list(list)
-  list.items = nil
-  list.count = 0
-  list.capacity = 0
 end
 
 function M.entity_registry_forget_registries()
   entity_id.entity_id_table_forget()
   layer_orders_reset()
   g_generation = (g_generation + 1) % UINT_WRAP
-  forget_list(g_live_entities)
+  empty_list(g_live_entities)
   for i = 0, ENTITY_MESSAGE_COUNT - 1 do
-    forget_list(g_entities_by_message[i])
+    empty_list(g_entities_by_message[i])
   end
   for i = 0, TAG_COUNT - 1 do
-    forget_list(g_entities_by_tag[i].list)
+    empty_list(g_entities_by_tag[i].list)
     g_entities_by_tag[i].seen = 0
   end
 end
@@ -204,7 +199,7 @@ end
 -- 0 when no entity of the tag was ever registered.
 function M.entity_registry_count_tagged(tag)
   local tagged = M.entities_by_tag(tag)
-  return (tagged == nil) and 0 or tagged.count
+  return (tagged == nil) and 0 or #tagged
 end
 
 local function is_drawn_message(message)
@@ -274,11 +269,13 @@ end
 function M.entity_register(e)
   g_generation = (g_generation + 1) % UINT_WRAP
 
-  entity_list.entity_list_add(g_live_entities, e)
+  assert(e ~= nil, "entity_register: an entity")
+  g_live_entities[#g_live_entities + 1] = e
 
   for i = 0, ENTITY_MESSAGE_COUNT - 1 do
     if is_message_name(e, i) ~= 0 then
-      entity_list.entity_list_add(g_entities_by_message[i], e)
+      local bucket = g_entities_by_message[i]
+      bucket[#bucket + 1] = e
     end
   end
 
@@ -295,7 +292,8 @@ function M.entity_register(e)
   for t = 0, TAG_COUNT - 1 do
     if bit.band(e.class.tags, entity_class.TAG(t)) ~= 0 then
       g_entities_by_tag[t].seen = 1
-      entity_list.entity_list_add(g_entities_by_tag[t].list, e)
+      local tagged = g_entities_by_tag[t].list
+      tagged[#tagged + 1] = e
     end
   end
 
@@ -306,13 +304,13 @@ end
 function M.entity_unregister(e)
   g_generation = (g_generation + 1) % UINT_WRAP
 
-  if entity_list.entity_list_del(g_live_entities, e) ~= 0 then
+  if remove_first(g_live_entities, e) ~= 0 then
     exit_queue.exit_queue_put(e)
   end
 
   for i = 0, ENTITY_MESSAGE_COUNT - 1 do
     if is_message_name(e, i) ~= 0 then
-      entity_list.entity_list_del(g_entities_by_message[i], e)
+      remove_first(g_entities_by_message[i], e)
       if is_drawn_message(i) ~= 0 then
         layer_order_remove(layer_order_of(i), e)
       end
@@ -321,7 +319,7 @@ function M.entity_unregister(e)
 
   for i = 0, TAG_COUNT - 1 do
     if bit.band(e.class.tags, entity_class.TAG(i)) ~= 0 then
-      entity_list.entity_list_del(g_entities_by_tag[i].list, e)
+      remove_first(g_entities_by_tag[i].list, e)
     end
   end
 end
@@ -336,14 +334,14 @@ local function layer_order_reinsert(message, e, key)
   if key == 0 then
     return
   end
-  local index = 0
-  while index < bucket.count and bucket.items[index] ~= e do
-    if layer_key(bucket.items[index]) == key then
+  local index = 1
+  while index <= #bucket and bucket[index] ~= e do
+    if layer_key(bucket[index]) == key then
       rank = rank + 1
     end
     index = index + 1
   end
-  if index == bucket.count then
+  if index > #bucket then
     return
   end
   layer_order_insert(order, e, key, order.start[key - 1] + rank)

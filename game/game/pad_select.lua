@@ -86,17 +86,17 @@ end
 function M.pad_select_next(candidates, current)
   assert(candidates ~= nil, "pad_select_next: the candidate list exists, even empty")
   local start = -1
-  for i = 0, candidates.count - 1 do
+  for i = 1, #candidates do
     if current == nil then
       break
     end
-    if candidates.items[i] == current then
-      start = i
+    if candidates[i] == current then
+      start = i - 1
       break
     end
   end
-  for step = 1, candidates.count do
-    local e = candidates.items[cint.mod(start + step, candidates.count)]
+  for step = 1, #candidates do
+    local e = candidates[cint.mod(start + step, #candidates) + 1]
     if M.pad_select_needs_attention(e) ~= 0 then
       return e
     end

@@ -24,7 +24,6 @@ local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local geom = require("engine.geom")
 local vec = require("engine.vec")
@@ -321,9 +320,8 @@ function M.slipway_obstruction(self)
   do
     local node_ctx = {}
     local slipway_ctx = {}
-    local part1
-    local part2
-    local ds
+    local nodes = entity_registry.entities_by_tag(entity_class.TAG_NODE)
+    local slipways = entity_registry.entities_by_tag(entity_class.TAG_SLIPWAY)
     local result = nil
 
     node_ctx.start_point = start_point
@@ -333,14 +331,20 @@ function M.slipway_obstruction(self)
     slipway_ctx.self_has_infraspace = entity_class.entity_has(self, entity_class.ENTITY_HAS_INFRASPACE)
     slipway_ctx.self_infraspace = self.infraspace
 
-    part1 = entity_list.entity_list_filter(
-      entity_registry.entities_by_tag(entity_class.TAG_NODE), slipway_obstruction_node_predicate, node_ctx)
-    part2 = entity_list.entity_list_filter(
-      entity_registry.entities_by_tag(entity_class.TAG_SLIPWAY), slipway_obstruction_slipway_predicate, slipway_ctx)
-    ds = entity_list.entity_list_concat(part1, part2)
-
-    if ds.count > 0 then
-      result = ds.items[0]
+    -- Every predicate runs on every node, then every slipway: no early exit at the first match.
+    if nodes ~= nil then
+      for i = 1, #nodes do
+        if slipway_obstruction_node_predicate(nodes[i], node_ctx) ~= 0 and result == nil then
+          result = nodes[i]
+        end
+      end
+    end
+    if slipways ~= nil then
+      for i = 1, #slipways do
+        if slipway_obstruction_slipway_predicate(slipways[i], slipway_ctx) ~= 0 and result == nil then
+          result = slipways[i]
+        end
+      end
     end
     return result
   end

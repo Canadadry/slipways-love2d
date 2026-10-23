@@ -927,15 +927,15 @@ end
 -- The tag's entities in registration order; 0 entities when the tag has no list.
 local function tagged_count(tag)
   local list = entity_registry.entities_by_tag(tag)
-  return (list ~= nil) and list.count or 0
+  return (list ~= nil) and #list or 0
 end
 
 local function tagged_at(tag, index)
-  return entity_registry.entities_by_tag(tag).items[index]
+  return entity_registry.entities_by_tag(tag)[index]
 end
 
 local function capture_probe(out)
-  for i = 0, tagged_count(entity_class.TAG_PROBE) - 1 do
+  for i = 1, tagged_count(entity_class.TAG_PROBE) do
     local e = tagged_at(entity_class.TAG_PROBE, i)
     if e.class ~= probe.probe_class() or e.is_dead ~= 0 or e.state ~= entity_class.ENTITY_STATE_SETTLED then
       goto continue
@@ -1101,7 +1101,7 @@ local function capture_node_links(out, node, planet, ids)
 end
 
 local function capture_world(out, ids)
-  for i = 0, tagged_count(entity_class.TAG_NODE) - 1 do
+  for i = 1, tagged_count(entity_class.TAG_NODE) do
     local e = tagged_at(entity_class.TAG_NODE, i)
     if is_saved(e) ~= 0 then
       assert(ids.node_count < M.SAVE_STATE_NODES_CAP, "save_state_capture: node indices are one byte")
@@ -1109,7 +1109,7 @@ local function capture_world(out, ids)
       ids.node_count = ids.node_count + 1
     end
   end
-  for i = 0, tagged_count(entity_class.TAG_SLIPWAY) - 1 do
+  for i = 1, tagged_count(entity_class.TAG_SLIPWAY) do
     local e = tagged_at(entity_class.TAG_SLIPWAY, i)
     local slipway = e
     local saved

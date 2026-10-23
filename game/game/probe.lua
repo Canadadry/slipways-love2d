@@ -18,7 +18,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
-local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local geom = require("engine.geom")
 local vec = require("engine.vec")
@@ -233,11 +232,18 @@ function M.targeting_track(self, mouse)
     target = candidate
   else
     local ctx = {}
-    local first
+    local first = nil
+    local slipways = entity_registry.entities_by_tag(entity_class.TAG_SLIPWAY)
 
     ctx.self_map_pos = p_vec
-    first = entity_list.entity_list_find_first(entity_registry.entities_by_tag(entity_class.TAG_SLIPWAY),
-      targeting_track_slipway_predicate, ctx)
+    if slipways ~= nil then
+      for i = 1, #slipways do
+        if targeting_track_slipway_predicate(slipways[i], ctx) ~= 0 then
+          first = slipways[i]
+          break
+        end
+      end
+    end
 
     if first ~= nil then
       target = first

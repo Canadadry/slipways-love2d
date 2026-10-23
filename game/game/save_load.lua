@@ -166,9 +166,9 @@ end
 -- mid-walk and skips the next one.
 local function remove_bursts()
   local live = entity_registry.live_entities()
-  for i = live.count - 1, 0, -1 do
-    if live.items[i].class == planet_family.burst_class() then
-      entity_registry.entity_unregister(live.items[i])
+  for i = #live, 1, -1 do
+    if live[i].class == planet_family.burst_class() then
+      entity_registry.entity_unregister(live[i])
     end
   end
 end
@@ -315,10 +315,10 @@ end
 
 local function refresh_structure_icons()
   local refreshed = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_REFRESH)
-  local i = 0
-  while refreshed ~= nil and i < refreshed.count do
-    if refreshed.items[i].class == structure_icon.structure_icon_class() then
-      structure_icon.structure_icon_refresh(refreshed.items[i])
+  local i = 1
+  while refreshed ~= nil and i <= #refreshed do
+    if refreshed[i].class == structure_icon.structure_icon_class() then
+      structure_icon.structure_icon_refresh(refreshed[i])
     end
     i = i + 1
   end

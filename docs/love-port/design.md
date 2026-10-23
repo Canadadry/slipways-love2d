@@ -822,8 +822,9 @@ table goes through a Lua-only reverse map built at load
 (`project_index_of` in `research.lua`). Lists handed to LÖVE, the trade
 route lists, the id lists (a planet's slipways, a route's planets and
 slipways, the UI's ephemerals and hover layers, a wormhole's anchors),
-needs, project inputs, invented technologies, particles and transit dots
-are plain 1-based arrays without holes. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
+needs, project inputs, invented technologies, particles, transit dots and
+the registry's buckets (live, per-message, per-tag) with the filter results
+built from them are plain 1-based arrays without holes. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
 `%` is `cint.mod` (the dividend's sign); `math.floor` and Lua `%` appear only
 where the C floors. `(unsigned char)x` is `bit.band(x, 0xFF)`; a `bit`
 result above 2^31 − 1 is brought back to unsigned where it is compared or
@@ -858,15 +859,14 @@ whose new value comes back after the C return value, several in C order, a
 p8_fixed_rnd_from_state(state, x)`; `pad_panel_step` returns `at, x, y,
 mouse_buttons`).
 
-**Memory.** A new object is a table built where it is needed. An
-`entity_list` that grows gets a fresh items table holding a copy of its
-items, and copies of its header share that table. The plain-array lists are
-emptied or refilled in place when several owners hold them; a list that
+**Memory.** A new object is a table built where it is needed. The
+plain-array lists are emptied or refilled in place when several owners hold them; a list that
 outlives a copy point is copied, never shared by accident (an offer's routes
 are a copy of the source list, assigned back when the offer returns); a
 route's id arrays are never changed once built, so route copies share them.
 An id list is read through `entity_id_resolve`, which asserts the id is
-alive. Strings are Lua strings, compared with `==`.
+alive. A walk whose body may change its list walks a copy and says so.
+Strings are Lua strings, compared with `==`.
 
 **Truth values.** A C int predicate returns 1 or 0, never a Lua boolean;
 `if (x)` on an int is `if x ~= 0`, `!x` is `x == 0` as a test and

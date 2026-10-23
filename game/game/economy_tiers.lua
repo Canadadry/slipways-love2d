@@ -8,7 +8,6 @@
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local research = require("game.research")
 local trade = require("game.trade")
@@ -22,21 +21,11 @@ end
 
 local function for_each_tagged(tag, fn, ctx)
   local list = entity_registry.entities_by_tag(tag)
-  local it
-  local e
   if list == nil then
     return
   end
-  it = entity_list.entity_list_all(list)
-  while true do
-    local more
-    more, e = entity_list.entity_list_iter_next(it, e)
-    if more == 0 then
-      break
-    end
-    if e ~= nil then
-      fn(e, ctx)
-    end
+  for i = 1, #list do
+    fn(list[i], ctx)
   end
 end
 

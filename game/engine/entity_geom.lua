@@ -4,7 +4,6 @@
 -- other at load.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
-local entity_list = require("engine.entity_list")
 local entity_id = require("engine.entity_id")
 local vec = require("engine.vec")
 local geom = require("engine.geom")
@@ -100,42 +99,29 @@ end
 
 function M.entity_geom_nearest(p, j_, out_nearest)
   local mk = fixed.p8_fixed_from_int(32767)
-  local it
-  local o
-  local more
 
   out_nearest = nil
   if j_ == nil then
     return mk, out_nearest
   end
-  it = entity_list.entity_list_all(j_)
-  more, o = entity_list.entity_list_iter_next(it, o)
-  while more ~= 0 do
-    mk, out_nearest = nearest_step(p, o, mk, out_nearest)
-    more, o = entity_list.entity_list_iter_next(it, o)
+  for i = 1, #j_ do
+    mk, out_nearest = nearest_step(p, j_[i], mk, out_nearest)
   end
   return mk, out_nearest
 end
 
 -- Answers entity_geom_nearest(p, list, &n) <= threshold for any threshold under its 32767 bound; 0 for a NULL list.
 function M.entity_geom_any_within(p, list, threshold)
-  local it
-  local o
-  local more
-
   if list == nil then
     return 0
   end
-  it = entity_list.entity_list_all(list)
-  more, o = entity_list.entity_list_iter_next(it, o)
-  while more ~= 0 do
-    local o_p = map_pos_of(o)
+  for i = 1, #list do
+    local o_p = map_pos_of(list[i])
     local same_position = (p.x == o_p.x and p.y == o_p.y)
 
     if not same_position and vec.vec_length_squared(vec.vec_sub(p, o_p)) <= threshold then
       return 1
     end
-    more, o = entity_list.entity_list_iter_next(it, o)
   end
   return 0
 end
@@ -143,21 +129,16 @@ end
 -- Skips only `excluded`, by identity: another entity on the very point counts.
 function M.entity_geom_nearest_except(p, j_, excluded, out_nearest)
   local best = fixed.p8_fixed_from_int(32767)
-  local it
-  local o
-  local more
 
   out_nearest = nil
   if j_ == nil then return best, out_nearest end
-  it = entity_list.entity_list_all(j_)
-  more, o = entity_list.entity_list_iter_next(it, o)
-  while more ~= 0 do
+  for i = 1, #j_ do
+    local o = j_[i]
     local d = vec.vec_length_squared(vec.vec_sub(p, map_pos_of(o)))
     if o ~= excluded and d < best then
       out_nearest = o
       best = d
     end
-    more, o = entity_list.entity_list_iter_next(it, o)
   end
   return best, out_nearest
 end

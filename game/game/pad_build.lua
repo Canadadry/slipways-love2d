@@ -37,8 +37,8 @@ local function icon_beside(x, step)
   local nearest = nil
   local nearest_x = 0
   local bucket = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_HIT_TEST)
-  for i = 0, bucket.count - 1 do
-    local e = bucket.items[i]
+  for i = 1, #bucket do
+    local e = bucket[i]
     if structure_icon.structure_icon_is_revealed(e) ~= 0 then
       local at_x = pad_panel.pad_panel_focus_point(e, 0, 0)
       if (step < 0 and at_x < x or step >= 0 and at_x > x) and

@@ -12,7 +12,7 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
-function M.reset_world(reserve)
+function M.reset_world()
   local real_main_camera
   local real_main_mouse
   local real_main_ui
@@ -21,7 +21,7 @@ function M.reset_world(reserve)
     ui.ui_forget_world(ui.main_ui())
   end
   entity_registry.entity_registry_abandon_live_entities()
-  entity_registry.entity_registry_init(reserve)
+  entity_registry.entity_registry_init()
 
   if entity.entity_ready() == 0 then
     entity.entity_init()
@@ -55,13 +55,13 @@ end
 
 function M.update_entities()
   local hv = entity_registry.live_entities()
-  local i = 0
+  local i = 1
 
   -- Removing an element during this walk skips the next one; it is visited
   -- next frame. Compensating the index would change update timing and every
   -- replay.
-  while i < hv.count do
-    local qc = hv.items[i]
+  while i <= #hv do
+    local qc = hv[i]
 
     if qc.state ~= entity_class.ENTITY_STATE_NONE and qc.class.states[qc.state] ~= nil then
       qc.class.states[qc.state](qc, qc.state_time)

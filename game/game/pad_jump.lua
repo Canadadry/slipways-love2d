@@ -5,7 +5,6 @@
 --   directions_by_priority is 0-indexed.
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_list = require("engine.entity_list")
 local bindings_module = require("game.bindings")
 local galaxy = require("game.galaxy")
 local pad_direction = require("game.pad_direction")
@@ -160,8 +159,8 @@ function M.pad_jump_nearest(x, y, candidates)
   end
   local best = nil
   local best_distance = 0
-  for i = 0, candidates.count - 1 do
-    local e = candidates.items[i]
+  for i = 1, #candidates do
+    local e = candidates[i]
     local ex, ey = M.pad_jump_world_point(e, 0, 0)
     local distance = (ex - x) * (ex - x) + (ey - y) * (ey - y)
     if best == nil or distance < best_distance then
@@ -180,28 +179,34 @@ function M.pad_jump_seed(candidates, centre_x, centre_y)
   if candidates == nil then
     return nil
   end
-  for i = 0, candidates.count - 1 do
-    if is_colony(candidates.items[i]) ~= 0 then
-      return candidates.items[i]
+  for i = 1, #candidates do
+    if is_colony(candidates[i]) ~= 0 then
+      return candidates[i]
     end
   end
   return M.pad_jump_nearest(centre_x, centre_y, candidates)
 end
 
-local function is_candidate(e, ctx)
-  return pad_target.pad_target_is_candidate(e)
-end
-
+-- An empty array for a nil list.
 function M.pad_jump_candidates(nodes)
-  return entity_list.entity_list_filter(nodes, is_candidate, nil)
+  local candidates = {}
+  if nodes == nil then
+    return candidates
+  end
+  for i = 1, #nodes do
+    if pad_target.pad_target_is_candidate(nodes[i]) ~= 0 then
+      candidates[#candidates + 1] = nodes[i]
+    end
+  end
+  return candidates
 end
 
 function M.pad_jump_any_candidate(nodes)
   if nodes == nil then
     return 0
   end
-  for i = 0, nodes.count - 1 do
-    if pad_target.pad_target_is_candidate(nodes.items[i]) ~= 0 then
+  for i = 1, #nodes do
+    if pad_target.pad_target_is_candidate(nodes[i]) ~= 0 then
       return 1
     end
   end
