@@ -48,8 +48,6 @@ local M = {}
 
 M.CART_NO_DEMO_FRAME = -1
 
-local SAVE_BUFFER_BYTES = 8192
-
 local g_title_built = 0
 local g_save_cut = 0
 local g_demo_frame = M.CART_NO_DEMO_FRAME
@@ -164,7 +162,7 @@ local function resume_saved_game(self)
 end
 
 local function title_resume_handler()
-  local count = save_storage.save_storage_read(g_save_bytes, SAVE_BUFFER_BYTES)
+  local count = save_storage.save_storage_read(g_save_bytes)
 
   if count > 0 and save_state.save_state_decode(g_save_bytes, count, g_save_state) ~= 0 then
     return resume_saved_game

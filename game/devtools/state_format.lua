@@ -1,7 +1,7 @@
 -- Copy of src/devtools/state_format.h then src/devtools/state_format.c.
 --
 -- A state_sink_t is a table { write_line, context }: write_line(context, line) receives one whole
--- line, its "\n" included. A line_t is a table { sink, text, length }.
+-- line, its "\n" included. A line_t is a table { sink, text }.
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
@@ -18,25 +18,20 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
-local LINE_CAP = 256
-
 local function line_start(sink)
   assert(sink ~= nil and sink.write_line ~= nil)
-  return { sink = sink, text = "", length = 0 }
+  return { sink = sink, text = "" }
 end
 
 local function line_add(line, format, ...)
   local written = string.format(format, ...)
-  assert(#written < LINE_CAP - line.length, "state line longer than LINE_CAP")
   line.text = line.text .. written
-  line.length = line.length + #written
 end
 
 local function line_end(line)
   line_add(line, "\n")
   line.sink.write_line(line.sink.context, line.text)
   line.text = ""
-  line.length = 0
 end
 
 -- Plain arithmetic, never bit: -(-2^31) is 2^31, which bit wraps back to negative.

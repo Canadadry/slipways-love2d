@@ -19,12 +19,10 @@ function M.save_storage_write(bytes, count)
   return (love.filesystem.write(SAVE_FILE, table.concat(chars)) == true) and 1 or 0
 end
 
--- Asserts cap >= SAVE_STATE_MAX_BYTES. Returns the record's byte count, 0 when there is none or
--- it cannot be read; on 0, bytes is unspecified.
-function M.save_storage_read(bytes, cap)
-  local content
-  assert(cap >= save_state.SAVE_STATE_MAX_BYTES, "a smaller buffer would lose the end of a record")
-  content = love.filesystem.read(SAVE_FILE)
+-- Returns the record's byte count, 0 when there is none or it cannot be read; on 0, bytes is
+-- unspecified.
+function M.save_storage_read(bytes)
+  local content = love.filesystem.read(SAVE_FILE)
   if content == nil or #content == 0 or #content > save_state.SAVE_STATE_MAX_BYTES then
     return 0
   end

@@ -6,8 +6,7 @@
 -- Shapes, with the C field names:
 --   bindings_t: { masks }, masks[mode][action] indexed from 0, every entry
 --     present, zeros included.
---   bindings_error_t: { line, text }, text a Lua string of at most
---     ERROR_TEXT_CAPACITY - 1 bytes.
+--   bindings_error_t: { line, text }, text a Lua string.
 -- A C pointer into a parsed text is a 1-based position in the Lua string; a
 -- range [start, end_) excludes end_; a position past the text reads 0.
 -- fail, parse_line and bindings_parse keep the C parameter name error, which
@@ -64,10 +63,6 @@ M.BINDINGS_ACTION_CANCEL_PLACEMENT = 32
 M.BINDINGS_ACTION_CLOSE_PANEL = 33
 M.BINDINGS_ACTION_NEXT_PANEL = 34
 M.BINDINGS_ACTION_COUNT = 35
-
-local ERROR_TEXT_CAPACITY = 256
-
-local BINDINGS_MAX_LINE_LENGTH = 127
 
 M.mode_names = {
   [0] = "title", "jump", "aim", "slipway", "menu", "pause", "build_bar", "placement", "panels",
@@ -209,16 +204,9 @@ function M.bindings_action_name(action)
   return M.action_names[action]
 end
 
--- What snprintf and vsnprintf leave in the C's 256 bytes: at most 255.
 local function fail(error, file_name, line_number, format, ...)
-  local capacity = ERROR_TEXT_CAPACITY
   error.line = line_number
-  local prefix = string.format("%s:%d: ", file_name, line_number)
-  if #prefix >= capacity then
-    error.text = prefix:sub(1, capacity - 1)
-    return 0
-  end
-  error.text = (prefix .. string.format(format, ...)):sub(1, capacity - 1)
+  error.text = string.format("%s:%d: ", file_name, line_number) .. string.format(format, ...)
   return 0
 end
 
@@ -350,9 +338,6 @@ function M.bindings_parse(file_name, text, out, error)
       end_ = end_ - 1
     end
     local length = (end_ > line) and end_ - line or 0
-    if length > BINDINGS_MAX_LINE_LENGTH then
-      return fail(error, file_name, line_number, "line longer than %d characters", BINDINGS_MAX_LINE_LENGTH)
-    end
     local hash = memchr(text, line, "#", length)
     local content_end = (hash ~= nil) and hash or end_
     local content_start = skip_blanks(text, line, content_end)

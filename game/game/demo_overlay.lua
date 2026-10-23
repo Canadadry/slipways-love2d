@@ -1,14 +1,10 @@
 -- Copy of src/game/demo_overlay.h then src/game/demo_overlay.c.
---
--- A line buffer char[DEMO_OVERLAY_LINE_LENGTH + 1] is a Lua string; a pointer into the caption is its 1-based position.
 local cint = require("p8.cint")
 local gfx_module = require("p8.gfx")
 local vram = require("p8.vram")
 local demo_data = require("game.demo_data")
 
 local M = {}
-
-local DEMO_OVERLAY_LINE_LENGTH = 32
 
 local BAND_FILL = 1
 local TEXT_COLOR = 7
@@ -49,24 +45,15 @@ local function draw_tag(gfx, mem)
   gfx_module.p8_print(gfx, mem, M.TAG_TEXT, left + PADDING, TOP_HUD_HEIGHT + PADDING, TEXT_COLOR)
 end
 
--- Returns the line: the length bytes of text from position start.
-local function copy_line(text, start, length)
-  assert(length <= DEMO_OVERLAY_LINE_LENGTH,
-    "a caption line over 32 characters: the generator refuses it; a hand-made unit would overflow the line buffer")
-  return string.sub(text, start, start + length - 1)
-end
-
 local function draw_caption(gfx, mem, text)
   gfx_module.p8_rectfill(gfx, mem, 0, BAND_TOP, vram.P8_SCREEN_WIDTH - 1, BAND_BOTTOM, BAND_FILL)
   local newline = string.find(text, "\n", 1, true)
   if newline == nil then
-    local first = copy_line(text, 1, #text)
-    print_centred(gfx, mem, first, BAND_TOP + cint.div(BAND_HEIGHT - gfx_module.P8_FONT_GLYPH_HEIGHT, 2))
+    print_centred(gfx, mem, text, BAND_TOP + cint.div(BAND_HEIGHT - gfx_module.P8_FONT_GLYPH_HEIGHT, 2))
     return
   end
-  assert(string.find(text, "\n", newline + 1, true) == nil, "a caption of more than 2 lines: the generator refuses it")
-  local first = copy_line(text, 1, newline - 1)
-  local second = copy_line(text, newline + 1, #text - newline)
+  local first = string.sub(text, 1, newline - 1)
+  local second = string.sub(text, newline + 1)
   print_centred(gfx, mem, first, BAND_TOP + PADDING)
   print_centred(gfx, mem, second, BAND_TOP + PADDING + gfx_module.P8_FONT_GLYPH_HEIGHT + LINE_GAP)
 end
