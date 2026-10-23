@@ -52,10 +52,10 @@ function M.map_tables_make_data_item(fields)
     text = fields.text,
     number = fields.number or 0,
     row = fields.row,
-    is_false = fields.is_false or 0,
-    is_fixed = fields.is_fixed or 0,
+    is_false = fields.is_false or false,
+    is_fixed = fields.is_fixed or false,
     fixed = fields.fixed or 0,
-    is_nil = fields.is_nil or 0,
+    is_nil = fields.is_nil or false,
   }, "data_item_t")
 end
 

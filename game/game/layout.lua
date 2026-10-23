@@ -93,10 +93,10 @@ end
 local function tuple_scalar_of_item(item)
   assert(item.row == nil and item.text == nil,
     "a tuple holds numbers only; a text one needs a pointer in the cell -- stop, measure first")
-  if item.is_false ~= 0 or item.is_nil ~= 0 then
+  if item.is_false or item.is_nil then
     return M.layout_row_scalar_nothing()
   end
-  if item.is_fixed ~= 0 then
+  if item.is_fixed then
     return M.layout_row_scalar_fixed(item.fixed)
   end
   return M.layout_row_scalar_fixed(fixed.p8_fixed_from_int(item.number))
@@ -129,10 +129,10 @@ function M.layout_row_cell_item(item)
   if item.text ~= nil then
     return M.layout_row_cell_string(item.text)
   end
-  if item.is_false ~= 0 or item.is_nil ~= 0 then
+  if item.is_false or item.is_nil then
     return M.layout_row_cell_nothing()
   end
-  if item.is_fixed ~= 0 then
+  if item.is_fixed then
     return M.layout_row_cell_fixed(item.fixed)
   end
   return M.layout_row_cell_fixed(fixed.p8_fixed_from_int(item.number))
@@ -169,7 +169,7 @@ end
 local function row_measure_item(self, cell, out_item, out_w, out_spacing)
   local width = fixed.p8_fixed_from_int(6)
   local palette_block = fixed.p8_fixed_from_int(0)
-  local have_spacing = 0
+  local have_spacing = false
   local spacing = fixed.p8_fixed_from_int(0)
 
   item_zero(out_item)
@@ -185,7 +185,7 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
     width = tuple_fixed_at(t, 1) or width
     palette_block = tuple_fixed_at(t, 2) or palette_block
     if tuple_fixed_at(t, 3) ~= nil then
-      have_spacing = 1
+      have_spacing = true
       spacing = tuple_fixed_at(t, 3)
     end
   end
@@ -216,7 +216,7 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
     out_item.kind = M.LAYOUT_ROW_ITEM_NONE
   end
   out_w = width
-  if have_spacing ~= 0 then
+  if have_spacing then
     out_spacing = spacing
   else
     out_spacing = fixed.p8_fixed_from_int(2)
@@ -321,7 +321,7 @@ local function keys_zero()
   return {
     items = {},
     count = 0,
-    background_is_bool = 0,
+    background_is_bool = false,
   }
 end
 
@@ -403,7 +403,7 @@ local function row_struct_init(self)
   entity_class.entity_init_header(self, M.layout_row_class_def)
   self.color = nil
   self.background = nil
-  self.background_is_bool = 0
+  self.background_is_bool = false
   self.score = nil
   self.placed_items = nil
   self.placed_items_count = 0

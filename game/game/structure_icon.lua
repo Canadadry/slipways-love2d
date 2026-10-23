@@ -157,7 +157,7 @@ function M.structure_icon_draw(gfx, mem, self, p)
   gfx_module.p8_spr_default(gfx, mem, (view.sprite ~= nil) and structure_icon_to_int(view.sprite) or 0,
     structure_icon_to_int(p.x), structure_icon_to_int(p.y))
 
-  if self.is_hovered ~= 0 then
+  if self.is_hovered then
     if structure_icon_own_kind(self) ~= nil then
       local pb = targeting.targeting_zero()
       pb.archetype = game_data.targeting_archetype_none
@@ -208,7 +208,7 @@ local function structure_icon_create(keys)
   entity_class.entity_set_pos(self, self.archetype.pos)
   self.kind = nil
   self.tooltip = nil
-  self.is_hovered = 0
+  self.is_hovered = false
   if keys ~= nil then
     self.kind = keys.kind
     self.tooltip = keys.tooltip

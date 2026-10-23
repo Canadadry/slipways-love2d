@@ -28,6 +28,7 @@ end
 
 -- Returns the action, then played_buttons.
 function M.attract_frame(attract, on_title, raw_buttons, played_buttons)
+  assert(type(on_title) == "boolean", "attract_frame: on_title is a boolean")
   if attract.phase == M.ATTRACT_PHASE_PLAYING then
     if raw_buttons ~= 0 or attract.demo_frame == demo_data.demo_data_frame_count then
       if raw_buttons ~= 0 then
@@ -50,7 +51,7 @@ function M.attract_frame(attract, on_title, raw_buttons, played_buttons)
     end
     attract.phase = M.ATTRACT_PHASE_IDLE
   end
-  if raw_buttons ~= 0 or on_title == 0 then
+  if raw_buttons ~= 0 or not on_title then
     attract.idle_frames = 0
     played_buttons = raw_buttons
     return M.ATTRACT_ACTION_NONE, played_buttons

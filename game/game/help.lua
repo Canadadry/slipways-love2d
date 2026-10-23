@@ -71,7 +71,7 @@ function M.help_screen_construct(self)
     bs[i].on_click = M.help_start_game_field_value()
   end
   frame.fixed_pos = vec.vec_make(self.archetype.fixed_pos.x, self.archetype.fixed_pos.y)
-  frame.clear_ephemerals_after = 1
+  frame.clear_ephemerals_after = true
   frame.back_color = self.archetype.back_color
   frame.row_step = vec.vec_make(self.archetype.row_step.x, self.archetype.row_step.y)
   frame.pos = entity_class.entity_pos(self)
@@ -136,7 +136,7 @@ local function screen_create()
   probe.probe_init_instance(self, M.help_screen_class_def, game_data.help_screen_archetype)
   hit_box = self.archetype.hit_box
   self.hit_box = { left = hit_box.left, top = hit_box.top, right = hit_box.right, bottom = hit_box.bottom }
-  self.is_hovered = 0
+  self.is_hovered = false
   M.help_screen_construct(self)
   particle.emitter_init(self)
   entity.entity_construct(self)

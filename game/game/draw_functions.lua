@@ -26,27 +26,24 @@ end
 local function is_number(e, i)
   local item = draw_functions_arg(e, i)
   if item == nil or item.text ~= nil then
-    return 0
+    return false
   end
-  if item.is_false ~= 0 or item.is_nil ~= 0 then
-    return 0
-  end
-  return 1
+  return not (item.is_false or item.is_nil)
 end
 
 local function number(e, i)
   local item = draw_functions_arg(e, i)
-  if is_number(e, i) == 0 then
+  if not is_number(e, i) then
     return fixed.p8_fixed_from_int(0)
   end
-  return (item.is_fixed ~= 0) and item.fixed or fixed.p8_fixed_from_int(item.number)
+  return item.is_fixed and item.fixed or fixed.p8_fixed_from_int(item.number)
 end
 
 local function draw_bar_entry(e)
   local y1 = number(e, 1)
   local col
   col = fixed.p8_fixed_flr_int(number(e, 3))
-  if is_number(e, 2) ~= 0 then
+  if is_number(e, 2) then
     hud.hud_draw_bar(g_draw_functions_gfx, g_draw_functions_mem, y1, number(e, 2), col)
   else
     hud.hud_draw_bar_y1(g_draw_functions_gfx, g_draw_functions_mem, y1, col)
@@ -61,7 +58,7 @@ end
 local function print_outlined_with(e, print)
   local a1 = draw_functions_arg(e, 1)
   local owned = nil
-  if is_number(e, 1) ~= 0 then
+  if is_number(e, 1) then
     owned = str.p8_tostr_fixed(number(e, 1))
   end
   local t
@@ -75,7 +72,7 @@ local function print_outlined_with(e, print)
   local x = number(e, 2)
   local y = number(e, 3)
   local c = fixed.p8_fixed_flr_int(number(e, 4))
-  local a = (is_number(e, 5) ~= 0) and number(e, 5) or fixed.p8_fixed_from_int(0)
+  local a = is_number(e, 5) and number(e, 5) or fixed.p8_fixed_from_int(0)
   print(g_draw_functions_gfx, g_draw_functions_mem, t, x, y, c, a)
 end
 
@@ -95,7 +92,7 @@ local function spr_entry(e)
   local n = fixed.p8_fixed_flr_int(number(e, 1))
   local x = fixed.p8_fixed_flr_int(number(e, 2))
   local y = fixed.p8_fixed_flr_int(number(e, 3))
-  if is_number(e, 4) ~= 0 and is_number(e, 5) ~= 0 then
+  if is_number(e, 4) and is_number(e, 5) then
     local w = fixed.p8_fixed_flr_int(number(e, 4))
     local h = fixed.p8_fixed_flr_int(number(e, 5))
     gfx_module.p8_spr(g_draw_functions_gfx, g_draw_functions_mem, n, x, y, w, h)

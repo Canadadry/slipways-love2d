@@ -94,7 +94,7 @@ local function button_create(keys)
   self.side_tooltip = nil
   self.tooltip = nil
   self.on_click = nil
-  self.is_hovered = 0
+  self.is_hovered = false
   self.refresh = nil
   self.name = nil
   self.technology = nil
@@ -211,13 +211,13 @@ function M.button_draw_overlay(gfx, mem, self)
     return
   end
 
-  if self.tooltip ~= nil and self.is_hovered ~= 0 then
+  if self.tooltip ~= nil and self.is_hovered then
     layout.tooltip_draw_at(gfx, mem, self.tooltip, fixed.p8_fixed_from_int(vram.P8_SCREEN_HEIGHT - 1),
       fixed.p8_fixed_from_int(1))
   end
 end
 
--- Text items go through the text image cache, or are printed directly when through_text_image is 0.
+-- Text items go through the text image cache, or are printed directly when through_text_image is false.
 local function button_draw_body(graphics, memory, self, draw_pos, body, top, through_text_image)
   local width = self.width
   local right = fixed.p8_fixed_sub(fixed.p8_fixed_add(draw_pos.x, width), fixed.p8_fixed_from_int(1))
@@ -233,7 +233,7 @@ local function button_draw_body(graphics, memory, self, draw_pos, body, top, thr
 
   if self.layout_row ~= nil then
     local off = vec.vec_add(draw_pos, vec.vec_make(fixed.p8_fixed_from_int(1), fixed.p8_fixed_from_int(2)))
-    if through_text_image ~= 0 then
+    if through_text_image then
       layout.layout_row_draw_at_text_image(graphics, memory, self.layout_row, off, fixed.p8_fixed_from_int(0))
     else
       layout.layout_row_draw_at(graphics, memory, self.layout_row, off, fixed.p8_fixed_from_int(0))
@@ -245,14 +245,14 @@ local function button_draw_body(graphics, memory, self, draw_pos, body, top, thr
     local bg = 2
     local x2 = fixed.p8_fixed_add(right, c.width)
 
-    if c.background ~= nil and c.background_is_bool == 0 then
+    if c.background ~= nil and not c.background_is_bool then
       bg = ui_to_int(c.background)
     end
     gfx_module.p8_rectfill(graphics, memory, ui_to_int(right) + 3, top_pixel + 1, ui_to_int(x2) + 4, bottom_pixel, bg)
 
     local off2 = vec.vec_add(draw_pos, vec.vec_make(fixed.p8_fixed_add(width, fixed.p8_fixed_from_int(3)),
       fixed.p8_fixed_from_int(2)))
-    if through_text_image ~= 0 then
+    if through_text_image then
       layout.layout_row_draw_at_text_image(graphics, memory, c, off2, fixed.p8_fixed_from_int(0))
     else
       layout.layout_row_draw_at(graphics, memory, c, off2, fixed.p8_fixed_from_int(0))
@@ -264,16 +264,16 @@ local function is_whole(x)
   return fixed.p8_fixed_from_int(ui_to_int(x)) == x
 end
 
--- Returns ok, extent: extent widened to the row's items drawn dx right of the button's border; ok 0 when
+-- Returns ok, extent: extent widened to the row's items drawn dx right of the button's border; ok false when
 -- an item is off a whole offset or left of the border, so the image could not hold it.
 local function row_extent(row, dx, extent)
   if row == nil or row.placed_items == nil then
-    return 1, extent
+    return true, extent
   end
   for i = 0, row.placed_items_count - 1 do
     local item = row.placed_items[i]
     if not is_whole(item.offset.x) or item.offset.y ~= 0 then
-      return 0, extent
+      return false, extent
     end
     local left = dx + ui_to_int(item.offset.x) + 1
     local end_ = left
@@ -284,13 +284,13 @@ local function row_extent(row, dx, extent)
       end_ = left + gfx_module.P8_SPRITE_SIZE
     end
     if left < 0 then
-      return 0, extent
+      return false, extent
     end
     if end_ > extent then
       extent = end_
     end
   end
-  return 1, extent
+  return true, extent
 end
 
 -- The image's width, the border's left column to the rightmost pixel any call writes; 0 when the
@@ -304,7 +304,7 @@ local function button_image_width(self)
   local width = ui_to_int(self.width)
   local extent = width + 2
   ok, extent = row_extent(self.layout_row, 1, extent)
-  if ok == 0 then
+  if not ok then
     return 0
   end
   local side = self.side_tooltip
@@ -322,7 +322,7 @@ local function button_image_width(self)
       return 0
     end
     ok, extent = row_extent(side, width + 3, extent)
-    if ok == 0 then
+    if not ok then
       return 0
     end
     if fill_right + 1 > extent then
@@ -337,16 +337,16 @@ local g_building_look = { body = 0, top = 0 }
 -- context is the button. Draws no visual random number and reads no game state but its rows.
 local function button_image_build_draw(gfx, mem, context)
   button_draw_body(gfx, mem, context, vec.vec_make(fixed.p8_fixed_from_int(1), fixed.p8_fixed_from_int(0)),
-    g_building_look.body, g_building_look.top, 0)
+    g_building_look.body, g_building_look.top, false)
 end
 
 local function button_draw_image(graphics, memory, self, draw_pos, look)
   if graphics.fillp_pattern ~= 0 or not hud.hud_palette_block_default_in_force(memory) then
-    return 0
+    return false
   end
   local width = button_image_width(self)
   if width == 0 then
-    return 0
+    return false
   end
   local key = { words = {
     [0] = (self.layout_row ~= nil) and self.layout_row.serial or 0,
@@ -367,14 +367,14 @@ function M.button_draw(graphics, memory, self, draw_pos)
   end
 
   local clickable = self.on_click ~= nil
-  local hovered = self.is_hovered ~= 0 or (ui.main_ui() ~= nil and ui.ui_pad_tab(ui.main_ui()) == self)
+  local hovered = self.is_hovered or (ui.main_ui() ~= nil and ui.ui_pad_tab(ui.main_ui()) == self)
   local look = {
     body = clickable and (hovered and 12 or 13) or 5,
     top = clickable and 6 or 5,
   }
 
-  if button_draw_image(graphics, memory, self, draw_pos, look) == 0 then
-    button_draw_body(graphics, memory, self, draw_pos, look.body, look.top, 1)
+  if not button_draw_image(graphics, memory, self, draw_pos, look) then
+    button_draw_body(graphics, memory, self, draw_pos, look.body, look.top, true)
   end
 end
 
@@ -411,7 +411,7 @@ local function modal_backdrop_create(keys)
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
   self.on_click = nil
   self.is_dead = false
-  self.is_hovered = 0
+  self.is_hovered = false
   if keys ~= nil then
     self.on_click = keys.on_click
   end
@@ -448,7 +448,9 @@ function M.modal_backdrop_left_press(self)
   end
   self.is_dead = false
   if self.on_click ~= nil then
-    self.is_dead = self.on_click(self) ~= 0
+    local dies = self.on_click(self)
+    assert(type(dies) == "boolean", "modal_backdrop_left_press: a backdrop's on_click returns whether the backdrop goes")
+    self.is_dead = dies
   end
   return out
 end

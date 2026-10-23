@@ -64,7 +64,7 @@ local function entry_of(item)
     bit.lshift(fixed.p8_fixed_flr_int(item.offset.x), 12)))
 end
 
--- Fills key from the row; returns 0 when the row cannot be copied exactly.
+-- Fills key from the row; returns false when the row cannot be copied exactly.
 local function key_of(row, mem, key)
   local hash
 
@@ -72,7 +72,7 @@ local function key_of(row, mem, key)
   key.count = 0
   key.extent = 0
   if row == nil or row.placed_items == nil then
-    return 0
+    return false
   end
   for i = 0, row.placed_items_count - 1 do
     local item = row.placed_items[i]
@@ -80,7 +80,7 @@ local function key_of(row, mem, key)
       goto continue
     end
     if item.kind ~= layout.LAYOUT_ROW_ITEM_SPRITE then
-      return 0
+      return false
     end
     do
       local sprite = fixed.p8_fixed_flr_int(item.sprite_id)
@@ -89,7 +89,7 @@ local function key_of(row, mem, key)
       if fixed.p8_fixed_from_int(x) ~= item.offset.x or item.offset.y ~= 0 or x < 0
         or x + gfx_module.P8_SPRITE_SIZE > row_image_width() or sprite < 0 or sprite >= SPRITE_COUNT or block < 0
         or block >= BLOCK_COUNT then
-        return 0
+        return false
       end
       key.entries[key.count] = entry_of(item)
       key.count = key.count + 1
@@ -100,17 +100,17 @@ local function key_of(row, mem, key)
     ::continue::
   end
   if key.count == 0 then
-    return 0
+    return false
   end
   hash = u32(bit.bxor(2166136261, 0))
   for i = 0, key.count - 1 do
     hash = mul_u32(u32(bit.bxor(hash, key.entries[i])), 16777619)
   end
   key.hash = hash
-  return 1
+  return true
 end
 
--- 1 when row_image_draw_at copies the row from an image slot: only sprite and nothing items, at
+-- true when row_image_draw_at copies the row from an image slot: only sprite and nothing items, at
 -- least one sprite, each at a whole, non-negative x offset, a y offset of 0, within a slot.
 function M.row_image_cacheable(row)
   local key = key_zero()
@@ -119,14 +119,14 @@ end
 
 local function same_key(a, b)
   if not (a.hash == b.hash and a.mem == b.mem and a.count == b.count) then
-    return 0
+    return false
   end
   for i = 0, a.count - 1 do
     if a.entries[i] ~= b.entries[i] then
-      return 0
+      return false
     end
   end
-  return 1
+  return true
 end
 
 -- Draws no visual random number and reads no game state: only the row's own items, each at its
@@ -135,19 +135,17 @@ local function row_image_build_draw(gfx, mem, context)
   layout.layout_row_draw_at(gfx, mem, context, vec.vec_make(0, 0), 0)
 end
 
-local function slot_for(key, built)
+local function slot_for(key)
   local oldest = 0
   for i = 0, image_slot.IMAGE_SLOT_ROW_COUNT - 1 do
-    if g_slots[i].key.mem ~= nil and same_key(g_slots[i].key, key) ~= 0 then
-      built = 1
-      return i, built
+    if g_slots[i].key.mem ~= nil and same_key(g_slots[i].key, key) then
+      return i, true
     end
     if g_slots[i].stamp < g_slots[oldest].stamp then
       oldest = i
     end
   end
-  built = 0
-  return oldest, built
+  return oldest, false
 end
 
 -- layout_row_draw_at's contract (same pixels, same draw palette after), through an image slot
@@ -159,12 +157,12 @@ function M.row_image_draw_at(gfx, mem, row, p, a)
   local i
   local origin
 
-  if key_of(row, mem, key) == 0 then
+  if not key_of(row, mem, key) then
     layout.layout_row_draw_at(gfx, mem, row, p, a)
     return
   end
-  i, built = slot_for(key, built)
-  if built == 0 then
+  i, built = slot_for(key)
+  if not built then
     image.p8_image_build(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i, key.extent, ROW_IMAGE_HEIGHT,
       row_image_build_draw, row)
     g_slots[i].key = key_copy(key)

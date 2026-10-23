@@ -126,7 +126,7 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.targeted_by = nil
   self.is_dead = false
   self.development_tier = self.archetype.development_tier
-  self.is_hovered = 0
+  self.is_hovered = false
   self.synthesizable_resources = self.archetype.synthesizable_resources
 end
 

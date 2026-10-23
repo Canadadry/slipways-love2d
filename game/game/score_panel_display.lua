@@ -71,7 +71,7 @@ function M.score_panel_new_year(year)
   if countdown_index >= 1 and countdown_index <= countdown_rows.count then
     local item = countdown_rows.items[countdown_index - 1]
 
-    assert(item.row ~= nil or item.is_false ~= 0, "score_panel_new_year: the countdown rows hold rows and false only")
+    assert(item.row ~= nil or item.is_false, "score_panel_new_year: the countdown rows hold rows and false only")
     message = item.row
   end
 
@@ -116,7 +116,7 @@ end
 
 local function score_panel_toggle_on_click_method(self)
   score_panel_toggle_visibility()
-  return 1
+  return true
 end
 
 local function score_panel_toggle_button_on_click_method(self)

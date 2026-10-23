@@ -113,7 +113,7 @@ local function planet_resource_row_pair(first, width)
 end
 
 local tail_row_items = {
-  [0] = map_tables.map_tables_make_data_item({ is_false = 1 }),
+  [0] = map_tables.map_tables_make_data_item({ is_false = true }),
   map_tables.map_tables_make_data_item({ number = -4 }),
 }
 local tail_row = map_tables.map_tables_make_data_row({ count = 2, items = tail_row_items })

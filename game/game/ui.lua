@@ -153,7 +153,7 @@ local function ui_create()
   self.pad_selection = nil
   self.pad_selection_frames = 0
   self.pad_tab = nil
-  self.pad_crosshair = 0
+  self.pad_crosshair = false
   entity.entity_construct(self)
   return self
 end
@@ -220,8 +220,9 @@ function M.ui_set_pad_tab(self, button)
   self.pad_tab = entity_id.entity_id_link(button)
 end
 
--- Nonzero draws a crosshair at the screen centre.
+-- true draws a crosshair at the screen centre.
 function M.ui_set_pad_crosshair(self, shown)
+  assert(type(shown) == "boolean", "ui_set_pad_crosshair: shown is a boolean")
   self.pad_crosshair = shown
 end
 
@@ -343,7 +344,7 @@ function M.ui_update(mem, self)
   end
 
   left = ui_main_mouse_button()
-  if left ~= nil and left.pressed ~= 0 and self.ephemerals_serial == serial_before then
+  if left ~= nil and left.pressed and self.ephemerals_serial == serial_before then
     M.ui_clear_ephemerals(self)
   end
 
@@ -365,7 +366,7 @@ function M.ui_draw_overlay(gfx, mem, self)
   if self == nil or gfx == nil or mem == nil then
     return
   end
-  if self.pad_crosshair ~= 0 then
+  if self.pad_crosshair then
     ui_draw_pad_crosshair(gfx, mem)
   end
 end
@@ -432,13 +433,13 @@ function M.ui_update_hover(self)
   if previous ~= nil then
     assert(previous.is_hovered ~= nil,
       "ui_update_hover: the previously hovered entity has no is_hovered member -- stop, do not add one")
-    previous.is_hovered = 0
+    previous.is_hovered = false
   end
 
   if hovered ~= nil then
     assert(hovered.is_hovered ~= nil,
       "ui_update_hover: the hovered entity has no is_hovered member -- stop, do not add one")
-    hovered.is_hovered = 1
+    hovered.is_hovered = true
   end
 end
 
@@ -449,12 +450,12 @@ local function ui_is_held_class(cls)
   local wormhole = require("game.wormhole")
 
   return (cls == slipway.slipway_class() or cls == probe.probe_class() or cls == wormhole.wormhole_class() or
-    (cls.states[entity_class.ENTITY_STATE_SETTLED] ~= nil and cls ~= planet_family.protostar_class())) and 1 or 0
+    (cls.states[entity_class.ENTITY_STATE_SETTLED] ~= nil and cls ~= planet_family.protostar_class()))
 end
 
 -- nil clears; anything else must be of a class a left press can hand over (asserted).
 function M.ui_set_left_held(self, held)
-  assert(held == nil or ui_is_held_class(held.class) ~= 0,
+  assert(held == nil or ui_is_held_class(held.class),
     "ui_set_left_held: only a class a left press hands over can be held on the left")
   self.left_held = entity_id.entity_id_link(held)
 end
@@ -471,17 +472,17 @@ function M.ui_handle_button(self, side)
   button = ui_main_mouse_button()
   mouse = M.main_mouse_typed()
 
-  if button ~= nil and button.pressed ~= 0 then
+  if button ~= nil and button.pressed then
     local kv = nil
     local kn = nil
     local given
     local found
 
     found, kv, kn = M.ui_send_to_hovered(self, M.SEND_TO_HOVERED_LEFT_PRESS, ui_mouse_pos(self, mouse), nil, kv, kn)
-    if found ~= 0 then
+    if found then
       given = entity_id.entity_get(kn.held)
       if given ~= nil then
-        assert(ui_is_held_class(given.class) ~= 0,
+        assert(ui_is_held_class(given.class),
           "ui_handle_button: a left press hands over a slipway; a probe or a wormhole from the background; a " ..
           "structure, processor, slipgate, infraspace_gate, trading_hub, synthesizer or ascension from an icon")
         self.left_held = kn.held
@@ -495,7 +496,7 @@ function M.ui_handle_button(self, side)
     held_inst.class.drag(held_inst, ui_mouse_pos(self, mouse))
   end
 
-  if button ~= nil and button.released ~= 0 and held_inst ~= nil then
+  if button ~= nil and button.released and held_inst ~= nil then
     local target = nil
     local down = nil
     local _
@@ -514,11 +515,11 @@ end
 -- Returns found, out_target, out_down; both outs as passed when nothing stops.
 function M.ui_send_to_hovered(self, message, mouse, held, out_target, out_down)
   if self == nil then
-    return 0, out_target, out_down
+    return false, out_target, out_down
   end
 
   if self.hovered_by_layer == nil then
-    return 0, out_target, out_down
+    return false, out_target, out_down
   end
 
   for layer = M.UI_HOVER_LAYERS - 1, 0, -1 do
@@ -538,12 +539,12 @@ function M.ui_send_to_hovered(self, message, mouse, held, out_target, out_down)
         end
       end
       if kn.stop then
-        return 1, h, { stop = kn.stop, held = kn.held }
+        return true, h, { stop = kn.stop, held = kn.held }
       end
     end
   end
 
-  return 0, out_target, out_down
+  return false, out_target, out_down
 end
 
 function M.ui_clear_ephemerals(self)

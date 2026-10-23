@@ -31,7 +31,7 @@ local function modal_backdrop_keys_zero()
   return { on_click = nil }
 end
 
-local g_menu_up = 0
+local g_menu_up = false
 local g_galaxy_menu_pos = {}
 for i = 0, game_data.GALAXY_MENU_COUNT - 1 do
   g_galaxy_menu_pos[i] = vec.vec_make(0, 0)
@@ -263,7 +263,7 @@ galaxy_menu_button4_on_click_method = function(self)
   local bs = {}
   local frame = message_box.open_box_frame_zero()
 
-  if g_menu_up == 0 then
+  if not g_menu_up then
     return
   end
   for i = 0, game_data.PAUSE_MENU_COUNT - 1 do
@@ -284,7 +284,7 @@ function M.galaxy_menu_button(i)
   local e
   local keys = ui_button.button_keys_zero({})
 
-  assert(g_menu_up ~= 0 and i >= 1 and i <= game_data.GALAXY_MENU_COUNT,
+  assert(g_menu_up and i >= 1 and i <= game_data.GALAXY_MENU_COUNT,
     "galaxy_menu_button: the galaxy menu has GALAXY_MENU_COUNT rows, after menu_init()")
   e = game_data.galaxy_menu_table[i - 1]
   keys.layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
@@ -313,7 +313,7 @@ function M.galaxy_menu_find_button(i)
 end
 
 function M.pause_menu_open_box()
-  if g_menu_up ~= 0 then
+  if g_menu_up then
     return M.g_pause_menu_open_box
   end
   return nil
@@ -323,20 +323,20 @@ function M.pause_menu_open_box_class()
   return M.pause_menu_open_box_class_def
 end
 
--- 1 while the ui's open box is the pause menu.
+-- true while the ui's open box is the pause menu.
 function M.pause_menu_shown()
   local ui = ui_module.main_ui()
   if ui == nil then
-    return 0
+    return false
   end
   local ephemerals = ui.ephemerals
   for i = 1, #ephemerals do
     local e = entity_id.entity_id_resolve(ephemerals[i])
     if e.class == ui_button.button_class() and e.on_click == pause_menu_row2_on_click_method then
-      return 1
+      return true
     end
   end
-  return 0
+  return false
 end
 
 function M.menu_init()
@@ -351,11 +351,11 @@ function M.menu_init()
   M.g_pause_menu_open_box.row_step = vec.vec_make(fixed.p8_fixed_from_int(game_data.pause_menu_tail.row_step_x),
     fixed.p8_fixed_from_int(game_data.pause_menu_tail.row_step_y))
   M.g_pause_menu_open_box.back_color = fixed.p8_fixed_from_int(game_data.pause_menu_tail.back_color)
-  g_menu_up = 1
+  g_menu_up = true
 end
 
 function M.menu_shutdown()
-  g_menu_up = 0
+  g_menu_up = false
   M.g_pause_menu_open_box.fixed_pos = nil
   M.g_pause_menu_open_box.row_step = nil
   M.g_pause_menu_open_box.back_color = nil

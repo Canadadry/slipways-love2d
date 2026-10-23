@@ -59,7 +59,7 @@ local function background_create()
     game_data.background_archetype.state_time)
   self.archetype = game_data.background_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
-  self.is_hovered = 0
+  self.is_hovered = false
   self.seed = fixed.p8_fixed_rnd_state()
   M.background_construct(dispatch_context.dispatch_context_mem(), self)
   entity.entity_construct(self)
@@ -118,14 +118,14 @@ function M.background_construct(memory, self)
   end
 
   for x = 0, 31 do
-    row_values_set[x] = 0
+    row_values_set[x] = false
   end
 
   walk = gen.random_walk_new(fixed.P8_FIXED_LIT(0x00001999, 0.1), fixed.p8_fixed_from_int(0))
 
   for y = 0, 31 do
     for x = 0, 31 do
-      local prev = (row_values_set[x] ~= 0) and row_values[x] or fixed.p8_fixed_from_int(1)
+      local prev = row_values_set[x] and row_values[x] or fixed.p8_fixed_from_int(1)
       local step = fixed.p8_fixed_sub(fixed.p8_fixed_mul(gen.random_walk_next(walk), fixed.p8_fixed_from_int(8)),
         fixed.p8_fixed_from_int(4))
       local roll
@@ -134,7 +134,7 @@ function M.background_construct(memory, self)
       value = fixed.p8_fixed_add(step, fixed.p8_fixed_mul(fixed.p8_fixed_add(value, prev),
         fixed.P8_FIXED_LIT(0x00008000, 0.5)))
       row_values[x] = value
-      row_values_set[x] = 1
+      row_values_set[x] = true
 
       roll = fixed.p8_fixed_rnd_default()
       if roll < fixed.P8_FIXED_LIT(0x00000106, 0.004) then
@@ -153,7 +153,7 @@ function M.background_construct(memory, self)
   end
 end
 
-local g_background_image_key = { built = 0, mem = nil, map_version = 0, draw_palette = {} }
+local g_background_image_key = { built = false, mem = nil, map_version = 0, draw_palette = {} }
 for i = 0, DRAW_PALETTE_LENGTH - 1 do
   g_background_image_key.draw_palette[i] = 0
 end
@@ -174,10 +174,10 @@ end
 local function background_draw_map_image(gfx, mem)
   local key = g_background_image_key
 
-  if key.built == 0 or key.mem ~= mem or key.map_version ~= mem.map_version or draw_palette_differs(key, mem) then
+  if not key.built or key.mem ~= mem or key.map_version ~= mem.map_version or draw_palette_differs(key, mem) then
     image.p8_image_build(gfx, mem, image_slot.IMAGE_SLOT_BACKGROUND, BACKGROUND_IMAGE_SIDE, BACKGROUND_IMAGE_SIDE,
       background_draw_map, nil)
-    key.built = 1
+    key.built = true
     key.mem = mem
     key.map_version = mem.map_version
     for i = 0, DRAW_PALETTE_LENGTH - 1 do

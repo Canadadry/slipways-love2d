@@ -320,16 +320,16 @@ function M.pad_nav_focus(nav)
 end
 
 local function planet_menu_open(nav)
-  return (on_the_map(nav) ~= 0 and pad_panel.pad_panel_box_open() ~= 0 and menu.pause_menu_shown() == 0) and 1 or 0
+  return (on_the_map(nav) ~= 0 and pad_panel.pad_panel_box_open() ~= 0 and not menu.pause_menu_shown()) and 1 or 0
 end
 
 local function armed_panel_open(nav)
   return ((on_the_map(nav) ~= 0 or cycle_open(nav) ~= 0) and M.pad_nav_panel_open() ~= 0 and
-    menu.pause_menu_shown() == 0) and 1 or 0
+    not menu.pause_menu_shown()) and 1 or 0
 end
 
 local function panel_mode(nav)
-  if menu.pause_menu_shown() ~= 0 then
+  if menu.pause_menu_shown() then
     return bindings_module.BINDINGS_MODE_PAUSE
   end
   if probe.main_economy_typed() == nil then
@@ -358,7 +358,7 @@ local function panel_step(nav, pad_buttons, pressed, played)
   local mode = panel_mode(nav)
   local direction = first_pressed_move(nav, pressed, mode)
   local choose_held = action_held(nav, pad_buttons, mode, bindings_module.BINDINGS_ACTION_CHOOSE_ROW)
-  if menu.pause_menu_shown() ~= 0 then
+  if menu.pause_menu_shown() then
     nav.pause_choose_row_armed = bit.bor(nav.pause_choose_row_armed,
       action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PAUSE, bindings_module.BINDINGS_ACTION_CHOOSE_ROW))
     choose_held = bit.band(choose_held, nav.pause_choose_row_armed)
@@ -547,7 +547,7 @@ end
 
 -- Never pause, which only pause_step closes: cleared on a release frame, the resumed carry would press the map.
 local function back_closes_the_box()
-  if pad_panel.pad_panel_box_open() ~= 0 and menu.pause_menu_shown() == 0 then
+  if pad_panel.pad_panel_box_open() ~= 0 and not menu.pause_menu_shown() then
     ui_module.ui_clear_ephemerals(ui_module.main_ui())
   end
 end
@@ -567,7 +567,7 @@ end
 
 local function own_panel_up(nav)
   if pad_cycle.pad_cycle_panel(nav.cycle) == pad_cycle.PAD_CYCLE_TECH then
-    return (pad_panel.pad_panel_box_open() ~= 0 and menu.pause_menu_shown() == 0) and 1 or 0
+    return (pad_panel.pad_panel_box_open() ~= 0 and not menu.pause_menu_shown()) and 1 or 0
   end
   if pad_cycle.pad_cycle_panel(nav.cycle) == pad_cycle.PAD_CYCLE_SCORE then
     return (M.pad_nav_panel_open() ~= 0 and pad_panel.pad_panel_box_open() == 0 and
@@ -653,7 +653,7 @@ local function nav_mode(nav)
 end
 
 local function back_mode(nav)
-  if pad_panel.pad_panel_box_open() ~= 0 and menu.pause_menu_shown() == 0 then
+  if pad_panel.pad_panel_box_open() ~= 0 and not menu.pause_menu_shown() then
     return (cycle_open(nav) ~= 0) and bindings_module.BINDINGS_MODE_PANELS or bindings_module.BINDINGS_MODE_MENU
   end
   return map_binding_mode(nav)
@@ -1129,7 +1129,7 @@ local function resume_placement(nav)
     nav.suspended_carry = nil
     return 0
   end
-  if menu.pause_menu_shown() ~= 0 then
+  if menu.pause_menu_shown() then
     return 0
   end
   ui_module.ui_set_left_held(ui_module.main_ui(), suspended)
@@ -1139,7 +1139,7 @@ local function resume_placement(nav)
 end
 
 local function pause_step(nav, pressed, release, played)
-  if menu.pause_menu_shown() ~= 0 then
+  if menu.pause_menu_shown() then
     if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PAUSE, bindings_module.BINDINGS_ACTION_CLOSE_PAUSE) == 0 or
       release ~= 0 then
       return 0
@@ -1194,13 +1194,13 @@ local function finish_step(nav, release, shown, played)
   if ui_module.main_ui() ~= nil then
     ui_module.ui_set_pad_tab(ui_module.main_ui(), lit_button(nav))
     ui_module.ui_set_pad_crosshair(ui_module.main_ui(),
-      (M.pad_nav_aim_mode(nav) ~= 0 and M.pad_nav_placing(nav) == nil) and 1 or 0)
+      M.pad_nav_aim_mode(nav) ~= 0 and M.pad_nav_placing(nav) == nil)
   end
 end
 
 local function select_allowed(nav, panels_changing, release)
   return (probe.main_economy_typed() ~= nil and on_the_map(nav) ~= 0 and panels_changing == 0 and
-    menu.pause_menu_shown() == 0 and M.pad_nav_panel_open() == 0 and
+    not menu.pause_menu_shown() and M.pad_nav_panel_open() == 0 and
     (nav.map_mode == M.PAD_NAV_MAP_JUMP or nav.map_mode == M.PAD_NAV_MAP_AIM) and
     nav.placement == M.PAD_NAV_PLACEMENT_NONE and nav.probe_or_fold_engaged == 0 and release == 0 and
     nav.release_pending == 0) and 1 or 0
@@ -1246,7 +1246,7 @@ local function run_step(nav, raw_buttons, played)
   nav.release_pending = 0
   played.mouse_buttons = 0
   local shown = nil
-  if menu.pause_menu_shown() == 0 then
+  if not menu.pause_menu_shown() then
     nav.pause_choose_row_armed = 0
   end
   if armed_panel_open(nav) == 0 then

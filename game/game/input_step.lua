@@ -90,7 +90,7 @@ end
 function M.input_step_run(step, raw)
   local buttons = 0
   local action
-  action, buttons = attract_module.attract_frame(step.attract, cart.cart_title_shown(), raw.pad_buttons, buttons)
+  action, buttons = attract_module.attract_frame(step.attract, cart.cart_title_shown() ~= 0, raw.pad_buttons, buttons)
   if action == attract_module.ATTRACT_ACTION_START then
     M.input_step_start_record(step, attract_module.attract_demo_record())
     cart.cart_cut_save()

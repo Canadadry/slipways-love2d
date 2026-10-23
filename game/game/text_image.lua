@@ -30,12 +30,11 @@ local function text_length(str)
   return (string.find(str, "\0", 1, true) or #str + 1) - 1
 end
 
--- 1 when str fits a text slot: text_image_print_outlined then copies it, unless every slot was
+-- true when str fits a text slot: text_image_print_outlined then copies it, unless every slot was
 -- used this frame.
 function M.text_image_cacheable(str)
   local length = text_length(str)
-  return (length > 0 and image_width(length) <= image.p8_image_size(image_slot.IMAGE_SLOT_TEXT_FIRST).width)
-    and 1 or 0
+  return length > 0 and image_width(length) <= image.p8_image_size(image_slot.IMAGE_SLOT_TEXT_FIRST).width
 end
 
 -- Starts a draw frame: a slot copied earlier in the frame is never rebuilt before the next call.
@@ -47,19 +46,19 @@ local function same_key(a, b)
   return a.col == b.col and a.length == b.length and a.text == b.text
 end
 
--- Returns the slot holding key and 1, else the least recently used slot not copied this
--- frame and 0, else -1 and 0.
+-- Returns the slot holding key and true, else the least recently used slot not copied this
+-- frame and false, else -1 and false.
 local function slot_for(key)
   local oldest = -1
   for i = 0, image_slot.IMAGE_SLOT_TEXT_COUNT - 1 do
     if g_slots[i].key.length > 0 and same_key(g_slots[i].key, key) then
-      return i, 1
+      return i, true
     end
     if g_slots[i].frame ~= g_frame and (oldest < 0 or g_slots[i].stamp < g_slots[oldest].stamp) then
       oldest = i
     end
   end
-  return oldest, 0
+  return oldest, false
 end
 
 -- Draws no visual random number and reads no game state.
@@ -72,7 +71,7 @@ end
 -- by str and col when str is cacheable and a slot is free. gfx's camera moves during a build and
 -- is restored.
 function M.text_image_print_outlined(graphics, mem, str, x, y, col)
-  if M.text_image_cacheable(str) == 0 then
+  if not M.text_image_cacheable(str) then
     gfx.p8_print_outlined(graphics, mem, str, x, y, col)
     return
   end
@@ -85,7 +84,7 @@ function M.text_image_print_outlined(graphics, mem, str, x, y, col)
     gfx.p8_print_outlined(graphics, mem, str, x, y, col)
     return
   end
-  if built == 0 then
+  if not built then
     g_slots[i].key = { col = key.col, length = key.length, text = key.text }
     image.p8_image_build(graphics, mem, image_slot.IMAGE_SLOT_TEXT_FIRST + i, image_width(key.length),
       TEXT_IMAGE_HEIGHT, text_image_build_draw, g_slots[i].key)

@@ -55,7 +55,7 @@ local function article_zero()
   local row = {}
 
   entity_class.entity_init_header(row, nil)
-  row.background_is_bool = 0
+  row.background_is_bool = false
   row.placed_items = nil
   row.placed_items_count = 0
   row.width = 0
@@ -138,11 +138,11 @@ local function message_box_draw_article(gfx, mem, article)
     if argument.kind == M.MESSAGE_BOX_ARGUMENT_TEXT then
       items[i] = map_tables.map_tables_make_data_item({ text = article.as.scalars.text })
     elseif argument.kind == M.MESSAGE_BOX_ARGUMENT_FALSE then
-      items[i] = map_tables.map_tables_make_data_item({ is_false = 1 })
+      items[i] = map_tables.map_tables_make_data_item({ is_false = true })
     elseif argument.kind == M.MESSAGE_BOX_ARGUMENT_NIL then
-      items[i] = map_tables.map_tables_make_data_item({ is_nil = 1 })
+      items[i] = map_tables.map_tables_make_data_item({ is_nil = true })
     else
-      items[i] = map_tables.map_tables_make_data_item({ is_fixed = 1, fixed = argument.number })
+      items[i] = map_tables.map_tables_make_data_item({ is_fixed = true, fixed = argument.number })
     end
   end
   row = map_tables.map_tables_make_data_row({
@@ -228,13 +228,13 @@ function M.message_box_add_row(self, row)
       assert(i == 0, "message_box_add_row: only print_outlined's first argument is read as text -- stop, do not widen")
       article.as.scalars.text = item.text
       argument.kind = M.MESSAGE_BOX_ARGUMENT_TEXT
-    elseif item.is_false ~= 0 then
+    elseif item.is_false then
       argument.kind = M.MESSAGE_BOX_ARGUMENT_FALSE
-    elseif item.is_nil ~= 0 then
+    elseif item.is_nil then
       argument.kind = M.MESSAGE_BOX_ARGUMENT_NIL
     else
       argument.kind = M.MESSAGE_BOX_ARGUMENT_NUMBER
-      if item.is_fixed ~= 0 then
+      if item.is_fixed then
         argument.number = item.fixed
       else
         argument.number = fixed.p8_fixed_from_int(item.number)
@@ -531,7 +531,7 @@ function M.message_box_open_box(frame, buttons, button_count)
     ui.ui_set_ephemerals(dispatcher, ephemerals)
   end
 
-  if frame.clear_ephemerals_after ~= 0 and dispatcher ~= nil then
+  if frame.clear_ephemerals_after and dispatcher ~= nil then
     ui.ui_set_ephemerals(dispatcher, ui.ui_ephemerals_new())
   end
 end
@@ -547,7 +547,7 @@ end
 -- Lua only: open_box_frame_t frame = {0}, a new table.
 function M.open_box_frame_zero()
   return {
-    clear_ephemerals_after = 0,
+    clear_ephemerals_after = false,
   }
 end
 

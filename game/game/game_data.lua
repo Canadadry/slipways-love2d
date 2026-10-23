@@ -190,14 +190,14 @@ M.score_rows_8_items = { [0] = data_item({ number = 19 }), data_item({ text = "p
 M.score_rows_9_items = { [0] = data_item({ number = 24 }), data_item({ text = "technology:" }) }
 M.score_rows_10_1_items = { [0] = data_item({ number = 27 }), data_item({ number = 5 }) }
 M.score_rows_10_1 = data_row({ count = 2, items = M.score_rows_10_1_items })
-M.score_rows_10_2_items = { [0] = data_item({ is_false = 1 }), data_item({ number = 0 }) }
+M.score_rows_10_2_items = { [0] = data_item({ is_false = true }), data_item({ number = 0 }) }
 M.score_rows_10_2 = data_row({ count = 2, items = M.score_rows_10_2_items })
 M.score_rows_10_4_items = { [0] = data_item({ number = 25 }), data_item({ number = 5 }) }
 M.score_rows_10_4 = data_row({ count = 2, items = M.score_rows_10_4_items })
 M.score_rows_10_items = {
   [0] = data_item({ row = M.score_rows_10_1 }),
   data_item({ row = M.score_rows_10_2 }),
-  data_item({ is_false = 1 }),
+  data_item({ is_false = true }),
   data_item({ row = M.score_rows_10_4 }),
   data_item({ text = "happiness" }),
 }
@@ -257,7 +257,7 @@ M.planet_mood_rows_rows = {
 M.planet_made_resources_items = { [0] = 12, 36, 24, 25 }
 M.planet_made_resources_seq = { count = 4, items = M.planet_made_resources_items }
 M.planet_spacer_items = {
-  [0] = data_item({ is_false = 1 }),
+  [0] = data_item({ is_false = true }),
   data_item({ number = 3 }),
   data_item({ number = 0 }),
   data_item({ number = -1 }),
@@ -350,14 +350,14 @@ M.help_screen_rows_items = {
   data_item({ row = M.help_screen_rows_4 }),
 }
 M.help_screen_rows_row = data_row({ count = 4, items = M.help_screen_rows_items })
-M.research_project_row_tail_items = { [0] = data_item({ is_false = 1 }), data_item({ number = 2 }) }
+M.research_project_row_tail_items = { [0] = data_item({ is_false = true }), data_item({ number = 2 }) }
 M.research_project_row_tail_row = data_row({ count = 2, items = M.research_project_row_tail_items })
 M.score_panel_countdown_rows_1_items = {
   [0] = data_item({ text = "last year!" }),
   data_item({ number = HALF_WIDTH }),
   data_item({ number = HALF_HEIGHT - 16 }),
   data_item({ number = 9 }),
-  data_item({ is_fixed = 1, fixed = 0x8000 }),
+  data_item({ is_fixed = true, fixed = 0x8000 }),
 }
 M.score_panel_countdown_rows_1 = data_row({
   count = 5, items = M.score_panel_countdown_rows_1_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
@@ -367,7 +367,7 @@ M.score_panel_countdown_rows_2_items = {
   data_item({ number = HALF_WIDTH }),
   data_item({ number = HALF_HEIGHT - 16 }),
   data_item({ number = 2 }),
-  data_item({ is_fixed = 1, fixed = 0x8000 }),
+  data_item({ is_fixed = true, fixed = 0x8000 }),
 }
 M.score_panel_countdown_rows_2 = data_row({
   count = 5, items = M.score_panel_countdown_rows_2_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
@@ -377,7 +377,7 @@ M.score_panel_countdown_rows_5_items = {
   data_item({ number = HALF_WIDTH }),
   data_item({ number = HALF_HEIGHT - 16 }),
   data_item({ number = 2 }),
-  data_item({ is_fixed = 1, fixed = 0x8000 }),
+  data_item({ is_fixed = true, fixed = 0x8000 }),
 }
 M.score_panel_countdown_rows_5 = data_row({
   count = 5, items = M.score_panel_countdown_rows_5_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
@@ -385,8 +385,8 @@ M.score_panel_countdown_rows_5 = data_row({
 M.score_panel_countdown_rows_items = {
   [0] = data_item({ row = M.score_panel_countdown_rows_1 }),
   data_item({ row = M.score_panel_countdown_rows_2 }),
-  data_item({ is_false = 1 }),
-  data_item({ is_false = 1 }),
+  data_item({ is_false = true }),
+  data_item({ is_false = true }),
   data_item({ row = M.score_panel_countdown_rows_5 }),
 }
 M.score_panel_countdown_rows_row = data_row({ count = 5, items = M.score_panel_countdown_rows_items })
@@ -451,7 +451,7 @@ M.score_panel_year_banner_2_items = {
   data_item({ number = HALF_WIDTH }),
   data_item({ number = HALF_HEIGHT - 24 }),
   data_item({ number = 6 }),
-  data_item({ is_fixed = 1, fixed = 0x8000 }),
+  data_item({ is_fixed = true, fixed = 0x8000 }),
 }
 M.score_panel_year_banner_2 = data_row({
   count = 5, items = M.score_panel_year_banner_2_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
@@ -462,7 +462,7 @@ M.score_panel_year_banner_items = {
 }
 M.score_panel_year_banner_row = data_row({ count = 2, items = M.score_panel_year_banner_items })
 M.score_panel_readouts_1_items = {
-  [0] = data_item({ is_false = 1 }),
+  [0] = data_item({ is_false = true }),
   data_item({ number = 13 }),
   data_item({ number = vram.P8_SCREEN_HEIGHT - 7 }),
   data_item({ number = 9 }),
@@ -471,7 +471,7 @@ M.score_panel_readouts_1 = data_row({
   count = 4, items = M.score_panel_readouts_1_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_2_items = {
-  [0] = data_item({ is_false = 1 }),
+  [0] = data_item({ is_false = true }),
   data_item({ number = 37 }),
   data_item({ number = vram.P8_SCREEN_HEIGHT - 7 }),
   data_item({ number = 2 }),
@@ -480,7 +480,7 @@ M.score_panel_readouts_2 = data_row({
   count = 4, items = M.score_panel_readouts_2_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_3_items = {
-  [0] = data_item({ is_false = 1 }),
+  [0] = data_item({ is_false = true }),
   data_item({ number = 13 }),
   data_item({ number = 2 }),
   data_item({ number = 9 }),
@@ -489,7 +489,7 @@ M.score_panel_readouts_3 = data_row({
   count = 4, items = M.score_panel_readouts_3_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_4_items = {
-  [0] = data_item({ is_false = 1 }),
+  [0] = data_item({ is_false = true }),
   data_item({ number = 29 }),
   data_item({ number = 2 }),
   data_item({ number = 2 }),
@@ -498,7 +498,7 @@ M.score_panel_readouts_4 = data_row({
   count = 4, items = M.score_panel_readouts_4_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_5_items = {
-  [0] = data_item({ is_false = 1 }),
+  [0] = data_item({ is_false = true }),
   data_item({ number = HALF_WIDTH - 5 }),
   data_item({ number = 2 }),
   data_item({ number = 2 }),
@@ -507,7 +507,7 @@ M.score_panel_readouts_5 = data_row({
   count = 4, items = M.score_panel_readouts_5_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_6_items = {
-  [0] = data_item({ is_false = 1 }),
+  [0] = data_item({ is_false = true }),
   data_item({ number = vram.P8_SCREEN_WIDTH - 43 }),
   data_item({ number = 2 }),
   data_item({ number = 13 }),
@@ -516,7 +516,7 @@ M.score_panel_readouts_6 = data_row({
   count = 4, items = M.score_panel_readouts_6_items, draw_function = map_tables.DRAW_FUNCTION_PRINT_OUTLINED,
 })
 M.score_panel_readouts_7_items = {
-  [0] = data_item({ is_false = 1 }),
+  [0] = data_item({ is_false = true }),
   data_item({ number = vram.P8_SCREEN_WIDTH - 29 }),
   data_item({ number = 2 }),
   data_item({ number = 13 }),
@@ -585,7 +585,7 @@ local function probe_archetype(fields)
     fixed_pos = fields.fixed_pos or vec(0, 0),
     back_color = fields.back_color or 0,
     row_step = fields.row_step or vec(0, 0),
-    clear_ephemerals_after = fields.clear_ephemerals_after or 0,
+    clear_ephemerals_after = fields.clear_ephemerals_after or false,
     hit_box = fields.hit_box or box(0, 0, 0, 0),
     rows = fields.rows,
     emitter = fields.emitter or emitter({}),
@@ -750,7 +750,7 @@ M.help_screen_archetype = probe_archetype({
   fixed_pos = vec(FIXED_INT(HALF_WIDTH - 30), FIXED_INT(HALF_HEIGHT - 8)),
   back_color = 0xb0000,
   row_step = vec(0x0, 0xb0000),
-  clear_ephemerals_after = 0x10000,
+  clear_ephemerals_after = true,
   hit_box = box(-0x280000, 0x4e0000, 0x280000, 0x620000),
   rows = M.help_screen_rows_row,
   emitter = emitter({

@@ -205,7 +205,7 @@ local function need_row(need)
 end
 
 local gap_items = {
-  [0] = map_tables.map_tables_make_data_item({ is_false = 1 }),
+  [0] = map_tables.map_tables_make_data_item({ is_false = true }),
   map_tables.map_tables_make_data_item({ number = 1 }),
 }
 local gap = map_tables.map_tables_make_data_row({ count = 2, items = gap_items })
@@ -246,7 +246,7 @@ function M.planet_inspection_panel(self)
 
     signed, discard_color = economy_formulas.economy_formulas_format_signed(self.net_income, 0, nil, discard_color)
     layout.layout_row_keys_append(h_keys, layout.layout_row_cell_string(planet_dollar(signed)))
-    h_keys.background_is_bool = (self.net_income < fixed.p8_fixed_from_int(0)) and 1 or 0
+    h_keys.background_is_bool = self.net_income < fixed.p8_fixed_from_int(0)
     h_keys.background = (self.net_income >= fixed.p8_fixed_from_int(0)) and fixed.p8_fixed_from_int(1) or 0
     buttons[0].side_tooltip_row = h_keys
   end

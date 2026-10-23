@@ -155,7 +155,7 @@ function M.score_panel_refresh()
   local economy_placeholder = probe.main_economy_placeholder()
   local main_economy_income = (economy ~= nil) and economy.income or fixed.p8_fixed_from_int(0)
   local main_economy_credits = fixed.p8_fixed_from_int(0)
-  local main_economy_research_points = data_item({ is_nil = 1 })
+  local main_economy_research_points = data_item({ is_nil = true })
   local main_economy_happiness = (economy ~= nil and economy.happiness ~= nil) and economy.happiness
     or fixed.p8_fixed_from_int(0)
   local main_economy_year_ticks = (economy ~= nil) and economy.year_ticks or fixed.p8_fixed_from_int(0)
@@ -170,9 +170,9 @@ function M.score_panel_refresh()
   local income_color = 0
 
   if economy ~= nil then
-    main_economy_year = data_item({ is_fixed = 1, fixed = economy.year })
+    main_economy_year = data_item({ is_fixed = true, fixed = economy.year })
   else
-    main_economy_year = data_item({ is_nil = 1 })
+    main_economy_year = data_item({ is_nil = true })
   end
   if economy ~= nil then
     main_economy_production = economy.production
@@ -180,13 +180,13 @@ function M.score_panel_refresh()
 
   if economy ~= nil then
     main_economy_credits = economy.credits
-    main_economy_research_points = data_item({ is_fixed = 1, fixed = economy.research_points })
+    main_economy_research_points = data_item({ is_fixed = true, fixed = economy.research_points })
   elseif economy_placeholder ~= nil then
     if economy_placeholder.credits ~= nil then
       main_economy_credits = economy_placeholder.credits
     end
     if economy_placeholder.research_points ~= nil then
-      main_economy_research_points = data_item({ is_fixed = 1, fixed = economy_placeholder.research_points })
+      main_economy_research_points = data_item({ is_fixed = true, fixed = economy_placeholder.research_points })
     end
   end
 
@@ -221,7 +221,7 @@ function M.score_panel_refresh()
     if lo >= 1 and lo <= game_data.PERIOD_NAMES_COUNT then
       readouts[5] = data_item({ text = game_data.period_names_table[lo - 1] })
     else
-      readouts[5] = data_item({ is_nil = 1 })
+      readouts[5] = data_item({ is_nil = true })
     end
   end
 
