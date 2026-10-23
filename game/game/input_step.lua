@@ -43,7 +43,7 @@ function M.init(step, bindings)
   step.session_bindings = nil
   step.attract = {}
   cheat.init(step.cheat)
-  pad_nav.pad_nav_init(step.pad_nav, bindings)
+  pad_nav.init(step.pad_nav, bindings)
   step.session_bindings = copy_bindings(bindings)
   attract_module.init(step.attract, attract_module.AFTER_DEFAULT)
 end
@@ -99,7 +99,7 @@ function M.run(step, raw)
   played_frame.mouse_buttons = 0
   played_frame.pad_buttons = 0
   played_frame.pad_buttons = buttons
-  pad_nav.pad_nav_step(step.pad_nav, buttons, step.played_frame)
+  pad_nav.step(step.pad_nav, buttons, step.played_frame)
   -- Set every frame, not at init: input_step.init leaves step.played empty.
   step.played.frames = { step.played_frame }
   step.played.frame_count = 1

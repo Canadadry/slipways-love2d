@@ -8,24 +8,24 @@ local M = {}
 local INT_MAX = 2147483647
 
 -- icon is an entity id, nil for none.
-function M.pad_build_init(b)
+function M.init(b)
   b.open = false
   b.icon = nil
 end
 
-function M.pad_build_open(b)
+function M.open(b)
   b.open = true
 end
 
-function M.pad_build_close(b)
+function M.close(b)
   b.open = false
 end
 
-function M.pad_build_is_open(b)
+function M.is_open(b)
   return b.open
 end
 
-function M.pad_build_icon(b)
+function M.icon(b)
   local icon = entity_id.get(b.icon)
   return structure_icon.is_revealed(icon) and icon or nil
 end
@@ -37,7 +37,7 @@ local function icon_beside(x, step)
   for i = 1, #bucket do
     local e = bucket[i]
     if structure_icon.is_revealed(e) then
-      local at_x = pad_panel.pad_panel_focus_point(e, 0, 0)
+      local at_x = pad_panel.focus_point(e, 0, 0)
       if (step < 0 and at_x < x or step >= 0 and at_x > x) and
         (nearest == nil or (step < 0 and at_x > nearest_x or step >= 0 and at_x < nearest_x)) then
         nearest = e
@@ -48,8 +48,8 @@ local function icon_beside(x, step)
   return nearest
 end
 
-function M.pad_build_focus(b)
-  local icon = M.pad_build_icon(b)
+function M.focus(b)
+  local icon = M.icon(b)
   if icon == nil then
     icon = icon_beside(INT_MAX, -1)
     b.icon = entity_id.link(icon)
@@ -57,12 +57,12 @@ function M.pad_build_focus(b)
   return icon
 end
 
-function M.pad_build_pick(b, step)
-  local icon = M.pad_build_icon(b)
+function M.pick(b, step)
+  local icon = M.icon(b)
   if icon == nil then
     return
   end
-  local x, y = pad_panel.pad_panel_focus_point(icon, 0, 0)
+  local x, y = pad_panel.focus_point(icon, 0, 0)
   local next_icon = icon_beside(x, step)
   if next_icon ~= nil then
     b.icon = entity_id.link(next_icon)

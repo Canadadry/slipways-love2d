@@ -92,4 +92,4 @@
   - [x] Chunk 11 — boxes and panels
   - [x] Chunk 12 — input and cart
   - [x] Chunk 13 — save
-  - [ ] Chunk 14 — pad layer, docs, full check
+  - [x] Chunk 14 — pad layer, docs, full check

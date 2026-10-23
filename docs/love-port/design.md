@@ -804,21 +804,19 @@ commit shows any original, e.g. `git show 60e62c1:src/game/planet.c` for
 how a C construct reads in Lua, until plan 5 replaces them. `game/love/`
 has no C original.
 
-**Naming.** Exported functions are `function M.<c name>(` at line start,
-`static` ones `local function <c name>(`; a module's file-level tables are
-`M.NAME = {` or `local NAME = {`, its header constants and enum values
-`M.<MACRO> = value`, computed as the C does; a `.c`-local macro is a module
-local. In `game/p8/` a name drops `p8_` and the module's name (`fixed.add`
-for `p8_fixed_add`, `vram.SCREEN_WIDTH` for `P8_SCREEN_WIDTH`). A C
-identifier that is a Lua keyword takes a trailing underscore
-(the slipway's `end_`). A module local that would
-clash with a C parameter or local takes the `_module` suffix
-(`local planet_module = require("game.planet")` in `save_load.lua`). A
-function the Lua adds is, when another module needs it, exported after
-the C functions as `M.<what>` in
-`game/p8/` (`gfx_software.slot_pixels`) and in the modules whose
-prefix is gone (`planet.keys_zero`), with a C-style name elsewhere. `game/love/` names follow
-`module_verb[_object]`.
+**Naming.** An exported name, function or constant, does not repeat its
+module's name or first word, which every caller already writes, and
+`game/p8/` has no `p8_` left (`planet.init_instance`, `fixed.add`,
+`vram.SCREEN_WIDTH`, `entity_class.STATE_NORMAL`); `make lua-names` checks it.
+Four exports keep a word of their module's name, the check's listed
+exceptions: `draw_functions.draw_row`, `.draw_row_text_image` and
+`.draw_rows_default`, whose verb is the module's first word, and
+`bindings_default.bindings`, whose stripped name would be empty. A field
+whose name would be a Lua keyword takes a trailing underscore (the
+slipway's `end_`), and an export whose name would be one takes a word that
+says what it returns (`slipway.end_node`). A module alias that would clash
+with a parameter or local takes the `_module` suffix
+(`local planet_module = require("game.planet")` in `save_load.lua`).
 
 **Arrays and integers.** Every array is 1-based: a table whose integer key only
 says "the k-th element" (a list, a sequence, a cache's slots, a ring, a pool, a data
@@ -871,7 +869,7 @@ link"; ids are compared with `==`. A research project id follows the same
 convention from `research`'s own counter and table, and goes stale when
 `research.expire_project_ids` runs. A re-init or `memset` of a table that another holder may
 point at zeroes its fields in place and keeps its identity:
-`pad_nav_init` keeps its sub-tables and bindings table,
+`pad_nav.init` keeps its sub-tables and bindings table,
 `input_step.init` zeroes `played` and `played_frame` in place,
 `economy_score.set_difficulty` clears and refills `g_difficulty`. A
 static struct, or inline array of structs, is a table (or array of
@@ -890,7 +888,7 @@ a `{ value = 0 }` table. A by-value `p8_graphics_t` is a local
 `graphics_copy` of its five fields. An out-parameter is an input argument
 whose new value comes back after the C return value, several in C order, a
 `void` function returning only them (`result, state =
-fixed.rnd_from_state(state, x)`; `pad_panel_step` returns `at, x, y,
+fixed.rnd_from_state(state, x)`; `pad_panel.step` returns `at, x, y,
 mouse_buttons`).
 
 **Memory.** A new object is a table built where it is needed. The

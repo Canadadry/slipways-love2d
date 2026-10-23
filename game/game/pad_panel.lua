@@ -13,11 +13,11 @@ local input = require("p8.input")
 
 local M = {}
 
-M.PAD_PANEL_ANY_LAYER = -32768
+M.ANY_LAYER = -32768
 
 local SCREEN_SPACE_LAYER = 10
 
-function M.pad_panel_box_open()
+function M.box_open()
   local ui = ui_module.main_ui()
   return ui ~= nil and #ui.ephemerals > 0
 end
@@ -31,12 +31,12 @@ local function mouse_at(x, y)
   return mouse
 end
 
-function M.pad_panel_entity_under(x, y, above, accept)
+function M.entity_under(x, y, above, accept)
   local mouse = mouse_at(x, y)
   local bucket = entity_registry.entities_by_message(entity_registry.MESSAGE_HIT_TEST)
   for i = 1, #bucket do
     local e = bucket[i]
-    if not e.is_dead and (above == M.PAD_PANEL_ANY_LAYER or fixed.flr_int(e.layer) > above) and
+    if not e.is_dead and (above == M.ANY_LAYER or fixed.flr_int(e.layer) > above) and
       accept(e) and e.class.hit_test ~= nil and e.class.hit_test(e, mouse) then
       return e
     end
@@ -53,9 +53,9 @@ local function panel_open_now(ui, economy)
     return false
   end
   assert(ui_button.modal_backdrop_class().hit_test == entity_registry.hit_test_always,
-    "pad_panel_open: the backdrop is found at (0, 0) only because its hit test always holds")
+    "pad_panel.open: the backdrop is found at (0, 0) only because its hit test always holds")
   return economy == nil or #ui.ephemerals > 0 or
-    M.pad_panel_entity_under(0, 0, M.PAD_PANEL_ANY_LAYER, is_modal_backdrop) ~= nil
+    M.entity_under(0, 0, M.ANY_LAYER, is_modal_backdrop) ~= nil
 end
 
 local g_memo = {
@@ -65,20 +65,20 @@ local g_memo = {
   open = false,
 }
 
--- Inside the pair, pad_panel_open reuses its answer while the ui, the economy, the box's ephemerals count and
+-- Inside the pair, pad_panel.open reuses its answer while the ui, the economy, the box's ephemerals count and
 -- the registered set are unchanged; a backdrop's is_dead is not watched, nothing writes it inside a pad step.
-function M.pad_panel_step_begin()
-  assert(not g_memo.in_step, "pad_panel_step_begin: a pad step is already open")
+function M.step_begin()
+  assert(not g_memo.in_step, "pad_panel.step_begin: a pad step is already open")
   g_memo.in_step = true
   g_memo.known = false
 end
 
-function M.pad_panel_step_end()
-  assert(g_memo.in_step, "pad_panel_step_end: no pad step is open")
+function M.step_end()
+  assert(g_memo.in_step, "pad_panel.step_end: no pad step is open")
   g_memo.in_step = false
 end
 
-function M.pad_panel_open()
+function M.open()
   local ui = ui_module.main_ui()
   local economy = probe.main_economy_typed()
   if not g_memo.in_step then
@@ -102,11 +102,11 @@ end
 
 -- Mirrors ui.update: while a box is open, a left press reaches only its ephemerals.
 local function candidates_all()
-  local it = { from_ephemerals = M.pad_panel_box_open(), index = 1 }
+  local it = { from_ephemerals = M.box_open(), index = 1 }
   return it
 end
 
-function M.pad_panel_is_candidate(e)
+function M.is_candidate(e)
   return e.class.left_press ~= nil and e.layer ~= nil
 end
 
@@ -132,7 +132,7 @@ local function candidates_next(it)
       e = bucket[it.index]
       it.index = it.index + 1
     end
-    if M.pad_panel_is_candidate(e) then
+    if M.is_candidate(e) then
       return e
     end
   end
@@ -153,12 +153,12 @@ local function top_layer()
 end
 
 local function is_item_on(e, layer)
-  return M.pad_panel_is_candidate(e) and fixed.flr_int(e.layer) == layer and
+  return M.is_candidate(e) and fixed.flr_int(e.layer) == layer and
     e.hit_box ~= nil
 end
 
-function M.pad_panel_is_item(e)
-  if e == nil or not M.pad_panel_open() then
+function M.is_item(e)
+  if e == nil or not M.open() then
     return false
   end
   local layer = top_layer()
@@ -173,8 +173,8 @@ function M.pad_panel_is_item(e)
   return false
 end
 
-function M.pad_panel_first_item()
-  if not M.pad_panel_open() then
+function M.first_item()
+  if not M.open() then
     return nil
   end
   local layer = top_layer()
@@ -227,14 +227,14 @@ local function box_middle(box, x, y)
   return x, y
 end
 
-function M.pad_panel_focus_point(e, x, y)
+function M.focus_point(e, x, y)
   x, y = box_middle(screen_box(e), x, y)
   return x, y
 end
 
 local function is_direction(direction)
-  return direction == pad_direction.PAD_DIRECTION_UP or direction == pad_direction.PAD_DIRECTION_DOWN or
-    direction == pad_direction.PAD_DIRECTION_LEFT or direction == pad_direction.PAD_DIRECTION_RIGHT
+  return direction == pad_direction.UP or direction == pad_direction.DOWN or
+    direction == pad_direction.LEFT or direction == pad_direction.RIGHT
 end
 
 local function absolute(value)
@@ -256,24 +256,24 @@ local function neighbor_score(item, candidate, direction)
   local to = rest_box(candidate)
   local from_x, from_y = box_middle(from, 0, 0)
   local to_x, to_y = box_middle(to, 0, 0)
-  if direction == pad_direction.PAD_DIRECTION_UP then
+  if direction == pad_direction.UP then
     if fixed.from_int(to_y) >= from.top then return -1 end
-  elseif direction == pad_direction.PAD_DIRECTION_DOWN then
+  elseif direction == pad_direction.DOWN then
     if fixed.from_int(to_y) <= from.bottom then return -1 end
-  elseif direction == pad_direction.PAD_DIRECTION_LEFT then
+  elseif direction == pad_direction.LEFT then
     if fixed.from_int(to_x) >= from.left then return -1 end
   else
     if fixed.from_int(to_x) <= from.right then return -1 end
   end
-  if direction == pad_direction.PAD_DIRECTION_UP or direction == pad_direction.PAD_DIRECTION_DOWN then
+  if direction == pad_direction.UP or direction == pad_direction.DOWN then
     return absolute(to_y - from_y) + 2 * span_gap(from.left, from.right, to.left, to.right)
   end
   return absolute(to_x - from_x) + 2 * span_gap(from.top, from.bottom, to.top, to.bottom)
 end
 
-function M.pad_panel_neighbor(item, direction)
+function M.neighbor(item, direction)
   assert(is_direction(direction),
-    "pad_panel_neighbor: the direction is exactly one of PAD_DIRECTION_UP, DOWN, LEFT or RIGHT")
+    "pad_panel.neighbor: the direction is exactly one of pad_direction.UP, DOWN, LEFT or RIGHT")
   local layer = top_layer()
   local it = candidates_all()
   local best = nil
@@ -292,16 +292,16 @@ function M.pad_panel_neighbor(item, direction)
   return best
 end
 
-function M.pad_panel_step(focus, choose_held, direction, x, y, mouse_buttons)
-  local at = M.pad_panel_is_item(focus) and focus or M.pad_panel_first_item()
-  if at ~= nil and direction ~= pad_direction.PAD_DIRECTION_NONE then
-    local next_item = M.pad_panel_neighbor(at, direction)
+function M.step(focus, choose_held, direction, x, y, mouse_buttons)
+  local at = M.is_item(focus) and focus or M.first_item()
+  if at ~= nil and direction ~= pad_direction.NONE then
+    local next_item = M.neighbor(at, direction)
     if next_item ~= nil then
       at = next_item
     end
   end
   if at ~= nil then
-    x, y = M.pad_panel_focus_point(at, x, y)
+    x, y = M.focus_point(at, x, y)
   end
   -- With no focus the cursor still sits on the last point: on the score panel a press there closes it.
   mouse_buttons = (at ~= nil and choose_held) and input.MOUSE_LEFT or 0

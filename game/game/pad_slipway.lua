@@ -7,23 +7,23 @@ local bit = require("bit")
 
 local M = {}
 
-M.PAD_SLIPWAY_NONE = 0
-M.PAD_SLIPWAY_PRESSED = 1
-M.PAD_SLIPWAY_HELD = 2
-M.PAD_SLIPWAY_RELEASED = 3
+M.NONE = 0
+M.PRESSED = 1
+M.HELD = 2
+M.RELEASED = 3
 
-M.PAD_SLIPWAY_REFUSED = 0
-M.PAD_SLIPWAY_BUILT = 1
+M.REFUSED = 0
+M.BUILT = 1
 
 -- start and target are entity ids, nil for none.
-function M.pad_slipway_init(slipway)
+function M.init(slipway)
   slipway.start = nil
   slipway.target = nil
-  slipway.phase = M.PAD_SLIPWAY_NONE
+  slipway.phase = M.NONE
   slipway.linked_before = false
 end
 
-function M.pad_slipway_can_start(e)
+function M.can_start(e)
   if e == nil or e.is_dead or not planet.is_family(e) or e.state ~= entity_class.STATE_SETTLED then
     return false
   end
@@ -32,7 +32,7 @@ function M.pad_slipway_can_start(e)
 end
 
 -- An empty array for a nil list.
-function M.pad_slipway_candidates(candidates, start)
+function M.candidates(candidates, start)
   local targets = {}
   if candidates == nil then
     return targets
@@ -45,13 +45,13 @@ function M.pad_slipway_candidates(candidates, start)
   return targets
 end
 
-function M.pad_slipway_between(start, target)
-  assert(start ~= nil and planet.is_family(start), "pad_slipway_between: only a planet holds a slipways list")
+function M.between(start, target)
+  assert(start ~= nil and planet.is_family(start), "pad_slipway.between: only a planet holds a slipways list")
   local slipways = start.slipways
   for i = 1, #slipways do
     local slipway = entity_id.resolve(slipways[i])
     assert(not slipway.is_dead,
-      "pad_slipway_between: a slipway dies only when its drop is refused, before it joins a planet's list")
+      "pad_slipway.between: a slipway dies only when its drop is refused, before it joins a planet's list")
     if slipway_module.other_end(slipway, start) == target then
       return slipway
     end
@@ -59,27 +59,27 @@ function M.pad_slipway_between(start, target)
   return nil
 end
 
-function M.pad_slipway_outcome(start, target, linked_before)
+function M.outcome(start, target, linked_before)
   if linked_before or target == nil then
-    return M.PAD_SLIPWAY_REFUSED
+    return M.REFUSED
   end
-  return M.pad_slipway_between(start, target) ~= nil and M.PAD_SLIPWAY_BUILT or M.PAD_SLIPWAY_REFUSED
+  return M.between(start, target) ~= nil and M.BUILT or M.REFUSED
 end
 
-function M.pad_slipway_release(slipway, linked_before)
-  assert(slipway.phase == M.PAD_SLIPWAY_HELD and slipway.target ~= nil,
-    "pad_slipway_release: only a held slipway aimed at a target is released")
+function M.release(slipway, linked_before)
+  assert(slipway.phase == M.HELD and slipway.target ~= nil,
+    "pad_slipway.release: only a held slipway aimed at a target is released")
   slipway.linked_before = linked_before
-  slipway.phase = M.PAD_SLIPWAY_RELEASED
+  slipway.phase = M.RELEASED
 end
 
-function M.pad_slipway_rebase(slipway, outcome)
-  assert(slipway.phase == M.PAD_SLIPWAY_RELEASED, "pad_slipway_rebase: only the frame after a release rebases")
-  if outcome == M.PAD_SLIPWAY_BUILT then
+function M.rebase(slipway, outcome)
+  assert(slipway.phase == M.RELEASED, "pad_slipway.rebase: only the frame after a release rebases")
+  if outcome == M.BUILT then
     slipway.start = slipway.target
   end
   slipway.target = nil
-  slipway.phase = M.PAD_SLIPWAY_PRESSED
+  slipway.phase = M.PRESSED
 end
 
 return M

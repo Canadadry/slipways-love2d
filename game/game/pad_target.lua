@@ -5,37 +5,37 @@ local fixed = require("p8.fixed")
 
 local M = {}
 
-M.PAD_TARGET_PERPENDICULAR_WEIGHT = 2
+M.PERPENDICULAR_WEIGHT = 2
 
-function M.pad_target_is_candidate(e)
+function M.is_candidate(e)
   return (e ~= nil and not e.is_dead and planet.is_family(e) and
     (e.state == entity_class.STATE_KNOWN or e.state == entity_class.STATE_SETTLED))
 end
 
 local function is_direction(direction)
-  return direction == pad_direction.PAD_DIRECTION_UP or direction == pad_direction.PAD_DIRECTION_DOWN or
-    direction == pad_direction.PAD_DIRECTION_LEFT or direction == pad_direction.PAD_DIRECTION_RIGHT
+  return direction == pad_direction.UP or direction == pad_direction.DOWN or
+    direction == pad_direction.LEFT or direction == pad_direction.RIGHT
 end
 
 -- Returns a new { along, perpendicular } table on each call.
 local function offset_in(direction, from, to)
   local dx = fixed.sub(to.x, from.x)
   local dy = fixed.sub(to.y, from.y)
-  if direction == pad_direction.PAD_DIRECTION_RIGHT then
+  if direction == pad_direction.RIGHT then
     return { along = dx, perpendicular = fixed.abs(dy) }
-  elseif direction == pad_direction.PAD_DIRECTION_LEFT then
+  elseif direction == pad_direction.LEFT then
     return { along = -dx, perpendicular = fixed.abs(dy) }
-  elseif direction == pad_direction.PAD_DIRECTION_DOWN then
+  elseif direction == pad_direction.DOWN then
     return { along = dy, perpendicular = fixed.abs(dx) }
   end
   return { along = -dy, perpendicular = fixed.abs(dx) }
 end
 
-function M.pad_target_pick(origin, direction, candidates)
+function M.pick(origin, direction, candidates)
   assert(is_direction(direction),
-    "pad_target_pick: the direction is exactly one of PAD_DIRECTION_UP, DOWN, LEFT or RIGHT")
+    "pad_target.pick: the direction is exactly one of pad_direction.UP, DOWN, LEFT or RIGHT")
   assert(origin ~= nil and entity_class.has_map_pos(origin),
-    "pad_target_pick: the origin is an entity with a map position")
+    "pad_target.pick: the origin is an entity with a map position")
   if candidates == nil then
     return nil
   end
@@ -49,13 +49,13 @@ function M.pad_target_pick(origin, direction, candidates)
       goto continue
     end
     assert(e ~= nil and entity_class.has_map_pos(e),
-      "pad_target_pick: every candidate is an entity with a map position")
+      "pad_target.pick: every candidate is an entity with a map position")
     do
       local offset = offset_in(direction, from, entity_class.map_pos(e))
       if offset.along <= 0 or offset.perpendicular > offset.along then
         goto continue
       end
-      local score = fixed.add(offset.along, offset.perpendicular * M.PAD_TARGET_PERPENDICULAR_WEIGHT)
+      local score = fixed.add(offset.along, offset.perpendicular * M.PERPENDICULAR_WEIGHT)
       if best == nil or score < best_score or
           (score == best_score and offset.perpendicular < best_offset.perpendicular) then
         best = e

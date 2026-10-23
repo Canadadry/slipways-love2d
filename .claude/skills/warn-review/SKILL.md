@@ -53,6 +53,7 @@ Allowed table references: `self` and other tables as parameters (borrowed for th
 20. A truth value held as a `0`/`1` number, or a predicate tested against `0` or `1`.
 21. An array indexed from 0, or a `[0]` key that is a position rather than a value (a colour, a pixel coordinate, an address, a byte, a disk code or rank, a layer, a bit position, an image slot handle).
 22. A comment that describes the Lua through the C — a C type, file, construct or behaviour, a port status, a `-- Lua only` marker — rather than stating a trap or a contract in Lua terms.
+23. An exported name that repeats its module's name or first word, or starts with `p8_` in `game/p8/` (`planet.planet_draw`).
 
 ## Output format
 
