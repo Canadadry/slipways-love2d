@@ -1,13 +1,3 @@
--- Copy of src/game/gen.h then src/game/gen.c.
---
--- Shapes, with the C field names:
---   random_walk_t: { step, bias }.
---   weighted_picker_t: { tickets, tickets_count, recent, recent_set,
---     multiplier, random, random_ctx }; tickets, recent and recent_set
---     1-based, created when first written; recent_set[i] is true once
---     slot i is written, nil before. A ticket and a recent entry
---     are the very planet_types_table entry; random is a function taking
---     random_ctx (a random_walk_t when random is M.random_walk_draw).
 local game_data = require("game.game_data")
 local cint = require("p8.cint")
 local fixed = require("p8.fixed")
@@ -67,6 +57,9 @@ local function weighted_picker_fill(state)
   end
 end
 
+-- recent_set[i] is true once recent[i] is written, nil before. A ticket and a
+-- recent entry are the very planet_types_table entry; r is called with r_ctx
+-- (a random walk when r is M.random_walk_draw).
 function M.weighted_picker_new(multiplier, r, r_ctx)
   local state = {}
 

@@ -1,4 +1,3 @@
--- Copy of src/game/data_init.h then src/game/data_init.c.
 local research = require("game.research")
 local tech_gate = require("game.tech_gate")
 

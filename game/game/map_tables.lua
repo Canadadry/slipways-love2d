@@ -1,20 +1,5 @@
--- Copy of src/game/map_tables.h then src/game/map_tables.c.
---
--- Shapes, with the C field names (a pointer is the table, NULL is nil; every
--- array indexed from 1):
---   resource_code_t: { key, resource }.
---   resource_names_entry_t: { key, name }.
---   production_tables_entry_t: { key, count, values (4 entries), upgraded_entry }.
---   data_item_t: { text, number, row, is_false, is_fixed, fixed, is_nil }.
---   data_row_t: { count, items, color, draw_function, resource }, color and resource nil
---     when absent.
---   project_records_entry_t: { header, npos, name, planet_codes, base_cost,
---     production_key, inputs, output, upgrade_tech, byproduct,
---     upgrade_tech_false, icon_sprite, next_type, class_name }, base_cost and icon_sprite
---     nil when absent.
---   technologies_entry_t: { name, era, icon_key, icon, cost, tooltip_rows }.
--- Every data table is a module field, also the C statics: a local per table
--- would pass LuaJIT's 200 locals per function.
+-- Every data table is a module field: a local per table would pass LuaJIT's
+-- 200 locals per function.
 local M = {}
 
 M.RESOURCE_CODE_COUNT = 13
@@ -32,9 +17,9 @@ M.DRAW_FUNCTION_SPR = 4
 M.DRAW_FUNCTION_DRAW_ROW = 5
 M.DRAW_FUNCTION_COUNT = 6
 
--- Lua only, like the two constructors below, here rather than after the C
--- functions because the tables below call them at load. Returns made; a
--- misspelt field would be dropped silently and read as its zero.
+-- Defined above the tables, like the two constructors below, because the
+-- tables call them at load. Returns made; raises on a field of fields that made
+-- lacks, which would otherwise be dropped silently.
 function M.map_tables_check_fields(fields, made, type_name)
   for key in pairs(fields) do
     if made[key] == nil then
@@ -46,7 +31,7 @@ end
 
 local check_fields = M.map_tables_check_fields
 
--- Lua only: a new data_item_t, the fields not given at their C zero.
+-- A new data item: a missing field takes its default, an unknown field raises.
 function M.map_tables_make_data_item(fields)
   return check_fields(fields, {
     text = fields.text,
@@ -59,7 +44,7 @@ function M.map_tables_make_data_item(fields)
   }, "data_item_t")
 end
 
--- Lua only: a new data_row_t, the fields not given at their C zero.
+-- A new data row: a missing field takes its default, an unknown field raises.
 function M.map_tables_make_data_row(fields)
   return check_fields(fields, {
     count = fields.count or 0,

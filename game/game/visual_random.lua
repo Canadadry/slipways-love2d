@@ -1,4 +1,3 @@
--- Copy of src/game/visual_random.h then src/game/visual_random.c.
 -- The visual stream: random draws for on-screen-only effects. No game
 -- decision may read it, and the save does not hold it. It is seeded once at
 -- boot and never reseeded.
@@ -8,7 +7,7 @@ local M = {}
 
 local VISUAL_RANDOM_BOOT_SEED = 0x9E3779B9
 
--- A uint32_t: a number in 0 .. 2^32 - 1, never a signed bit result.
+-- A number in 0 .. 2^32 - 1, never a signed bit result.
 local visual_state = VISUAL_RANDOM_BOOT_SEED
 
 function M.visual_random_draw(x)

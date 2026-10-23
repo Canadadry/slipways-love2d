@@ -1,11 +1,3 @@
--- Copy of src/game/background.h then src/game/background.c.
---
--- Shapes, with the C field names:
---   background_t: one table holding the entity header and { archetype, seed }, archetype the
---     game_data background_archetype table.
---   background_image_key_t: { built, mem, map_version, draw_palette }, draw_palette keyed by colour;
---     mem compared by identity.
---
 -- Include cycle: game.probe and game.wormhole are required at call time (background_left_press).
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")

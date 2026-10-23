@@ -1,5 +1,3 @@
--- Copy of src/game/galaxy.h then src/game/galaxy.c.
---
 -- Include cycle: game.planet and game.economy_score are required at call time, inside the
 -- functions that need them, so that this module loads before they exist.
 local entity_class = require("engine.entity_class")

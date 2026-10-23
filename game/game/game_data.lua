@@ -1,26 +1,5 @@
--- Copy of src/game/game_data.h then src/game/game_data.c.
---
--- Shapes, with the C field names (a pointer is the table, NULL is nil, arrays
--- indexed from 1):
---   int_seq_t: { count, items }.
---   planet_types_entry_t: { name, sprite, weight, description, state }.
---   galaxy_menu_entry_t: { pos_x, pos_y, layout_row }.
---   pause_menu_entry_t: { layout_row }.
---   pause_menu_tail_t: { fixed_pos_x, fixed_pos_y, row_step_x, row_step_y,
---     back_color }.
---   difficulty_options_entry_t: { layout_row, name, trade, type_bias }.
---   score_rows_entry_t: { row (a data_row_t held inline), score (nil when unscored),
---     pos_x, pos_y (both nil when the row has no position) }.
---   kind_record_t: { required_tech, sprite, state, cost, archetype }, sprite and cost nil
---     when the kind has none.
---   The *_archetype_t, targeting_archetype_t, emitter_archetype_t and
---     burst_construct_keys_t: their C fields, box_t { left, top, right,
---     bottom } and vec_t { x, y } held inline as new tables.
--- A char[] table is its Lua string, and so is a pointer to one.
--- int_seq_at and game_data_fixed_seq_at return found, value: value is out
--- unchanged when found is false.
--- Every data table is a module field, also the C statics: a local per table
--- would pass LuaJIT's 200 locals per function.
+-- Every data table is a module field: a local per table would pass LuaJIT's
+-- 200 locals per function.
 local map_tables = require("game.map_tables")
 local entity_class = require("engine.entity_class")
 local vram = require("p8.vram")
@@ -51,6 +30,7 @@ local check_fields = map_tables.map_tables_check_fields
 local data_item = map_tables.map_tables_make_data_item
 local data_row = map_tables.map_tables_make_data_row
 
+-- score is nil when the row is unscored; pos_x and pos_y are both nil when it has no position.
 local function score_row(fields)
   return check_fields(fields, {
     row = fields.row or data_row({}),
@@ -593,6 +573,7 @@ local function probe_archetype(fields)
   }, "probe_archetype_t")
 end
 
+-- sprite and cost are nil when the kind has none.
 local function kind_record(required_tech, sprite, state, cost, archetype)
   return {
     required_tech = required_tech,
@@ -1137,6 +1118,8 @@ M.synthesizer_kind_record = kind_record(
   M.synthesizer_required_tech_text, 0x420000, PLACING, 0x280000, M.synthesizer_archetype
 )
 
+-- int_seq_at and game_data_fixed_seq_at return found, value: value is out
+-- unchanged when found is false.
 function M.int_seq_at(seq, count, i, out)
   assert(seq ~= nil and count >= 0, "a sequence is an array and its length")
   if i < 1 or i > count then

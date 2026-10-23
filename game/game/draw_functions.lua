@@ -1,6 +1,5 @@
--- Copy of src/game/draw_functions.h then src/game/draw_functions.c.
--- A draw_functions_fn_t is a Lua function taking the data_row_t; draw_functions_by_id is
--- keyed by the DRAW_FUNCTION_* constants of map_tables, [DRAW_FUNCTION_NONE] absent.
+-- A draw function takes the data row; draw_functions_by_id is keyed by the
+-- DRAW_FUNCTION_* constants of map_tables, [DRAW_FUNCTION_NONE] absent.
 local hud = require("game.hud")
 local map_tables = require("game.map_tables")
 local fixed = require("p8.fixed")
