@@ -15,8 +15,8 @@ local CHORD_FIRST = input.P8_PAD_BUTTON_5
 local CHORD_SECOND = input.P8_PAD_BUTTON_6
 
 function M.cheat_init(cheat)
-  cheat.previous_first = 0
-  cheat.previous_second = 0
+  cheat.previous_first = false
+  cheat.previous_second = false
   cheat.chords = 0
 end
 
@@ -42,28 +42,28 @@ function M.cheat_chord_buttons()
 end
 
 function M.cheat_step(cheat, pad_buttons)
-  local first = (bit.band(pad_buttons, CHORD_FIRST) ~= 0) and 1 or 0
-  local second = (bit.band(pad_buttons, CHORD_SECOND) ~= 0) and 1 or 0
-  local first_edge = (first ~= 0 and cheat.previous_first == 0) and 1 or 0
-  local second_edge = (second ~= 0 and cheat.previous_second == 0) and 1 or 0
+  local first = bit.band(pad_buttons, CHORD_FIRST) ~= 0
+  local second = bit.band(pad_buttons, CHORD_SECOND) ~= 0
+  local first_edge = first and not cheat.previous_first
+  local second_edge = second and not cheat.previous_second
 
   cheat.previous_first = first
   cheat.previous_second = second
 
-  if first_edge == 0 and second_edge == 0 then
-    return 0
+  if not first_edge and not second_edge then
+    return false
   end
-  if not (first_edge ~= 0 and second_edge ~= 0) then
+  if not (first_edge and second_edge) then
     cheat.chords = 0
-    return 0
+    return false
   end
   cheat.chords = cheat.chords + 1
   if cheat.chords < M.CHEAT_CHORDS then
-    return 0
+    return false
   end
   cheat.chords = 0
   apply()
-  return 1
+  return true
 end
 
 return M

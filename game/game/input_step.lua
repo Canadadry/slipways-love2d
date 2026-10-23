@@ -90,7 +90,7 @@ end
 function M.input_step_run(step, raw)
   local buttons = 0
   local action
-  action, buttons = attract_module.attract_frame(step.attract, cart.cart_title_shown() ~= 0, raw.pad_buttons, buttons)
+  action, buttons = attract_module.attract_frame(step.attract, cart.cart_title_shown(), raw.pad_buttons, buttons)
   if action == attract_module.ATTRACT_ACTION_START then
     M.input_step_start_record(step, attract_module.attract_demo_record())
     cart.cart_cut_save()
@@ -110,8 +110,7 @@ function M.input_step_run(step, raw)
   step.played.current_frame = 0
   local fired = cheat.cheat_step(step.cheat, buttons)
   dispatch_context.dispatch_context_set_input(step.played)
-  local playing = (M.input_step_attract_phase(step) == attract_module.ATTRACT_PHASE_PLAYING) and 1 or 0
-  if playing ~= 0 then
+  if M.input_step_attract_phase(step) == attract_module.ATTRACT_PHASE_PLAYING then
     cart.cart_set_demo_frame(M.input_step_attract_demo_frame(step) - 1)
   else
     cart.cart_set_demo_frame(cart.CART_NO_DEMO_FRAME)

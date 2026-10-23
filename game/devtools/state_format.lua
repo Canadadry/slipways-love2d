@@ -206,7 +206,7 @@ local function write_planets(sink, camera)
 end
 
 local function slipway_placed(e)
-  return (e.state ~= entity_class.ENTITY_STATE_PLACING) and 1 or 0
+  return e.state ~= entity_class.ENTITY_STATE_PLACING
 end
 
 local function write_slipways(sink)
@@ -215,7 +215,7 @@ local function write_slipways(sink)
   local n = 0
   for i = 1, count_of(jc) do
     local s = jc[i]
-    if slipway_placed(s) == 0 then goto continue end
+    if not slipway_placed(s) then goto continue end
     line_add(line, "slipway %s %s %s", id_of(slipway.slipway_start(s)), id_of(slipway.slipway_end(s)),
              s.infraspace and "infragate" or "normal")
     line_end(line)
@@ -243,7 +243,9 @@ local function count_colonies()
   local planets = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
   local n = 0
   for i = 1, count_of(planets) do
-    n = n + ((planets[i].state == entity_class.ENTITY_STATE_SETTLED) and 1 or 0)
+    if planets[i].state == entity_class.ENTITY_STATE_SETTLED then
+      n = n + 1
+    end
   end
   return n
 end
@@ -271,7 +273,7 @@ function M.state_format(sink)
   write_count(sink, "nodes", count_of(entity_registry.entities_by_tag(entity_class.TAG_NODE)))
 end
 
--- Reads only state, which came out of a save_state_decode that returned 1: its difficulty, clock
+-- Reads only state, which came out of a save_state_decode that returned true: its difficulty, clock
 -- year, resources credits and count nodes lines in state_format's format, each after prefix.
 function M.state_format_save_summary(sink, state, prefix)
   assert(state ~= nil and prefix ~= nil)

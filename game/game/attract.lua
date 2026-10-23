@@ -79,7 +79,7 @@ end
 function M.attract_demo_record()
   local decoded = save_state.save_state_decode(demo_data.demo_data_record, demo_data.demo_data_record_count,
     g_demo_record)
-  assert(decoded ~= 0, "the compiled demo record decodes: test_demo_data proves it")
+  assert(decoded, "the compiled demo record decodes: test_demo_data proves it")
   return g_demo_record
 end
 

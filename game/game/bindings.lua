@@ -207,7 +207,7 @@ end
 local function fail(error, file_name, line_number, format, ...)
   error.line = line_number
   error.text = string.format("%s:%d: ", file_name, line_number) .. string.format(format, ...)
-  return 0
+  return false
 end
 
 local function skip_blanks(s, start, end_)
@@ -313,7 +313,7 @@ local function parse_line(file_name, line_number, text, start, end_, out, given_
     item = comma + 1
   end
   out.masks[mode][action] = line_mask
-  return 1
+  return true
 end
 
 -- text_end is the C's line + strlen(line): a NUL byte ends the text.
@@ -343,12 +343,12 @@ function M.bindings_parse(file_name, text, out, error)
     local content_start = skip_blanks(text, line, content_end)
     content_end = trim_end(text, content_start, content_end)
     if content_start < content_end
-      and parse_line(file_name, line_number, text, content_start, content_end, out, given_on_line, error) == 0 then
-      return 0
+      and not parse_line(file_name, line_number, text, content_start, content_end, out, given_on_line, error) then
+      return false
     end
     line = next_
   end
-  return 1
+  return true
 end
 
 return M

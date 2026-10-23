@@ -34,7 +34,7 @@ local function read_bindings()
   end
   local parsed = {}
   local error_report = {}
-  if bindings.bindings_parse("bindings.cfg", text, parsed, error_report) == 0 then
+  if not bindings.bindings_parse("bindings.cfg", text, parsed, error_report) then
     fatal.p8_fatal(error_report.text)
   end
   return parsed
@@ -99,7 +99,9 @@ end
 
 function love.update(dt)
   local raw = { mouse_x = 0, mouse_y = 0, mouse_buttons = 0, pad_buttons = read_pad_buttons() }
-  cheat_activations = cheat_activations + input_step.input_step_run(step, raw)
+  if input_step.input_step_run(step, raw) then
+    cheat_activations = cheat_activations + 1
+  end
   cart.cart_update60()
 end
 

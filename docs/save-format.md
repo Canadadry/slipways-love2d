@@ -6,7 +6,7 @@ The module (`require("game.save_state")`) has four entry points. A byte buffer i
 
 - `save_state_capture(out)` reads the live game into the save state table `out`, changing nothing else;
 - `save_state_encode(state, buffer)` writes a save state table to `buffer` and returns the record's byte count, asserting that the record fits 8 KiB; it writes what it is given and validates nothing;
-- `save_state_decode(bytes, count, out)` reads `count` bytes back into the table `out` and returns 1 for a valid record, 0 otherwise, never asserting on the bytes;
+- `save_state_decode(bytes, count, out)` reads `count` bytes back into the table `out` and returns true for a valid record, false otherwise, never asserting on the bytes;
 - `save_state_crc32(bytes, count)` is the trailer checksum.
 
 `save_state_zero(out)` resets a table to the empty save state. The module exports the constants this page names as `M.SAVE_STATE_*` fields (`M.SAVE_STATE_MAX_BYTES`) and `M.SAVE_NODE_*` fields (`M.SAVE_NODE_HAS_POS` for the flag `HAS_POS`).
@@ -145,7 +145,7 @@ Decode fills one flat table, with the field names listed at the head of `game/ga
 
 ## Validation
 
-`save_state_decode` returns 0 on the first failure, in this order:
+`save_state_decode` returns false on the first failure, in this order:
 
 1. the byte count is below 12 (header and trailer) or above 8192;
 2. the magic is not `SLWY`;
@@ -156,7 +156,7 @@ Decode fills one flat table, with the field names listed at the head of `game/ga
 7. a payload byte left unread;
 8. the field rules: difficulty outside 1–4; a tech ≥ 19 or a duplicate tech; a ticket ≥ 11; a recent_set outside 0/1, or a recent ≥ 11 whose recent_set is 1; a node kind ≥ 9; a forbidden node state; an unknown flag bit; `PRODUCTION_HAS_RESOURCE` without `HAS_PRODUCTION`; `SYNTHESIZER_SPENT` on another kind; `HAS_STATE_TIME` not matching (`VANISHING` or kind ≠ planet); planet_type or description_type above 11; project above 42; a need or production resource that is not a `resource_codes` value; a slipway end ≥ node count, or start equal to end; a route planet ≥ node count or route slipway ≥ slipway count; a node slipway entry ≥ slipway count, not having the node as an end, or twice in the node's list.
 
-Values that are not references (credits, positions, tiers, bonuses, route resources, timers) are not range-checked: they are game values, and the game's readers bound their own table lookups. On 0, the contents of the output table are unspecified.
+Values that are not references (credits, positions, tiers, bonuses, route resources, timers) are not range-checked: they are game values, and the game's readers bound their own table lookups. On false, the contents of the output table are unspecified.
 
 ## What capture reads
 

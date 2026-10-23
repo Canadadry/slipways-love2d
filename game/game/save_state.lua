@@ -214,7 +214,7 @@ end
 
 local function read_u8(bytes, reader)
   if reader.position >= reader.end_ then
-    reader.failed = 1
+    reader.failed = true
     return 0
   end
   local value = bytes[reader.position]
@@ -397,8 +397,8 @@ end
 -- Returns the record's byte count; the caller owns buffer. Writes what it is
 -- given: only save_state_decode validates.
 function M.save_state_encode(state, buffer)
-  local writer = { position = 0, end_ = M.SAVE_STATE_MAX_BYTES, failed = 0 }
-  local length = { position = LENGTH_OFFSET, end_ = LENGTH_OFFSET + 2, failed = 0 }
+  local writer = { position = 0, end_ = M.SAVE_STATE_MAX_BYTES, failed = false }
+  local length = { position = LENGTH_OFFSET, end_ = LENGTH_OFFSET + 2, failed = false }
   for i = 0, MAGIC_LENGTH - 1 do
     write_u8(buffer, writer, magic[i])
   end
@@ -418,7 +418,7 @@ local function read_economy(bytes, reader, economy)
   economy.year_ticks = read_i32(bytes, reader)
   economy.invented_count = read_u8(bytes, reader)
   if economy.invented_count > map_tables.TECHNOLOGIES_COUNT then
-    reader.failed = 1
+    reader.failed = true
     return
   end
   for i = 0, economy.invented_count - 1 do
@@ -429,7 +429,7 @@ end
 local function read_type_picker(bytes, reader, picker)
   picker.tickets_count = read_u8(bytes, reader)
   if picker.tickets_count > gen.WEIGHTED_PICKER_TICKETS_CAP then
-    reader.failed = 1
+    reader.failed = true
     return
   end
   for i = 0, picker.tickets_count - 1 do
@@ -451,7 +451,7 @@ local function read_indices(bytes, reader, out, count)
   local first = out.route_index_count
   count = read_u8(bytes, reader)
   if first + count > M.SAVE_STATE_ROUTE_INDICES_CAP then
-    reader.failed = 1
+    reader.failed = true
     count = 0
     return first, count
   end
@@ -467,7 +467,7 @@ local function read_route(bytes, reader, out, route)
   route.first_slipway, route.slipway_count = read_indices(bytes, reader, out, route.slipway_count)
   local resource_flags = read_u8(bytes, reader)
   if bit.band(resource_flags, bit.bnot(3)) ~= 0 then
-    reader.failed = 1
+    reader.failed = true
     return
   end
   route.resource_is_bool = bit.band(bit.rshift(resource_flags, 1), 1)
@@ -489,13 +489,13 @@ local function read_node(bytes, reader, out, node)
   if bit.band(node.flags, M.SAVE_NODE_HAS_PLANET_ID) ~= 0 then
     local length = read_u8(bytes, reader)
     if length == 0 or length > M.SAVE_STATE_PLANET_ID_MAX then
-      reader.failed = 1
+      reader.failed = true
       return
     end
     for _ = 0, length - 1 do
       local character = read_u8(bytes, reader)
       if character < 0x21 or character > 0x7E then
-        reader.failed = 1
+        reader.failed = true
         return
       end
       node.planet_id = node.planet_id .. string.char(character)
@@ -509,13 +509,13 @@ local function read_node(bytes, reader, out, node)
   if bit.band(node.flags, M.SAVE_NODE_HAS_NEEDS) ~= 0 then
     node.need_count = read_u8(bytes, reader)
     if node.need_count > M.SAVE_STATE_NEEDS_CAP then
-      reader.failed = 1
+      reader.failed = true
       return
     end
     for i = 0, node.need_count - 1 do
       local resource_flag = read_u8(bytes, reader)
       if resource_flag > 1 then
-        reader.failed = 1
+        reader.failed = true
         return
       end
       if resource_flag == 1 then
@@ -539,11 +539,11 @@ local function read_node(bytes, reader, out, node)
   if bit.band(node.flags, M.SAVE_NODE_HAS_OUTGOING_ROUTES) ~= 0 then
     node.route_count = read_u16(bytes, reader)
     if node.first_route + node.route_count > M.SAVE_STATE_ROUTES_CAP then
-      reader.failed = 1
+      reader.failed = true
       return
     end
     local i = 0
-    while i < node.route_count and reader.failed == 0 do
+    while i < node.route_count and not reader.failed do
       local route = save_route_zero()
       out.routes[out.route_count] = route
       out.route_count = out.route_count + 1
@@ -554,7 +554,7 @@ local function read_node(bytes, reader, out, node)
   node.first_slipway = out.node_slipway_count
   node.slipway_count = read_u8(bytes, reader)
   if node.first_slipway + node.slipway_count > M.SAVE_STATE_NODE_SLIPWAYS_CAP then
-    reader.failed = 1
+    reader.failed = true
     return
   end
   for _ = 0, node.slipway_count - 1 do
@@ -566,13 +566,13 @@ end
 local function read_payload(bytes, reader, out)
   out.difficulty = read_u8(bytes, reader)
   read_economy(bytes, reader, out.economy)
-  if reader.failed ~= 0 then
+  if reader.failed then
     return
   end
   out.rnd_state = read_u32(bytes, reader)
   out.background_seed = read_u32(bytes, reader)
   read_type_picker(bytes, reader, out.type_picker)
-  if reader.failed ~= 0 then
+  if reader.failed then
     return
   end
   out.vanish_walk.step = read_i32(bytes, reader)
@@ -580,7 +580,7 @@ local function read_payload(bytes, reader, out)
   out.structure_id_counter = read_i32(bytes, reader)
   local probe_flag = read_u8(bytes, reader)
   if probe_flag > 1 then
-    reader.failed = 1
+    reader.failed = true
     return
   end
   if probe_flag == 1 then
@@ -592,7 +592,7 @@ local function read_payload(bytes, reader, out)
   out.camera_map_pos = read_vec(bytes, reader)
   out.node_count = read_u8(bytes, reader)
   local i = 0
-  while i < out.node_count and reader.failed == 0 do
+  while i < out.node_count and not reader.failed do
     out.nodes[i] = save_node_zero()
     read_node(bytes, reader, out, out.nodes[i])
     i = i + 1
@@ -607,174 +607,174 @@ local function read_payload(bytes, reader, out)
 end
 
 local function is_flag(value)
-  return (value == 0 or value == 1) and 1 or 0
+  return value == 0 or value == 1
 end
 
 local function economy_is_valid(economy)
-  local seen = zero_array(map_tables.TECHNOLOGIES_COUNT)
+  local seen = {}
   for i = 0, economy.invented_count - 1 do
     local tech = economy.invented[i]
-    if tech >= map_tables.TECHNOLOGIES_COUNT or seen[tech] ~= 0 then
-      return 0
+    if tech >= map_tables.TECHNOLOGIES_COUNT or seen[tech] then
+      return false
     end
-    seen[tech] = 1
+    seen[tech] = true
   end
-  return 1
+  return true
 end
 
 local function type_picker_is_valid(picker)
   for i = 0, picker.tickets_count - 1 do
     if picker.tickets[i] >= game_data.PLANET_TYPES_COUNT then
-      return 0
+      return false
     end
   end
   for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
-    if is_flag(picker.recent_set[i]) == 0 or (picker.recent_set[i] ~= 0 and picker.recent[i] >= game_data.PLANET_TYPES_COUNT) then
-      return 0
+    if not is_flag(picker.recent_set[i]) or (picker.recent_set[i] ~= 0 and picker.recent[i] >= game_data.PLANET_TYPES_COUNT) then
+      return false
     end
   end
-  return 1
+  return true
 end
 
 local function node_state_is_valid(state)
-  return (state ~= entity_class.ENTITY_STATE_NONE and state ~= entity_class.ENTITY_STATE_PLACING and
-          state ~= entity_class.ENTITY_STATE_UNFOLDING and state < entity_class.STATE_COUNT) and 1 or 0
+  return state ~= entity_class.ENTITY_STATE_NONE and state ~= entity_class.ENTITY_STATE_PLACING and
+         state ~= entity_class.ENTITY_STATE_UNFOLDING and state < entity_class.STATE_COUNT
 end
 
 local function has(node, flag)
-  return (bit.band(node.flags, flag) ~= 0) and 1 or 0
+  return bit.band(node.flags, flag) ~= 0
 end
 
 -- A planet reads its clock only while vanishing; every other kind animates with it.
 local function node_has_state_time(kind, state)
-  return (state == entity_class.ENTITY_STATE_VANISHING or kind ~= M.SAVE_NODE_PLANET) and 1 or 0
+  return state == entity_class.ENTITY_STATE_VANISHING or kind ~= M.SAVE_NODE_PLANET
 end
 
 local function node_flags_are_valid(node)
   if bit.band(node.flags, bit.bnot(M.SAVE_NODE_KNOWN_FLAGS)) ~= 0 then
-    return 0
+    return false
   end
-  if has(node, M.SAVE_NODE_PRODUCTION_HAS_RESOURCE) ~= 0 and has(node, M.SAVE_NODE_HAS_PRODUCTION) == 0 then
-    return 0
+  if has(node, M.SAVE_NODE_PRODUCTION_HAS_RESOURCE) and not has(node, M.SAVE_NODE_HAS_PRODUCTION) then
+    return false
   end
-  if has(node, M.SAVE_NODE_SYNTHESIZER_SPENT) ~= 0 and node.kind ~= M.SAVE_NODE_SYNTHESIZER then
-    return 0
+  if has(node, M.SAVE_NODE_SYNTHESIZER_SPENT) and node.kind ~= M.SAVE_NODE_SYNTHESIZER then
+    return false
   end
-  return (has(node, M.SAVE_NODE_HAS_STATE_TIME) == node_has_state_time(node.kind, node.state)) and 1 or 0
+  return has(node, M.SAVE_NODE_HAS_STATE_TIME) == node_has_state_time(node.kind, node.state)
 end
 
 local function is_resource_code(resource)
   for i = 0, map_tables.RESOURCE_CODE_COUNT - 1 do
     if resource == bit.lshift(map_tables.resource_codes[i].resource, 16) then
-      return 1
+      return true
     end
   end
-  return 0
+  return false
 end
 
 local function resources_are_valid(node)
   for i = 0, node.need_count - 1 do
     local need = node.needs[i]
-    if need.resource ~= nil and is_resource_code(need.resource) == 0 then
-      return 0
+    if need.resource ~= nil and not is_resource_code(need.resource) then
+      return false
     end
   end
-  return (has(node, M.SAVE_NODE_PRODUCTION_HAS_RESOURCE) == 0 or is_resource_code(node.production_resource) ~= 0) and 1 or 0
+  return not has(node, M.SAVE_NODE_PRODUCTION_HAS_RESOURCE) or is_resource_code(node.production_resource)
 end
 
 local function node_is_valid(node)
-  return (node.kind < M.SAVE_NODE_KIND_COUNT and node_state_is_valid(node.state) ~= 0 and node_flags_are_valid(node) ~= 0 and
-          node.planet_type <= game_data.PLANET_TYPES_COUNT and node.description_type <= game_data.PLANET_TYPES_COUNT and
-          node.project <= map_tables.PROJECT_RECORDS_COUNT and resources_are_valid(node) ~= 0) and 1 or 0
+  return node.kind < M.SAVE_NODE_KIND_COUNT and node_state_is_valid(node.state) and node_flags_are_valid(node) and
+         node.planet_type <= game_data.PLANET_TYPES_COUNT and node.description_type <= game_data.PLANET_TYPES_COUNT and
+         node.project <= map_tables.PROJECT_RECORDS_COUNT and resources_are_valid(node)
 end
 
 local function nodes_are_valid(state)
   for i = 0, state.node_count - 1 do
-    if node_is_valid(state.nodes[i]) == 0 then
-      return 0
+    if not node_is_valid(state.nodes[i]) then
+      return false
     end
   end
-  return 1
+  return true
 end
 
 local function indices_are_below(state, first, count, limit)
   for i = 0, count - 1 do
     if state.route_indices[first + i] >= limit then
-      return 0
+      return false
     end
   end
-  return 1
+  return true
 end
 
 local function routes_are_valid(state)
   for i = 0, state.route_count - 1 do
     local route = state.routes[i]
-    if indices_are_below(state, route.first_planet, route.planet_count, state.node_count) == 0 or
-       indices_are_below(state, route.first_slipway, route.slipway_count, state.slipway_count) == 0 then
-      return 0
+    if not indices_are_below(state, route.first_planet, route.planet_count, state.node_count) or
+       not indices_are_below(state, route.first_slipway, route.slipway_count, state.slipway_count) then
+      return false
     end
   end
-  return 1
+  return true
 end
 
 local function slipways_are_valid(state)
   for i = 0, state.slipway_count - 1 do
     local slipway = state.slipways[i]
     if slipway.start >= state.node_count or slipway.end_ >= state.node_count or slipway.start == slipway.end_ then
-      return 0
+      return false
     end
   end
-  return 1
+  return true
 end
 
 local function node_slipways_are_valid(state)
   for i = 0, state.node_count - 1 do
     local node = state.nodes[i]
-    local seen = zero_array(M.SAVE_STATE_SLIPWAYS_CAP)
+    local seen = {}
     for k = 0, node.slipway_count - 1 do
       local index = state.node_slipways[node.first_slipway + k]
-      if index >= state.slipway_count or seen[index] ~= 0 or
+      if index >= state.slipway_count or seen[index] or
          (state.slipways[index].start ~= i and state.slipways[index].end_ ~= i) then
-        return 0
+        return false
       end
-      seen[index] = 1
+      seen[index] = true
     end
   end
-  return 1
+  return true
 end
 
 local function state_is_valid(state)
-  return (state.difficulty >= 1 and state.difficulty <= game_data.DIFFICULTY_OPTIONS_COUNT and economy_is_valid(state.economy) ~= 0 and
-          type_picker_is_valid(state.type_picker) ~= 0 and nodes_are_valid(state) ~= 0 and
-          slipways_are_valid(state) ~= 0 and routes_are_valid(state) ~= 0 and node_slipways_are_valid(state) ~= 0) and 1 or 0
+  return state.difficulty >= 1 and state.difficulty <= game_data.DIFFICULTY_OPTIONS_COUNT and economy_is_valid(state.economy) and
+         type_picker_is_valid(state.type_picker) and nodes_are_valid(state) and
+         slipways_are_valid(state) and routes_are_valid(state) and node_slipways_are_valid(state)
 end
 
--- Returns 1 for a valid record, 0 otherwise, never asserts on the bytes. On 0,
--- out is unspecified.
+-- Returns true for a valid record, false otherwise, never asserts on the bytes.
+-- On false, out is unspecified.
 function M.save_state_decode(bytes, count, out)
-  local reader = { position = MAGIC_LENGTH, end_ = count, failed = 0 }
-  local trailer = { position = count - TRAILER_BYTES, end_ = count, failed = 0 }
+  local reader = { position = MAGIC_LENGTH, end_ = count, failed = false }
+  local trailer = { position = count - TRAILER_BYTES, end_ = count, failed = false }
   if count < HEADER_BYTES + TRAILER_BYTES or count > M.SAVE_STATE_MAX_BYTES then
-    return 0
+    return false
   end
   for i = 0, MAGIC_LENGTH - 1 do
     if bytes[i] ~= magic[i] then
-      return 0
+      return false
     end
   end
   if read_u16(bytes, reader) ~= M.SAVE_STATE_VERSION then
-    return 0
+    return false
   end
   if read_u16(bytes, reader) ~= count - HEADER_BYTES - TRAILER_BYTES then
-    return 0
+    return false
   end
   reader.end_ = count - TRAILER_BYTES
   if read_u32(bytes, trailer) ~= M.save_state_crc32(bytes, reader.end_) then
-    return 0
+    return false
   end
   save_state_zero(out)
   read_payload(bytes, reader, out)
-  return (reader.failed == 0 and reader.position == reader.end_ and state_is_valid(out) ~= 0) and 1 or 0
+  return not reader.failed and reader.position == reader.end_ and state_is_valid(out)
 end
 
 M.crc32_table = {
@@ -958,7 +958,7 @@ local function capture_probe(out)
 end
 
 local function is_saved(e)
-  return (not e.is_dead and e.state ~= entity_class.ENTITY_STATE_PLACING) and 1 or 0
+  return not e.is_dead and e.state ~= entity_class.ENTITY_STATE_PLACING
 end
 
 local function node_kind(cls)
@@ -1063,7 +1063,7 @@ local function capture_node_fields(node, planet)
   if planet.synthesizable_resources ~= planet.archetype.synthesizable_resources then
     node.flags = bit.bor(node.flags, M.SAVE_NODE_SYNTHESIZER_SPENT)
   end
-  if node_has_state_time(node.kind, node.state) ~= 0 then
+  if node_has_state_time(node.kind, node.state) then
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_STATE_TIME)
     node.state_time = header.state_time
   end
@@ -1110,7 +1110,7 @@ end
 local function capture_world(out, ids)
   for i = 1, tagged_count(entity_class.TAG_NODE) do
     local e = tagged_at(entity_class.TAG_NODE, i)
-    if is_saved(e) ~= 0 then
+    if is_saved(e) then
       assert(ids.node_count < M.SAVE_STATE_NODES_CAP, "save_state_capture: node indices are one byte")
       ids.nodes[ids.node_count] = entity_id.entity_id_link(e)
       ids.node_count = ids.node_count + 1
@@ -1120,7 +1120,7 @@ local function capture_world(out, ids)
     local e = tagged_at(entity_class.TAG_SLIPWAY, i)
     local slipway = e
     local saved
-    if is_saved(e) == 0 or slipway.end_is_point then
+    if not is_saved(e) or slipway.end_is_point then
       goto continue
     end
     assert(ids.slipway_count < M.SAVE_STATE_SLIPWAYS_CAP, "save_state_capture: slipway indices are one byte")

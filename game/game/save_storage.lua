@@ -9,14 +9,14 @@ local M = {}
 
 local SAVE_FILE = "save.bin"
 
--- Asserts 1 <= count <= SAVE_STATE_MAX_BYTES. Returns 1 when stored, 0 when the write failed.
+-- Asserts 1 <= count <= SAVE_STATE_MAX_BYTES. Returns true when stored, false when the write failed.
 function M.save_storage_write(bytes, count)
   local chars = {}
   assert(count >= 1 and count <= save_state.SAVE_STATE_MAX_BYTES, "to clear the save, call save_storage_erase")
   for i = 0, count - 1 do
     chars[i + 1] = string.char(bytes[i])
   end
-  return (love.filesystem.write(SAVE_FILE, table.concat(chars)) == true) and 1 or 0
+  return love.filesystem.write(SAVE_FILE, table.concat(chars)) == true
 end
 
 -- Returns the record's byte count, 0 when there is none or it cannot be read; on 0, bytes is
@@ -32,9 +32,9 @@ function M.save_storage_read(bytes)
   return #content
 end
 
--- Returns 1 when no record remains afterwards, 0 when the write failed.
+-- Returns true when no record remains afterwards, false when the write failed.
 function M.save_storage_erase()
-  return (love.filesystem.write(SAVE_FILE, "") == true) and 1 or 0
+  return love.filesystem.write(SAVE_FILE, "") == true
 end
 
 return M

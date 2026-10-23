@@ -44,7 +44,7 @@ local function economy_create()
   self.year_ticks = fixed.p8_fixed_from_int(0)
   self.year = fixed.p8_fixed_from_int(0)
   self.invented = {}
-  self.save_pending = 0
+  self.save_pending = false
 
   self.credits = self.archetype.credits
   self.income = fixed.p8_fixed_from_int(0)
@@ -113,7 +113,7 @@ local function economy_add_ticks(self, hx, bring_up_to_date)
   if self == nil then
     return
   end
-  self.save_pending = 1
+  self.save_pending = true
 
   kx = tech_gate.tech_gate_if_unlocked("time compression", fixed.p8_fixed_from_int(12), fixed.p8_fixed_from_int(15))
 
@@ -152,7 +152,7 @@ function M.economy_new_year(self)
   if self == nil then
     return
   end
-  self.save_pending = 1
+  self.save_pending = true
 
   credits = self.credits
   income = self.income
@@ -203,7 +203,7 @@ function M.economy_spend(self, jt)
 
   if self ~= nil then
     self.credits = fixed.p8_fixed_sub(nz, jt)
-    self.save_pending = 1
+    self.save_pending = true
   end
 
   if jt ~= fixed.p8_fixed_from_int(0) then
@@ -277,7 +277,7 @@ function M.economy_invent(self, t)
   if self == nil then
     return
   end
-  self.save_pending = 1
+  self.save_pending = true
 
   jk = self.research_points
   self.research_points = fixed.p8_fixed_sub(jk, tech_gate.tech_gate_research_cost(t))

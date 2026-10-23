@@ -1,6 +1,6 @@
 -- Copy of src/game/save_load.h then src/game/save_load.c.
 --
--- Every state came out of a save_state_decode that returned 1: nothing is validated again.
+-- Every state came out of a save_state_decode that returned true: nothing is validated again.
 -- node_constructors is 0-indexed by SAVE_NODE_* kind. The ids in node_ids and slipway_ids are
 -- new tables from entity_id_link.
 local bit = require("bit")
@@ -33,7 +33,7 @@ local function vec_of(saved)
 end
 
 local function has(node, flag)
-  return (bit.band(node.flags, flag) ~= 0) and 1 or 0
+  return bit.band(node.flags, flag) ~= 0
 end
 
 -- Fills out the way the title fills a difficulty button.
@@ -63,7 +63,7 @@ end
 local function load_needs(planet, node)
   local needs = {}
 
-  if has(node, save_state.SAVE_NODE_HAS_NEEDS) == 0 then
+  if not has(node, save_state.SAVE_NODE_HAS_NEEDS) then
     planet.needs = nil
     return
   end
@@ -79,14 +79,14 @@ local function load_needs(planet, node)
 end
 
 local function load_production(planet, node)
-  if has(node, save_state.SAVE_NODE_HAS_PRODUCTION) == 0 then
+  if not has(node, save_state.SAVE_NODE_HAS_PRODUCTION) then
     planet.production = nil
     return
   end
   if planet.production == nil then
     planet.production = {}
   end
-  planet.production.resource = (has(node, save_state.SAVE_NODE_PRODUCTION_HAS_RESOURCE) ~= 0)
+  planet.production.resource = has(node, save_state.SAVE_NODE_PRODUCTION_HAS_RESOURCE)
     and node.production_resource or nil
   -- The routes rebuild of the first recompute reads the amount before update_tiers sets it.
   planet.production.amount = fixed.p8_fixed_from_int(0)
@@ -110,24 +110,24 @@ local node_constructors = M.node_constructors
 -- Planets and protostars take their position as keys; the structure
 -- constructors assert that their keys hold none, so it is set after.
 local function construct_node(node)
-  local positions_are_keys = (node.kind == save_state.SAVE_NODE_PLANET or node.kind == save_state.SAVE_NODE_PROTOSTAR) and 1 or 0
+  local positions_are_keys = node.kind == save_state.SAVE_NODE_PLANET or node.kind == save_state.SAVE_NODE_PROTOSTAR
   local keys = planet_module.planet_keys_zero()
   local planet
 
-  if has(node, save_state.SAVE_NODE_HAS_PLANET_ID) ~= 0 then
+  if has(node, save_state.SAVE_NODE_HAS_PLANET_ID) then
     planet_module.planet_keys_set_id(keys, node.planet_id)
   end
-  if positions_are_keys ~= 0 and has(node, save_state.SAVE_NODE_HAS_POS) ~= 0 then
+  if positions_are_keys and has(node, save_state.SAVE_NODE_HAS_POS) then
     keys.pos = vec_of(node.pos)
   end
-  if positions_are_keys ~= 0 and has(node, save_state.SAVE_NODE_HAS_MAP_POS) ~= 0 then
+  if positions_are_keys and has(node, save_state.SAVE_NODE_HAS_MAP_POS) then
     keys.map_pos = vec_of(node.map_pos)
   end
   planet = node_constructors[node.kind](keys)
-  if positions_are_keys == 0 and has(node, save_state.SAVE_NODE_HAS_POS) ~= 0 then
+  if not positions_are_keys and has(node, save_state.SAVE_NODE_HAS_POS) then
     entity_class.entity_set_pos(planet, vec_of(node.pos))
   end
-  if positions_are_keys == 0 and has(node, save_state.SAVE_NODE_HAS_MAP_POS) ~= 0 then
+  if not positions_are_keys and has(node, save_state.SAVE_NODE_HAS_MAP_POS) then
     entity_class.entity_set_map_pos(planet, vec_of(node.map_pos))
   end
   return planet
@@ -137,7 +137,7 @@ local function load_node(node)
   local planet = construct_node(node)
 
   entity.entity_set_state(planet, node.state)
-  if has(node, save_state.SAVE_NODE_HAS_STATE_TIME) ~= 0 then
+  if has(node, save_state.SAVE_NODE_HAS_STATE_TIME) then
     planet.state_time = node.state_time
   end
   planet.planet_type = (node.planet_type ~= 0) and game_data.planet_types_table[node.planet_type - 1] or nil
@@ -148,11 +148,11 @@ local function load_node(node)
   planet.description = (node.description_type ~= 0) and game_data.planet_types_table[node.description_type - 1].description or nil
   load_needs(planet, node)
   planet.development_tier = nil
-  if has(node, save_state.SAVE_NODE_HAS_DEVELOPMENT_TIER) ~= 0 then
+  if has(node, save_state.SAVE_NODE_HAS_DEVELOPMENT_TIER) then
     planet.development_tier = node.development_tier
   end
   planet.production_bonus = nil
-  if has(node, save_state.SAVE_NODE_HAS_PRODUCTION_BONUS) ~= 0 then
+  if has(node, save_state.SAVE_NODE_HAS_PRODUCTION_BONUS) then
     planet.production_bonus = node.production_bonus
   end
   planet.fold_anchor = node.fold_anchor ~= 0 or nil
@@ -221,7 +221,7 @@ local function undo_attach_side_effects(state, node_ids)
     planet.shake = 0
     load_production(planet, node)
     if node.kind == save_state.SAVE_NODE_SYNTHESIZER then
-      planet_family_trade.synthesizer_set_spent(planet, has(node, save_state.SAVE_NODE_SYNTHESIZER_SPENT) ~= 0)
+      planet_family_trade.synthesizer_set_spent(planet, has(node, save_state.SAVE_NODE_SYNTHESIZER_SPENT))
     end
   end
 end
@@ -241,7 +241,7 @@ local function load_outgoing_routes(state, node_ids, slipway_ids)
   for i = 0, state.node_count - 1 do
     local node = state.nodes[i]
     local planet = entity_id.entity_get(node_ids[i])
-    if has(node, save_state.SAVE_NODE_HAS_OUTGOING_ROUTES) == 0 then
+    if not has(node, save_state.SAVE_NODE_HAS_OUTGOING_ROUTES) then
       goto continue
     end
     if planet.outgoing_routes == nil then

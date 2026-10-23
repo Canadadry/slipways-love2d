@@ -48,8 +48,8 @@ local M = {}
 
 M.CART_NO_DEMO_FRAME = -1
 
-local g_title_built = 0
-local g_save_cut = 0
+local g_title_built = false
+local g_save_cut = false
 local g_demo_frame = M.CART_NO_DEMO_FRAME
 -- 0 when not loading, else the loading frame being played, from 1 (the press) to LOADING_SCREEN_FRAMES.
 local g_loading_frame = 0
@@ -66,8 +66,8 @@ function M.cart_load()
   local memory
 
   quit_game()
-  g_title_built = 0
-  g_save_cut = 0
+  g_title_built = false
+  g_save_cut = false
   g_demo_frame = M.CART_NO_DEMO_FRAME
   g_loading_frame = 0
   entity.entity_init()
@@ -164,7 +164,7 @@ end
 local function title_resume_handler()
   local count = save_storage.save_storage_read(g_save_bytes)
 
-  if count > 0 and save_state.save_state_decode(g_save_bytes, count, g_save_state) ~= 0 then
+  if count > 0 and save_state.save_state_decode(g_save_bytes, count, g_save_state) then
     return resume_saved_game
   else
     return nil
@@ -192,12 +192,12 @@ function M.cart_init()
 
   help.help_set_resume_game(title_resume_handler())
   help.help_screen_new()
-  g_title_built = 1
+  g_title_built = true
 end
 
 function M.cart_title_shown()
-  return (g_title_built ~= 0 and g_loading_frame == 0 and message_box.shown_message_box() == nil
-    and entity_registry.entity_registry_count_tagged(entity_class.TAG_MESSAGE_BOX) == 0) and 1 or 0
+  return g_title_built and g_loading_frame == 0 and message_box.shown_message_box() == nil
+    and entity_registry.entity_registry_count_tagged(entity_class.TAG_MESSAGE_BOX) == 0
 end
 
 -- Between frames only, never from a handler inside ui_update or update_entities: it releases
@@ -207,13 +207,13 @@ function M.cart_return_to_title()
   M.cart_flush_exit_queue()
   -- After the flush: reset_world's own abandon would walk the released entries.
   entity_registry.entity_registry_forget_registries()
-  g_save_cut = 0
+  g_save_cut = false
   g_demo_frame = M.CART_NO_DEMO_FRAME
   M.cart_init()
 end
 
 function M.cart_cut_save()
-  g_save_cut = 1
+  g_save_cut = true
 end
 
 function M.cart_set_demo_frame(frame)
@@ -229,7 +229,7 @@ local function start_world(difficulty)
     "game start: cart_load() must run first")
 
   economy_score.economy_score_set_difficulty(difficulty)
-  g_title_built = 0
+  g_title_built = false
 
   bootstrap.reset_world()
   research.research_expire_project_ids()
@@ -292,7 +292,7 @@ function M.cart_request_start_game(chosen_option)
 end
 
 function M.cart_loading()
-  return (g_loading_frame ~= 0) and 1 or 0
+  return g_loading_frame ~= 0
 end
 
 function M.cart_resume_game(state)
@@ -312,14 +312,14 @@ end
 local function save_at_frame_end()
   local economy = probe.main_economy_typed()
 
-  if economy == nil or economy.save_pending == 0 or economy_score.economy_score_difficulty() == nil then return end
+  if economy == nil or not economy.save_pending or economy_score.economy_score_difficulty() == nil then return end
   if economy.end_status ~= nil then
     save_storage.save_storage_erase()
-    economy.save_pending = 0
+    economy.save_pending = false
   elseif wormhole.wormhole_live_count() == 0 then
     save_state.save_state_capture(g_save_state)
     save_storage.save_storage_write(g_save_bytes, save_state.save_state_encode(g_save_state, g_save_bytes))
-    economy.save_pending = 0
+    economy.save_pending = false
   end
 end
 
@@ -332,13 +332,13 @@ function M.cart_update60()
     M.cart_flush_exit_queue()
     M.cart_start_game(g_requested_option)
     g_loading_frame = 0
-    if g_save_cut == 0 then save_at_frame_end() end
+    if not g_save_cut then save_at_frame_end() end
     return
   end
   M.cart_flush_exit_queue()
   bootstrap.update_entities()
   ui.ui_update(dispatch_context.dispatch_context_mem(), ui.main_ui())
-  if g_save_cut == 0 then save_at_frame_end() end
+  if not g_save_cut then save_at_frame_end() end
 end
 
 function M.cart_draw()
