@@ -75,8 +75,8 @@ function M.pad_select_needs_attention(e)
   if bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) == 0 then
     return 0
   end
-  for i = 0, planet.needs.count - 1 do
-    if need_is_unmet(planet.needs.items[i]) ~= 0 then
+  for i = 1, #planet.needs do
+    if need_is_unmet(planet.needs[i]) ~= 0 then
       return 1
     end
   end

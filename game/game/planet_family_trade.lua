@@ -17,7 +17,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
-local pointer_list = require("engine.pointer_list")
 local game_data = require("game.game_data")
 local planet = require("game.planet")
 local planet_display = require("game.planet_display")
@@ -273,24 +272,17 @@ function M.synthesizer_attach_slipway(self, slipway)
 
   if other_end ~= nil then
     local jy
-    local it
-    local i_val
 
     assert(planet.planet_is_family(other_end) ~= 0, "synthesizer_attach_slipway: the other end of a registered slipway is a planet")
     assert(bit.band(other_end.has_, planet.PLANET_HAS_NEEDS) ~= 0,
       "synthesizer_attach_slipway: the other end of a slipway to a synthesizer holds needs")
     jy = other_end.needs
 
-    it = pointer_list.pointer_list_all(jy)
-    while true do
-      local more
+    for index = 1, #jy do
+      local i_val = jy[index]
       local i
       local gc
 
-      more, i_val = pointer_list.pointer_list_iter_next(it, i_val)
-      if more == 0 then
-        break
-      end
       if i_val == nil then
         goto continue
       end

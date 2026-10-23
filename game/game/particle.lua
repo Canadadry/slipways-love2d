@@ -4,7 +4,7 @@
 --   particle_t: { pos, velocity, has_acceleration, acceleration, life }.
 --   emitter_t: { archetype, has, angle_slices, base_radius, speed_factor, trail_colors, matrix_xx,
 --     matrix_xy, matrix_yx, matrix_yy, particles }, the `emitter` field of its
---     host (a probe, a help screen or a planet), particles a pointer_list_t.
+--     host (a probe, a help screen or a planet), particles an array.
 --   p8_point_t: { x, y, col }, the batch a 0-indexed array of them.
 --
 -- Include cycle: game.planet is required at call time (emitter_of). A probe is reached through
@@ -13,7 +13,6 @@ local bit = require("bit")
 local dispatch_context = require("engine.dispatch_context")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
-local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
 local visual_random = require("game.visual_random")
@@ -24,8 +23,6 @@ local M = {}
 
 M.EMITTER_HAS_PARTICLES = bit.lshift(1, 0)
 
-M.PARTICLES_RESERVE = 158
-M.PARTICLES_HELP_SCREEN_RESERVE = 653
 
 local EMITTER_POINT_BATCH = 32
 
@@ -81,21 +78,18 @@ function M.emitter_of(e)
 end
 
 function M.emitter_init(self)
-  M.emitter_init_in(self, M.PARTICLES_RESERVE)
-end
-
--- The reserve sets the list's first capacity, and so when it grows.
-function M.emitter_init_in(self, reserve)
   local emitter
 
   if self == nil then
     return
   end
   emitter = M.emitter_of(self)
-  assert(emitter ~= nil, "emitter_init_in: a class that carries no particle emitter has no particle list -- stop")
+  assert(emitter ~= nil, "emitter_init: a class that carries no particle emitter has no particle list -- stop")
 
   M.emitter_release_particles(emitter)
-  pointer_list.pointer_list_init_reserve(emitter.particles, reserve)
+  for i = #emitter.particles, 1, -1 do
+    emitter.particles[i] = nil
+  end
   emitter.has = bit.bor(emitter.has, M.EMITTER_HAS_PARTICLES)
 end
 
@@ -105,9 +99,9 @@ function M.emitter_release_particles(emitter)
   if bit.band(emitter.has, M.EMITTER_HAS_PARTICLES) == 0 then
     return
   end
-  qy.items = nil
-  qy.count = 0
-  qy.capacity = 0
+  for i = #qy, 1, -1 do
+    qy[i] = nil
+  end
   emitter.has = bit.band(bit.band(emitter.has, bit.bnot(M.EMITTER_HAS_PARTICLES)), 0xFFFF)
 end
 
@@ -126,7 +120,9 @@ function M.emitter_spawn(self, n)
 
   while visual_random.visual_random_draw_one() < n do
     if qy ~= nil and self.class.spawn_particle ~= nil then
-      pointer_list.pointer_list_add(qy, self.class.spawn_particle(self))
+      local spawned = self.class.spawn_particle(self)
+      assert(spawned ~= nil, "an emitter's particles are particles")
+      qy[#qy + 1] = spawned
     end
     n = fixed.p8_fixed_sub(n, fixed.p8_fixed_from_int(1))
   end
@@ -167,10 +163,10 @@ function M.emitter_update(graphics, memory, self)
   if bit.band(emitter.has, M.EMITTER_HAS_PARTICLES) ~= 0 then
     local points = {}
     local point_count = 0
-    local index = 0
+    local index = 1
     particles = emitter.particles
-    while index < particles.count do
-      local particle = particles.items[index]
+    while index <= #particles do
+      local particle = particles[index]
       local pv
 
       if particle ~= nil then
@@ -192,7 +188,12 @@ function M.emitter_update(graphics, memory, self)
 
         if particle.life <= fixed.p8_fixed_from_int(1) then
           -- Removing an element during this walk skips the next one; it is visited next frame. Compensating the index would change update timing and every replay.
-          pointer_list.pointer_list_del(particles, particle)
+          for i = 1, #particles do
+            if particles[i] == particle then
+              table.remove(particles, i)
+              break
+            end
+          end
         else
           local px = particle_to_int(fixed.p8_fixed_add(center_x, particle.pos.x))
           local py = particle_to_int(fixed.p8_fixed_add(center_y, particle.pos.y))
@@ -243,7 +244,7 @@ function M.emitter_zero()
     matrix_xy = 0,
     matrix_yx = 0,
     matrix_yy = 0,
-    particles = { items = nil, count = 0, capacity = 0 },
+    particles = {},
   }
 end
 

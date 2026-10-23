@@ -5,7 +5,6 @@
 --     technologies_table entry.
 -- The main economy is read through game.probe at call time: these functions cannot run before
 -- game.probe exists.
-local collect = require("engine.collect")
 local economy_formulas = require("game.economy_formulas")
 local main_economy = require("game.main_economy")
 local map_tables = require("game.map_tables")
@@ -37,7 +36,15 @@ function M.tech_gate_is_unlocked(px)
   if fm ~= nil then
     invented_list = fm.invented
   end
-  return collect.collect_contains_string(invented_list, px)
+  if invented_list == nil then
+    return 0
+  end
+  for i = 1, #invented_list do
+    if invented_list[i] == px then
+      return 1
+    end
+  end
+  return 0
 end
 
 function M.tech_gate_if_unlocked(px, lk, mc)

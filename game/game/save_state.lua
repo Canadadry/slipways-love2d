@@ -893,15 +893,15 @@ end
 local function capture_economy(out)
   local economy = probe.main_economy_typed()
   assert(economy ~= nil, "save_state_capture: a running game has an economy")
-  assert(economy.invented.count <= map_tables.TECHNOLOGIES_COUNT)
+  assert(#economy.invented <= map_tables.TECHNOLOGIES_COUNT)
   out.credits = economy.credits
   out.research_points = economy.research_points
   out.era = economy.era
   out.year = economy.year
   out.year_ticks = economy.year_ticks
-  out.invented_count = economy.invented.count
-  for i = 0, economy.invented.count - 1 do
-    out.invented[i] = technology_index(economy.invented.items[i])
+  out.invented_count = #economy.invented
+  for i = 0, #economy.invented - 1 do
+    out.invented[i] = technology_index(economy.invented[i + 1])
   end
 end
 
@@ -1027,11 +1027,11 @@ local function capture_node_fields(node, planet)
   node.description_type = description_type_index(planet)
   node.project = project_index(planet.project)
   if bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) ~= 0 then
-    assert(planet.needs.count <= M.SAVE_STATE_NEEDS_CAP)
+    assert(#planet.needs <= M.SAVE_STATE_NEEDS_CAP)
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_NEEDS)
-    node.need_count = planet.needs.count
-    for i = 0, planet.needs.count - 1 do
-      local need = planet.needs.items[i]
+    node.need_count = #planet.needs
+    for i = 0, #planet.needs - 1 do
+      local need = planet.needs[i + 1]
       assert(need ~= nil)
       node.needs[i].has_resource = (need.row.has_resource ~= 0) and 1 or 0
       node.needs[i].resource = (need.row.has_resource ~= 0) and need.row.resource or 0

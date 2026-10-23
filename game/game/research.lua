@@ -5,7 +5,7 @@
 --   research_project_t: one table holding the entity header and { archetype, name,
 --     planet_codes, base_cost, has_base_cost, production_key, inputs, output, has_output,
 --     upgrade_tech, has_upgrade_tech, byproduct, has_byproduct, required_tech, icon_sprite,
---     has_icon_sprite, class_name, next_type }, inputs an inline pointer_list_t of need_t.
+--     has_icon_sprite, class_name, next_type }, inputs an array of need_t.
 --   research_project_id_t: { index, epoch }, both 16-bit, a new table at every creation.
 --   research_project_keys_t: { record, required_tech }.
 -- g_project_table holds PROJECT_RECORDS_COUNT tables created once at load: a project is always
@@ -14,7 +14,6 @@
 -- tech_gate: they cannot run before game.probe exists.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
-local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
 local map_tables = require("game.map_tables")
@@ -39,7 +38,7 @@ local g_research_project_up = 0
 -- Built in place: a project's layout_row items point into the project itself.
 local g_project_table = {}
 for i = 0, PROJECT_RECORDS_COUNT - 1 do
-  g_project_table[i] = { inputs = { items = nil, count = 0, capacity = 0 } }
+  g_project_table[i] = { inputs = {} }
 end
 local g_project_table_count = 0
 local g_project_epoch = 1
@@ -225,9 +224,9 @@ local function project_zero(self)
   self.base_cost = 0
   self.has_base_cost = 0
   self.production_key = nil
-  inputs.items = nil
-  inputs.count = 0
-  inputs.capacity = 0
+  for i = #inputs, 1, -1 do
+    inputs[i] = nil
+  end
   self.output = 0
   self.has_output = 0
   self.upgrade_tech = nil
@@ -300,20 +299,15 @@ local function project_create(keys)
   end
 
   -- A character that is no resource code still makes a need, with no resource.
-  if #input_codes == 0 then
-    pointer_list.pointer_list_init(self.inputs)
-  else
-    pointer_list.pointer_list_init_reserve(self.inputs, #input_codes)
-  end
   for input_count = 1, #input_codes do
     local key = input_codes:sub(input_count, input_count)
     local found, r_resource = map_tables.resource_code_lookup(key, 0)
 
     if found ~= 0 then
-      pointer_list.pointer_list_add(self.inputs,
-        M.need_new({ kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(r_resource) }))
+      self.inputs[#self.inputs + 1] =
+        M.need_new({ kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(r_resource) })
     else
-      pointer_list.pointer_list_add(self.inputs, M.need_new({ kind = trade.RESOURCE_NIL, number = 0 }))
+      self.inputs[#self.inputs + 1] = M.need_new({ kind = trade.RESOURCE_NIL, number = 0 })
     end
   end
   return self

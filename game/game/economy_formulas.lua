@@ -10,6 +10,7 @@ local vec = require("engine.vec")
 local game_data = require("game.game_data")
 local map_tables = require("game.map_tables")
 local fixed = require("p8.fixed")
+local str = require("p8.str")
 
 local M = {}
 
@@ -72,6 +73,22 @@ function M.economy_formulas_cost_scale()
   local val = fixed.p8_fixed_sub(fixed.p8_fixed_mul(sq, fixed.P8_FIXED_LIT(0x0000451e, 0.27)),
     fixed.P8_FIXED_LIT(0x00001999, 0.1))
   return fixed_max(fixed.p8_fixed_from_int(1), val)
+end
+
+-- Returns text, color: out_color is ignored, the color is c from zero up and 8 below.
+function M.economy_formulas_format_signed(d, c, ku, out_color)
+  local num_str = str.p8_tostr_fixed(d)
+  local suffix = (ku ~= nil) and ku or ""
+  local result
+
+  if d >= 0 then
+    out_color = c
+    result = "+" .. num_str
+  else
+    out_color = 8
+    result = num_str
+  end
+  return result .. suffix, out_color
 end
 
 return M

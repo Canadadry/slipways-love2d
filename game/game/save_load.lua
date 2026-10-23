@@ -9,7 +9,6 @@ local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
 local entity_registry = require("engine.entity_registry")
-local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
 local economy_tiers = require("game.economy_tiers")
 local galaxy = require("game.galaxy")
@@ -71,17 +70,13 @@ local function load_needs(planet, node)
     planet.has_ = bit.band(bit.band(planet.has_, bit.bnot(planet_module.PLANET_HAS_NEEDS)), 0xFFFF)
     return
   end
-  pointer_list.pointer_list_init(needs)
-  if node.need_count > 0 then
-    pointer_list.pointer_list_init_reserve(needs, node.need_count)
-  end
   for i = 0, node.need_count - 1 do
     local resource = { kind = trade.RESOURCE_NIL, number = 0 }
     if node.needs[i].has_resource ~= 0 then
       resource.kind = trade.RESOURCE_FIXED
       resource.number = node.needs[i].resource
     end
-    pointer_list.pointer_list_add(needs, research.need_new(resource))
+    needs[#needs + 1] = research.need_new(resource)
   end
   planet.needs = needs
   planet.has_ = bit.bor(planet.has_, planet_module.PLANET_HAS_NEEDS)
@@ -335,7 +330,9 @@ end
 local function load_invented(economy, saved)
   refresh_structure_icons()
   for i = 0, saved.invented_count - 1 do
-    pointer_list.pointer_list_add(economy.invented, map_tables.technologies_table[saved.invented[i]].name)
+    local name = map_tables.technologies_table[saved.invented[i]].name
+    assert(name ~= nil, "economy.invented holds technology names")
+    economy.invented[#economy.invented + 1] = name
     refresh_structure_icons()
   end
 end

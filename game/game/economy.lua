@@ -8,12 +8,10 @@
 -- required at call time, inside the functions that need them, so that this module loads before
 -- they exist.
 local bit = require("bit")
-local collect = require("engine.collect")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
-local pointer_list = require("engine.pointer_list")
 local economy_formulas = require("game.economy_formulas")
 local main_economy = require("game.main_economy")
 local game_data = require("game.game_data")
@@ -67,7 +65,6 @@ local function economy_create()
   self.income = fixed.p8_fixed_from_int(0)
   self.research_points = fixed.p8_fixed_from_int(0)
   self.era = self.archetype.era
-  pointer_list.pointer_list_init(self.invented)
   self.year_ticks = self.archetype.year_ticks
   self.year = self.archetype.year
 
@@ -244,7 +241,7 @@ function M.economy_spend(self, jt)
   if jt ~= fixed.p8_fixed_from_int(0) then
     local color = 0
     local text
-    text, color = collect.collect_format_signed(fixed.p8_fixed_neg(jt), 10, "$", color)
+    text, color = economy_formulas.economy_formulas_format_signed(fixed.p8_fixed_neg(jt), 10, "$", color)
     message_box.toast_keys_set_text(keys, text)
     keys.color = fixed.p8_fixed_from_int(color)
     message_box.toast_new(keys)
@@ -323,9 +320,9 @@ function M.economy_invent(self, t)
   self.research_points = fixed.p8_fixed_sub(jk, tech_gate.tech_gate_research_cost(t))
 
   if t ~= nil and t.name ~= nil then
-    pointer_list.pointer_list_add(self.invented, t.name)
+    self.invented[#self.invented + 1] = t.name
   end
-  count = self.invented.count
+  count = #self.invented
 
   ew = self.era
   if ew < fixed.p8_fixed_from_int(4) then
@@ -405,10 +402,10 @@ local function crowding_penalty_visit(l, ctx)
     return
   end
   jy = l.needs
-  if jy.count == 0 then
+  if #jy == 0 then
     return
   end
-  last_val = jy.items[jy.count - 1]
+  last_val = jy[#jy]
   if last_val == nil then
     return
   end

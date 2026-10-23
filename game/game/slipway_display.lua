@@ -11,7 +11,6 @@ local dispatch_context = require("engine.dispatch_context")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
-local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
 local particle = require("game.particle")
@@ -59,7 +58,7 @@ function M.slipway_spawn_transit_dot(self, f, t)
     dot.velocity = v
     dot.life = vec.vec_length(d)
 
-    pointer_list.pointer_list_add(self.transit_dots, dot)
+    self.transit_dots[#self.transit_dots + 1] = dot
   end
 end
 
@@ -176,9 +175,9 @@ function M.slipway_draw(graphics, memory, self)
 
     do
       local ts = self.transit_dots
-      local i = 0
-      while i < ts.count do
-        local t = ts.items[i]
+      local i = 1
+      while i <= #ts do
+        local t = ts[i]
         local new_pos
         local new_l
 
@@ -195,7 +194,12 @@ function M.slipway_draw(graphics, memory, self)
         -- No `else`: an expired particle is still drawn once more at its final position.
         if new_l <= fixed.p8_fixed_from_int(0) then
           -- Removing an element during this walk skips the next one; it is visited next frame. Compensating the index would change update timing and every replay.
-          pointer_list.pointer_list_del(ts, t)
+          for j = 1, #ts do
+            if ts[j] == t then
+              table.remove(ts, j)
+              break
+            end
+          end
         end
 
         if particle.particle_pixels_hidden() == 0 then

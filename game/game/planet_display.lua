@@ -10,14 +10,13 @@
 -- A planet is one table with its entity header: the planet's own `has` (PLANET_HAS_* bits) is
 -- `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
 local bit = require("bit")
-local collect = require("engine.collect")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
-local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
+local economy_formulas = require("game.economy_formulas")
 local game_data = require("game.game_data")
 local hud = require("game.hud")
 local image_slot = require("game.image_slot")
@@ -71,8 +70,6 @@ local ROW_NEED_SATISFIED_ZERO = 2
 local function planet_row_signature(needs_list, has_output, output, amount, route_count)
   local planet = require("game.planet")
   local signature
-  local it
-  local entry
 
   assert(route_count >= 0 and route_count <= 0xFFFF, "planet_row_signature: a wider route count would alias in the signature")
   signature = planet.planet_row_signature_zero()
@@ -80,17 +77,12 @@ local function planet_row_signature(needs_list, has_output, output, amount, rout
   signature.output = output
   signature.amount = amount
   signature.route_count = route_count
-  if needs_list ~= nil and needs_list.count > planet.PLANET_ROW_SIGNATURE_NEEDS then
+  if needs_list ~= nil and #needs_list > planet.PLANET_ROW_SIGNATURE_NEEDS then
     return signature
   end
   if needs_list ~= nil then
-    it = pointer_list.pointer_list_all(needs_list)
-    while true do
-      local more
-      more, entry = pointer_list.pointer_list_iter_next(it, entry)
-      if more == 0 then
-        break
-      end
+    for index = 1, #needs_list do
+      local entry = needs_list[index]
       if entry ~= nil then
         local need = entry
         local resource = research.need_resource(need)
@@ -192,7 +184,7 @@ local function planet_inspection_panel_filter_step(e, ctx_ptr)
   end
   count = fixed.p8_fixed_flr_int(gc)
   for _ = 0, count - 1 do
-    pointer_list.pointer_list_add(ctx.received_needs, e)
+    ctx.received_needs[#ctx.received_needs + 1] = e
   end
   return (gc == fixed.p8_fixed_from_int(0)) and 1 or 0
 end
@@ -270,7 +262,7 @@ function M.planet_inspection_panel(self)
     local h_keys = buttons[0].side_tooltip_row
     local signed
 
-    signed, discard_color = collect.collect_format_signed(self.net_income, 0, nil, discard_color)
+    signed, discard_color = economy_formulas.economy_formulas_format_signed(self.net_income, 0, nil, discard_color)
     layout.layout_row_keys_append(h_keys, layout.layout_row_cell_string(planet_dollar(signed)))
     h_keys.has_background = 1
     h_keys.background_is_bool = (self.net_income < fixed.p8_fixed_from_int(0)) and 1 or 0
@@ -280,17 +272,23 @@ function M.planet_inspection_panel(self)
   row_count = 1
 
   filter_context.received_needs = {}
-  pointer_list.pointer_list_init(filter_context.received_needs)
 
   needs = (bit.band(self.has_, planet.PLANET_HAS_NEEDS) ~= 0) and self.needs or nil
-  unmet_needs = collect.collect_filter_pointer_list(needs, planet_inspection_panel_filter_step,
-    filter_context)
+  unmet_needs = {}
+  if needs ~= nil then
+    for index = 1, #needs do
+      local need = needs[index]
+      if planet_inspection_panel_filter_step(need, filter_context) ~= 0 then
+        unmet_needs[#unmet_needs + 1] = need
+      end
+    end
+  end
 
-  if unmet_needs.count > 0 then
+  if #unmet_needs > 0 then
     layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("needs:"))
-    for index = 0, unmet_needs.count - 1 do
+    for index = 1, #unmet_needs do
       layout.layout_row_keys_append(buttons[row_count].layout_row_keys,
-        layout.layout_row_cell_row(need_row(unmet_needs.items[index])))
+        layout.layout_row_cell_row(need_row(unmet_needs[index])))
     end
     row_count = row_count + 1
   else
@@ -305,28 +303,28 @@ function M.planet_inspection_panel(self)
       resource_is_r_w = found ~= 0 and kw.resource == fixed.p8_fixed_from_int(r_w)
     end
 
-    if development_tier_fixed < fixed.p8_fixed_from_int(4) and needs ~= nil and needs.count > 0 and not resource_is_r_w then
+    if development_tier_fixed < fixed.p8_fixed_from_int(4) and needs ~= nil and #needs > 0 and not resource_is_r_w then
       local last_only = lineage_has(self, entity_class.LINEAGE_STRUCTURE) and self.archetype.is_structure ~= 0
 
       layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("wants more:"))
       if last_only then
         layout.layout_row_keys_append(buttons[row_count].layout_row_keys,
-          layout.layout_row_cell_row(need_row(needs.items[needs.count - 1])))
+          layout.layout_row_cell_row(need_row(needs[#needs])))
       else
-        for index = 0, needs.count - 1 do
+        for index = 1, #needs do
           layout.layout_row_keys_append(buttons[row_count].layout_row_keys,
-            layout.layout_row_cell_row(need_row(needs.items[index])))
+            layout.layout_row_cell_row(need_row(needs[index])))
         end
       end
       row_count = row_count + 1
     end
   end
 
-  if filter_context.received_needs.count >= 1 then
+  if #filter_context.received_needs >= 1 then
     layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string("receives:"))
-    for index = 0, filter_context.received_needs.count - 1 do
+    for index = 1, #filter_context.received_needs do
       layout.layout_row_keys_append(buttons[row_count].layout_row_keys,
-        layout.layout_row_cell_row(need_row(filter_context.received_needs.items[index])))
+        layout.layout_row_cell_row(need_row(filter_context.received_needs[index])))
     end
     row_count = row_count + 1
   end

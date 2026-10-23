@@ -176,11 +176,11 @@ local function write_techs(sink)
   local economy = probe.main_economy_typed()
   if economy == nil then return 0 end
   local line = line_start(sink)
-  for i = 0, economy.invented.count - 1 do
-    line_add(line, "techs %s", economy.invented.items[i])
+  for i = 1, #economy.invented do
+    line_add(line, "techs %s", economy.invented[i])
     line_end(line)
   end
-  return economy.invented.count
+  return #economy.invented
 end
 
 local function write_camera(sink)

@@ -393,8 +393,8 @@ function M.burst_draw(graphics, memory, self, screen_pos)
   for index = 1, 3 do
     local pt = nil
 
-    if particles ~= nil and index <= particles.count then
-      pt = particles.items[index - 1]
+    if particles ~= nil and index <= #particles then
+      pt = particles[index]
     end
 
     if pt ~= nil then

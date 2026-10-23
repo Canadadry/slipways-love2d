@@ -100,7 +100,7 @@ local function tech_tree_screen_step(t, b)
 end
 
 local function invented_lines(list)
-  local n = (list ~= nil) and list.count or 0
+  local n = (list ~= nil) and #list or 0
   local row = {}
   local items = {}
 
@@ -115,7 +115,7 @@ local function invented_lines(list)
     items[i] = map_tables.map_tables_make_data_item({})
   end
   for i = 0, n - 1 do
-    items[i].text = list.items[i]
+    items[i].text = list[i + 1]
   end
   row.count = n
   row.items = items
@@ -139,7 +139,7 @@ function M.menu_show_tech_tree_screen()
     current_era = economy.era
   end
   if economy ~= nil then
-    invented_count = economy.invented.count
+    invented_count = #economy.invented
   end
 
   found, tier_thresholds = game_data.int_seq_at(game_data.tier_thresholds_table, game_data.TIER_THRESHOLDS_COUNT,

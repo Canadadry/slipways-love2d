@@ -10,7 +10,6 @@ local entity_class = require("engine.entity_class")
 local entity_id_list = require("engine.entity_id_list")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
-local pointer_list = require("engine.pointer_list")
 local research = require("game.research")
 local trade = require("game.trade")
 local fixed = require("p8.fixed")
@@ -142,7 +141,7 @@ local function update_tiers_visit(entity, context)
         if bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) ~= 0 then
           local entry = research.need_new(
             { kind = trade.RESOURCE_FIXED, number = hn.byproduct })
-          pointer_list.pointer_list_add(planet.needs, entry)
+          planet.needs[#planet.needs + 1] = entry
         end
       end
     end
@@ -214,8 +213,8 @@ function M.economy_tiers_compute_tier(entity)
   incoming_routes = (bit.band(planet.has_, planet_module.PLANET_HAS_INCOMING_ROUTES) ~= 0)
     and planet.incoming_routes or nil
   if needs ~= nil then
-    for index = 0, needs.count - 1 do
-      local i_val = needs.items[index]
+    for index = 1, #needs do
+      local i_val = needs[index]
 
       if i_val ~= nil then
         local want = i_val
@@ -244,8 +243,8 @@ function M.economy_tiers_compute_tier(entity)
   if bit.band(entity.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_TRADING_HUB)) ~= 0 then
     local count = 0
     if needs ~= nil then
-      for index = 0, needs.count - 1 do
-        local want = needs.items[index]
+      for index = 1, #needs do
+        local want = needs[index]
         if want ~= nil then
           if want.has_satisfied ~= 0 and want.satisfied > fixed.p8_fixed_from_int(0) then
             count = count + 1
@@ -257,8 +256,8 @@ function M.economy_tiers_compute_tier(entity)
   end
 
   if planet.archetype.is_planet == 0 then
-    if needs ~= nil and needs.count > 0 then
-      local last = needs.items[needs.count - 1]
+    if needs ~= nil and #needs > 0 then
+      local last = needs[#needs]
       if last ~= nil then
         if last.has_satisfied ~= 0 then
           return fixed_min(fixed.p8_fixed_add(last.satisfied, fixed.p8_fixed_from_int(1)), fixed.p8_fixed_from_int(4))

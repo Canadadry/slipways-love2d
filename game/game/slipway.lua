@@ -28,7 +28,6 @@ local entity_id_list = require("engine.entity_id_list")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local geom = require("engine.geom")
-local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
 local economy_formulas = require("game.economy_formulas")
 local game_data = require("game.game_data")
@@ -41,11 +40,10 @@ local M = {}
 
 M.SLIPWAY_SERVED_PLANETS_CAP = 90
 
-M.SLIPWAY_TRANSIT_DOTS_RESERVE = 24
-
--- pointer_list_t list = {0}.
-local function list_zero()
-  return { items = nil, count = 0, capacity = 0 }
+local function transit_dots_empty(self)
+  for i = #self.transit_dots, 1, -1 do
+    self.transit_dots[i] = nil
+  end
 end
 
 local g_slipway_up = 0
@@ -156,7 +154,7 @@ function M.slipway_construct(self)
     return
   end
 
-  pointer_list.pointer_list_init_reserve(self.transit_dots, M.SLIPWAY_TRANSIT_DOTS_RESERVE)
+  transit_dots_empty(self)
   self.served_planets.count = 0
 end
 
@@ -391,7 +389,7 @@ local function slipway_draw_overlay_method(self, screen_pos)
 end
 
 local function slipway_release_method(self)
-  self.transit_dots.count = 0
+  transit_dots_empty(self)
 end
 
 local function slipway_is_endpoint_class(cls)
@@ -427,7 +425,7 @@ local function slipway_create(keys)
   self.targeting.archetype = self.archetype.targeting
   self.fade_in_step = self.archetype.fade_in_step
   self.start = nil
-  self.transit_dots = list_zero()
+  self.transit_dots = {}
   self.served_planets.count = 0
   self.end_ = nil
   self.end_is_point = 0

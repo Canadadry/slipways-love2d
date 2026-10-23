@@ -22,15 +22,14 @@
 -- methods fill planet_class_def; neither requires this module at load. game.message_box and
 -- game.particle are required at call time.
 local bit = require("bit")
-local collect = require("engine.collect")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
 local entity_registry = require("engine.entity_registry")
-local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
+local economy_formulas = require("game.economy_formulas")
 local game_data = require("game.game_data")
 local gen = require("game.gen")
 local map_tables = require("game.map_tables")
@@ -60,16 +59,19 @@ local function production_zero()
   return { has_resource = 0, resource = 0, amount = 0 }
 end
 
--- pointer_list_t / entity_id_list_t list = {0}.
+-- entity_id_list_t list = {0}.
 local function list_zero()
   return { items = nil, count = 0, capacity = 0 }
 end
 
--- A pointer_list_t assigned by value into dst, the inline list of its owner.
-local function pointer_list_assign(dst, src)
-  dst.items = src.items
-  dst.count = src.count
-  dst.capacity = src.capacity
+-- In place: whoever holds dst sees src's elements.
+local function needs_refill(dst, src)
+  for i = #dst, 1, -1 do
+    dst[i] = nil
+  end
+  for i = 1, #src do
+    dst[i] = src[i]
+  end
 end
 
 -- *copy = *input for a need_t: the row is copied, its items shared as the C copy shares the pointer.
@@ -147,7 +149,7 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.slipways = list_zero()
   self.project = { index = research.RESEARCH_PROJECT_ID_NONE.index, epoch = research.RESEARCH_PROJECT_ID_NONE.epoch }
   self.description = nil
-  self.needs = list_zero()
+  self.needs = {}
   self.planet_type = nil
   self.layout_row = nil
   self.layout_row_signature = M.planet_row_signature_zero()
@@ -318,8 +320,8 @@ local function planet_project_need_count(project)
   if project == nil then
     return n
   end
-  for i = 0, project.inputs.count - 1 do
-    if project.inputs.items[i] ~= nil then
+  for i = 1, #project.inputs do
+    if project.inputs[i] ~= nil then
       n = n + 1
     end
   end
@@ -339,22 +341,18 @@ function M.planet_install_project(self, research_project_instance)
   self.project = research.research_project_id_of(research_project_instance)
   self.description = nil
 
-  pointer_list.pointer_list_init(jy)
   if n > 0 then
-    pointer_list.pointer_list_init_reserve(jy, n)
-  end
-  if n > 0 then
-    for i = 0, research_project_instance.inputs.count - 1 do
-      local input = research_project_instance.inputs.items[i]
+    for i = 1, #research_project_instance.inputs do
+      local input = research_project_instance.inputs[i]
 
       if input ~= nil then
         local copy = {}
         need_copy_into(copy, input)
-        pointer_list.pointer_list_add(jy, copy)
+        jy[#jy + 1] = copy
       end
     end
   end
-  pointer_list_assign(self.needs, jy)
+  needs_refill(self.needs, jy)
   self.has_ = bit.bor(self.has_, M.PLANET_HAS_NEEDS)
 
   self.production.has_resource = (research_project_instance ~= nil and research_project_instance.has_output ~= 0)
@@ -437,7 +435,7 @@ function M.planet_new_year(self)
     local text
 
     keys.source = entity_id.entity_id_link(self)
-    text, color = collect.collect_format_signed(self.net_income, 10, "$", color)
+    text, color = economy_formulas.economy_formulas_format_signed(self.net_income, 10, "$", color)
     message_box.toast_keys_set_text(keys, text)
     keys.color = fixed.p8_fixed_from_int(color)
     message_box.toast_new(keys)

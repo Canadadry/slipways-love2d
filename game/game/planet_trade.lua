@@ -9,11 +9,9 @@
 -- Include cycle: game.planet and game.slipway are required at call time, inside the functions
 -- that need them, so that this module loads before they exist.
 local bit = require("bit")
-local collect = require("engine.collect")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
-local pointer_list = require("engine.pointer_list")
 local game_data = require("game.game_data")
 local map_tables = require("game.map_tables")
 local research = require("game.research")
@@ -47,11 +45,14 @@ local function route_list_empty(list)
   end
 end
 
--- A pointer_list_t assigned by value into dst, the inline list of its owner.
-local function pointer_list_assign(dst, src)
-  dst.items = src.items
-  dst.count = src.count
-  dst.capacity = src.capacity
+-- In place: whoever holds dst sees src's elements.
+local function needs_refill(dst, src)
+  for i = #dst, 1, -1 do
+    dst[i] = nil
+  end
+  for i = 1, #src do
+    dst[i] = src[i]
+  end
 end
 
 local function contains_trade(list, v)
@@ -114,8 +115,6 @@ function M.planet_offer_trade(self, trade_offer)
   local route
   local t_resource
   local needs = nil
-  local iter
-  local entry
 
   if self == nil or trade_offer == nil then
     return
@@ -136,13 +135,8 @@ function M.planet_offer_trade(self, trade_offer)
   needs = self.needs
 
   if has_bonus_resource ~= 0 and trade.resource_equal(t_resource, bonus_resource) ~= 0 and self.has_production_bonus == 0 then
-    iter = pointer_list.pointer_list_all(needs)
-    while true do
-      local more
-      more, entry = pointer_list.pointer_list_iter_next(iter, entry)
-      if more == 0 then
-        break
-      end
+    for index = 1, #needs do
+      local entry = needs[index]
       if entry ~= nil then
         local i = entry
         local gc = (i.has_satisfied ~= 0) and i.satisfied or fixed.p8_fixed_from_int(0)
@@ -150,34 +144,29 @@ function M.planet_offer_trade(self, trade_offer)
 
         resource_is_any = has_any_resource ~= 0 and trade.resource_equal(research.need_resource(i), any_resource) ~= 0
         if gc == fixed.p8_fixed_from_int(0) and not resource_is_any then
-          pointer_list.pointer_list_del(needs, entry)
+          table.remove(needs, index)
           break
         end
       end
     end
 
     do
-      local fresh = research.need_new(bonus_resource)
-      local prefix = {}
+      local prefixed = { research.need_new(bonus_resource) }
 
-      pointer_list.pointer_list_init(prefix)
-      pointer_list.pointer_list_add(prefix, fresh)
-      pointer_list_assign(self.needs, collect.collect_concat_pointer_list(prefix, needs))
+      for index = 1, #needs do
+        prefixed[#prefixed + 1] = needs[index]
+      end
+      needs_refill(self.needs, prefixed)
     end
     self.production_bonus = fixed.p8_fixed_from_int(1)
     self.has_production_bonus = 1
   end
 
-  iter = pointer_list.pointer_list_all(needs)
-  while true do
-    local more
+  for index = 1, #needs do
+    local entry = needs[index]
     local i
     local resource_val
 
-    more, entry = pointer_list.pointer_list_iter_next(iter, entry)
-    if more == 0 then
-      break
-    end
     if entry == nil then
       goto continue
     end

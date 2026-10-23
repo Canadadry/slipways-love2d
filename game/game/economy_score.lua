@@ -203,7 +203,7 @@ function M.economy_score_final()
   local total
   local fm = require("game.probe").main_economy_typed()
   local happiness = (fm ~= nil and fm.has_happiness ~= 0) and fm.happiness or fixed.p8_fixed_from_int(0)
-  local invented_count = fm ~= nil and fm.invented.count or 0
+  local invented_count = fm ~= nil and #fm.invented or 0
   local main_economy_production = (fm ~= nil and bit.band(fm.has_, main_economy.ECONOMY_HAS_PRODUCTION) ~= 0)
     and fm.production or nil
   local result = final_score_zero()

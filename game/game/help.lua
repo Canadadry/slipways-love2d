@@ -152,7 +152,7 @@ local function screen_create()
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)
   self.is_hovered = 0
   M.help_screen_construct(self)
-  particle.emitter_init_in(self, particle.PARTICLES_HELP_SCREEN_RESERVE)
+  particle.emitter_init(self)
   entity.entity_construct(self)
   return self
 end

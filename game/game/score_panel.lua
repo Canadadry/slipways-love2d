@@ -11,7 +11,6 @@
 -- score_panel_display_shutdown are defined in game.score_panel_display, required at load: the class holds
 -- the two methods by identity.
 local bit = require("bit")
-local collect = require("engine.collect")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -210,7 +209,7 @@ function M.score_panel_refresh()
     end
   end
 
-  text, income_color = collect.collect_format_signed(main_economy_income, 0, nil, income_color)
+  text, income_color = economy_formulas.economy_formulas_format_signed(main_economy_income, 0, nil, income_color)
 
   credits_str = str.p8_tostr_fixed(main_economy_credits)
   readouts[0] = data_item({ text = str.p8_concat2(credits_str, "$") })

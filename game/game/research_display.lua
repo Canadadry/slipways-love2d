@@ -9,7 +9,6 @@
 -- Include cycle: game.planet is required at call time (planet_is_family, planet_spacer).
 --
 -- layout_row_tuple_t zeroes are local.
-local pointer_list = require("engine.pointer_list")
 local layout = require("game.layout")
 local map_tables = require("game.map_tables")
 local research = require("game.research")
@@ -33,22 +32,15 @@ local function research_project_tooltip_join(self)
   local i_list
   local names = ""
   local first = 1
-  local iter
-  local entry
 
   i_list = self.inputs
-  iter = pointer_list.pointer_list_all(i_list)
-  while true do
-    local more
+  for index = 1, #i_list do
+    local entry = i_list[index]
     local qe = { kind = trade.RESOURCE_NIL, number = 0 }
     local num_str
     local resource_names_name
     local piece = ""
 
-    more, entry = pointer_list.pointer_list_iter_next(iter, entry)
-    if more == 0 then
-      break
-    end
     if entry ~= nil then
       qe = research.need_resource(entry)
     end
@@ -135,7 +127,7 @@ local function planet_resource_row_keys(inputs, has_output, output, amount, used
   local l_cap
   local keys = layout.layout_row_keys_zero()
   local crowded
-  local is_count = (inputs ~= nil) and inputs.count or 0
+  local is_count = (inputs ~= nil) and #inputs or 0
   local outputs = {}
   local outputs_count
   local wide
@@ -171,19 +163,12 @@ local function planet_resource_row_keys(inputs, has_output, output, amount, used
   end
 
   if inputs ~= nil then
-    local it = pointer_list.pointer_list_all(inputs)
-    local entry
-
-    while true do
-      local more
+    for index = 1, #inputs do
+      local entry = inputs[index]
       local tuple = tuple_zero()
       local qe = { kind = trade.RESOURCE_NIL, number = 0 }
       local gc_zero = 0
 
-      more, entry = pointer_list.pointer_list_iter_next(it, entry)
-      if more == 0 then
-        break
-      end
       tuple.count = 3
       if entry ~= nil then
         local i = entry
