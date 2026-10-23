@@ -21,7 +21,7 @@
     - [x] Chunk 4 — entity_list and the registry buckets
     - [x] Chunk 5 — the exit queue, design.md and the tdd examples
 - [ ] Phase 2 — The entity model
-  - [ ] Step 2.1 — optional parts as nil-able fields
+  - [x] Step 2.1 — optional parts as nil-able fields
 - [ ] Phase 3 — The surface
   - [ ] Step 3.1 — booleans
   - [ ] Step 3.2 — 1-based arrays
@@ -32,7 +32,7 @@
   - [x] Decisions reopened with the user
   - [ ] Step 2.2 — research project ids as plain numbers
   - [ ] Step 2.3 — capacity limits that are not a game rule removed
-- [ ] Step 2.1 chunks
+- [x] Step 2.1 chunks
   - [x] Chunk 1 — display rows
   - [x] Chunk 2 — resources
   - [x] Chunk 3 — research projects

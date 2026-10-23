@@ -254,3 +254,24 @@ decisions; `plan-pilot` stopped and the user decided, on 2026-10-23: the
 become plain numbers (new step 2.2), and the capacity limits that are not a
 game rule go (new step 2.3). `plan-review` fixed the checks of steps 3.1,
 3.2 and 3.4 in the same review.
+
+### Step 2.1
+
+Ten chunks by module group: display rows, resources, research projects,
+the planet's parts, particles/probes/targeting, the economy, UI/buttons/icons,
+boxes and panels, positions, then the entity header with the docs and
+skills. Every `has` bit set of an entity and every `has_<field>` 0/1 number
+paired with a value is gone: an absent part or value is `nil`, tested with
+`~= nil`; `is_dead` stays on every entity. Each chunk ran a temporary
+instrument at every read or copy not behind its flag over one `make e2e`:
+no stale value was ever read, every unguarded read found the 0 placeholder;
+the reads that needed it became `x or 0` (row signature output, saved fold
+anchor and infraspace). Save bytes stayed identical (102 distinct records)
+and the decoder's results unchanged under byte fuzzing. Exceptions left by
+the check, none an entity's optional part: `SAVE_NODE_*` (the save's node
+flag word), `MOUSE_POS_HAS_*` with `mouse.has` (a by-value struct, not an
+entity), `ROW_SIGNATURE_HAS_OUTPUT` and `ROW_NEED_HAS_RESOURCE` (cache-key
+bits), `has_refresh` (a class method). `main_economy.lua` now holds only a
+shapes comment and is required by nothing. warn-review rule 13 and the tdd
+skill were inverted to match. `make e2e` 20/20 in 4.9 s, `make end-state`
+20/20, `make test` 0.65 s.
