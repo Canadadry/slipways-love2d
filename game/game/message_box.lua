@@ -15,14 +15,14 @@ local gfx_module = require("p8.gfx")
 
 local M = {}
 
-M.MESSAGE_BOX_ARGUMENT_NUMBER = 0
-M.MESSAGE_BOX_ARGUMENT_FALSE = 1
-M.MESSAGE_BOX_ARGUMENT_NIL = 2
-M.MESSAGE_BOX_ARGUMENT_TEXT = 3
+M.ARGUMENT_NUMBER = 0
+M.ARGUMENT_FALSE = 1
+M.ARGUMENT_NIL = 2
+M.ARGUMENT_TEXT = 3
 
-M.MESSAGE_BOX_ARTICLE_SCALARS = 0
-M.MESSAGE_BOX_ARTICLE_LAYOUT_ROW = 1
-M.MESSAGE_BOX_ARTICLE_SHARED_ROW = 2
+M.ARTICLE_SCALARS = 0
+M.ARTICLE_LAYOUT_ROW = 1
+M.ARTICLE_SHARED_ROW = 2
 
 local function zero_vec()
   return vec.make(fixed.from_int(0), fixed.from_int(0))
@@ -44,7 +44,7 @@ local function article_zero()
   row.width = 0
   row.serial = 0
   return {
-    kind = M.MESSAGE_BOX_ARTICLE_SCALARS,
+    kind = M.ARTICLE_SCALARS,
     draw_function = map_tables.DRAW_FUNCTION_NONE,
     as = {
       scalars = { count = 0, arguments = {}, text = "" },
@@ -62,20 +62,20 @@ function M.shown_message_box()
   return entity_id.get(g_shown_message_box)
 end
 
-function M.message_box_set_shown(mh)
+function M.set_shown(mh)
   g_shown_message_box = entity_id.link(mh)
 end
 
 -- Closes the shown box as its timeout does: marked dead, no box shown. Does nothing when none is shown.
-function M.message_box_close_shown()
+function M.close_shown()
   local shown = M.shown_message_box()
   if shown ~= nil then
     shown.is_dead = true
-    M.message_box_set_shown(nil)
+    M.set_shown(nil)
   end
 end
 
-function M.message_box_construct(self)
+function M.construct(self)
   local previous
 
   if self == nil then
@@ -86,18 +86,18 @@ function M.message_box_construct(self)
   if previous ~= nil then
     previous.is_dead = true
   end
-  M.message_box_set_shown(self)
+  M.set_shown(self)
 end
 
 local function message_box_draw_overlay_method(self, screen_pos)
-  M.message_box_draw_overlay(dispatch_context.gfx(), dispatch_context.mem(), self)
+  M.draw_overlay(dispatch_context.gfx(), dispatch_context.mem(), self)
 end
 
 local function message_box_draw_article(gfx, mem, article)
   local items = {}
   local row
 
-  if article.kind == M.MESSAGE_BOX_ARTICLE_SHARED_ROW then
+  if article.kind == M.ARTICLE_SHARED_ROW then
     local shared = article.as.row_of()
 
     if shared ~= nil then
@@ -105,7 +105,7 @@ local function message_box_draw_article(gfx, mem, article)
     end
     return
   end
-  if article.kind == M.MESSAGE_BOX_ARTICLE_LAYOUT_ROW then
+  if article.kind == M.ARTICLE_LAYOUT_ROW then
     local p
     if article.as.layout.pos ~= nil then
       p = vec_copy(article.as.layout.pos)
@@ -118,11 +118,11 @@ local function message_box_draw_article(gfx, mem, article)
   for i = 1, article.as.scalars.count do
     local argument = article.as.scalars.arguments[i]
 
-    if argument.kind == M.MESSAGE_BOX_ARGUMENT_TEXT then
+    if argument.kind == M.ARGUMENT_TEXT then
       items[i] = map_tables.make_data_item({ text = article.as.scalars.text })
-    elseif argument.kind == M.MESSAGE_BOX_ARGUMENT_FALSE then
+    elseif argument.kind == M.ARGUMENT_FALSE then
       items[i] = map_tables.make_data_item({ is_false = true })
-    elseif argument.kind == M.MESSAGE_BOX_ARGUMENT_NIL then
+    elseif argument.kind == M.ARGUMENT_NIL then
       items[i] = map_tables.make_data_item({ is_nil = true })
     else
       items[i] = map_tables.make_data_item({ is_fixed = true, fixed = argument.number })
@@ -136,7 +136,7 @@ local function message_box_draw_article(gfx, mem, article)
   draw_functions.draw_row_text_image(gfx, mem, row)
 end
 
-function M.message_box_draw_overlay(gfx, mem, self)
+function M.draw_overlay(gfx, mem, self)
   local self_t, rh, t, nc, t3
 
   if self == nil then
@@ -168,13 +168,13 @@ function M.message_box_draw_overlay(gfx, mem, self)
 
   if t > 0x000a8000 then
     self.is_dead = true
-    M.message_box_set_shown(nil)
+    M.set_shown(nil)
     assert(M.shown_message_box() == nil,
-      "message_box_draw_overlay: the closing box marks itself dead and clears the shown message box")
+      "message_box.draw_overlay: the closing box marks itself dead and clears the shown message box")
   end
 end
 
-M.message_box_class_def = {
+M.class_def = {
   draw_overlay = message_box_draw_overlay_method,
   tags = entity_class.TAG(entity_class.TAG_MESSAGE_BOX),
   states = {},
@@ -191,33 +191,33 @@ local function message_box_next_article(self)
   return article
 end
 
-function M.message_box_add_row(self, row)
+function M.add_row(self, row)
   local article
 
   assert(row.draw_function ~= map_tables.DRAW_FUNCTION_DRAW_ROW,
-    "message_box_add_row: a layout row goes through message_box_add_layout_row")
+    "message_box.add_row: a layout row goes through message_box.add_layout_row")
   article = message_box_next_article(self)
-  article.kind = M.MESSAGE_BOX_ARTICLE_SCALARS
+  article.kind = M.ARTICLE_SCALARS
   article.draw_function = row.draw_function
   article.as.scalars.count = row.count
   article.as.scalars.text = ""
   for i = 1, row.count do
     local item = row.items[i]
-    local argument = { kind = M.MESSAGE_BOX_ARGUMENT_NUMBER, number = 0 }
+    local argument = { kind = M.ARGUMENT_NUMBER, number = 0 }
 
     article.as.scalars.arguments[i] = argument
-    assert(item.row == nil, "message_box_add_row: a draw function reads no nested row")
+    assert(item.row == nil, "message_box.add_row: a draw function reads no nested row")
     argument.number = fixed.from_int(0)
     if item.text ~= nil then
-      assert(i == 1, "message_box_add_row: only print_outlined's first argument is read as text -- stop, do not widen")
+      assert(i == 1, "message_box.add_row: only print_outlined's first argument is read as text -- stop, do not widen")
       article.as.scalars.text = item.text
-      argument.kind = M.MESSAGE_BOX_ARGUMENT_TEXT
+      argument.kind = M.ARGUMENT_TEXT
     elseif item.is_false then
-      argument.kind = M.MESSAGE_BOX_ARGUMENT_FALSE
+      argument.kind = M.ARGUMENT_FALSE
     elseif item.is_nil then
-      argument.kind = M.MESSAGE_BOX_ARGUMENT_NIL
+      argument.kind = M.ARGUMENT_NIL
     else
-      argument.kind = M.MESSAGE_BOX_ARGUMENT_NUMBER
+      argument.kind = M.ARGUMENT_NUMBER
       if item.is_fixed then
         argument.number = item.fixed
       else
@@ -228,10 +228,10 @@ function M.message_box_add_row(self, row)
 end
 
 -- A nil pos draws the row at the zero vector.
-function M.message_box_add_layout_row(self, keys, pos, align)
+function M.add_layout_row(self, keys, pos, align)
   local article = message_box_next_article(self)
 
-  article.kind = M.MESSAGE_BOX_ARTICLE_LAYOUT_ROW
+  article.kind = M.ARTICLE_LAYOUT_ROW
   article.draw_function = map_tables.DRAW_FUNCTION_DRAW_ROW
   layout.row_init(article.as.layout.row, keys)
   article.as.layout.pos = pos and vec_copy(pos)
@@ -239,11 +239,11 @@ function M.message_box_add_layout_row(self, keys, pos, align)
 end
 
 -- The row is read through `row_of` at each draw (nil draws nothing): the box never copies it.
-function M.message_box_add_shared_row(self, row_of)
+function M.add_shared_row(self, row_of)
   local article = message_box_next_article(self)
 
-  assert(row_of ~= nil, "message_box_add_shared_row: a shared row is read through its function at each draw")
-  article.kind = M.MESSAGE_BOX_ARTICLE_SHARED_ROW
+  assert(row_of ~= nil, "message_box.add_shared_row: a shared row is read through its function at each draw")
+  article.kind = M.ARTICLE_SHARED_ROW
   article.draw_function = map_tables.DRAW_FUNCTION_NONE
   article.as.row_of = row_of
 end
@@ -251,7 +251,7 @@ end
 local function message_box_create(keys)
   local self = {}
 
-  entity.init_instance(self, M.message_box_class_def, game_data.message_box_archetype.state,
+  entity.init_instance(self, M.class_def, game_data.message_box_archetype.state,
     game_data.message_box_archetype.state_time)
   self.archetype = game_data.message_box_archetype
   entity_registry.set_layer(self, self.archetype.layer)
@@ -267,25 +267,25 @@ local function message_box_create(keys)
     self.keep_open = keys.keep_open
   end
   entity.construct(self)
-  M.message_box_construct(self)
+  M.construct(self)
   return self
 end
 
-function M.message_box_init()
-  M.message_box_shutdown()
+function M.init()
+  M.shutdown()
   g_message_box_up = true
 end
 
-function M.message_box_shutdown()
+function M.shutdown()
   g_message_box_up = false
-  M.message_box_set_shown(nil)
+  M.set_shown(nil)
 end
 
-function M.message_box_ready()
+function M.ready()
   return g_message_box_up
 end
 
-function M.message_box_new(keys)
+function M.new(keys)
   return message_box_create(keys)
 end
 
@@ -470,7 +470,7 @@ local function open_box_add(le, button)
   end
 end
 
-function M.message_box_open_box(frame, buttons, button_count)
+function M.open_box(frame, buttons, button_count)
   local ui = require("game.ui")
   local ui_button = require("game.ui_button")
   local box_pos
@@ -483,7 +483,7 @@ function M.message_box_open_box(frame, buttons, button_count)
     return
   end
   assert(button_count == 0 or buttons[button_count] ~= nil,
-    "message_box_open_box: buttons is an array of button_count keys, from 1")
+    "message_box.open_box: buttons is an array of button_count keys, from 1")
 
   if frame.description ~= nil then
     layout.row_keys_append(description_row.layout_row_keys, layout.row_cell_string(frame.description))

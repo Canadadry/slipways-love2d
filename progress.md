@@ -89,7 +89,7 @@
   - [x] Chunk 8 — slipways, wormholes, trade, probes
   - [x] Chunk 9 — economy and research
   - [x] Chunk 10 — UI core
-  - [ ] Chunk 11 — boxes and panels
+  - [x] Chunk 11 — boxes and panels
   - [ ] Chunk 12 — input and cart
   - [ ] Chunk 13 — save
   - [ ] Chunk 14 — pad layer, docs, full check

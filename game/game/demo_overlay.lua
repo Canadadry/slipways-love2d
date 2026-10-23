@@ -19,7 +19,7 @@ local BAND_TOP = BAND_BOTTOM - BAND_HEIGHT + 1
 M.TAG_TEXT = "demo"
 
 -- Returns the position of the caption shown at frame, nil when none is.
-function M.demo_overlay_find_caption(captions, count, frame)
+function M.find_caption(captions, count, frame)
   for i = 1, count do
     if captions[i].from <= frame and frame < captions[i].to then
       return i
@@ -68,7 +68,7 @@ local function graphics_copy(gfx)
   }
 end
 
-function M.demo_overlay_draw(gfx, mem, frame)
+function M.draw(gfx, mem, frame)
   if frame < 0 then
     return
   end
@@ -76,7 +76,7 @@ function M.demo_overlay_draw(gfx, mem, frame)
   gfx_module.camera_reset(own)
   gfx_module.fillp_reset(own)
   draw_tag(own, mem)
-  local caption = M.demo_overlay_find_caption(demo_data.captions, demo_data.caption_count, frame)
+  local caption = M.find_caption(demo_data.captions, demo_data.caption_count, frame)
   if caption ~= nil then
     draw_caption(own, mem, demo_data.captions[caption].text)
   end

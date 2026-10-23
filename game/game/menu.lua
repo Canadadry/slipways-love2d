@@ -100,7 +100,7 @@ local function invented_lines(list)
   return row
 end
 
-function M.menu_show_tech_tree_screen()
+function M.show_tech_tree_screen()
   local economy = probe.main_economy_typed()
   local current_era = fixed.from_int(0)
   local invented_count = 0
@@ -148,7 +148,7 @@ function M.menu_show_tech_tree_screen()
     ui_button.button_keys_set_tooltip_row(extra, invented_lines(economy.invented))
   end
 
-  layout_block = score_panel.score_panel_layout_block()
+  layout_block = score_panel.layout_block()
   if layout_block ~= nil then
     local tier_thresholds_era = fixed.from_int(0)
     local era_str
@@ -185,7 +185,7 @@ function M.menu_show_tech_tree_screen()
     if layout_block.row_step ~= nil then
       frame.row_step = vec_copy(layout_block.row_step)
     end
-    message_box.message_box_open_box(frame, buttons, row_count)
+    message_box.open_box(frame, buttons, row_count)
   end
 end
 
@@ -198,7 +198,7 @@ local function galaxy_menu_button1_on_click_method(self)
 end
 
 local function galaxy_menu_button2_on_click_method(self)
-  M.menu_show_tech_tree_screen()
+  M.show_tech_tree_screen()
 end
 
 local function galaxy_menu_button2_refresh_method(self)
@@ -226,7 +226,7 @@ local function galaxy_menu_button3_on_click_method(self)
   if ju ~= nil then
     ju.is_shown = true
   end
-  keys.on_click = score_panel_display.score_panel_toggle_on_click()
+  keys.on_click = score_panel_display.toggle_on_click()
   built = ui_button.modal_backdrop_new(keys)
 end
 
@@ -251,7 +251,7 @@ M.galaxy_menu_refresh_table = { [2] = galaxy_menu_button2_refresh_method }
 
 galaxy_menu_button4_on_click_method = function(self)
   local my = {
-    score_panel.score_panel_init_field_value(),
+    score_panel.init_field_value(),
     pause_menu_row2_on_click_method,
     pause_menu_row3_on_click_method,
     pause_menu_row4_on_click_method,
@@ -272,7 +272,7 @@ galaxy_menu_button4_on_click_method = function(self)
   frame.fixed_pos = M.g_pause_menu_open_box.fixed_pos and vec_copy(M.g_pause_menu_open_box.fixed_pos)
   frame.back_color = M.g_pause_menu_open_box.back_color
   frame.row_step = M.g_pause_menu_open_box.row_step and vec_copy(M.g_pause_menu_open_box.row_step)
-  message_box.message_box_open_box(frame, bs, game_data.PAUSE_MENU_COUNT)
+  message_box.open_box(frame, bs, game_data.PAUSE_MENU_COUNT)
 end
 M.galaxy_menu_on_click_table[4] = galaxy_menu_button4_on_click_method
 
@@ -281,7 +281,7 @@ function M.galaxy_menu_button(i)
   local keys = ui_button.button_keys_zero({})
 
   assert(g_menu_up and i >= 1 and i <= game_data.GALAXY_MENU_COUNT,
-    "galaxy_menu_button: the galaxy menu has GALAXY_MENU_COUNT rows, after menu_init()")
+    "galaxy_menu_button: the galaxy menu has GALAXY_MENU_COUNT rows, after menu.init()")
   e = game_data.galaxy_menu_table[i]
   keys.layout_row_keys = layout.row_keys_of_row(e.layout_row)
   keys.pos = vec_copy(g_galaxy_menu_pos[i])
@@ -335,8 +335,8 @@ function M.pause_menu_shown()
   return false
 end
 
-function M.menu_init()
-  M.menu_shutdown()
+function M.init()
+  M.shutdown()
 
   for i = 1, game_data.GALAXY_MENU_COUNT do
     g_galaxy_menu_pos[i] = vec.make(fixed.from_int(game_data.galaxy_menu_table[i].pos_x),
@@ -350,7 +350,7 @@ function M.menu_init()
   g_menu_up = true
 end
 
-function M.menu_shutdown()
+function M.shutdown()
   g_menu_up = false
   M.g_pause_menu_open_box.fixed_pos = nil
   M.g_pause_menu_open_box.row_step = nil

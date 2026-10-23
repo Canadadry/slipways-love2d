@@ -120,7 +120,7 @@ twenty year skips to "5 years remain" held by its keep_open, the score
 panel opened over it, its box replacing the year's, the panel closed and
 the box exiting and removing itself; year 3421 at the end in both. With
 the pad, measured on the C game's coverage (since removed), this file
-reached the closing box's end in message_box_draw_overlay
+reached the closing box's end in message_box.draw_overlay
 (game/game/message_box.lua), which only that file reached.
 
 The X and O edges never type the cheat (four X + O chords): the title's

@@ -349,7 +349,7 @@ function M.inspection_panel(self)
   end
 
   frame = planet_open_box_frame(self)
-  message_box.message_box_open_box(frame, buttons, row_count)
+  message_box.open_box(frame, buttons, row_count)
 end
 
 function M.accept_drop(self, s)
@@ -446,7 +446,7 @@ function M.projects_panel(self)
   end
 
   frame = planet_open_box_frame(self)
-  message_box.message_box_open_box(frame, bs, n)
+  message_box.open_box(frame, bs, n)
 end
 
 local planet_draw_on_screen

@@ -5,9 +5,9 @@ local vram = require("p8.vram")
 local M = {}
 
 -- Not 1: every e2e hash depends on the two loading frames.
-M.LOADING_SCREEN_FRAMES = 2
+M.FRAMES = 2
 
-M.LOADING_TEXT = "loading"
+M.TEXT = "loading"
 
 local LOADING_TEXT_LENGTH = 8
 local DRAW_PALETTE_LENGTH = 16
@@ -30,8 +30,8 @@ local function graphics_copy(gfx)
 end
 
 -- Draws with the camera at 0,0, no fill pattern and the default palette; restores what it found.
-function M.loading_screen_draw(gfx, mem)
-  assert(gfx ~= nil and mem ~= nil, "loading_screen_draw: print dereferences both")
+function M.draw(gfx, mem)
+  assert(gfx ~= nil and mem ~= nil, "loading_screen.draw: print dereferences both")
   local found = graphics_copy(gfx)
   local palette = {}
 
@@ -45,7 +45,7 @@ function M.loading_screen_draw(gfx, mem)
   gfx_module.fillp_reset(gfx)
 
   gfx_module.cls(mem)
-  gfx_module.print(gfx, mem, M.LOADING_TEXT, TEXT_X, TEXT_Y, TEXT_COLOR)
+  gfx_module.print(gfx, mem, M.TEXT, TEXT_X, TEXT_Y, TEXT_COLOR)
 
   gfx.camera_x = found.camera_x
   gfx.camera_y = found.camera_y

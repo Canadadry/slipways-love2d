@@ -1268,7 +1268,7 @@ local function run_step(nav, raw_buttons, played)
   if bit.band(pressed, back) ~= 0 then
     back_closes_the_box()
     if back_returns and on_the_map(nav) and message_box.shown_message_box() ~= nil then
-      message_box.message_box_close_shown()
+      message_box.close_shown()
       back_returns = false
       pressed = bit.band(pressed, bit.bnot(back))
     end

@@ -1,5 +1,5 @@
--- score_panel_new_year_method, score_panel_update_method, score_panel_display_init and
--- score_panel_display_shutdown are defined in game.score_panel_display, required at load: the class holds
+-- score_panel_display.new_year_method, score_panel_display.update_method, score_panel_display.init and
+-- score_panel_display.shutdown are defined in game.score_panel_display, required at load: the class holds
 -- the two methods by identity.
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
@@ -49,7 +49,7 @@ local g_score_panel_readouts = {
 }
 for i = 1, 7 do
   g_score_panel_readouts.subs[i] = data_row({})
-  -- [1] is written by score_panel_refresh whatever the copied row's count: it must hold a table.
+  -- [1] is written by score_panel.refresh whatever the copied row's count: it must hold a table.
   g_score_panel_readouts.sub_items[i] = { data_item({}) }
   g_score_panel_readouts.texts[i] = ""
 end
@@ -58,7 +58,7 @@ local g_score_panel_year_banner = {
   row = data_row({}),
   items = {},
   second = data_row({}),
-  -- [1] is written by score_panel_new_year whatever the copied row's count: it must hold a table.
+  -- [1] is written by score_panel_display.new_year whatever the copied row's count: it must hold a table.
   second_items = { data_item({}) },
   year = "",
   keep_open = nil,
@@ -77,7 +77,7 @@ local function score_panel_row_copy(dst, items, src)
   dst.items = items
 end
 
-M.score_panel_layout_block_class_def = {
+M.layout_block_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
@@ -85,41 +85,41 @@ M.score_panel_layout_block_class_def = {
 }
 
 M.g_score_panel_layout_block = {}
-entity_class.init_header(M.g_score_panel_layout_block, M.score_panel_layout_block_class_def)
+entity_class.init_header(M.g_score_panel_layout_block, M.layout_block_class_def)
 M.g_score_panel_layout_block.fixed_pos = vec.make(0x0, 0xb0000)
 M.g_score_panel_layout_block.row_step = vec.make(0x0, 0xb0000)
 M.g_score_panel_layout_block.back_color = 0xa0000
 
-function M.score_panel_readouts()
+function M.readouts()
   if g_score_panel_up then
     return g_score_panel_readouts
   end
   return nil
 end
 
-function M.score_panel_year_banner()
+function M.year_banner()
   if g_score_panel_up then
     return g_score_panel_year_banner
   end
   return nil
 end
 
-function M.score_panel_layout_block()
+function M.layout_block()
   if g_score_panel_up then
     return M.g_score_panel_layout_block
   end
   return nil
 end
 
-function M.score_panel_layout_block_class()
-  return M.score_panel_layout_block_class_def
+function M.layout_block_class()
+  return M.layout_block_class_def
 end
 
-function M.score_panel_frame_rows()
+function M.frame_rows()
   return game_data.score_panel_archetype.frame_rows
 end
 
-function M.score_panel_countdown_rows()
+function M.countdown_rows()
   return game_data.score_panel_archetype.countdown_rows
 end
 
@@ -128,11 +128,11 @@ end
 
 local g_init_method = score_panel_init_placeholder
 
-function M.score_panel_init_field_value()
+function M.init_field_value()
   return g_init_method
 end
 
-function M.score_panel_set_init(fn)
+function M.set_init(fn)
   if fn ~= nil then
     g_init_method = fn
   else
@@ -140,7 +140,7 @@ function M.score_panel_set_init(fn)
   end
 end
 
-function M.score_panel_refresh()
+function M.refresh()
   local probe = require("game.probe")
   local economy = probe.main_economy_typed()
   local economy_placeholder = probe.main_economy_placeholder()
@@ -218,7 +218,7 @@ function M.score_panel_refresh()
 
   readouts[7] = main_economy_year
 
-  readouts_state = M.score_panel_readouts()
+  readouts_state = M.readouts()
   if readouts_state ~= nil then
     for index = 1, 7 do
       if readouts[index].text ~= nil then
@@ -231,12 +231,12 @@ function M.score_panel_refresh()
 end
 
 local function score_panel_refresh_method(self)
-  M.score_panel_refresh()
+  M.refresh()
 end
 
-function M.score_panel_draw(gfx, mem, self)
-  local i_ = M.score_panel_frame_rows()
-  local readouts_state = M.score_panel_readouts()
+function M.draw(gfx, mem, self)
+  local i_ = M.frame_rows()
+  local readouts_state = M.readouts()
   local combined = {}
   local n = 0
   local i
@@ -268,14 +268,14 @@ function M.score_panel_draw(gfx, mem, self)
 end
 
 local function score_panel_draw_method(self, screen_pos)
-  M.score_panel_draw(dispatch_context.gfx(), dispatch_context.mem(), self)
+  M.draw(dispatch_context.gfx(), dispatch_context.mem(), self)
 end
 
-M.score_panel_class_def = {
+M.class_def = {
   draw = score_panel_draw_method,
-  new_year = score_panel_display.score_panel_new_year_method,
+  new_year = score_panel_display.new_year_method,
   refresh = score_panel_refresh_method,
-  states = { [entity_class.STATE_NORMAL] = score_panel_display.score_panel_update_method },
+  states = { [entity_class.STATE_NORMAL] = score_panel_display.update_method },
   tags = 0,
   lineage = 0,
   skip_draw_off_screen = false,
@@ -285,9 +285,9 @@ M.score_panel_class_def = {
 local function score_panel_create()
   local self
 
-  assert(g_score_panel_up, "score_panel_init() must run first")
+  assert(g_score_panel_up, "score_panel.init() must run first")
   self = {}
-  entity.init_instance(self, M.score_panel_class_def, game_data.score_panel_archetype.state,
+  entity.init_instance(self, M.class_def, game_data.score_panel_archetype.state,
     game_data.score_panel_archetype.state_time)
   self.archetype = game_data.score_panel_archetype
   entity_registry.set_layer(self, self.archetype.layer)
@@ -296,8 +296,8 @@ local function score_panel_create()
   return self
 end
 
-function M.score_panel_init()
-  M.score_panel_shutdown()
+function M.init()
+  M.shutdown()
 
   g_score_panel_up = true
   score_panel_row_copy(g_score_panel_readouts.row, g_score_panel_readouts.items, game_data.score_panel_readouts_row)
@@ -313,47 +313,47 @@ function M.score_panel_init()
   g_score_panel_year_banner.items[2].row = g_score_panel_year_banner.second
   g_score_panel_year_banner.keep_open = nil
 
-  M.score_panel_set_init(nil)
+  M.set_init(nil)
   g_main_score_panel = nil
 
-  score_panel_display.score_panel_display_init()
+  score_panel_display.init()
 end
 
-function M.score_panel_shutdown()
-  score_panel_display.score_panel_display_shutdown()
+function M.shutdown()
+  score_panel_display.shutdown()
   g_score_panel_up = false
-  M.score_panel_set_init(nil)
+  M.set_init(nil)
   g_main_score_panel = nil
 end
 
-function M.score_panel_ready()
+function M.ready()
   return g_score_panel_up
 end
 
-function M.score_panel_class()
-  return M.score_panel_class_def
+function M.class()
+  return M.class_def
 end
 
-function M.score_panel_new()
+function M.new()
   return score_panel_create()
 end
 
-function M.score_panel_last_box(self)
+function M.last_box(self)
   return entity_id.get(self.last_box)
 end
 
-function M.score_panel_set_last_box(self, box)
+function M.set_last_box(self, box)
   self.last_box = entity_id.link(box)
 end
 
 function M.main_score_panel()
   local e = entity_id.get(g_main_score_panel)
 
-  assert(e == nil or e.class == M.score_panel_class_def, "main_score_panel: only a score panel is ever stored")
+  assert(e == nil or e.class == M.class_def, "main_score_panel: only a score panel is ever stored")
   return e
 end
 
-function M.score_panel_set_main(instance)
+function M.set_main(instance)
   g_main_score_panel = entity_id.link(instance)
 end
 

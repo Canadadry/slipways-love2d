@@ -49,7 +49,7 @@ M.CART_NO_DEMO_FRAME = -1
 local g_title_built = false
 local g_save_cut = false
 local g_demo_frame = M.CART_NO_DEMO_FRAME
--- 0 when not loading, else the loading frame being played, from 1 (the press) to LOADING_SCREEN_FRAMES.
+-- 0 when not loading, else the loading frame being played, from 1 (the press) to loading_screen.FRAMES.
 local g_loading_frame = 0
 local g_requested_option = nil
 
@@ -59,7 +59,7 @@ local function quit_game()
   entity_registry.forget_registries()
 end
 
--- Do not list the inits data_init.init() and score_panel_init() run themselves: they would run twice.
+-- Do not list the inits data_init.init() and score_panel.init() run themselves: they would run twice.
 function M.cart_load()
   local memory
 
@@ -80,7 +80,7 @@ function M.cart_load()
   ui_button.button_init()
   ui_button.modal_backdrop_init()
   background.init()
-  message_box.message_box_init()
+  message_box.init()
   message_box.toast_init()
   probe.init()
   economy_module.init()
@@ -101,15 +101,15 @@ function M.cart_load()
     "cart_load: slipgate extends structure and synthesizer extends ascension: planet_family.init() must run first")
   wormhole.init()
 
-  help.help_init()
-  assert(help.help_screen_ready() and probe.ready(),
+  help.init()
+  assert(help.screen_ready() and probe.ready(),
     "cart_load: the help screen extends probe: probe.init() must run first")
-  score_panel.score_panel_init()
+  score_panel.init()
   structure_icon.init()
-  menu.menu_init()
+  menu.init()
 
-  help.help_set_start_game(M.cart_request_start_game)
-  score_panel.score_panel_set_init(M.cart_init_method)
+  help.set_start_game(M.cart_request_start_game)
+  score_panel.set_init(M.cart_init_method)
 end
 
 function M.cart_flush_exit_queue()
@@ -118,10 +118,10 @@ end
 
 function M.cart_shutdown()
   quit_game()
-  menu.menu_shutdown()
+  menu.shutdown()
   structure_icon.shutdown()
-  score_panel.score_panel_shutdown()
-  help.help_shutdown()
+  score_panel.shutdown()
+  help.shutdown()
 
   wormhole.shutdown()
   planet_family_trade.shutdown()
@@ -134,7 +134,7 @@ function M.cart_shutdown()
   economy_module.shutdown()
   probe.shutdown()
   message_box.toast_shutdown()
-  message_box.message_box_shutdown()
+  message_box.shutdown()
   background.shutdown()
   ui_button.modal_backdrop_shutdown()
   ui_button.button_shutdown()
@@ -171,9 +171,9 @@ end
 
 function M.cart_init()
   assert(structure_icon.ready(), "cart_init: cart_load() must run first")
-  assert(help.help_start_game_field_value() == M.cart_request_start_game
-      and score_panel.score_panel_init_field_value() == M.cart_init_method,
-    "cart_init: help_init() and score_panel_init() reset these bridges, so cart_load() must "
+  assert(help.start_game_field_value() == M.cart_request_start_game
+      and score_panel.init_field_value() == M.cart_init_method,
+    "cart_init: help.init() and score_panel.init() reset these bridges, so cart_load() must "
       .. "install them afterwards: every button copies the value when it is built")
 
   g_loading_frame = 0
@@ -183,13 +183,13 @@ function M.cart_init()
   if structure_icon.rest_cursor() ~= nil then
     structure_icon.set_cursor(structure_icon.rest_cursor())
   end
-  message_box.message_box_set_shown(nil)
+  message_box.set_shown(nil)
 
   if probe.main_economy_typed() ~= nil then probe.set_main_economy(nil) end
-  score_panel.score_panel_set_main(nil)
+  score_panel.set_main(nil)
 
-  help.help_set_resume_game(title_resume_handler())
-  help.help_screen_new()
+  help.set_resume_game(title_resume_handler())
+  help.screen_new()
   g_title_built = true
 end
 
@@ -238,7 +238,7 @@ local function start_interface()
   local kind_table = {}
 
   probe.set_main_economy(economy_module.new())
-  score_panel.score_panel_set_main(score_panel.score_panel_new())
+  score_panel.set_main(score_panel.new())
 
   if menu.pause_menu_open_box() ~= nil then
     for j = 1, game_data.GALAXY_MENU_COUNT do
@@ -322,11 +322,11 @@ local function save_at_frame_end()
 end
 
 function M.cart_update60()
-  if g_loading_frame > 0 and g_loading_frame < loading_screen.LOADING_SCREEN_FRAMES then
+  if g_loading_frame > 0 and g_loading_frame < loading_screen.FRAMES then
     g_loading_frame = g_loading_frame + 1
     return
   end
-  if g_loading_frame == loading_screen.LOADING_SCREEN_FRAMES then
+  if g_loading_frame == loading_screen.FRAMES then
     M.cart_flush_exit_queue()
     M.cart_start_game(g_requested_option)
     g_loading_frame = 0
@@ -343,7 +343,7 @@ function M.cart_draw()
   local mem = dispatch_context.mem()
 
   if g_loading_frame ~= 0 then
-    loading_screen.loading_screen_draw(dispatch_context.gfx(), mem)
+    loading_screen.draw(dispatch_context.gfx(), mem)
     return
   end
   text_image.frame_begin()
@@ -352,7 +352,7 @@ function M.cart_draw()
   hud.select_palette_block_default(mem)
   entity_registry.draw_layers(entity_registry.MESSAGE_DRAW)
   entity_registry.draw_layers(entity_registry.MESSAGE_DRAW_OVERLAY)
-  demo_overlay.demo_overlay_draw(dispatch_context.gfx(), mem, g_demo_frame)
+  demo_overlay.draw(dispatch_context.gfx(), mem, g_demo_frame)
 end
 
 return M

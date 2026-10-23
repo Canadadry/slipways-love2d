@@ -1,5 +1,5 @@
--- Also defines score_panel_new_year_method, score_panel_update_method, score_panel_display_init and
--- score_panel_display_shutdown for game.score_panel.
+-- Also defines score_panel_display.new_year_method, score_panel_display.update_method, score_panel_display.init and
+-- score_panel_display.shutdown for game.score_panel.
 --
 -- Include cycle: game.score_panel requires this module at load (its class holds the two methods), so
 -- game.score_panel is required here at call time.
@@ -44,7 +44,7 @@ local function score_panel_new_year_keep_open_method(self)
 end
 
 local function score_panel_year_banner_label_row()
-  local year_banner = require("game.score_panel").score_panel_year_banner()
+  local year_banner = require("game.score_panel").year_banner()
 
   if year_banner ~= nil then
     return year_banner.second
@@ -52,10 +52,10 @@ local function score_panel_year_banner_label_row()
   return nil
 end
 
-function M.score_panel_new_year(year)
+function M.new_year(year)
   local score_panel = require("game.score_panel")
-  local year_banner = score_panel.score_panel_year_banner()
-  local countdown_rows = score_panel.score_panel_countdown_rows()
+  local year_banner = score_panel.year_banner()
+  local countdown_rows = score_panel.countdown_rows()
   local message = nil
   local year_str
   local countdown_index
@@ -68,7 +68,7 @@ function M.score_panel_new_year(year)
   if countdown_index >= 1 and countdown_index <= countdown_rows.count then
     local item = countdown_rows.items[countdown_index]
 
-    assert(item.row ~= nil or item.is_false, "score_panel_new_year: the countdown rows hold rows and false only")
+    assert(item.row ~= nil or item.is_false, "score_panel_display.new_year: the countdown rows hold rows and false only")
     message = item.row
   end
 
@@ -92,13 +92,13 @@ function M.score_panel_new_year(year)
     local made
 
     keys.keep_open = year_banner.keep_open
-    made = message_box.message_box_new(keys)
+    made = message_box.new(keys)
     for i = 1, year_banner.row.count do
       if year_banner.row.items[i].row == year_banner.second then
         -- The cart's year boxes share the banner: a box still drawn when the next year opens shows the new year.
-        message_box.message_box_add_shared_row(made, score_panel_year_banner_label_row)
+        message_box.add_shared_row(made, score_panel_year_banner_label_row)
       else
-        message_box.message_box_add_row(made, year_banner.row.items[i].row)
+        message_box.add_row(made, year_banner.row.items[i].row)
       end
     end
   end
@@ -148,7 +148,7 @@ local function score_panel_update_add_row(box, entry, context)
   local keys = layout.row_keys_zero()
 
   if entry.score == nil then
-    message_box.message_box_add_row(box, entry.row)
+    message_box.add_row(box, entry.row)
     return
   end
 
@@ -196,16 +196,16 @@ local function score_panel_update_add_row(box, entry, context)
     keys.color = fixed.from_int(entry.row.color)
   end
   keys.score = fixed.from_int(score_i)
-  message_box.message_box_add_layout_row(box, keys,
+  message_box.add_layout_row(box, keys,
     entry.pos_x and vec.make(fixed.from_int(entry.pos_x), fixed.from_int(entry.pos_y)),
     fixed.LIT(0x00008000, 0.5))
 end
 
--- The function-local statics of score_panel_update: one row, the same object at every call.
+-- The function-local statics of score_panel_display.update: one row, the same object at every call.
 local back_items = { data_item({ number = 10 }), data_item({ number = 7 }) }
 local back = data_row({ count = 2, items = back_items })
 
-function M.score_panel_update(self)
+function M.update(self)
   local score_panel = require("game.score_panel")
   local economy = require("game.probe").main_economy_typed()
 
@@ -224,7 +224,7 @@ function M.score_panel_update(self)
     layout.row_keys_append(restart_keys.layout_row_keys, layout.row_cell_string(" again? "))
     restart_keys.layer = fixed.from_int(15)
     restart_keys.pos = first_line_pos
-    restart_keys.on_click = score_panel.score_panel_init_field_value()
+    restart_keys.on_click = score_panel.init_field_value()
     made1 = ui_button.button_new(restart_keys)
 
     layout.row_keys_append(toggle_keys.layout_row_keys, layout.row_cell_row(back))
@@ -246,50 +246,50 @@ function M.score_panel_update(self)
 
     -- Without the nil test, nil == nil would fire on the first eligible tick.
     if self ~= nil then
-      local last_box = score_panel.score_panel_last_box(self)
+      local last_box = score_panel.last_box(self)
       last_box_equals_shown_message_box = last_box ~= nil and message_box.shown_message_box() == last_box
     end
 
     if is_shown and not last_box_equals_shown_message_box then
       local ctx = { final_score = economy_score.final() }
-      local is_ready = score_panel.score_panel_ready()
+      local is_ready = score_panel.ready()
       local keys = message_box_keys_zero()
       local made
       local i = 1
 
       keys.duration_scale = fixed.from_int(3)
       keys.keep_open = score_panel_update_keep_open_method
-      made = message_box.message_box_new(keys)
+      made = message_box.new(keys)
       while is_ready and i <= game_data.SCORE_ROWS_COUNT do
         score_panel_update_add_row(made, game_data.score_rows_table[i], ctx)
         i = i + 1
       end
 
       if self ~= nil then
-        score_panel.score_panel_set_last_box(self, made)
+        score_panel.set_last_box(self, made)
       end
     end
   end
 end
 
-function M.score_panel_display_init()
-  M.score_panel_display_shutdown()
+function M.init()
+  M.shutdown()
   g_score_panel_new_year_keep_open = 0
 end
 
-function M.score_panel_display_shutdown()
+function M.shutdown()
 end
 
-function M.score_panel_toggle_on_click()
+function M.toggle_on_click()
   return score_panel_toggle_on_click_method
 end
 
-function M.score_panel_new_year_method(self, year)
-  M.score_panel_new_year(year)
+function M.new_year_method(self, year)
+  M.new_year(year)
 end
 
-function M.score_panel_update_method(self, t)
-  M.score_panel_update(self)
+function M.update_method(self, t)
+  M.update(self)
 end
 
 return M
