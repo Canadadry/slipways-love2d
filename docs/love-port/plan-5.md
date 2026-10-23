@@ -84,7 +84,14 @@ phase 1 is written, rerun `/plan-converge` on this plan, then start
 - Predicates return booleans; `x ~= 0` tests and `and 1 or 0` on truth
   values go.
 - An entity's optional parts are fields that are `nil` when absent; the `has`
-  bits go.
+  bits go, and so do the `has_<field>` 0/1 numbers paired with a value
+  (`has_production_bonus`, `has_net_income`, `has_resource`, ...): the value
+  is `nil` when absent.
+- Research project ids `{ index, epoch }` become plain numbers like entity
+  ids.
+- The capacity limits left after phase 1 that are not a game rule (message
+  box, layout, text, row image, score panel, help, bindings,
+  `SLIPWAY_SERVED_PLANETS_CAP`, ...) go.
 - Exported names drop the repeated module prefix (`planet.init_instance`,
   `p8_` inside `p8/` too); `CLAUDE.md`'s naming rule changes with them.
 - `lua-test-modules` keeps only "every module loads": the comparison with
@@ -115,9 +122,20 @@ phase 1 is written, rerun `/plan-converge` on this plan, then start
 
 ### Phase 2 — The entity model
 
-1. Optional parts as `nil`-able fields. Seen when
-   `grep -rE '_HAS_|entity_has\(|\.has\b' game/` finds only bit sets that are
-   not an entity's optional parts, each listed in the step note.
+1. Optional parts as `nil`-able fields, `has_<field>` numbers included. Seen
+   when
+   `grep -rnE '_HAS_|entity_has\(|\.has\b|\bhas_[a-z_]+ *([~=]?= *[01]\b|= *[a-z_.]*has_[a-z_]+)|has_[a-z_]+ or [01]\b' game/`
+   finds only bit sets that are not an entity's optional parts, and `has_`
+   names that are not a 0/1 flag paired with a value (a method such as
+   `has_refresh`, a local boolean), each listed in the step note.
+2. Research project ids as plain numbers. Seen when `grep -rn epoch game/`
+   finds nothing.
+3. Capacity limits that are not a game rule removed. Seen when every
+   remaining constant or local in `game/` that bounds a growing collection
+   or text (by a fatal, an assert, a cut or a refusal), whatever its name
+   (`_CAP`, `_MAX`, `_LENGTH`, `_SIZE`, `_LIMIT`...), is a game rule, each
+   listed with its reason in the step note; a constant that is only the size
+   of a data table is not a limit.
 
 ### Phase 3 — The surface
 
@@ -227,3 +245,12 @@ reverse walk keep their live-length forms. `collect_format_signed` moved to
 3.2. Seen: the five modules are gone, `grep -r last_count game/` finds
 nothing. `make e2e` 20/20 in 4.9 s, `make end-state` 20/20, `make test`
 0.65 s.
+
+### Phase 1 review
+
+The end-of-phase-1 `warn-review` raised three warnings bearing on phase-0
+decisions; `plan-pilot` stopped and the user decided, on 2026-10-23: the
+`has_<field>` numbers are optional parts (step 2.1), research project ids
+become plain numbers (new step 2.2), and the capacity limits that are not a
+game rule go (new step 2.3). `plan-review` fixed the checks of steps 3.1,
+3.2 and 3.4 in the same review.

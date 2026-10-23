@@ -28,3 +28,7 @@
   - [ ] Step 3.3 — the C headers
   - [ ] Step 3.4 — names without the module prefix
   - [ ] Step 3.5 — design.md conventions replaced
+- [ ] Added after the phase 1 review
+  - [x] Decisions reopened with the user
+  - [ ] Step 2.2 — research project ids as plain numbers
+  - [ ] Step 2.3 — capacity limits that are not a game rule removed
