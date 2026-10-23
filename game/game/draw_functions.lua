@@ -43,14 +43,14 @@ local function draw_bar_entry(e)
   local col
   col = fixed.flr_int(number(e, 3))
   if is_number(e, 2) then
-    hud.hud_draw_bar(g_draw_functions_gfx, g_draw_functions_mem, y1, number(e, 2), col)
+    hud.draw_bar(g_draw_functions_gfx, g_draw_functions_mem, y1, number(e, 2), col)
   else
-    hud.hud_draw_bar_y1(g_draw_functions_gfx, g_draw_functions_mem, y1, col)
+    hud.draw_bar_y1(g_draw_functions_gfx, g_draw_functions_mem, y1, col)
   end
 end
 
 local function print_outlined_direct(gfx, mem, t, x, y, c, a)
-  hud.hud_print_outlined(gfx, mem, t, x, y, c, a)
+  hud.print_outlined(gfx, mem, t, x, y, c, a)
 end
 
 -- `a1` is often a number: substituting "" for one blanks the year and tech counter of the top bar.
@@ -80,11 +80,11 @@ local function print_outlined_entry(e)
 end
 
 local function print_outlined_text_image_entry(e)
-  print_outlined_with(e, hud.hud_print_outlined_text_image)
+  print_outlined_with(e, hud.print_outlined_text_image)
 end
 
 local function draw_help_frame_entry(e)
-  hud.hud_draw_help_frame(g_draw_functions_gfx, g_draw_functions_mem, number(e, 1), number(e, 2), number(e, 3))
+  hud.draw_help_frame(g_draw_functions_gfx, g_draw_functions_mem, number(e, 1), number(e, 2), number(e, 3))
 end
 
 local function spr_entry(e)
@@ -131,7 +131,7 @@ function M.draw_row(gfx, mem, row)
   draw_rows_dispatch_one(gfx, mem, row, print_outlined_entry)
 end
 
--- draw_functions.draw_row's contract, a PRINT_OUTLINED row through hud_print_outlined_text_image.
+-- draw_functions.draw_row's contract, a PRINT_OUTLINED row through hud.print_outlined_text_image.
 function M.draw_row_text_image(gfx, mem, row)
   draw_rows_dispatch_one(gfx, mem, row, print_outlined_text_image_entry)
 end

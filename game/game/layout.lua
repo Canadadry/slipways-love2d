@@ -236,15 +236,15 @@ local function row_draw_at_item_draw(gfx, mem, item, p)
   local pos = vec.add(p, item.offset)
 
   if item.kind == M.ROW_ITEM_TEXT then
-    hud.hud_print_outlined_default(gfx, mem, item.text, fixed.add(pos.x, fixed.from_int(2)),
+    hud.print_outlined_default(gfx, mem, item.text, fixed.add(pos.x, fixed.from_int(2)),
       fixed.add(pos.y, fixed.from_int(1)),
       fixed.flr_int(item.color))
   elseif item.kind == M.ROW_ITEM_SPRITE then
-    hud.hud_select_palette_block(mem, item.sprite_palette_block)
+    hud.select_palette_block(mem, item.sprite_palette_block)
     gfx_module.spr_default(gfx, mem, fixed.flr_int(item.sprite_id),
       fixed.flr_int(pos.x),
       fixed.flr_int(pos.y))
-    hud.hud_select_palette_block_default(mem)
+    hud.select_palette_block_default(mem)
   end
 end
 
@@ -355,7 +355,7 @@ function M.tooltip_draw_at(gfx, mem, self, om, a)
   dn = fixed.add(om, h)
 
   gfx_module.fillp(gfx, 0x0F0F)
-  hud.hud_draw_bar(gfx, mem, om, dn, 0x10)
+  hud.draw_bar(gfx, mem, om, dn, 0x10)
   gfx_module.fillp_reset(gfx)
 
   for i = 1, self.rows_count do

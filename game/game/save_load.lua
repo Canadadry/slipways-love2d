@@ -318,8 +318,8 @@ local function refresh_structure_icons()
   local refreshed = entity_registry.entities_by_message(entity_registry.MESSAGE_REFRESH)
   local i = 1
   while refreshed ~= nil and i <= #refreshed do
-    if refreshed[i].class == structure_icon.structure_icon_class() then
-      structure_icon.structure_icon_refresh(refreshed[i])
+    if refreshed[i].class == structure_icon.class() then
+      structure_icon.refresh(refreshed[i])
     end
     i = i + 1
   end
@@ -352,7 +352,7 @@ function M.save_load_globals(state)
   economy.year_ticks = state.economy.year_ticks
   load_invented(economy, state.economy)
 
-  structure_icon.structure_icon_set_id_counter(state.structure_id_counter)
+  structure_icon.set_id_counter(state.structure_id_counter)
 
   entity_class.set_map_pos(camera, vec_of(state.camera_map_pos))
   entity_class.set_pos(camera, vec_of(state.camera_map_pos))

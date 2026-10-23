@@ -519,7 +519,7 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
     gfx_module.circfill(graphics, memory, screen_x, screen_y, PLANET_DISC_RADIUS, 0)
   end
 
-  hud.hud_select_palette_block(memory,
+  hud.select_palette_block(memory,
     lineage_has(self, entity_class.LINEAGE_TRADING_HUB) and self.palette_block or fixed.from_int(0))
   gfx_module.palt(memory, 3, false)
   gfx_module.palt(memory, 0, true)
@@ -530,7 +530,7 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
     spr_index = fixed.flr_int(self.sprite)
   end
   gfx_module.spr(graphics, memory, spr_index, screen_x - 4, screen_y - 4, 2, 2)
-  hud.hud_select_palette_block_default(memory)
+  hud.select_palette_block_default(memory)
 
   if planet.is_colonized(self) then
     local mi = fixed.flr_int(self.development_tier or fixed.from_int(0))
@@ -547,7 +547,7 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
     gfx_module.spr_default(graphics, memory, mi + 1, screen_x - 3, screen_y - 6)
   end
 
-  if ui.main_ui() ~= nil and ui.ui_pad_circle(ui.main_ui()) == self then
+  if ui.main_ui() ~= nil and ui.pad_circle(ui.main_ui()) == self then
     gfx_module.circ(graphics, memory, screen_x, screen_y, 9, 7)
   end
 

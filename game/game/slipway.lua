@@ -142,7 +142,7 @@ function M.drag(self, mouse)
 
   ok = ui.main_ui()
   if ok ~= nil then
-    hovered = ui.ui_hovered(ok)
+    hovered = ui.hovered(ok)
   else
     hovered = nil
   end

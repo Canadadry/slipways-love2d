@@ -331,7 +331,7 @@ local function button_image_build_draw(gfx, mem, context)
 end
 
 local function button_draw_image(graphics, memory, self, draw_pos, look)
-  if graphics.fillp_pattern ~= 0 or not hud.hud_palette_block_default_in_force(memory) then
+  if graphics.fillp_pattern ~= 0 or not hud.palette_block_default_in_force(memory) then
     return false
   end
   local width = button_image_width(self)
@@ -357,7 +357,7 @@ function M.button_draw(graphics, memory, self, draw_pos)
   end
 
   local clickable = self.on_click ~= nil
-  local hovered = self.is_hovered or (ui.main_ui() ~= nil and ui.ui_pad_tab(ui.main_ui()) == self)
+  local hovered = self.is_hovered or (ui.main_ui() ~= nil and ui.pad_tab(ui.main_ui()) == self)
   local look = {
     body = clickable and (hovered and 12 or 13) or 5,
     top = clickable and 6 or 5,

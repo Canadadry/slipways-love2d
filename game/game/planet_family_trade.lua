@@ -243,7 +243,7 @@ local function infraspace_gate_create(keys)
   slipgate_init_instance(self, M.infraspace_gate_class_def, game_data.infraspace_gate_archetype)
   self.infraspace = self.archetype.infraspace
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
-    "infraspace_gate_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
+    "infraspace_gate_create: the only construction key is planet_id (structure_icon.left_press); another key has no member "
     .. "-- stop, do not add one")
   planet.copy_keys(self, keys)
   planet.construct(self)
@@ -335,7 +335,7 @@ local function synthesizer_create(keys)
   assert(g_family_trade_up, "planet_family_trade.init() must run first")
   planet_family.ascension_init_instance(self, M.synthesizer_class_def, game_data.synthesizer_archetype)
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
-    "synthesizer_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
+    "synthesizer_create: the only construction key is planet_id (structure_icon.left_press); another key has no member "
     .. "-- stop, do not add one")
   planet.copy_keys(self, keys)
   require("game.particle").emitter_init(self)

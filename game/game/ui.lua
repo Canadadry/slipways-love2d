@@ -17,13 +17,13 @@ local vram = require("p8.vram")
 
 local M = {}
 
-M.UI_HOVER_LAYERS = 16
+M.HOVER_LAYERS = 16
 
 M.MOUSE_SIDE_LEFT = 0
 
-M.UI_PAD_BLINK_PERIOD = 32
-M.UI_PAD_CROSSHAIR_ARM = 2
-M.UI_PAD_CROSSHAIR_COLOUR = 7
+M.PAD_BLINK_PERIOD = 32
+M.PAD_CROSSHAIR_ARM = 2
+M.PAD_CROSSHAIR_COLOUR = 7
 
 M.SEND_TO_HOVERED_LEFT_PRESS = 0
 M.SEND_TO_HOVERED_ACCEPT_DROP = 1
@@ -41,7 +41,7 @@ local g_main_mouse_state = MAIN_MOUSE_NONE
 local g_main_mouse = nil
 local g_main_ui = nil
 
-function M.ui_panel_box()
+function M.panel_box()
   if g_ui_up then
     return game_data.ui_archetype.panel_box
   end
@@ -49,11 +49,11 @@ function M.ui_panel_box()
 end
 
 -- An array of ids.
-function M.ui_ephemerals_new()
+function M.ephemerals_new()
   return {}
 end
 
-function M.ui_set_ephemerals(self, list)
+function M.set_ephemerals(self, list)
   self.ephemerals = list
   self.ephemerals_serial = bit.band(self.ephemerals_serial + 1, 0xFFFF)
 end
@@ -100,7 +100,7 @@ local function ui_main_mouse_button()
   if M.main_mouse_typed() == nil then
     return nil
   end
-  b = mouse_module.mouse_left_button()
+  b = mouse_module.left_button()
   if b ~= nil and b.held ~= nil then
     return b
   end
@@ -108,7 +108,7 @@ local function ui_main_mouse_button()
 end
 
 local function ui_draw_overlay_method(self, screen_pos)
-  M.ui_draw_overlay(dispatch_context.gfx(), dispatch_context.mem(), self)
+  M.draw_overlay(dispatch_context.gfx(), dispatch_context.mem(), self)
 end
 
 local function ui_ephemerals_release(self)
@@ -119,7 +119,7 @@ local function ui_release_method(self)
   ui_ephemerals_release(self)
 end
 
-M.ui_class_def = {
+M.class_def = {
   draw_overlay = ui_draw_overlay_method,
   release = ui_release_method,
   states = {},
@@ -128,13 +128,13 @@ M.ui_class_def = {
   skip_draw_off_screen = false,
 }
 
--- mouse_world and hovered_by_layer stay nil until the first ui_update and hover pass write them.
+-- mouse_world and hovered_by_layer stay nil until the first ui.update and hover pass write them.
 local function ui_create()
   local self
 
-  assert(g_ui_up, "ui_init() must run first")
+  assert(g_ui_up, "ui.init() must run first")
   self = {}
-  entity.init_instance(self, M.ui_class_def, game_data.ui_archetype.state, game_data.ui_archetype.state_time)
+  entity.init_instance(self, M.class_def, game_data.ui_archetype.state, game_data.ui_archetype.state_time)
   self.archetype = game_data.ui_archetype
   entity_registry.set_layer(self, self.archetype.layer)
   self.ephemerals_serial = 0
@@ -150,16 +150,16 @@ local function ui_create()
   return self
 end
 
-function M.ui_init()
-  M.ui_shutdown()
+function M.init()
+  M.shutdown()
   g_ui_up = true
 
-  M.ui_set_main_mouse(M.g_main_mouse_placeholder)
+  M.set_main_mouse(M.g_main_mouse_placeholder)
 end
 
-function M.ui_shutdown()
+function M.shutdown()
   g_ui_up = false
-  M.ui_set_main_mouse(nil)
+  M.set_main_mouse(nil)
   g_main_ui = nil
 end
 
@@ -167,68 +167,68 @@ function M.main_mouse_placeholder_class()
   return M.main_mouse_placeholder_class_def
 end
 
-function M.ui_ready()
+function M.ready()
   return g_ui_up
 end
 
-function M.ui_class()
-  return M.ui_class_def
+function M.class()
+  return M.class_def
 end
 
-function M.ui_new()
+function M.new()
   return ui_create()
 end
 
 -- Each nil when absent or once its entity was flushed.
-function M.ui_hovered(self)
+function M.hovered(self)
   return entity_id.get(self.hovered)
 end
 
-function M.ui_previous_hovered(self)
+function M.previous_hovered(self)
   return entity_id.get(self.previous_hovered)
 end
 
-function M.ui_left_held(self)
+function M.left_held(self)
   return entity_id.get(self.left_held)
 end
 
-function M.ui_pad_selection(self)
+function M.pad_selection(self)
   return entity_id.get(self.pad_selection)
 end
 
 -- nil selection for none. frames_shown counts from the frame the selection was last shown.
-function M.ui_set_pad_selection(self, selection, frames_shown)
-  assert(frames_shown >= 0, "ui_set_pad_selection: frames_shown counts up from 0")
+function M.set_pad_selection(self, selection, frames_shown)
+  assert(frames_shown >= 0, "ui.set_pad_selection: frames_shown counts up from 0")
   self.pad_selection = entity_id.link(selection)
   self.pad_selection_frames = frames_shown
 end
 
-function M.ui_pad_tab(self)
+function M.pad_tab(self)
   return entity_id.get(self.pad_tab)
 end
 
 -- nil for none: the open panel's HUD button, drawn as if hovered.
-function M.ui_set_pad_tab(self, button)
+function M.set_pad_tab(self, button)
   self.pad_tab = entity_id.link(button)
 end
 
 -- true draws a crosshair at the screen centre.
-function M.ui_set_pad_crosshair(self, shown)
-  assert(type(shown) == "boolean", "ui_set_pad_crosshair: shown is a boolean")
+function M.set_pad_crosshair(self, shown)
+  assert(type(shown) == "boolean", "ui.set_pad_crosshair: shown is a boolean")
   self.pad_crosshair = shown
 end
 
 -- The pad selection while its circle's blink is on; nil otherwise.
-function M.ui_pad_circle(self)
-  if cint.mod(self.pad_selection_frames, M.UI_PAD_BLINK_PERIOD) < cint.div(M.UI_PAD_BLINK_PERIOD, 2) then
-    return M.ui_pad_selection(self)
+function M.pad_circle(self)
+  if cint.mod(self.pad_selection_frames, M.PAD_BLINK_PERIOD) < cint.div(M.PAD_BLINK_PERIOD, 2) then
+    return M.pad_selection(self)
   end
   return nil
 end
 
 -- Empties the ui's own ephemerals list (kept, not replaced) and its hover layers: their ids name
 -- entities of the world reset_world() abandons.
-function M.ui_forget_world(self)
+function M.forget_world(self)
   local ephemerals = self.ephemerals
   for i = #ephemerals, 1, -1 do
     ephemerals[i] = nil
@@ -241,9 +241,9 @@ end
 local empty = {}
 
 -- The layer's list from the last hover pass; a shared empty list for a layer that pass did not
--- write, before the first pass, or after ui_forget_world.
-function M.ui_hovered_layer(self, layer)
-  assert(layer >= 0 and layer < M.UI_HOVER_LAYERS)
+-- write, before the first pass, or after ui.forget_world.
+function M.hovered_layer(self, layer)
+  assert(layer >= 0 and layer < M.HOVER_LAYERS)
   if self.hovered_by_layer ~= nil and bit.band(self.hovered_by_layer.written, bit.lshift(1, layer)) ~= 0 then
     return self.hovered_by_layer.layers[layer]
   end
@@ -265,13 +265,13 @@ function M.main_mouse_typed()
   if g_main_mouse_state == MAIN_MOUSE_REAL then
     e = entity_id.get(g_main_mouse)
   end
-  assert(e == nil or e.class == mouse_module.mouse_class(),
+  assert(e == nil or e.class == mouse_module.class(),
     "main_mouse_typed: only the placeholder or a mouse is ever stored")
   return e
 end
 
--- Never frees the outgoing instance: a click inside ui_update replaces it while `self` is still the old one.
-function M.ui_set_main_mouse(instance)
+-- Never frees the outgoing instance: a click inside ui.update replaces it while `self` is still the old one.
+function M.set_main_mouse(instance)
   if instance == nil then
     g_main_mouse_state = MAIN_MOUSE_NONE
     g_main_mouse = nil
@@ -287,17 +287,17 @@ end
 function M.main_ui()
   local e = entity_id.get(g_main_ui)
 
-  assert(e == nil or e.class == M.ui_class_def, "main_ui: only a ui is ever stored")
+  assert(e == nil or e.class == M.class_def, "main_ui: only a ui is ever stored")
   return e
 end
 
--- Never frees the outgoing ui, for the same reason as ui_set_main_mouse().
-function M.ui_set_main_ui(ui)
+-- Never frees the outgoing ui, for the same reason as ui.set_main_mouse().
+function M.set_main_ui(ui)
   g_main_ui = entity_id.link(ui)
 end
 
 -- Called once per frame by `cart_update60()`. TODO: `mem` is no longer read; drop it.
-function M.ui_update(mem, self)
+function M.update(mem, self)
   local scroll = require("game.scroll")
   local ephemerals_before
   local serial_before
@@ -322,7 +322,7 @@ function M.ui_update(mem, self)
   qa = vec.add(ui_pos_or_zero(je), ui_pos_or_zero(mo))
   self.mouse_world = qa
 
-  M.ui_update_hover(self)
+  M.update_hover(self)
 
   hit = (#ephemerals_before == 0)
   for i = 1, #ephemerals_before do
@@ -332,12 +332,12 @@ function M.ui_update(mem, self)
     end
   end
   if hit then
-    M.ui_handle_button(self, M.MOUSE_SIDE_LEFT)
+    M.handle_button(self, M.MOUSE_SIDE_LEFT)
   end
 
   left = ui_main_mouse_button()
   if left ~= nil and left.pressed and self.ephemerals_serial == serial_before then
-    M.ui_clear_ephemerals(self)
+    M.clear_ephemerals(self)
   end
 
   self.previous_hovered = self.hovered
@@ -346,15 +346,15 @@ end
 local function ui_draw_pad_crosshair(gfx, mem)
   local x = cint.div(vram.SCREEN_WIDTH, 2)
   local y = cint.div(vram.SCREEN_HEIGHT, 2)
-  for d = 1, M.UI_PAD_CROSSHAIR_ARM do
-    gfx_module.pset(gfx, mem, x - d, y, M.UI_PAD_CROSSHAIR_COLOUR)
-    gfx_module.pset(gfx, mem, x + d, y, M.UI_PAD_CROSSHAIR_COLOUR)
-    gfx_module.pset(gfx, mem, x, y - d, M.UI_PAD_CROSSHAIR_COLOUR)
-    gfx_module.pset(gfx, mem, x, y + d, M.UI_PAD_CROSSHAIR_COLOUR)
+  for d = 1, M.PAD_CROSSHAIR_ARM do
+    gfx_module.pset(gfx, mem, x - d, y, M.PAD_CROSSHAIR_COLOUR)
+    gfx_module.pset(gfx, mem, x + d, y, M.PAD_CROSSHAIR_COLOUR)
+    gfx_module.pset(gfx, mem, x, y - d, M.PAD_CROSSHAIR_COLOUR)
+    gfx_module.pset(gfx, mem, x, y + d, M.PAD_CROSSHAIR_COLOUR)
   end
 end
 
-function M.ui_draw_overlay(gfx, mem, self)
+function M.draw_overlay(gfx, mem, self)
   if self == nil or gfx == nil or mem == nil then
     return
   end
@@ -372,7 +372,7 @@ local function ui_hit_test(e, mouse)
   return hit_test ~= nil and hit_test(e, mouse)
 end
 
-function M.ui_update_hover(self)
+function M.update_hover(self)
   local mouse
   local hit_test_bucket
   local previous
@@ -383,8 +383,8 @@ function M.ui_update_hover(self)
   end
 
   if self.hovered_by_layer == nil then
-    self.hovered_by_layer = { layer_count = M.UI_HOVER_LAYERS, written = 0, layers = {} }
-    for layer = 0, M.UI_HOVER_LAYERS - 1 do
+    self.hovered_by_layer = { layer_count = M.HOVER_LAYERS, written = 0, layers = {} }
+    for layer = 0, M.HOVER_LAYERS - 1 do
       self.hovered_by_layer.layers[layer] = {}
     end
   end
@@ -402,8 +402,8 @@ function M.ui_update_hover(self)
       if e.layer ~= nil then
         local fa = ui_to_int(e.layer)
 
-        assert(fa >= 0 and fa < M.UI_HOVER_LAYERS,
-          "ui_update_hover: a hovered entity's layer outside 0..15, the layers ui_send_to_hovered walks -- stop, do not widen")
+        assert(fa >= 0 and fa < M.HOVER_LAYERS,
+          "ui.update_hover: a hovered entity's layer outside 0..15, the layers ui.send_to_hovered walks -- stop, do not widen")
         if bit.band(self.hovered_by_layer.written, bit.lshift(1, fa)) == 0 then
           local layer_ids = self.hovered_by_layer.layers[fa]
           for i = #layer_ids, 1, -1 do
@@ -421,16 +421,16 @@ function M.ui_update_hover(self)
   end
 
   -- Clear before set, so an entity hovered two frames in a row stays hovered.
-  previous = M.ui_previous_hovered(self)
+  previous = M.previous_hovered(self)
   if previous ~= nil then
     assert(previous.is_hovered ~= nil,
-      "ui_update_hover: the previously hovered entity has no is_hovered member -- stop, do not add one")
+      "ui.update_hover: the previously hovered entity has no is_hovered member -- stop, do not add one")
     previous.is_hovered = false
   end
 
   if hovered ~= nil then
     assert(hovered.is_hovered ~= nil,
-      "ui_update_hover: the hovered entity has no is_hovered member -- stop, do not add one")
+      "ui.update_hover: the hovered entity has no is_hovered member -- stop, do not add one")
     hovered.is_hovered = true
   end
 end
@@ -446,13 +446,13 @@ local function ui_is_held_class(cls)
 end
 
 -- nil clears; anything else must be of a class a left press can hand over (asserted).
-function M.ui_set_left_held(self, held)
+function M.set_left_held(self, held)
   assert(held == nil or ui_is_held_class(held.class),
-    "ui_set_left_held: only a class a left press hands over can be held on the left")
+    "ui.set_left_held: only a class a left press hands over can be held on the left")
   self.left_held = entity_id.link(held)
 end
 
-function M.ui_handle_button(self, side)
+function M.handle_button(self, side)
   local button
   local held_inst
   local mouse
@@ -470,19 +470,19 @@ function M.ui_handle_button(self, side)
     local given
     local found
 
-    found, kv, kn = M.ui_send_to_hovered(self, M.SEND_TO_HOVERED_LEFT_PRESS, ui_mouse_pos(self, mouse), nil, kv, kn)
+    found, kv, kn = M.send_to_hovered(self, M.SEND_TO_HOVERED_LEFT_PRESS, ui_mouse_pos(self, mouse), nil, kv, kn)
     if found then
       given = entity_id.get(kn.held)
       if given ~= nil then
         assert(ui_is_held_class(given.class),
-          "ui_handle_button: a left press hands over a slipway; a probe or a wormhole from the background; a " ..
+          "ui.handle_button: a left press hands over a slipway; a probe or a wormhole from the background; a " ..
           "structure, processor, slipgate, infraspace_gate, trading_hub, synthesizer or ascension from an icon")
         self.left_held = kn.held
       end
     end
   end
 
-  held_inst = M.ui_left_held(self)
+  held_inst = M.left_held(self)
 
   if held_inst ~= nil and held_inst.class.drag ~= nil then
     held_inst.class.drag(held_inst, ui_mouse_pos(self, mouse))
@@ -493,7 +493,7 @@ function M.ui_handle_button(self, side)
     local down = nil
     local _
 
-    _, target, down = M.ui_send_to_hovered(self, M.SEND_TO_HOVERED_ACCEPT_DROP,
+    _, target, down = M.send_to_hovered(self, M.SEND_TO_HOVERED_ACCEPT_DROP,
       { world = zero_vec(), screen = zero_vec(), has = 0 }, held_inst, target, down)
 
     if held_inst.class.drop ~= nil then
@@ -505,7 +505,7 @@ end
 
 -- Layers descend from 15 to 0 and the first `stop` wins: that order is the dispatch priority.
 -- Returns found, out_target, out_down; both outs as passed when nothing stops.
-function M.ui_send_to_hovered(self, message, mouse, held, out_target, out_down)
+function M.send_to_hovered(self, message, mouse, held, out_target, out_down)
   if self == nil then
     return false, out_target, out_down
   end
@@ -514,8 +514,8 @@ function M.ui_send_to_hovered(self, message, mouse, held, out_target, out_down)
     return false, out_target, out_down
   end
 
-  for layer = M.UI_HOVER_LAYERS - 1, 0, -1 do
-    local hovered_ids = M.ui_hovered_layer(self, layer)
+  for layer = M.HOVER_LAYERS - 1, 0, -1 do
+    local hovered_ids = M.hovered_layer(self, layer)
 
     for i = 1, #hovered_ids do
       local h = entity_id.resolve(hovered_ids[i])
@@ -539,7 +539,7 @@ function M.ui_send_to_hovered(self, message, mouse, held, out_target, out_down)
   return false, out_target, out_down
 end
 
-function M.ui_clear_ephemerals(self)
+function M.clear_ephemerals(self)
   if self == nil then
     return
   end
@@ -551,7 +551,7 @@ function M.ui_clear_ephemerals(self)
     end
   end
 
-  M.ui_set_ephemerals(self, M.ui_ephemerals_new())
+  M.set_ephemerals(self, M.ephemerals_new())
 end
 
 return M

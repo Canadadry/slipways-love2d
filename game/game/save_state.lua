@@ -1174,7 +1174,7 @@ function M.save_state_capture(out)
   capture_type_picker(out.type_picker)
   out.vanish_walk.step = vanish_walk.step
   out.vanish_walk.bias = vanish_walk.bias
-  ok, counter = structure_icon.structure_icon_id_counter(0)
+  ok, counter = structure_icon.id_counter(0)
   out.structure_id_counter = ok and counter or 0
   capture_probe(out)
   out.camera_map_pos = vec_of(entity_registry.main_camera().map_pos)

@@ -69,7 +69,7 @@ local function structure_create(keys)
   assert(g_family_up, "planet_family.init() must run first")
   M.structure_init_instance(self, M.structure_class_def, game_data.structure_archetype)
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
-    "structure_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
+    "structure_create: the only construction key is planet_id (structure_icon.left_press); another key has no member "
     .. "-- stop, do not add one")
   planet.copy_keys(self, keys)
   planet.construct(self)
@@ -135,7 +135,7 @@ local function trading_hub_create(keys)
   M.structure_init_instance(self, M.trading_hub_class_def, game_data.trading_hub_archetype)
   self.palette_block = self.archetype.palette_block
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
-    "trading_hub_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
+    "trading_hub_create: the only construction key is planet_id (structure_icon.left_press); another key has no member "
     .. "-- stop, do not add one")
   planet.copy_keys(self, keys)
   planet.construct(self)
@@ -171,7 +171,7 @@ local function processor_create(keys)
   assert(g_family_up, "planet_family.init() must run first")
   M.structure_init_instance(self, M.processor_class_def, game_data.processor_archetype)
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
-    "processor_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
+    "processor_create: the only construction key is planet_id (structure_icon.left_press); another key has no member "
     .. "-- stop, do not add one")
   planet.copy_keys(self, keys)
   planet.construct(self)
@@ -244,7 +244,7 @@ local function ascension_create(keys)
   assert(g_family_up, "planet_family.init() must run first")
   M.ascension_init_instance(self, M.ascension_class_def, game_data.ascension_archetype)
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
-    "ascension_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
+    "ascension_create: the only construction key is planet_id (structure_icon.left_press); another key has no member "
     .. "-- stop, do not add one")
   planet.copy_keys(self, keys)
   require("game.particle").emitter_init(self)

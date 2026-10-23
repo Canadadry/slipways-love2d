@@ -260,9 +260,9 @@ function M.score_panel_draw(gfx, mem, self)
     local h = fixed.mul(capped, capped)
 
     self.curtain = gz
-    hud.hud_draw_bar(gfx, mem, fixed.from_int(0), h, 0)
+    hud.draw_bar(gfx, mem, fixed.from_int(0), h, 0)
     -- No colour on purpose: the bottom bar inherits the pen colour the line above leaves.
-    hud.hud_draw_bar_default(gfx, mem, fixed.sub(fixed.from_int(vram.SCREEN_HEIGHT - 1), h),
+    hud.draw_bar_default(gfx, mem, fixed.sub(fixed.from_int(vram.SCREEN_HEIGHT - 1), h),
       fixed.from_int(vram.SCREEN_HEIGHT - 1))
   end
 end

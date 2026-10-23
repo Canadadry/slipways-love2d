@@ -1,10 +1,10 @@
 -- A button: { held, pressed, released }, each a boolean; held nil until the first update.
 local M = {}
 
-function M.mouse_button_update(button, down)
-  assert(button ~= nil, "mouse_button_update dereferences the button")
+function M.update(button, down)
+  assert(button ~= nil, "mouse_button.update dereferences the button")
 
-  assert(type(down) == "boolean", "mouse_button_update: down is a boolean")
+  assert(type(down) == "boolean", "mouse_button.update: down is a boolean")
 
   local was_held = button.held or false
 

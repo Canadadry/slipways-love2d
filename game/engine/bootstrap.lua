@@ -16,7 +16,7 @@ function M.reset_world()
   local real_main_ui
 
   if ui.main_ui() ~= nil then
-    ui.ui_forget_world(ui.main_ui())
+    ui.forget_world(ui.main_ui())
   end
   entity_registry.abandon_live_entities()
   entity_registry.init()
@@ -27,25 +27,25 @@ function M.reset_world()
   if not scroll.camera_ready() then
     scroll.camera_init()
   end
-  if not mouse.mouse_ready() then
-    mouse.mouse_init()
+  if not mouse.ready() then
+    mouse.init()
   end
-  if not ui.ui_ready() then
-    ui.ui_init()
+  if not ui.ready() then
+    ui.init()
   end
 
   real_main_camera = scroll.camera_new()
-  real_main_mouse = mouse.mouse_new()
-  real_main_ui = ui.ui_new()
+  real_main_mouse = mouse.new()
+  real_main_ui = ui.new()
 
   entity_registry.set_main_camera(real_main_camera)
-  ui.ui_set_main_mouse(real_main_mouse)
-  ui.ui_set_main_ui(real_main_ui)
+  ui.set_main_mouse(real_main_mouse)
+  ui.set_main_ui(real_main_ui)
 end
 
 function M.shutdown()
-  ui.ui_shutdown()
-  mouse.mouse_shutdown()
+  ui.shutdown()
+  mouse.shutdown()
   scroll.camera_shutdown()
   entity.shutdown()
   entity_registry.shutdown()

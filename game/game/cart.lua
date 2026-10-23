@@ -71,8 +71,8 @@ function M.cart_load()
   entity.init()
   assert(entity.ready(), "cart_load: entity.init() must run before every class that extends entity_t")
   scroll.camera_init()
-  mouse.mouse_init()
-  ui.ui_init()
+  mouse.init()
+  ui.init()
 
   layout.init()
   trade.init()
@@ -105,7 +105,7 @@ function M.cart_load()
   assert(help.help_screen_ready() and probe.ready(),
     "cart_load: the help screen extends probe: probe.init() must run first")
   score_panel.score_panel_init()
-  structure_icon.structure_icon_init()
+  structure_icon.init()
   menu.menu_init()
 
   help.help_set_start_game(M.cart_request_start_game)
@@ -119,7 +119,7 @@ end
 function M.cart_shutdown()
   quit_game()
   menu.menu_shutdown()
-  structure_icon.structure_icon_shutdown()
+  structure_icon.shutdown()
   score_panel.score_panel_shutdown()
   help.help_shutdown()
 
@@ -142,8 +142,8 @@ function M.cart_shutdown()
   trade.shutdown()
   layout.shutdown()
 
-  ui.ui_shutdown()
-  mouse.mouse_shutdown()
+  ui.shutdown()
+  mouse.shutdown()
   scroll.camera_shutdown()
   entity.shutdown()
 end
@@ -170,7 +170,7 @@ local function title_resume_handler()
 end
 
 function M.cart_init()
-  assert(structure_icon.structure_icon_ready(), "cart_init: cart_load() must run first")
+  assert(structure_icon.ready(), "cart_init: cart_load() must run first")
   assert(help.help_start_game_field_value() == M.cart_request_start_game
       and score_panel.score_panel_init_field_value() == M.cart_init_method,
     "cart_init: help_init() and score_panel_init() reset these bridges, so cart_load() must "
@@ -180,8 +180,8 @@ function M.cart_init()
   bootstrap.reset_world()
   research.expire_project_ids()
 
-  if structure_icon.structure_icon_rest_cursor() ~= nil then
-    structure_icon.structure_icon_set_cursor(structure_icon.structure_icon_rest_cursor())
+  if structure_icon.rest_cursor() ~= nil then
+    structure_icon.set_cursor(structure_icon.rest_cursor())
   end
   message_box.message_box_set_shown(nil)
 
@@ -198,7 +198,7 @@ function M.cart_title_shown()
     and entity_registry.count_tagged(entity_class.TAG_MESSAGE_BOX) == 0
 end
 
--- Between frames only, never from a handler inside ui_update or update_entities: it releases
+-- Between frames only, never from a handler inside ui.update or update_entities: it releases
 -- every live entity while they are still being walked.
 function M.cart_return_to_title()
   entity_registry.abandon_live_entities()
@@ -259,7 +259,7 @@ local function start_interface()
 
     keys.kind = kind_table[index]
     keys.tooltip = layout.tooltip_new(map_tables.icon_tooltips_table[index])
-    structure_icon.structure_icon_new(keys)
+    structure_icon.new(keys)
   end
 end
 
@@ -335,7 +335,7 @@ function M.cart_update60()
   end
   M.cart_flush_exit_queue()
   bootstrap.update_entities()
-  ui.ui_update(dispatch_context.mem(), ui.main_ui())
+  ui.update(dispatch_context.mem(), ui.main_ui())
   if not g_save_cut then save_at_frame_end() end
 end
 
@@ -349,7 +349,7 @@ function M.cart_draw()
   text_image.frame_begin()
   button_image.frame_begin()
   gfx.cls(mem)
-  hud.hud_select_palette_block_default(mem)
+  hud.select_palette_block_default(mem)
   entity_registry.draw_layers(entity_registry.MESSAGE_DRAW)
   entity_registry.draw_layers(entity_registry.MESSAGE_DRAW_OVERLAY)
   demo_overlay.demo_overlay_draw(dispatch_context.gfx(), mem, g_demo_frame)

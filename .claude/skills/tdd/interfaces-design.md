@@ -6,10 +6,10 @@ Good interfaces make testing natural. Functions marked real are in `game/`; the 
 
    ```lua
    -- Testable (real signature): the caller hands the graphics state and the vram
-   function M.hud_draw_bar(gfx, mem, y1, y2, col)
+   function M.draw_bar(gfx, mem, y1, y2, col)
 
    -- Hard to test: draws into a global screen
-   function M.hud_draw_bar(y1, y2, col)
+   function M.draw_bar(y1, y2, col)
    ```
 
 2. **Return results, don't produce side effects**

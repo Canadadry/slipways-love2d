@@ -31,20 +31,20 @@ M.palette_blocks = {
 }
 local palette_blocks = M.palette_blocks
 
-function M.hud_select_palette_block(mem, no)
+function M.select_palette_block(mem, no)
   local block = fixed.flr_int(no)
   assert(block >= 0 and block < 16,
-    "hud_select_palette_block: only blocks 0..15 exist; the cart would read past its table")
+    "hud.select_palette_block: only blocks 0..15 exist; the cart would read past its table")
   for i = 0, 15 do
     mem.draw_palette[i] = palette_blocks[block][i]
   end
 end
 
-function M.hud_select_palette_block_default(mem)
-  M.hud_select_palette_block(mem, fixed.from_int(0))
+function M.select_palette_block_default(mem)
+  M.select_palette_block(mem, fixed.from_int(0))
 end
 
-function M.hud_palette_block_default_in_force(mem)
+function M.palette_block_default_in_force(mem)
   for i = 0, 15 do
     if mem.draw_palette[i] ~= palette_blocks[0][i] then
       return false
@@ -53,24 +53,24 @@ function M.hud_palette_block_default_in_force(mem)
   return true
 end
 
-function M.hud_draw_bar(gfx, mem, y1, y2, col)
-  assert(gfx ~= nil, "hud_draw_bar: gfx.rectfill dereferences the graphics state, so a NULL one is not a no-op")
+function M.draw_bar(gfx, mem, y1, y2, col)
+  assert(gfx ~= nil, "hud.draw_bar: gfx.rectfill dereferences the graphics state, so a NULL one is not a no-op")
   if gfx ~= nil then
     gfx.pen_color = col
   end
   gfx_module.rectfill(gfx, mem, 0, to_int(y1), vram.SCREEN_WIDTH - 1, to_int(y2), col)
 end
 
-function M.hud_draw_bar_y1(gfx, mem, y1, col)
-  M.hud_draw_bar(gfx, mem, y1, y1, col)
+function M.draw_bar_y1(gfx, mem, y1, col)
+  M.draw_bar(gfx, mem, y1, y1, col)
 end
 
-function M.hud_draw_bar_default(gfx, mem, y1, y2)
+function M.draw_bar_default(gfx, mem, y1, y2)
   local col = (gfx ~= nil) and gfx.pen_color or 6
-  M.hud_draw_bar(gfx, mem, y1, y2, col)
+  M.draw_bar(gfx, mem, y1, y2, col)
 end
 
-function M.hud_draw_help_frame(gfx, mem, x1, y1, x2)
+function M.draw_help_frame(gfx, mem, x1, y1, x2)
   local galaxy_menu_button1 = to_int(x1)
   local top_pixel = to_int(y1)
   local galaxy_menu_button2 = to_int(x2)
@@ -88,18 +88,18 @@ local function aligned_x(t, x, a)
     fixed.from_int(strlen)))
 end
 
-function M.hud_print_outlined(gfx, mem, t, x, y, c, a)
+function M.print_outlined(gfx, mem, t, x, y, c, a)
   gfx_module.print_outlined(gfx, mem, t, aligned_x(t, x, a), to_int(y), bit.band(c, 0x0F))
 end
 
--- hud_print_outlined's contract (same pixels, same draw palette after), through
+-- hud.print_outlined's contract (same pixels, same draw palette after), through
 -- text_image.print_outlined. gfx's camera moves during a build and is restored.
-function M.hud_print_outlined_text_image(gfx, mem, t, x, y, c, a)
+function M.print_outlined_text_image(gfx, mem, t, x, y, c, a)
   text_image.print_outlined(gfx, mem, t, aligned_x(t, x, a), to_int(y), bit.band(c, 0x0F))
 end
 
-function M.hud_print_outlined_default(gfx, mem, t, x, y, c)
-  M.hud_print_outlined(gfx, mem, t, x, y, c, fixed.from_int(0))
+function M.print_outlined_default(gfx, mem, t, x, y, c)
+  M.print_outlined(gfx, mem, t, x, y, c, fixed.from_int(0))
 end
 
 return M

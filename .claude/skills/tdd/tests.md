@@ -82,13 +82,13 @@ When production code asserts, a failing test tells you not just _that_ something
 
 ```lua
 -- Without assertion: a nil gfx fails deep inside gfx.rectfill
-function M.hud_draw_bar(gfx, mem, y1, y2, col)
+function M.draw_bar(gfx, mem, y1, y2, col)
   gfx_module.rectfill(gfx, mem, 0, to_int(y1), vram.SCREEN_WIDTH - 1, to_int(y2), col)
 end
 
 -- With assertion (real code): fails at the violated contract
-function M.hud_draw_bar(gfx, mem, y1, y2, col)
-  assert(gfx ~= nil, "hud_draw_bar: gfx.rectfill dereferences the graphics state, so a NULL one is not a no-op")
+function M.draw_bar(gfx, mem, y1, y2, col)
+  assert(gfx ~= nil, "hud.draw_bar: gfx.rectfill dereferences the graphics state, so a NULL one is not a no-op")
   -- ...
 end
 ```

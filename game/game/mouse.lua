@@ -14,10 +14,10 @@ local g_mouse_up = false
 local g_left_button = { held = nil, pressed = false, released = false }
 
 local function mouse_update_method(self, t)
-  M.mouse_update(dispatch_context.input(), self)
+  M.update(dispatch_context.input(), self)
 end
 
-M.mouse_class_def = {
+M.class_def = {
   states = { [entity_class.STATE_NORMAL] = mouse_update_method },
   tags = 0,
   lineage = 0,
@@ -27,7 +27,7 @@ M.mouse_class_def = {
 local function mouse_create()
   local self = {}
 
-  entity.init_instance(self, M.mouse_class_def, game_data.mouse_archetype.state,
+  entity.init_instance(self, M.class_def, game_data.mouse_archetype.state,
     game_data.mouse_archetype.state_time)
   self.archetype = game_data.mouse_archetype
   entity_class.set_pos(self, vec.make(fixed.from_int(0), fixed.from_int(0)))
@@ -35,39 +35,39 @@ local function mouse_create()
   return self
 end
 
-function M.mouse_init()
-  M.mouse_shutdown()
-  assert(entity.ready(), "mouse_init: entity.init() runs first")
+function M.init()
+  M.shutdown()
+  assert(entity.ready(), "mouse.init: entity.init() runs first")
   g_mouse_up = true
   g_left_button.held = nil
   g_left_button.pressed = false
   g_left_button.released = false
 end
 
-function M.mouse_shutdown()
+function M.shutdown()
   g_mouse_up = false
 end
 
-function M.mouse_left_button()
+function M.left_button()
   if g_mouse_up then
     return g_left_button
   end
   return nil
 end
 
-function M.mouse_ready()
+function M.ready()
   return g_mouse_up
 end
 
-function M.mouse_class()
-  return M.mouse_class_def
+function M.class()
+  return M.class_def
 end
 
-function M.mouse_new()
+function M.new()
   return mouse_create()
 end
 
-function M.mouse_update(input, self)
+function M.update(input, self)
   if self == nil or input == nil then
     return
   end
@@ -76,7 +76,7 @@ function M.mouse_update(input, self)
   entity_class.set_pos(self, vec.make(fixed.from_int(mouse.x), fixed.from_int(mouse.y)))
 
   if g_mouse_up then
-    mouse_button.mouse_button_update(g_left_button, bit_module.band(mouse.buttons, input_module.MOUSE_LEFT) ~= 0)
+    mouse_button.update(g_left_button, bit_module.band(mouse.buttons, input_module.MOUSE_LEFT) ~= 0)
   end
 end
 

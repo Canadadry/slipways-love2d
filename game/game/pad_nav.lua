@@ -156,7 +156,7 @@ end
 
 local function held_structure()
   if ui_module.main_ui() ~= nil then
-    return placing_structure(ui_module.ui_left_held(ui_module.main_ui()))
+    return placing_structure(ui_module.left_held(ui_module.main_ui()))
   end
   return nil
 end
@@ -408,7 +408,7 @@ end
 local function held_slipway()
   local held = nil
   if ui_module.main_ui() ~= nil then
-    held = live(ui_module.ui_left_held(ui_module.main_ui()))
+    held = live(ui_module.left_held(ui_module.main_ui()))
   end
   if held ~= nil and held.class == slipway_module.class() then
     return held
@@ -420,7 +420,7 @@ local function drop_held_slipway()
   local held = held_slipway()
   if held ~= nil then
     held.class.drop(held, nil)
-    ui_module.ui_set_left_held(ui_module.main_ui(), nil)
+    ui_module.set_left_held(ui_module.main_ui(), nil)
   end
 end
 
@@ -543,7 +543,7 @@ end
 -- Never pause, which only pause_step closes: cleared on a release frame, the resumed carry would press the map.
 local function back_closes_the_box()
   if pad_panel.pad_panel_box_open() and not menu.pause_menu_shown() then
-    ui_module.ui_clear_ephemerals(ui_module.main_ui())
+    ui_module.clear_ephemerals(ui_module.main_ui())
   end
 end
 
@@ -553,10 +553,10 @@ local function show_marker(nav, shown)
     nav.marker_frames = 0
   end
   if ui ~= nil then
-    ui_module.ui_set_pad_selection(ui, shown, nav.marker_frames)
+    ui_module.set_pad_selection(ui, shown, nav.marker_frames)
   end
   if shown ~= nil then
-    nav.marker_frames = cint.mod(nav.marker_frames + 1, ui_module.UI_PAD_BLINK_PERIOD)
+    nav.marker_frames = cint.mod(nav.marker_frames + 1, ui_module.PAD_BLINK_PERIOD)
   end
 end
 
@@ -598,7 +598,7 @@ local function unwind_sub_modes(nav)
     return CANCELLED_NOTHING
   end
   if planet_menu_open(nav) then
-    ui_module.ui_clear_ephemerals(ui_module.main_ui())
+    ui_module.clear_ephemerals(ui_module.main_ui())
   end
   if M.pad_nav_placing(nav) ~= nil then
     return CANCELLED_STRUCTURE
@@ -611,7 +611,7 @@ local function leave_panel(nav, played)
     return
   end
   if pad_cycle.pad_cycle_panel(nav.cycle) == pad_cycle.PAD_CYCLE_TECH then
-    ui_module.ui_clear_ephemerals(ui_module.main_ui())
+    ui_module.clear_ephemerals(ui_module.main_ui())
   else
     click(nav, played)
   end
@@ -793,7 +793,7 @@ local function cancel_point(nav)
     nav.cursor_y = PARKED_Y
   end
   local at = vec.make(fixed.from_int(nav.cursor_x), fixed.from_int(nav.cursor_y))
-  assert(ui_module.ui_panel_box() == nil or not geom.box_contains(ui_module.ui_panel_box(), at),
+  assert(ui_module.panel_box() == nil or not geom.box_contains(ui_module.panel_box(), at),
     "cancel_point: inside the ui's panel box the drop would be judged on the map, not cancelled")
 end
 
@@ -1048,7 +1048,7 @@ local function map_step(nav, pad_buttons, pressed, release, back_returns, select
     reset_aim_mode(nav)
     if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_MENU, bindings_module.BINDINGS_ACTION_OPEN_MENU) and
       not release and not nav.release_pending and planet_menu_open(nav) then
-      ui_module.ui_clear_ephemerals(ui_module.main_ui())
+      ui_module.clear_ephemerals(ui_module.main_ui())
     else
       panel_step(nav, pad_buttons, pressed, played)
     end
@@ -1110,7 +1110,7 @@ end
 local function suspend_placement(nav, carried)
   nav.suspended_carry = entity_id.link(carried)
   nav.placement = M.PAD_NAV_PLACEMENT_SUSPENDED
-  ui_module.ui_set_left_held(ui_module.main_ui(), nil)
+  ui_module.set_left_held(ui_module.main_ui(), nil)
 end
 
 -- Every close of pause leaves the left button down on its frame, so the resumed carry makes no press edge.
@@ -1127,7 +1127,7 @@ local function resume_placement(nav)
   if menu.pause_menu_shown() then
     return false
   end
-  ui_module.ui_set_left_held(ui_module.main_ui(), suspended)
+  ui_module.set_left_held(ui_module.main_ui(), suspended)
   nav.placement = M.PAD_NAV_PLACEMENT_CARRYING
   nav.suspended_carry = nil
   return true
@@ -1187,8 +1187,8 @@ local function finish_step(nav, release, shown, played)
   played.mouse_y = nav.cursor_y
   show_marker(nav, shown)
   if ui_module.main_ui() ~= nil then
-    ui_module.ui_set_pad_tab(ui_module.main_ui(), lit_button(nav))
-    ui_module.ui_set_pad_crosshair(ui_module.main_ui(),
+    ui_module.set_pad_tab(ui_module.main_ui(), lit_button(nav))
+    ui_module.set_pad_crosshair(ui_module.main_ui(),
       M.pad_nav_aim_mode(nav) and M.pad_nav_placing(nav) == nil)
   end
 end

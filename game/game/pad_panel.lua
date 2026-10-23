@@ -100,7 +100,7 @@ function M.pad_panel_open()
   return g_memo.open
 end
 
--- Mirrors ui_update: while a box is open, a left press reaches only its ephemerals.
+-- Mirrors ui.update: while a box is open, a left press reaches only its ephemerals.
 local function candidates_all()
   local it = { from_ephemerals = M.pad_panel_box_open(), index = 1 }
   return it

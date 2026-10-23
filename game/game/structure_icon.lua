@@ -31,7 +31,7 @@ local function structure_icon_own_kind(self)
   return (self ~= nil) and self.kind or nil
 end
 
-M.structure_icon_kind_view_class_def = {
+M.kind_view_class_def = {
   states = {},
   tags = 0,
   lineage = 0,
@@ -39,11 +39,11 @@ M.structure_icon_kind_view_class_def = {
 }
 
 -- A new table each call; sprite and cost nil when the kind has none.
-function M.structure_icon_kind_view(self)
+function M.kind_view(self)
   local kind = structure_icon_own_kind(self)
   local view = {}
 
-  entity_class.init_header(view, M.structure_icon_kind_view_class_def)
+  entity_class.init_header(view, M.kind_view_class_def)
   view.required_tech = nil
   view.state = entity_class.STATE_NONE
   if kind ~= nil then
@@ -55,11 +55,11 @@ function M.structure_icon_kind_view(self)
   return view
 end
 
-function M.structure_icon_kind_view_class()
-  return M.structure_icon_kind_view_class_def
+function M.kind_view_class()
+  return M.kind_view_class_def
 end
 
-function M.structure_icon_refresh(self)
+function M.refresh(self)
   local rr
 
   if self == nil then
@@ -70,13 +70,13 @@ function M.structure_icon_refresh(self)
     return
   end
 
-  rr = M.structure_icon_kind_view(self).required_tech
+  rr = M.kind_view(self).required_tech
 
   if not require("game.tech_gate").is_unlocked(rr) then
     return
   end
 
-  assert(g_structure_icon_up, "structure_icon_init() must run before structure_icon_refresh moves the shared cursor")
+  assert(g_structure_icon_up, "structure_icon.init() must run before structure_icon.refresh moves the shared cursor")
 
   if g_cursor ~= nil then
     entity_class.set_pos(self, g_cursor)
@@ -85,12 +85,12 @@ function M.structure_icon_refresh(self)
   end
   self.is_revealed = true
 
-  M.structure_icon_set_cursor(vec.sub(M.structure_icon_cursor(),
+  M.set_cursor(vec.sub(M.cursor(),
     vec.make(fixed.from_int(10), fixed.from_int(0))))
 end
 
-function M.structure_icon_is_revealed(e)
-  if e == nil or e.is_dead or e.class ~= M.structure_icon_class() then
+function M.is_revealed(e)
+  if e == nil or e.is_dead or e.class ~= M.class() then
     return false
   end
   local icon = e
@@ -98,10 +98,10 @@ function M.structure_icon_is_revealed(e)
 end
 
 local function structure_icon_refresh_method(self)
-  M.structure_icon_refresh(self)
+  M.refresh(self)
 end
 
-function M.structure_icon_left_press(self)
+function M.left_press(self)
   local planet = require("game.planet")
   local new_id
   local entity_kind
@@ -111,7 +111,7 @@ function M.structure_icon_left_press(self)
   local out = { stop = false, held = nil }
 
   assert(g_structure_icon_up,
-    "structure_icon_init() must run before structure_icon_left_press bumps the shared identifier counter")
+    "structure_icon.init() must run before structure_icon.left_press bumps the shared identifier counter")
   new_id = fixed.add(g_id_counter or fixed.from_int(0), fixed.from_int(1))
   g_id_counter = new_id
 
@@ -129,10 +129,10 @@ function M.structure_icon_left_press(self)
 end
 
 local function structure_icon_left_press_method(self, mouse)
-  return M.structure_icon_left_press(self)
+  return M.left_press(self)
 end
 
-function M.structure_icon_draw(gfx, mem, self, p)
+function M.draw(gfx, mem, self, p)
   local view
 
   if self == nil or not self.is_revealed then
@@ -144,7 +144,7 @@ function M.structure_icon_draw(gfx, mem, self, p)
 
   gfx_module.palt(mem, 3, false)
 
-  view = M.structure_icon_kind_view(self)
+  view = M.kind_view(self)
   gfx_module.spr_default(gfx, mem, (view.sprite ~= nil) and structure_icon_to_int(view.sprite) or 0,
     structure_icon_to_int(p.x), structure_icon_to_int(p.y))
 
@@ -166,7 +166,7 @@ function M.structure_icon_draw(gfx, mem, self, p)
 end
 
 local function structure_icon_draw_method(self, screen_pos)
-  M.structure_icon_draw(dispatch_context.gfx(), dispatch_context.mem(), self,
+  M.draw(dispatch_context.gfx(), dispatch_context.mem(), self,
     screen_pos)
 end
 
@@ -174,7 +174,7 @@ local function structure_icon_hit_test_method(self, mouse)
   return entity_geom.contains_cursor(self, mouse)
 end
 
-M.structure_icon_class_def = {
+M.class_def = {
   draw = structure_icon_draw_method,
   hit_test = structure_icon_hit_test_method,
   refresh = structure_icon_refresh_method,
@@ -191,8 +191,8 @@ local function structure_icon_create(keys)
   local archetype = game_data.structure_icon_archetype
   local hit_box
 
-  assert(g_structure_icon_up, "structure_icon_init() must run before a structure icon is created")
-  entity.init_instance(self, M.structure_icon_class_def, archetype.state, archetype.state_time)
+  assert(g_structure_icon_up, "structure_icon.init() must run before a structure icon is created")
+  entity.init_instance(self, M.class_def, archetype.state, archetype.state_time)
   self.archetype = archetype
   entity_registry.set_layer(self, self.archetype.layer)
   hit_box = self.archetype.hit_box
@@ -209,62 +209,62 @@ local function structure_icon_create(keys)
   return self
 end
 
-function M.structure_icon_init()
-  M.structure_icon_shutdown()
+function M.init()
+  M.shutdown()
 
   g_structure_icon_up = true
   structure_icon_clear_cursor()
   g_id_counter = fixed.from_int(0)
 end
 
-function M.structure_icon_shutdown()
+function M.shutdown()
   g_structure_icon_up = false
   structure_icon_clear_cursor()
 end
 
-function M.structure_icon_ready()
+function M.ready()
   return g_structure_icon_up
 end
 
-function M.structure_icon_class()
-  return M.structure_icon_class_def
+function M.class()
+  return M.class_def
 end
 
-function M.structure_icon_new(keys)
+function M.new(keys)
   return structure_icon_create(keys)
 end
 
 -- The archetype's own table, nil while the module is down.
-function M.structure_icon_rest_cursor()
+function M.rest_cursor()
   return g_structure_icon_up and game_data.structure_icon_archetype.rest_cursor or nil
 end
 
-function M.structure_icon_has_cursor()
+function M.has_cursor()
   return g_cursor ~= nil
 end
 
 -- Zero while the cursor is absent.
-function M.structure_icon_cursor()
+function M.cursor()
   if g_cursor ~= nil then
     return vec.make(g_cursor.x, g_cursor.y)
   end
   return vec.make(fixed.from_int(0), fixed.from_int(0))
 end
 
-function M.structure_icon_set_id_counter(id)
+function M.set_id_counter(id)
   assert(g_structure_icon_up,
-    "structure_icon_init() must run before structure_icon_set_id_counter, or the next init resets the counter")
+    "structure_icon.init() must run before structure_icon.set_id_counter, or the next init resets the counter")
   g_id_counter = id
 end
 
-function M.structure_icon_id_counter(out)
+function M.id_counter(out)
   if g_id_counter == nil then
     return false, out
   end
   return true, g_id_counter
 end
 
-function M.structure_icon_set_cursor(cursor)
+function M.set_cursor(cursor)
   g_cursor = vec.make(cursor.x, cursor.y)
 end
 

@@ -80,7 +80,7 @@ local function targeting_track_slipway_predicate(e, ctx_ptr)
 end
 
 local function probe_panel_box_contains(rp)
-  local hw = require("game.ui").ui_panel_box()
+  local hw = require("game.ui").panel_box()
 
   if hw == nil then
     return false
@@ -308,7 +308,7 @@ function M.targeting_tooltip_show(gfx, mem, state, pb)
 
   if gfx ~= nil and mem ~= nil then
     local a = fixed.LIT(0x00008000, 0.5)
-    hud.hud_print_outlined(gfx, mem, display, mp.x, fixed.sub(mp.y, fixed.from_int(8)), 8, a)
+    hud.print_outlined(gfx, mem, display, mp.x, fixed.sub(mp.y, fixed.from_int(8)), 8, a)
   end
 end
 

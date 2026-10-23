@@ -351,13 +351,13 @@ function M.toast_draw(gfx, mem, self, p)
     return
   end
 
-  hud.hud_select_palette_block(mem, self.fade)
+  hud.select_palette_block(mem, self.fade)
 
   color = fixed.flr_int(self.color)
 
-  hud.hud_print_outlined(gfx, mem, self.text, p.x, p.y, color, a_center)
+  hud.print_outlined(gfx, mem, self.text, p.x, p.y, color, a_center)
 
-  hud.hud_select_palette_block_default(mem)
+  hud.select_palette_block_default(mem)
 end
 
 local function toast_draw_method(self, screen_pos)
@@ -502,10 +502,10 @@ function M.message_box_open_box(frame, buttons, button_count)
   step_context.pos = box_pos
 
   dispatcher = ui.main_ui()
-  ui.ui_clear_ephemerals(dispatcher)
+  ui.clear_ephemerals(dispatcher)
 
   if dispatcher ~= nil then
-    ephemerals = ui.ui_ephemerals_new()
+    ephemerals = ui.ephemerals_new()
   end
   if frame.description ~= nil then
     open_box_add(ephemerals, open_box_step(step_context, frame, description_row))
@@ -514,11 +514,11 @@ function M.message_box_open_box(frame, buttons, button_count)
     open_box_add(ephemerals, open_box_step(step_context, frame, buttons[index]))
   end
   if dispatcher ~= nil then
-    ui.ui_set_ephemerals(dispatcher, ephemerals)
+    ui.set_ephemerals(dispatcher, ephemerals)
   end
 
   if frame.clear_ephemerals_after and dispatcher ~= nil then
-    ui.ui_set_ephemerals(dispatcher, ui.ui_ephemerals_new())
+    ui.set_ephemerals(dispatcher, ui.ephemerals_new())
   end
 end
 

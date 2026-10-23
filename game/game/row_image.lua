@@ -166,7 +166,7 @@ function M.draw_at(gfx, mem, row, p, a)
   origin = vec.sub(p, vec.make(fixed.mul(a, row.width), 0))
   image.draw(gfx, mem, image_slot.ROW_FIRST + i - 1, fixed.flr_int(origin.x),
     fixed.flr_int(origin.y))
-  hud.hud_select_palette_block_default(mem)
+  hud.select_palette_block_default(mem)
 end
 
 return M
