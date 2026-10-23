@@ -319,7 +319,7 @@ local function total_production_visit(pt, ctx)
   local found
   local current
 
-  assert(planet.planet_is_family(pt) ~= 0, "total_production_visit: the planet tag holds planets only")
+  assert(planet.planet_is_family(pt), "total_production_visit: the planet tag holds planets only")
   jo = pt
   if jo.needs == nil then
     return
@@ -350,7 +350,7 @@ local function crowding_penalty_visit(l, ctx)
   local found
   local current
 
-  assert(planet.planet_is_family(l) ~= 0, "crowding_penalty_visit: the structure tag holds planets only")
+  assert(planet.planet_is_family(l), "crowding_penalty_visit: the structure tag holds planets only")
   if l.needs == nil then
     return
   end

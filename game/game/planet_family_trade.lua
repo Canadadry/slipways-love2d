@@ -271,7 +271,7 @@ function M.synthesizer_attach_slipway(self, slipway)
   if other_end ~= nil then
     local jy
 
-    assert(planet.planet_is_family(other_end) ~= 0, "synthesizer_attach_slipway: the other end of a registered slipway is a planet")
+    assert(planet.planet_is_family(other_end), "synthesizer_attach_slipway: the other end of a registered slipway is a planet")
     assert(other_end.needs ~= nil,
       "synthesizer_attach_slipway: the other end of a slipway to a synthesizer holds needs")
     jy = other_end.needs
@@ -306,7 +306,7 @@ end
 
 function M.synthesizer_set_spent(self, spent)
   assert(self ~= nil and self.class == M.synthesizer_class(), "synthesizer_set_spent: self is a synthesizer")
-  self.synthesizable_resources = (spent ~= 0) and M.synthesizer_synthesizable_resources_spent
+  self.synthesizable_resources = spent and M.synthesizer_synthesizable_resources_spent
     or self.archetype.synthesizable_resources
 end
 

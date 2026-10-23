@@ -289,7 +289,7 @@ local function available_projects_predicate(b, planet_instance)
     local planet = require("game.planet")
     local jo
 
-    assert(planet.planet_is_family(planet_instance) ~= 0,
+    assert(planet.planet_is_family(planet_instance),
       "available_projects_predicate: the planet display passes its own planet")
     jo = planet_instance
     if jo.planet_type ~= nil then

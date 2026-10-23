@@ -82,7 +82,7 @@ end
 
 -- The planet, the slipway's own mouse point, or nil.
 function M.slipway_end(self)
-  if self.end_is_point ~= 0 then
+  if self.end_is_point then
     return self.point
   end
   return entity_id.entity_get(self.end_)
@@ -94,19 +94,18 @@ end
 
 local function slipway_copy_infraspace(self, from)
   if from == nil or from.infraspace == nil then
-    return 0
+    return false
   end
   self.infraspace = from.infraspace
-  return 1
+  return true
 end
 
 -- The start's infraspace, else the end's, and the layer that follows.
 local function slipway_inherit_infraspace(self)
   self.infraspace = nil
-  if slipway_copy_infraspace(self, M.slipway_start(self)) == 0 then
+  if not slipway_copy_infraspace(self, M.slipway_start(self)) then
     slipway_copy_infraspace(self, M.slipway_end(self))
   end
-  -- An infraspace of 0 still counts as one.
   if self.infraspace ~= nil then
     entity_registry.entity_registry_set_layer(self, fixed.p8_fixed_from_int(2))
   else
@@ -118,7 +117,7 @@ end
 function M.slipway_served_planets_add(hg, id)
   assert(id ~= nil,
     "slipway_served_planets_add: a NULL identifier does not fit the member's type -- stop, do not widen the member")
-  if M.slipway_served_planets_has(hg, id) ~= 0 then
+  if M.slipway_served_planets_has(hg, id) then
     return
   end
   hg.ids[hg.count] = id
@@ -127,14 +126,14 @@ end
 
 function M.slipway_served_planets_has(hg, id)
   if hg == nil or id == nil then
-    return 0
+    return false
   end
   for i = 0, hg.count - 1 do
     if hg.ids[i] == id then
-      return 1
+      return true
     end
   end
-  return 0
+  return false
 end
 
 function M.slipway_construct(self)
@@ -165,7 +164,7 @@ function M.slipway_drag(self, mouse)
 
   if hovered ~= nil and hovered.class.accept_drop ~= nil then
     self.end_ = entity_id.entity_id_link(hovered)
-    self.end_is_point = 0
+    self.end_is_point = false
   else
     local point_pos = entity_class.mouse_pos_world(mouse)
 
@@ -176,7 +175,7 @@ function M.slipway_drag(self, mouse)
     end
     entity_class.entity_set_map_pos(self.point, vec.vec_div(point_pos, fixed.p8_fixed_from_int(128)))
     self.end_ = nil
-    self.end_is_point = 1
+    self.end_is_point = true
   end
 
   self.targeting.cost = economy_formulas.economy_formulas_route_base_cost(
@@ -195,7 +194,7 @@ end
 function M.slipway_connect(self, end_)
   assert(self ~= nil and end_ ~= nil, "slipway_connect: a resumed slipway joins two saved nodes")
   self.end_ = entity_id.entity_id_link(end_)
-  self.end_is_point = 0
+  self.end_is_point = false
   slipway_inherit_infraspace(self)
   entity.entity_set_state(self, entity_class.ENTITY_STATE_NORMAL)
 end
@@ -217,7 +216,7 @@ function M.slipway_drop(self, end_planet)
 
   self.fade_in_step = fixed.p8_fixed_from_int(1)
   self.end_ = entity_id.entity_id_link(end_planet)
-  self.end_is_point = 0
+  self.end_is_point = false
 
   do
     local qu = M.slipway_start(self)
@@ -240,10 +239,10 @@ local function slipway_obstruction_node_predicate(e, ctx_ptr)
   local ctx = ctx_ptr
 
   if e == nil then
-    return 0
+    return false
   end
   return geom.geom_near_segment(ctx.start_point, ctx.end_point, M.slipway_end_map_pos(e),
-    fixed.P8_FIXED_LIT(0x000000d1, 0.0032)) and 1 or 0
+    fixed.P8_FIXED_LIT(0x000000d1, 0.0032))
 end
 
 local function slipway_obstruction_slipway_predicate(e, ctx_ptr)
@@ -251,15 +250,15 @@ local function slipway_obstruction_slipway_predicate(e, ctx_ptr)
   local sw
 
   if e == nil then
-    return 0
+    return false
   end
   assert(e.class == M.slipway_class(), "the slipway tag holds slipways only")
   sw = e
   if sw.infraspace ~= ctx.self_infraspace then
-    return 0
+    return false
   end
   return geom.geom_segments_cross(ctx.start_point, ctx.end_point, M.slipway_end_map_pos(M.slipway_start(sw)),
-    M.slipway_end_map_pos(M.slipway_end(sw))) and 1 or 0
+    M.slipway_end_map_pos(M.slipway_end(sw)))
 end
 
 function M.slipway_obstruction(self)
@@ -289,7 +288,7 @@ function M.slipway_obstruction(self)
     local oe = nil
 
     if start_node ~= nil then
-      assert(require("game.planet").planet_is_family(start_node) ~= 0,
+      assert(require("game.planet").planet_is_family(start_node),
         "a slipway's start is a planet: slipway_create asserts it")
       oe = start_node.slipways
     end
@@ -321,14 +320,14 @@ function M.slipway_obstruction(self)
     -- Every predicate runs on every node, then every slipway: no early exit at the first match.
     if nodes ~= nil then
       for i = 1, #nodes do
-        if slipway_obstruction_node_predicate(nodes[i], node_ctx) ~= 0 and result == nil then
+        if slipway_obstruction_node_predicate(nodes[i], node_ctx) and result == nil then
           result = nodes[i]
         end
       end
     end
     if slipways ~= nil then
       for i = 1, #slipways do
-        if slipway_obstruction_slipway_predicate(slipways[i], slipway_ctx) ~= 0 and result == nil then
+        if slipway_obstruction_slipway_predicate(slipways[i], slipway_ctx) and result == nil then
           result = slipways[i]
         end
       end
@@ -377,8 +376,7 @@ local function slipway_release_method(self)
 end
 
 local function slipway_is_endpoint_class(cls)
-  return (cls.states[entity_class.ENTITY_STATE_SETTLED] ~= nil or cls == require("game.planet").planet_class())
-    and 1 or 0
+  return cls.states[entity_class.ENTITY_STATE_SETTLED] ~= nil or cls == require("game.planet").planet_class()
 end
 
 M.slipway_class_def = {
@@ -412,7 +410,7 @@ local function slipway_create(keys)
   self.transit_dots = {}
   self.served_planets.count = 0
   self.end_ = nil
-  self.end_is_point = 0
+  self.end_is_point = false
   self.targeting.cost = self.archetype.targeting.cost
   require("game.probe").targeting_set_target(self.targeting, nil)
   self.targeted_by = nil
@@ -420,7 +418,7 @@ local function slipway_create(keys)
   entity_class.entity_init_header(self.point, M.slipway_mouse_point_class_def)
   entity_class.entity_set_map_pos(self.point, vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0)))
   if keys ~= nil and entity_id.entity_get(keys.start) ~= nil then
-    assert(slipway_is_endpoint_class(entity_id.entity_get(keys.start).class) ~= 0,
+    assert(slipway_is_endpoint_class(entity_id.entity_get(keys.start).class),
       "slipway_create: a start key that is neither NULL nor a planet or a structure "
         .. "does not fit the member's type -- stop, do not widen the member")
     self.start = keys.start

@@ -23,13 +23,13 @@ local M = {}
 
 local EMITTER_POINT_BATCH = 32
 
-local g_pixels_hidden = 0
+local g_pixels_hidden = false
 
 -- Off by default; only devtools turns it on. Hides the pixels of emitter
 -- particles, burst rings and transit dots, and nothing else: their state and
 -- every random draw are unchanged.
 function M.particle_hide_pixels(hidden)
-  g_pixels_hidden = (hidden ~= 0) and 1 or 0
+  g_pixels_hidden = hidden
 end
 
 function M.particle_pixels_hidden()
@@ -38,13 +38,12 @@ end
 
 -- A class property, not the position bit: a probe dragged without a mouse position carries a position that is absent.
 local function emitter_host_carries_pos(self)
-  return (bit.band(self.class.lineage,
-    bit.bor(entity_class.LINEAGE(entity_class.LINEAGE_PROBE), entity_class.LINEAGE(entity_class.LINEAGE_PLANET))) ~= 0)
-    and 1 or 0
+  return bit.band(self.class.lineage,
+    bit.bor(entity_class.LINEAGE(entity_class.LINEAGE_PROBE), entity_class.LINEAGE(entity_class.LINEAGE_PLANET))) ~= 0
 end
 
 local function emitter_host_layer_pos(self)
-  assert(self.layer ~= nil and emitter_host_carries_pos(self) ~= 0,
+  assert(self.layer ~= nil and emitter_host_carries_pos(self),
     "emitter_update: a host that carries no layer or no pos, none of whose draw runs it -- stop")
   return self.layer, entity_class.entity_pos(self)
 end
@@ -65,7 +64,7 @@ function M.emitter_of(e)
   if bit.band(e.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_PROBE)) ~= 0 then
     return e.emitter
   end
-  if planet.planet_is_family(e) ~= 0 then
+  if planet.planet_is_family(e) then
     return e.emitter
   end
   return nil
@@ -198,7 +197,7 @@ function M.emitter_update(graphics, memory, self)
             end
           end
 
-          if g_pixels_hidden == 0 then
+          if not g_pixels_hidden then
             points[point_count] = { x = px, y = py, col = col }
             point_count = point_count + 1
             if point_count == EMITTER_POINT_BATCH then

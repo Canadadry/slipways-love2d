@@ -48,8 +48,8 @@ local function is_colonized_truthy(pt)
   if pt == nil then
     return 0
   end
-  assert(planet.planet_is_family(pt) ~= 0, "is_colonized_truthy: the entity is a planet")
-  return planet.planet_is_colonized(pt)
+  assert(planet.planet_is_family(pt), "is_colonized_truthy: the entity is a planet")
+  return planet.planet_is_colonized(pt) and 1 or 0
 end
 
 function M.economy_score_planet_upkeep(pt)
@@ -105,7 +105,7 @@ function M.economy_score_trade_income(entity)
   if entity == nil then
     return total
   end
-  assert(planet_module.planet_is_family(entity) ~= 0, "economy_score_trade_income: the entity is a planet")
+  assert(planet_module.planet_is_family(entity), "economy_score_trade_income: the entity is a planet")
   planet = entity
   outgoing = planet.outgoing_routes
 
@@ -116,7 +116,7 @@ function M.economy_score_trade_income(entity)
       found, partner = trade.trade_last_planet(outgoing[i], partner)
       if found then
         local oz
-        assert(planet_module.planet_is_family(partner) ~= 0, "economy_score_trade_income: a trade leads to a planet")
+        assert(planet_module.planet_is_family(partner), "economy_score_trade_income: a trade leads to a planet")
         oz = partner
         if oz.archetype.is_planet then
           local trade_mult = fixed.p8_fixed_from_int(0)
@@ -304,7 +304,7 @@ function M.economy_score_net_income(p)
   local kr = fixed.p8_fixed_flr(fixed.p8_fixed_sub(M.economy_score_trade_income(p), M.economy_score_planet_upkeep(p)))
   local jo
 
-  assert(planet.planet_is_family(p) ~= 0, "economy_score_net_income: the planet tag holds planets only")
+  assert(planet.planet_is_family(p), "economy_score_net_income: the planet tag holds planets only")
   jo = p
   jo.net_income = kr
   return kr

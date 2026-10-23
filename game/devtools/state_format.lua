@@ -61,7 +61,7 @@ end
 local function add_position(line, e, camera)
   local ra = ra_of(e)
   local rest_y = ra.y
-  if planet_family.planet_family_bobs(e) ~= 0 then
+  if planet_family.planet_family_bobs(e) then
     rest_y = fixed.p8_fixed_sub(ra.y, planet.planet_bob_total(e.state_time))
   end
   line_add(line, " world ")
@@ -217,7 +217,7 @@ local function write_slipways(sink)
     local s = jc[i]
     if slipway_placed(s) == 0 then goto continue end
     line_add(line, "slipway %s %s %s", id_of(slipway.slipway_start(s)), id_of(slipway.slipway_end(s)),
-             (s.infraspace ~= nil and s.infraspace ~= 0) and "infragate" or "normal")
+             s.infraspace and "infragate" or "normal")
     line_end(line)
     n = n + 1
     ::continue::

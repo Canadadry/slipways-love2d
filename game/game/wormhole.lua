@@ -40,8 +40,7 @@ entity_class.entity_init_header(M.g_wormhole_too_far_target_wrapper, M.wormhole_
 M.g_wormhole_too_far_target_wrapper.status_text = game_data.wormhole_too_far_target_status_text
 
 local function wormhole_is_anchor(p)
-  return (p ~= nil and not p.is_dead and p.fold_anchor ~= nil and p.fold_anchor ~= 0)
-    and 1 or 0
+  return p ~= nil and not p.is_dead and p.fold_anchor ~= nil
 end
 
 local function wormhole_anchor_count()
@@ -49,7 +48,9 @@ local function wormhole_anchor_count()
   local n = 0
 
   for i = 1, #live do
-    n = n + wormhole_is_anchor(live[i])
+    if wormhole_is_anchor(live[i]) then
+      n = n + 1
+    end
   end
   return n
 end
@@ -71,7 +72,7 @@ function M.wormhole_construct(self)
   live = entity_registry.live_entities()
   for i = 1, #live do
     local p = live[i]
-    if wormhole_is_anchor(p) ~= 0 then
+    if wormhole_is_anchor(p) then
       ox[#ox + 1] = entity_id.entity_id_link(p)
     end
   end
@@ -183,7 +184,7 @@ function M.wormhole_update_unfolding(self, t)
       local pt
 
       if e ~= nil then
-        assert(planet.planet_is_family(e) ~= 0, "wormhole_update_unfolding: the planet tag holds planets only")
+        assert(planet.planet_is_family(e), "wormhole_update_unfolding: the planet tag holds planets only")
         pt = e
 
         if pt.state == entity_class.ENTITY_STATE_UNKNOWN then

@@ -12,7 +12,7 @@ local M = {}
 M.PAD_TARGET_PERPENDICULAR_WEIGHT = 2
 
 function M.pad_target_is_candidate(e)
-  return (e ~= nil and not e.is_dead and planet.planet_is_family(e) ~= 0 and
+  return (e ~= nil and not e.is_dead and planet.planet_is_family(e) and
     (e.state == entity_class.ENTITY_STATE_KNOWN or e.state == entity_class.ENTITY_STATE_SETTLED)) and 1 or 0
 end
 

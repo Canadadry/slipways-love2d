@@ -54,7 +54,7 @@
   - [x] Chunk 2 — engine
   - [x] Chunk 3 — class callbacks
   - [x] Chunk 4 — data lookups
-  - [ ] Chunk 5 — planets, slipways, wormholes
+  - [x] Chunk 5 — planets, slipways, wormholes
   - [ ] Chunk 6 — economy, research, targeting
   - [ ] Chunk 7 — UI
   - [ ] Chunk 8 — input, cart and save

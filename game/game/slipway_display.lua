@@ -41,12 +41,12 @@ function M.slipway_spawn_transit_dot(self, f, t)
   end
 
   -- The mouse point slipway_drag hangs the end on is not a planet.
-  if t ~= nil and planet.planet_is_family(t) ~= 0 then
+  if t ~= nil and planet.planet_is_family(t) then
     t_id = planet.planet_id_or_null(t)
   else
     t_id = nil
   end
-  if slipway.slipway_served_planets_has(self.served_planets, t_id) ~= 0 then
+  if slipway.slipway_served_planets_has(self.served_planets, t_id) then
     local f_pos = slipway.slipway_end_pos(f)
     local t_pos = slipway.slipway_end_pos(t)
     local d = vec.vec_sub(t_pos, f_pos)
@@ -135,7 +135,6 @@ function M.slipway_draw(graphics, memory, self)
     local fade_in_step_i = to_int(fade_in_step)
     local fade_color = fixed.p8_fixed_from_int(0)
     local target_or_targeted_by
-    local infraspace_truthy
     local line_color
     local border_color
     local dot_color
@@ -156,17 +155,16 @@ function M.slipway_draw(graphics, memory, self)
     end
 
     target_or_targeted_by = probe.targeting_target(self.targeting) ~= nil or entity_id.entity_get(self.targeted_by) ~= nil
-    infraspace_truthy = (self.infraspace ~= nil) and 1 or 0
 
     if target_or_targeted_by then
       line_color = fixed.p8_fixed_from_int(2)
-    elseif infraspace_truthy ~= 0 then
+    elseif self.infraspace then
       line_color = fixed.p8_fixed_from_int(0)
     else
       line_color = fade_color
     end
-    border_color = (infraspace_truthy ~= 0) and fade_color or fixed.p8_fixed_from_int(0)
-    dot_color = (infraspace_truthy ~= 0) and fixed.p8_fixed_from_int(5) or fixed.p8_fixed_from_int(13)
+    border_color = self.infraspace and fade_color or fixed.p8_fixed_from_int(0)
+    dot_color = self.infraspace and fixed.p8_fixed_from_int(5) or fixed.p8_fixed_from_int(13)
 
     local ends = M.slipway_line_ends(self)
     M.slipway_draw_line(graphics, memory, ends, -1, 2, 3, to_int(border_color))
@@ -201,7 +199,7 @@ function M.slipway_draw(graphics, memory, self)
           end
         end
 
-        if particle.particle_pixels_hidden() == 0 then
+        if not particle.particle_pixels_hidden() then
           local x = to_int(new_pos.x)
           local y = to_int(new_pos.y)
           gfx_module.p8_rectfill(graphics, memory, x, y, x + 1, y + 1, 0)

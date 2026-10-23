@@ -100,14 +100,14 @@ end
 local function planet_row_signature_equal(left, right)
   if left.output ~= right.output or left.amount ~= right.amount or left.route_count ~= right.route_count
     or left.needs_count ~= right.needs_count or left.flags ~= right.flags then
-    return 0
+    return false
   end
   for i = 0, left.needs_count - 1 do
     if left.need_flags[i] ~= right.need_flags[i] or left.need_resources[i] ~= right.need_resources[i] then
-      return 0
+      return false
     end
   end
-  return 1
+  return true
 end
 
 function M.planet_refresh(self)
@@ -136,7 +136,7 @@ function M.planet_refresh(self)
   by_list = self.outgoing_routes
   route_count = (by_list ~= nil) and #by_list or 0
   signature = planet_row_signature(needs_list, output, mu, route_count)
-  if planet_row_signature_equal(signature, self.layout_row_signature) ~= 0 then
+  if planet_row_signature_equal(signature, self.layout_row_signature) then
     return
   end
 
@@ -176,7 +176,7 @@ local function planet_inspection_panel_filter_step(e, ctx_ptr)
   for _ = 0, count - 1 do
     ctx.received_needs[#ctx.received_needs + 1] = e
   end
-  return (gc == fixed.p8_fixed_from_int(0)) and 1 or 0
+  return gc == fixed.p8_fixed_from_int(0)
 end
 
 local function planet_dollar(s)
@@ -259,7 +259,7 @@ function M.planet_inspection_panel(self)
   if needs ~= nil then
     for index = 1, #needs do
       local need = needs[index]
-      if planet_inspection_panel_filter_step(need, filter_context) ~= 0 then
+      if planet_inspection_panel_filter_step(need, filter_context) then
         unmet_needs[#unmet_needs + 1] = need
       end
     end
@@ -384,7 +384,7 @@ local function planet_projects_panel_on_click_method(self)
     od = self.project_cost
   end
 
-  assert(pt ~= nil and planet.planet_is_family(pt) ~= 0, "the projects panel button lost its captured planet")
+  assert(pt ~= nil and planet.planet_is_family(pt), "the projects panel button lost its captured planet")
   if economy.economy_spend(probe.main_economy_typed(), od) ~= 0 then
     M.planet_apply_project(pt, b)
   end
@@ -451,7 +451,7 @@ local planet_draw_on_screen
 local PLANET_DISC_RADIUS = 7
 local PLANET_RING_RADIUS = 6
 
-local planet_images_built = 0
+local planet_images_built = false
 
 local function planet_draw_disc_image(gfx, mem, context)
   gfx_module.p8_circfill(gfx, mem, PLANET_DISC_RADIUS, PLANET_DISC_RADIUS, PLANET_DISC_RADIUS, 0)
@@ -467,7 +467,7 @@ local function planet_build_images(gfx, mem)
   local ring_colors = require("game.planet").planet_ring_colors()
 
   assert(gfx.fillp_pattern == 0, "planet images are built with no fill pattern")
-  if planet_images_built ~= 0 then
+  if planet_images_built then
     return
   end
   image.p8_image_build(gfx, mem, image_slot.IMAGE_SLOT_PLANET_DISC, 2 * PLANET_DISC_RADIUS + 1, 2 * PLANET_DISC_RADIUS + 1,
@@ -477,7 +477,7 @@ local function planet_build_images(gfx, mem)
     image.p8_image_build(gfx, mem, image_slot.IMAGE_SLOT_PLANET_RING_FIRST + index, 2 * PLANET_RING_RADIUS + 1,
       2 * PLANET_RING_RADIUS + 1, planet_draw_ring_image, ring_colors.items[index])
   end
-  planet_images_built = 1
+  planet_images_built = true
 end
 
 function M.planet_draw(graphics, memory, self, screen_pos)
@@ -529,7 +529,7 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
   gfx_module.p8_spr(graphics, memory, spr_index, screen_x - 4, screen_y - 4, 2, 2)
   hud.hud_select_palette_block_default(memory)
 
-  if planet.planet_is_colonized(self) ~= 0 then
+  if planet.planet_is_colonized(self) then
     local mi = fixed.p8_fixed_flr_int(self.development_tier or fixed.p8_fixed_from_int(0))
     local color = 0
     local found
@@ -655,7 +655,7 @@ function M.planet_apply_project(self, research_project_instance)
   else
     entity.entity_set_state(self, entity_class.ENTITY_STATE_SETTLED)
     planet.planet_install_project(self, research_project_instance)
-    self.fold_anchor = fixed.p8_fixed_from_int(1)
+    self.fold_anchor = true
     fp = tech_gate.tech_gate_if_unlocked("autoassemblers", fixed.p8_fixed_from_int(3), fixed.p8_fixed_from_int(2))
   end
 

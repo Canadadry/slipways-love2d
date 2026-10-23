@@ -950,7 +950,7 @@ local function capture_probe(out)
     out.probe = {
       pos = vec_of(entity_class.entity_pos(e)),
       map_pos = vec_of(entity_class.entity_map_pos(e)),
-      fold_anchor = e.fold_anchor,
+      fold_anchor = e.fold_anchor and 0x10000 or 0,
     }
     do return end
     ::continue::
@@ -1027,9 +1027,9 @@ local function capture_node_fields(node, planet)
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_PLANET_ID)
     node.planet_id = id
   end
-  -- An absent fold anchor or infraspace is saved as 0.
-  node.fold_anchor = header.fold_anchor or 0
-  node.infraspace = header.infraspace or 0
+  -- Saved as the cart's fixed-point 1.0 or 0.
+  node.fold_anchor = header.fold_anchor and 0x10000 or 0
+  node.infraspace = header.infraspace and 0x10000 or 0
   if planet.planet_type ~= nil then
     node.planet_type = planet_type_index(planet.planet_type) + 1
   end
@@ -1120,7 +1120,7 @@ local function capture_world(out, ids)
     local e = tagged_at(entity_class.TAG_SLIPWAY, i)
     local slipway = e
     local saved
-    if is_saved(e) == 0 or slipway.end_is_point ~= 0 then
+    if is_saved(e) == 0 or slipway.end_is_point then
       goto continue
     end
     assert(ids.slipway_count < M.SAVE_STATE_SLIPWAYS_CAP, "save_state_capture: slipway indices are one byte")

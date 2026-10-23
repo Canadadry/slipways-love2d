@@ -63,7 +63,7 @@ In this order.
 | has_probe | u8 | 0 or 1 |
 | probe pos x, y | i32 × 2 | any; only when has_probe is 1 |
 | probe map_pos x, y | i32 × 2 | any; only when has_probe is 1 |
-| probe fold_anchor | i32 | any; only when has_probe is 1 |
+| probe fold_anchor | i32 | any, nonzero loads as anchored (capture writes 0x10000 or 0); only when has_probe is 1 |
 | camera map_pos x, y | i32 × 2 | any |
 | node count | u8 | 0–255 |
 | node record, × node count | see below | |
@@ -81,8 +81,8 @@ In this order.
 | map_pos x, y | i32 × 2 | if `HAS_MAP_POS` | any |
 | planet id length | u8 | if `HAS_PLANET_ID` | 1–7 |
 | planet id bytes, × length | u8 each | if `HAS_PLANET_ID` | printable ASCII 0x21–0x7E, no NUL |
-| fold_anchor | i32 | always | any |
-| infraspace | i32 | always | any; 0 for a node without one |
+| fold_anchor | i32 | always | any; nonzero loads as anchored (capture writes 0x10000 or 0) |
+| infraspace | i32 | always | any; 0 for a node without one, nonzero loads as one (capture writes 0x10000) |
 | planet_type | u8 | always | 0 = none, 1–11 the 1-based `planet_types_table` entry |
 | description_type | u8 | always | 0 = no description, 1–11 the 1-based `planet_types_table` entry whose `description` the node holds (terraform leaves the old type's) |
 | project | u8 | always | 0 = none, 1–42 the 1-based `research_projects_at` entry |

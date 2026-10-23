@@ -46,21 +46,21 @@ end
 
 local function contains_trade(list, v)
   if list == nil then
-    return 0
+    return false
   end
   for i = 1, #list do
     if trade.trade_equal(list[i], v) then
-      return 1
+      return true
     end
   end
-  return 0
+  return false
 end
 
 local function planet_rebuild_trades_attach_slipway_closure(self, a)
   if self == nil then
     return
   end
-  if contains_trade(self.accepted_routes, a) == 0 then
+  if not contains_trade(self.accepted_routes, a) then
     local kept
 
     kept = trade.trade_copy(a)
@@ -86,9 +86,9 @@ function M.planet_attach_slipway(self, slipway)
     other = slipway_module.slipway_other_end(slipway, self)
   end
   if other ~= nil then
-    assert(planet.planet_is_family(other) ~= 0, "planet_attach_slipway: the other end of a registered slipway is a planet")
-    if other.fold_anchor ~= 0 then
-      self.fold_anchor = fixed.p8_fixed_from_int(1)
+    assert(planet.planet_is_family(other), "planet_attach_slipway: the other end of a registered slipway is a planet")
+    if other.fold_anchor then
+      self.fold_anchor = true
     end
   end
 
@@ -162,14 +162,14 @@ function M.planet_offer_trade(self, trade_offer)
     resource_val = research.need_resource(i)
 
     if any_resource ~= nil and trade.resource_equal(resource_val, any_resource) then
-      local accepted = 0
+      local accepted = false
 
       if bit.band(self.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_STRUCTURE)) ~= 0
         and self.archetype.accepted_resources ~= nil then
         accepted = (t_resource.kind == trade.RESOURCE_FIXED
-          and game_data.int_seq_has_fixed(self.archetype.accepted_resources, t_resource.number)) and 1 or 0
+          and game_data.int_seq_has_fixed(self.archetype.accepted_resources, t_resource.number))
       end
-      if accepted ~= 0 then
+      if accepted then
         assert(t_resource.kind == trade.RESOURCE_FIXED, "a need's resource is a resource code, never a boolean")
         i.row.resource = t_resource.number
         resource_val = t_resource

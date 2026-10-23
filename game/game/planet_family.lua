@@ -104,13 +104,13 @@ local function trading_hub_update_settled_method(self, t)
   M.trading_hub_update_settled(self, t)
 end
 
--- 1 when e is settled and its settled update calls planet_bob.
+-- True when e is settled and its settled update calls planet_bob.
 function M.planet_family_bobs(e)
   if e == nil or e.state ~= entity_class.ENTITY_STATE_SETTLED or e.class == nil then
-    return 0
+    return false
   end
   local settled = e.class.states[entity_class.ENTITY_STATE_SETTLED]
-  return (settled == M.structure_update_settled_method or settled == trading_hub_update_settled_method) and 1 or 0
+  return settled == M.structure_update_settled_method or settled == trading_hub_update_settled_method
 end
 
 M.trading_hub_class_def = {
@@ -367,7 +367,7 @@ function M.burst_draw(graphics, memory, self, screen_pos)
   local particle = require("game.particle")
   local particles = nil
   local ramp
-  local third_taken = 0
+  local third_taken = false
   local screen_x
   local screen_y
 
@@ -400,17 +400,17 @@ function M.burst_draw(graphics, memory, self, screen_pos)
       if found then
         color = trail_color
       end
-      if particle.particle_pixels_hidden() == 0 then
+      if not particle.particle_pixels_hidden() then
         gfx_module.p8_circ(graphics, memory, screen_x, screen_y, fixed.p8_fixed_flr_int(vec.vec_length(pt.pos)), color)
       end
     end
 
     -- A flag, not the particle: emitter_update may give it back before is_dead is written.
-    third_taken = (pt ~= nil) and 1 or 0
+    third_taken = pt ~= nil
   end
 
   particle.emitter_update(graphics, memory, self)
-  self.is_dead = third_taken == 0
+  self.is_dead = not third_taken
 end
 
 local function burst_draw_method(self, screen_pos)

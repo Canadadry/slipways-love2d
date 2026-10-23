@@ -27,7 +27,7 @@ function M.pad_slipway_init(slipway)
 end
 
 function M.pad_slipway_can_start(e)
-  if e == nil or e.is_dead or planet.planet_is_family(e) == 0 or e.state ~= entity_class.ENTITY_STATE_SETTLED then
+  if e == nil or e.is_dead or not planet.planet_is_family(e) or e.state ~= entity_class.ENTITY_STATE_SETTLED then
     return 0
   end
   return (bit.band(e.class.tags, entity_class.TAG(entity_class.TAG_SLIPGATE)) == 0 or
@@ -49,7 +49,7 @@ function M.pad_slipway_candidates(candidates, start)
 end
 
 function M.pad_slipway_between(start, target)
-  assert(start ~= nil and planet.planet_is_family(start) ~= 0, "pad_slipway_between: only a planet holds a slipways list")
+  assert(start ~= nil and planet.planet_is_family(start), "pad_slipway_between: only a planet holds a slipways list")
   local slipways = start.slipways
   for i = 1, #slipways do
     local slipway = entity_id.entity_id_resolve(slipways[i])

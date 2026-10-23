@@ -32,7 +32,7 @@ local function rebuild_incoming_routes_reset_visit(pt, ctx)
   if pt == nil then
     return
   end
-  assert(planet.planet_is_family(pt) ~= 0, "rebuild_incoming_routes_reset_visit: the planet tag holds planets only")
+  assert(planet.planet_is_family(pt), "rebuild_incoming_routes_reset_visit: the planet tag holds planets only")
   jo = pt
   if jo.incoming_routes == nil then
     jo.incoming_routes = {}
@@ -53,7 +53,7 @@ local function rebuild_incoming_routes_route_visit(entity, context)
     return
   end
 
-  assert(planet_module.planet_is_family(entity) ~= 0,
+  assert(planet_module.planet_is_family(entity),
     "rebuild_incoming_routes_route_visit: the planet tag holds planets only")
   from_planet = entity
   outgoing = planet_trade.planet_rebuild_trades(from_planet)
@@ -70,7 +70,7 @@ local function rebuild_incoming_routes_route_visit(entity, context)
 
       if index + 1 <= #planets then
         local planet_val = entity_id.entity_id_resolve(planets[index + 1])
-        assert(planet_module.planet_is_family(planet_val) ~= 0,
+        assert(planet_module.planet_is_family(planet_val),
           "rebuild_incoming_routes_route_visit: a trade's planets list holds planets only")
         local planet = planet_val
         if planet.planet_id ~= nil then
@@ -86,7 +86,7 @@ local function rebuild_incoming_routes_route_visit(entity, context)
     if found then
       local dest
 
-      assert(planet_module.planet_is_family(to_val) ~= 0, "rebuild_incoming_routes_route_visit: a trade leads to a planet")
+      assert(planet_module.planet_is_family(to_val), "rebuild_incoming_routes_route_visit: a trade leads to a planet")
       dest = to_val
       if dest.incoming_routes ~= nil then
         trade.trade_route_list_add(dest.incoming_routes, route)
@@ -112,7 +112,7 @@ local function update_tiers_visit(entity, context)
     return
   end
   tier = M.economy_tiers_compute_tier(entity)
-  assert(planet_module.planet_is_family(entity) ~= 0, "update_tiers_visit: the planet tag holds planets only")
+  assert(planet_module.planet_is_family(entity), "update_tiers_visit: the planet tag holds planets only")
   planet = entity
   if planet.development_tier ~= nil then
     development_tier = planet.development_tier
@@ -186,7 +186,7 @@ function M.economy_tiers_compute_tier(entity)
   if entity == nil then
     return fixed.p8_fixed_from_int(0)
   end
-  assert(planet_module.planet_is_family(entity) ~= 0, "economy_tiers_compute_tier: the entity is a planet")
+  assert(planet_module.planet_is_family(entity), "economy_tiers_compute_tier: the entity is a planet")
   planet = entity
   if planet.state ~= entity_class.ENTITY_STATE_SETTLED then
     return fixed.p8_fixed_from_int(0)

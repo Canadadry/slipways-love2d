@@ -7,6 +7,8 @@
 --     infraspace, shake, fold_anchor, is_dead, is_hovered, id }; a game object
 --     whose first member is the header is that same table. Every field but
 --     class, state, state_time and is_dead is nil when the entity lacks it.
+--     infraspace and fold_anchor are true or nil, never false: a slipway
+--     compares two infraspaces.
 --   entity_class_t: { draw, draw_overlay, hit_test, new_year, refresh,
 --     has_refresh, left_press, accept_drop, drag, drop, attach_slipway,
 --     offer_trade, draw_at, spawn_particle, states (indexed from 0, STATE_COUNT

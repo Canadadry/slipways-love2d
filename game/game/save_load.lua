@@ -155,9 +155,9 @@ local function load_node(node)
   if has(node, save_state.SAVE_NODE_HAS_PRODUCTION_BONUS) ~= 0 then
     planet.production_bonus = node.production_bonus
   end
-  planet.fold_anchor = node.fold_anchor
+  planet.fold_anchor = node.fold_anchor ~= 0 or nil
   if node.infraspace ~= 0 then
-    planet.infraspace = node.infraspace
+    planet.infraspace = true
   end
   return planet
 end
@@ -181,7 +181,7 @@ local function load_probe(saved)
   entity.entity_set_state(probe, entity_class.ENTITY_STATE_SETTLED)
   entity_class.entity_set_pos(probe, vec_of(saved.pos))
   entity_class.entity_set_map_pos(probe, vec_of(saved.map_pos))
-  probe.fold_anchor = saved.fold_anchor
+  probe.fold_anchor = saved.fold_anchor ~= 0 or nil
 end
 
 local function load_slipways(state, node_ids, out)
@@ -217,11 +217,11 @@ local function undo_attach_side_effects(state, node_ids)
   for i = 0, state.node_count - 1 do
     local node = state.nodes[i]
     local planet = entity_id.entity_get(node_ids[i])
-    planet.fold_anchor = node.fold_anchor
+    planet.fold_anchor = node.fold_anchor ~= 0 or nil
     planet.shake = 0
     load_production(planet, node)
     if node.kind == save_state.SAVE_NODE_SYNTHESIZER then
-      planet_family_trade.synthesizer_set_spent(planet, has(node, save_state.SAVE_NODE_SYNTHESIZER_SPENT))
+      planet_family_trade.synthesizer_set_spent(planet, has(node, save_state.SAVE_NODE_SYNTHESIZER_SPENT) ~= 0)
     end
   end
 end

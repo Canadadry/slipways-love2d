@@ -83,7 +83,7 @@ function M.planet_new_year_method(self, year)
 end
 
 function M.planet_is_family(e)
-  return (bit.band(e.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_PLANET)) ~= 0) and 1 or 0
+  return bit.band(e.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_PLANET)) ~= 0
 end
 
 function M.planet_update_vanishing_method(self, t)
@@ -115,7 +115,7 @@ function M.planet_init_instance(self, instance_class, archetype)
     local hit_box = self.archetype.hit_box
     self.hit_box = { left = hit_box.left, top = hit_box.top, right = hit_box.right, bottom = hit_box.bottom }
   end
-  self.fold_anchor = 0
+  self.fold_anchor = nil
   self.shake = self.archetype.shake
   self.slipways = {}
   self.project = nil
@@ -311,12 +311,12 @@ end
 
 function M.planet_is_colonized(self)
   if self == nil then
-    return 0
+    return false
   end
   if not self.archetype.is_planet then
-    return 0
+    return false
   end
-  return (self.state == entity_class.ENTITY_STATE_SETTLED) and 1 or 0
+  return self.state == entity_class.ENTITY_STATE_SETTLED
 end
 
 function M.planet_restart_shake(self)
@@ -343,12 +343,12 @@ function M.planet_roll_type(self)
 
   if g_planet_vanish_roll ~= nil then
     local roll = gen.random_walk_next(g_planet_vanish_roll)
-    local use_vanishing = 0
+    local use_vanishing = false
 
     if roll < fixed.P8_FIXED_LIT(0x00007333, 0.45) then
-      use_vanishing = (game_data.planet_types_lookup("vanishing") ~= nil) and 1 or 0
+      use_vanishing = game_data.planet_types_lookup("vanishing") ~= nil
     end
-    if use_vanishing ~= 0 then
+    if use_vanishing then
       nk = game_data.planet_types_lookup("vanishing")
     elseif g_type_picker ~= nil then
       nk = gen.weighted_picker_next(g_type_picker)
@@ -395,7 +395,7 @@ local function bob_delta(t)
 end
 
 function M.planet_bob(self, t)
-  assert(self == nil or M.planet_is_family(self) ~= 0,
+  assert(self == nil or M.planet_is_family(self),
     "planet_bob: self is a planet (structure and trading hub settled updates) -- stop")
   if self ~= nil and self.pos ~= nil then
     self.pos.y = fixed.p8_fixed_add(self.pos.y, bob_delta(t))
