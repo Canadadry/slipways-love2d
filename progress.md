@@ -5,7 +5,7 @@
     - [x] PRD phase1-step1-module-load-check
   - [ ] Step 1.2 — zones and allocators removed
     - [x] Chunk 1 — UI pool
-    - [ ] Chunk 2 — particle pool, slot groups and slot zones
+    - [x] Chunk 2 — particle pool, slot groups and slot zones
     - [ ] Chunk 3 — grab arena and arenas
     - [ ] Chunk 4 — frame zone
     - [ ] Chunk 5 — game zone and load zone

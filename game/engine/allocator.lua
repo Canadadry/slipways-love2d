@@ -1,5 +1,5 @@
 -- Copy of src/engine/allocator.h then src/engine/allocator.c.
--- An allocator_t is { alloc, grow, release, bump, slot }. A struct whose first
+-- An allocator_t is { alloc, grow, release, bump }. A struct whose first
 -- member is the handle (flip_zone_allocator_t, arena_t, and the block an arena
 -- lives in) is one table holding the fields of both: the cast is the
 -- identity, and an arena's bump is both its inline zone and the handle's
@@ -17,10 +17,6 @@ local SIZEOF = M.SIZEOF
 
 M.ARENA_HEAD_BYTES = zone_module.ZONE_BYTES(SIZEOF.arena_t)
 
-function M.ARENA_LIST_BYTES(list_head_bytes, capacity, element_bytes)
-  return M.ARENA_HEAD_BYTES + zone_module.ZONE_BYTES(list_head_bytes) + zone_module.ZONE_BYTES(capacity * element_bytes)
-end
-
 -- Lua only: the memcpy of a whole block of unknown type, every key copied.
 local function copy_block(q, p)
   for key, value in pairs(p) do
@@ -34,7 +30,6 @@ local function store_handle(storage, z)
   storage.grow = z.grow
   storage.release = z.release
   storage.bump = z.bump
-  storage.slot = z.slot
 end
 
 local function bump_alloc(z, n)
@@ -54,37 +49,7 @@ end
 
 function M.allocator_from_bump_zone(bump)
   assert(bump ~= nil, "handle on a missing zone")
-  return { alloc = bump_alloc, grow = bump_grow, release = release_nothing, bump = bump, slot = nil }
-end
-
-local function slot_alloc(z, n)
-  assert(n <= z.slot.slot_size, "slot zone: block larger than a slot")
-  return zone_module.slot_zone_alloc(z.slot)
-end
-
-function M.allocator_grow_refused(z, p, old_n, new_n)
-  assert(false, "slot zone: a slot does not grow")
-  return nil
-end
-
-local function slot_release(z, p)
-  if p ~= nil then
-    zone_module.slot_zone_release(z.slot, p)
-  end
-end
-
-function M.allocator_from_slot_zone(slot)
-  assert(slot ~= nil, "handle on a missing zone")
-  return { alloc = slot_alloc, grow = M.allocator_grow_refused, release = slot_release, bump = nil, slot = slot }
-end
-
--- s is a 0-indexed array of slot_kind_zone_t { zone_name, slot_name, cells,
--- taken, size, count }; zones and handles are 0-indexed arrays the caller owns.
-function M.allocator_init_slot_kinds(s, n, zones, handles)
-  for i = 0, n - 1 do
-    zone_module.slot_zone_init(zones[i], s[i].zone_name, s[i].cells, s[i].taken, s[i].size, s[i].count)
-    handles[i] = M.allocator_from_slot_zone(zones[i])
-  end
+  return { alloc = bump_alloc, grow = bump_grow, release = release_nothing, bump = bump }
 end
 
 local function flip_zone_of(z)
@@ -106,7 +71,7 @@ end
 function M.allocator_from_flip_zone(storage, zone)
   assert(storage ~= nil and zone ~= nil, "handle on a missing zone")
   local z = { alloc = flip_zone_handle_alloc, grow = flip_zone_handle_grow, release = release_nothing,
-    bump = nil, slot = nil }
+    bump = nil }
   store_handle(storage, z)
   storage.zone = zone
   return storage

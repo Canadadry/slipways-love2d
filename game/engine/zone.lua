@@ -1,9 +1,7 @@
 -- Copy of src/engine/zone.h then src/engine/zone.c, for the 64-bit build
 -- without ASan: one half per bump zone, POISON and UNPOISON dropped.
 -- An allocation returns a new empty table, the block; a storage table stands
--- for the static cells and is never read. A slot zone also holds two Lua-only
--- fields: blocks, the block handed out from each slot index, and index_of,
--- the slot index of each block still mapped to its slot.
+-- for the static cells and is never read.
 local cint = require("p8.cint")
 local fatal = require("p8.fatal")
 
@@ -42,19 +40,6 @@ end
 
 function M.FLIP_ZONE_STORAGE(capacity)
   return {}
-end
-
--- Returns cells, taken.
-function M.SLOT_ZONE_STORAGE(slot_size, count)
-  local taken = {}
-  for i = 0, count - 1 do
-    taken[i] = 0
-  end
-  return {}, taken
-end
-
-function M.SLOT_ZONE_BYTES(size, count)
-  return M.ZONE_CELLS(size) * SIZEOF.zone_cell_t * count + count
 end
 
 local function zone_full(name, limit, unit)
@@ -177,63 +162,6 @@ end
 
 function M.flip_zone_max(zone)
   return zone.max
-end
-
-local function slot_at(zone, index)
-  return zone.blocks[index]
-end
-
-function M.slot_zone_init(zone, name, storage, taken, slot_size, count)
-  assert(slot_size > 0 and count > 0)
-  zone.name = name
-  zone.storage = storage
-  zone.taken = taken
-  zone.slot_size = slot_size
-  zone.count = count
-  zone.cursor = 0
-  zone.blocks = {}
-  zone.index_of = {}
-  for i = 0, count - 1 do
-    taken[i] = 0
-  end
-end
-
--- No LIFO free list: a stale pointer to a released slot would at once land on a valid one again.
-function M.slot_zone_alloc(zone)
-  for step = 0, zone.count - 1 do
-    local i = cint.mod(zone.cursor + step, zone.count)
-    if zone.taken[i] == 0 then
-      zone.taken[i] = 1
-      zone.cursor = cint.mod(i + 1, zone.count)
-      local previous = zone.blocks[i]
-      if previous ~= nil then
-        zone.index_of[previous] = nil
-      end
-      zone.blocks[i] = {}
-      zone.index_of[zone.blocks[i]] = i
-      return slot_at(zone, i)
-    end
-  end
-  zone_full(zone.name, zone.count, "slots")
-  return nil
-end
-
--- A block never handed out by this zone, or whose slot was handed out again
--- since, is outside the zone: Lua has no address to compare.
-function M.slot_zone_release(zone, slot)
-  local i = zone.index_of[slot]
-  assert(i ~= nil, "release of a pointer outside the zone")
-  assert(slot == slot_at(zone, i), "release of a pointer that is not the start of a slot")
-  assert(zone.taken[i] ~= 0, "release of a slot already released")
-  zone.taken[i] = 0
-end
-
-function M.slot_zone_taken(zone)
-  local n = 0
-  for i = 0, zone.count - 1 do
-    n = n + zone.taken[i]
-  end
-  return n
 end
 
 return M

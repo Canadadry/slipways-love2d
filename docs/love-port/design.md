@@ -850,7 +850,7 @@ zero constructor other modules use is exported by the module owning the
 struct (`button_zero` in `ui_button`, `emitter_zero` in `particle`,
 `targeting_zero` in `targeting`); a module needing one its owner does not
 export keeps a local one. A struct reached by casting its first member
-(`arena_t`, `flip_zone_allocator_t`, `slot_group_handle_t`) is one table
+(`arena_t`, `flip_zone_allocator_t`) is one table
 holding both structs' fields, the cast the identity. A C `int *` context is
 a `{ value = 0 }` table. A by-value `p8_graphics_t` is a local
 `graphics_copy` of its five fields. An out-parameter is an input argument
@@ -864,8 +864,7 @@ writes into it what the C writes into the bytes, and zones never read a
 block. Byte counts, cell rounding, capacity tests and the `zone %s full`
 message are the C ones; address arithmetic stays as byte offsets nothing
 reads. `BUMP_ZONE_STORAGE` and `FLIP_ZONE_STORAGE` return a table standing
-for the cells; a slot zone adds the Lua-only fields `blocks` and
-`index_of`. A `memcpy` of unknown type is `copy_block` (`allocator.lua`,
+for the cells. A `memcpy` of unknown type is `copy_block` (`allocator.lua`,
 every key) or `copy_value` (`value_list.lua`, one level deep). A zone-built
 `char *` is a Lua string: the function performs the C allocation for
 length + 1 bytes and returns the string; `strcmp(a, b) == 0` is `a == b`. A

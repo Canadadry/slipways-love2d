@@ -49,4 +49,4 @@ An allocator has `alloc`, `grow` and `release` — not one `do(op, ...)` entry p
 
 - No conditional logic in the test setup
 - Easy to see which operations a test exercises
-- A refusing double (`zone.grow = allocator.allocator_grow_refused`) tests the slot-zone path in one line
+- A refusing double (`grow` set to a function that asserts) tests the refusal path in one line

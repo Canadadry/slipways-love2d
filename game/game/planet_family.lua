@@ -433,12 +433,8 @@ local function burst_draw_method(self, screen_pos)
   M.burst_draw(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self, screen_pos)
 end
 
--- Read the slot first: arena_release() frees the struct and the list with it.
 local function burst_release_method(self)
-  local slot = self.slipways.zone
-
   M.ascension_release_method(self)
-  allocator.arena_release(slot)
 end
 
 M.burst_class_def = {
@@ -459,8 +455,7 @@ M.burst_class_def = {
 }
 
 local function burst_create(keys)
-  local slot = require("game.particle").particle_burst_slot_take()
-  local self = allocator.allocator_alloc(slot, SIZEOF.planet_t)
+  local self = {}
 
   assert(g_family_up ~= 0, "planet_family_init() must run first")
   planet.planet_init_instance(self, M.burst_class_def, game_data.burst_archetype)
@@ -490,7 +485,7 @@ local function burst_create(keys)
     end
   end
   M.burst_construct(self)
-  planet.planet_construct_in(self, slot)
+  planet.planet_construct_in(self, nil)
   entity.entity_construct(self)
   return self
 end

@@ -1,24 +1,21 @@
 -- Copy of src/game/particle.h then src/game/particle.c.
 --
 -- Shapes, with the C field names:
---   particle_t: { pos, velocity, has_acceleration, acceleration, life }, a slot of the particle zone.
+--   particle_t: { pos, velocity, has_acceleration, acceleration, life }.
 --   emitter_t: { archetype, has, angle_slices, base_radius, speed_factor, trail_colors, matrix_xx,
---     matrix_xy, matrix_yx, matrix_yy, particles, particles_slot_kind }, the `emitter` field of its
+--     matrix_xy, matrix_yx, matrix_yy, particles }, the `emitter` field of its
 --     host (a probe, a help screen or a planet), particles a pointer_list_t.
 --   p8_point_t: { x, y, col }, the batch a 0-indexed array of them.
 --
 -- Include cycle: game.planet is required at call time (emitter_of). A probe is reached through
 -- LINEAGE_PROBE and its `emitter` field only, so game.probe is not required.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
-local zone = require("engine.zone")
 local game_data = require("game.game_data")
-local particle_zone = require("game.particle_zone")
 local visual_random = require("game.visual_random")
 local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")
@@ -27,12 +24,8 @@ local M = {}
 
 M.EMITTER_HAS_PARTICLES = bit.lshift(1, 0)
 
-M.SIZEOF = {
-  particle_t = 32,
-}
-local SIZEOF = M.SIZEOF
-
-assert(zone.ZONE_BYTES(SIZEOF.particle_t) == particle_zone.PARTICLE_SLOT, "particle_fills_its_slot_t")
+M.PARTICLES_RESERVE = 158
+M.PARTICLES_HELP_SCREEN_RESERVE = 653
 
 local EMITTER_POINT_BATCH = 32
 
@@ -67,11 +60,7 @@ local function particle_to_int(x)
 end
 
 function M.particle_take()
-  return allocator.allocator_alloc(particle_zone.particle_zone(particle_zone.PARTICLE_SLOT_PARTICLE), SIZEOF.particle_t)
-end
-
-function M.particle_burst_slot_take()
-  return particle_zone.particle_zone_slot(particle_zone.PARTICLE_SLOT_BURST)
+  return {}
 end
 
 -- Points into the host: a probe, a help screen or a planet that carries one;
@@ -92,10 +81,11 @@ function M.emitter_of(e)
 end
 
 function M.emitter_init(self)
-  M.emitter_init_in(self, particle_zone.PARTICLE_SLOT_LIST)
+  M.emitter_init_in(self, M.PARTICLES_RESERVE)
 end
 
-function M.emitter_init_in(self, slot_kind)
+-- The reserve sets the list's first capacity, and so when it grows.
+function M.emitter_init_in(self, reserve)
   local emitter
 
   if self == nil then
@@ -103,28 +93,18 @@ function M.emitter_init_in(self, slot_kind)
   end
   emitter = M.emitter_of(self)
   assert(emitter ~= nil, "emitter_init_in: a class that carries no particle emitter has no particle list -- stop")
-  assert((slot_kind == particle_zone.PARTICLE_SLOT_LIST or slot_kind == particle_zone.PARTICLE_SLOT_HELP_LIST),
-    "emitter_init_in: a particle list is a list or a help screen list")
 
   M.emitter_release_particles(emitter)
-  pointer_list.pointer_list_init_reserve(emitter.particles, particle_zone.particle_zone_slot(slot_kind),
-    (slot_kind == particle_zone.PARTICLE_SLOT_HELP_LIST) and particle_zone.PARTICLES_HELP_SCREEN_CAPACITY
-      or particle_zone.PARTICLES_CAPACITY)
+  pointer_list.pointer_list_init_reserve(emitter.particles, nil, reserve)
   emitter.has = bit.bor(emitter.has, M.EMITTER_HAS_PARTICLES)
-  emitter.particles_slot_kind = slot_kind
 end
 
 function M.emitter_release_particles(emitter)
   local qy = emitter.particles
-  local particle = particle_zone.particle_zone(particle_zone.PARTICLE_SLOT_PARTICLE)
 
   if bit.band(emitter.has, M.EMITTER_HAS_PARTICLES) == 0 then
     return
   end
-  for i = 0, qy.count - 1 do
-    allocator.allocator_release(particle, qy.items[i])
-  end
-  allocator.arena_release(qy.zone)
   qy.items = nil
   qy.count = 0
   qy.capacity = 0
@@ -148,7 +128,6 @@ function M.emitter_spawn(self, n)
   while visual_random.visual_random_draw_one() < n do
     if qy ~= nil and self.class.spawn_particle ~= nil then
       pointer_list.pointer_list_add(qy, self.class.spawn_particle(self))
-      particle_zone.particle_zone_record_elements(emitter.particles_slot_kind, qy.count)
     end
     n = fixed.p8_fixed_sub(n, fixed.p8_fixed_from_int(1))
   end
@@ -215,7 +194,6 @@ function M.emitter_update(graphics, memory, self)
         if particle.life <= fixed.p8_fixed_from_int(1) then
           -- Removing an element during this walk skips the next one; it is visited next frame. Compensating the index would change update timing and every replay.
           pointer_list.pointer_list_del(particles, particle)
-          allocator.allocator_release(particle_zone.particle_zone(particle_zone.PARTICLE_SLOT_PARTICLE), particle)
         else
           local px = particle_to_int(fixed.p8_fixed_add(center_x, particle.pos.x))
           local py = particle_to_int(fixed.p8_fixed_add(center_y, particle.pos.y))
@@ -267,7 +245,6 @@ function M.emitter_zero()
     matrix_yx = 0,
     matrix_yy = 0,
     particles = { items = nil, count = 0, capacity = 0, zone = nil },
-    particles_slot_kind = 0,
   }
 end
 

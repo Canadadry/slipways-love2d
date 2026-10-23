@@ -1,13 +1,12 @@
 -- Copy of src/game/slipway_display.h then src/game/slipway_display.c.
 --
 -- Shapes, with the C field names:
---   transit_dot_t: { pos, velocity, life }, written into the block the particle zone hands out.
+--   transit_dot_t: { pos, velocity, life }.
 --   slipway_line_ends_t: { start, end_ }, passed by value; `end` is `end_` (a Lua keyword).
 --
 -- Include cycle: game.slipway requires this module at load (slipway_draw_method fills
 -- slipway_class_def), so game.slipway, game.planet and game.probe (home of targeting_target) are
 -- required at call time, inside the functions that need them.
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
@@ -15,26 +14,17 @@ local entity_id = require("engine.entity_id")
 local entity_id_type = require("engine.entity_id_type")
 local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
-local zone = require("engine.zone")
 local game_data = require("game.game_data")
 local particle = require("game.particle")
-local particle_zone = require("game.particle_zone")
 local visual_random = require("game.visual_random")
 local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")
 
 local M = {}
 
-M.SIZEOF = {
-  transit_dot_t = 20,
-}
-local SIZEOF = M.SIZEOF
-
 local function slipway_line_ends_make(start, end_)
   return { start = start, end_ = end_ }
 end
-
-assert(zone.ZONE_BYTES(SIZEOF.transit_dot_t) == particle_zone.TRANSIT_DOTS_SLOT, "transit_dot_fills_its_slot_t")
 
 local function to_int(x)
   return fixed.p8_fixed_flr_int(x)
@@ -64,15 +54,13 @@ function M.slipway_spawn_transit_dot(self, f, t)
     local t_pos = slipway.slipway_end_pos(t)
     local d = vec.vec_sub(t_pos, f_pos)
     local v = vec.vec_normalize(d)
-    local dot = allocator.allocator_alloc(particle_zone.particle_zone(particle_zone.PARTICLE_SLOT_TRANSIT_DOT),
-      SIZEOF.transit_dot_t)
+    local dot = {}
 
     dot.pos = vec.vec_add(f_pos, vec.vec_perpendicular(v))
     dot.velocity = v
     dot.life = vec.vec_length(d)
 
     pointer_list.pointer_list_add(self.transit_dots, dot)
-    particle_zone.particle_zone_record_elements(particle_zone.PARTICLE_SLOT_TRANSIT_DOT, self.transit_dots.count)
   end
 end
 
@@ -209,7 +197,6 @@ function M.slipway_draw(graphics, memory, self)
         if new_l <= fixed.p8_fixed_from_int(0) then
           -- Removing an element during this walk skips the next one; it is visited next frame. Compensating the index would change update timing and every replay.
           pointer_list.pointer_list_del(ts, t)
-          allocator.allocator_release(particle_zone.particle_zone(particle_zone.PARTICLE_SLOT_TRANSIT_DOT), t)
         end
 
         if particle.particle_pixels_hidden() == 0 then

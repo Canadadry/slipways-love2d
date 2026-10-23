@@ -37,7 +37,6 @@ local zone = require("engine.zone")
 local economy_formulas = require("game.economy_formulas")
 local game_data = require("game.game_data")
 local grab_arena = require("game.grab_arena")
-local particle_zone = require("game.particle_zone")
 local slipway_display = require("game.slipway_display")
 local targeting_module = require("game.targeting")
 local tech_gate = require("game.tech_gate")
@@ -415,10 +414,6 @@ local function slipway_release_method(self)
   local jc = self
   local zone_ = jc.transit_dots.zone
 
-  for i = 0, jc.transit_dots.count - 1 do
-    allocator.allocator_release(particle_zone.particle_zone(particle_zone.PARTICLE_SLOT_TRANSIT_DOT),
-      jc.transit_dots.items[i])
-  end
   jc.transit_dots.count = 0
   grab_arena.grab_arena_give_back_if_placing(zone_, jc.state)
 end

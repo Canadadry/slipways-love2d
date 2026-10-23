@@ -16,7 +16,6 @@ local game_data = require("game.game_data")
 local layout = require("game.layout")
 local message_box = require("game.message_box")
 local particle = require("game.particle")
-local particle_zone = require("game.particle_zone")
 local probe = require("game.probe")
 local ui_button = require("game.ui_button")
 local fixed = require("p8.fixed")
@@ -160,7 +159,7 @@ local function screen_create()
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)
   self.is_hovered = 0
   M.help_screen_construct(self)
-  particle.emitter_init_in(self, particle_zone.PARTICLE_SLOT_HELP_LIST)
+  particle.emitter_init_in(self, particle.PARTICLES_HELP_SCREEN_RESERVE)
   entity.entity_construct(self)
   return self
 end
