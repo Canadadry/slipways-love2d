@@ -59,7 +59,7 @@ end
 local function love_psets(gfx, mem, points, count)
   local coordinates = {}
   local run_col = nil
-  for i = 0, count - 1 do
+  for i = 1, count do
     local point = points[i]
     check_color("psets", point.col)
     local sx = point.x - gfx.camera_x
@@ -122,7 +122,7 @@ end
 
 local function love_lines(gfx, mem, segments, count, col)
   check_color("lines", col)
-  for i = 0, count - 1 do
+  for i = 1, count do
     local segment = segments[i]
     local coordinates = {}
     line_points(gfx, coordinates, segment.x1, segment.y1, segment.x2, segment.y2)

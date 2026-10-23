@@ -94,14 +94,15 @@ function M.slipway_draw_line(gfx, mem, ends, l, h, s, c)
   y2 = floored_far_from_the_wrap(ends.end_.y)
 
   local bundle = {}
-  for i = 0, 3 do
+  for i = 1, 4 do
     bundle[i] = { x1 = 0, y1 = 0, x2 = 0, y2 = 0 }
   end
   local count = 0
   for dx = l, h, s do
     for dy = l, h, s do
-      local segment = bundle[count]
-      count = count + 1
+      local n = count + 1
+      local segment = bundle[n]
+      count = n
       segment.x1 = x1 + dx
       segment.y1 = y1 + dy
       segment.x2 = x2 + dx

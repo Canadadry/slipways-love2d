@@ -460,13 +460,13 @@ local function software_image_draw(gfx, mem, slot, x, y)
 end
 
 local function software_lines(gfx, mem, segments, count, col)
-  for i = 0, count - 1 do
+  for i = 1, count do
     software_line(gfx, mem, segments[i].x1, segments[i].y1, segments[i].x2, segments[i].y2, col)
   end
 end
 
 local function software_psets(gfx, mem, points, count)
-  for i = 0, count - 1 do
+  for i = 1, count do
     software_pset(gfx, mem, points[i].x, points[i].y, points[i].col)
   end
 end

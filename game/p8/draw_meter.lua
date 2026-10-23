@@ -28,19 +28,19 @@ local CLUT_TABLE = 2 * GPU_CLUT_SLOTS
 local PATTERN_TABLE = 2 * GPU_PATTERN_SLOTS
 
 local cluts = {}
-for i = 0, CLUT_TABLE - 1 do
+for i = 1, CLUT_TABLE do
   cluts[i] = {}
   for c = 0, 15 do
     cluts[i][c] = 0
   end
 end
 local pattern_keys = {}
-for i = 0, PATTERN_TABLE - 1 do
+for i = 1, PATTERN_TABLE do
   pattern_keys[i] = 0
 end
 
 local function count_clut(mem)
-  for i = 0, frame.cluts - 1 do
+  for i = 1, frame.cluts do
     local same = true
     for c = 0, 15 do
       if cluts[i][c] ~= mem.draw_palette[c] then
@@ -53,10 +53,11 @@ local function count_clut(mem)
     end
   end
   if frame.cluts < CLUT_TABLE then
+    local n = frame.cluts + 1
     for c = 0, 15 do
-      cluts[frame.cluts][c] = mem.draw_palette[c]
+      cluts[n][c] = mem.draw_palette[c]
     end
-    frame.cluts = frame.cluts + 1
+    frame.cluts = n
   end
 end
 
@@ -65,14 +66,15 @@ local function count_pattern(gfx, col)
     return
   end
   local key = draw_cost.p8_draw_cost_pattern_key(gfx, col)
-  for i = 0, frame.patterns - 1 do
+  for i = 1, frame.patterns do
     if pattern_keys[i] == key then
       return
     end
   end
   if frame.patterns < PATTERN_TABLE then
-    pattern_keys[frame.patterns] = key
-    frame.patterns = frame.patterns + 1
+    local n = frame.patterns + 1
+    pattern_keys[n] = key
+    frame.patterns = n
   end
 end
 
@@ -172,14 +174,14 @@ local function meter_image_draw(gfx, mem, slot, x, y)
 end
 
 local function meter_lines(gfx, mem, segments, count, col)
-  for i = 0, count - 1 do
+  for i = 1, count do
     add(draw_cost.p8_draw_cost_line(gfx, segments[i].x1, segments[i].y1, segments[i].x2, segments[i].y2))
   end
   wrapped.lines(gfx, mem, segments, count, col)
 end
 
 local function meter_psets(gfx, mem, points, count)
-  for i = 0, count - 1 do
+  for i = 1, count do
     add(draw_cost.p8_draw_cost_pset(gfx, points[i].x, points[i].y))
   end
   wrapped.psets(gfx, mem, points, count)

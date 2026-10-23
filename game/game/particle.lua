@@ -5,7 +5,7 @@
 --   emitter_t: { archetype, angle_slices, base_radius, speed_factor, trail_colors, matrix_xx,
 --     matrix_xy, matrix_yx, matrix_yy, particles }, the `emitter` field of its
 --     host (a probe, a help screen or a planet), particles an array, nil when it holds none.
---   p8_point_t: { x, y, col }, the batch a 0-indexed array of them.
+--   p8_point_t: { x, y, col }, the batch a 1-based array of them, read up to its count.
 --
 -- Include cycle: game.planet is required at call time (emitter_of). A probe is reached through
 -- LINEAGE_PROBE and its `emitter` field only, so game.probe is not required.
@@ -198,8 +198,9 @@ function M.emitter_update(graphics, memory, self)
           end
 
           if not g_pixels_hidden then
-            points[point_count] = { x = px, y = py, col = col }
-            point_count = point_count + 1
+            local n = point_count + 1
+            points[n] = { x = px, y = py, col = col }
+            point_count = n
             if point_count == EMITTER_POINT_BATCH then
               gfx_module.p8_psets(graphics, memory, points, point_count)
               point_count = 0

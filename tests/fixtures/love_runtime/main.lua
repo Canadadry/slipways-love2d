@@ -146,8 +146,9 @@ function play_call(call)
       error(string.format("scene.txt:%d: psets takes x y c triples", call.line_number), 0)
     end
     local points = {}
-    for i = 0, call.count / 3 - 1 do
-      points[i] = { x = v[3 * i], y = v[3 * i + 1], col = v[3 * i + 2] }
+    for i = 1, call.count / 3 do
+      local first = 3 * (i - 1)
+      points[i] = { x = v[first], y = v[first + 1], col = v[first + 2] }
     end
     gfx_module.p8_psets(gfx, mem, points, call.count / 3)
   elseif operation == "line" then
@@ -159,8 +160,9 @@ function play_call(call)
     end
     local segments = {}
     local count = (call.count - 1) / 4
-    for i = 0, count - 1 do
-      segments[i] = { x1 = v[1 + 4 * i], y1 = v[2 + 4 * i], x2 = v[3 + 4 * i], y2 = v[4 + 4 * i] }
+    for i = 1, count do
+      local first = 1 + 4 * (i - 1)
+      segments[i] = { x1 = v[first], y1 = v[first + 1], x2 = v[first + 2], y2 = v[first + 3] }
     end
     gfx_module.p8_lines(gfx, mem, segments, count, v[0])
   elseif operation == "rect" then

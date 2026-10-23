@@ -89,7 +89,7 @@ function love.load(args)
   dispatch_context.dispatch_context_set_gfx(gfx)
   dispatch_context.dispatch_context_set_mem(mem)
   local zero_frame = { mouse_x = 0, mouse_y = 0, mouse_buttons = 0, pad_buttons = 0 }
-  dispatch_context.dispatch_context_set_input({ frames = { [0] = zero_frame }, frame_count = 1, current_frame = 0 })
+  dispatch_context.dispatch_context_set_input({ frames = { zero_frame }, frame_count = 1, current_frame = 1 })
   draw_meter.p8_draw_meter_install()
   cart.cart_load()
   cart.cart_init()

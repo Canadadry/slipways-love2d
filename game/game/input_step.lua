@@ -43,7 +43,7 @@ function M.input_step_init(step, bindings)
   end
   step.played.frames = nil
   step.played.frame_count = 0
-  step.played.current_frame = 0
+  step.played.current_frame = 1
   step.session_bindings = nil
   step.attract = {}
   cheat.cheat_init(step.cheat)
@@ -105,9 +105,9 @@ function M.input_step_run(step, raw)
   played_frame.pad_buttons = buttons
   pad_nav.pad_nav_step(step.pad_nav, buttons, step.played_frame)
   -- Set every frame, not at init: the struct may have been copied since.
-  step.played.frames = { [0] = step.played_frame }
+  step.played.frames = { step.played_frame }
   step.played.frame_count = 1
-  step.played.current_frame = 0
+  step.played.current_frame = 1
   local fired = cheat.cheat_step(step.cheat, buttons)
   dispatch_context.dispatch_context_set_input(step.played)
   if M.input_step_attract_phase(step) == attract_module.ATTRACT_PHASE_PLAYING then
