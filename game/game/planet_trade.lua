@@ -62,7 +62,7 @@ local function planet_rebuild_trades_attach_slipway_closure(self, a)
   end
 end
 
-function M.planet_attach_slipway(self, slipway)
+function M.attach_slipway(self, slipway)
   local planet = require("game.planet")
   local other = nil
 
@@ -70,25 +70,25 @@ function M.planet_attach_slipway(self, slipway)
     return
   end
 
-  assert(slipway ~= nil, "planet_attach_slipway: a planet's slipways list holds slipway ids")
+  assert(slipway ~= nil, "planet_trade.attach_slipway: a planet's slipways list holds slipway ids")
   self.slipways[#self.slipways + 1] = entity_id.link(slipway)
 
   if slipway ~= nil then
     local slipway_module = require("game.slipway")
-    assert(slipway.class == slipway_module.slipway_class(), "planet_attach_slipway: the slipway is one slipway_drop registers")
+    assert(slipway.class == slipway_module.slipway_class(), "planet_trade.attach_slipway: the slipway is one slipway_drop registers")
     other = slipway_module.slipway_other_end(slipway, self)
   end
   if other ~= nil then
-    assert(planet.planet_is_family(other), "planet_attach_slipway: the other end of a registered slipway is a planet")
+    assert(planet.is_family(other), "planet_trade.attach_slipway: the other end of a registered slipway is a planet")
     if other.fold_anchor then
       self.fold_anchor = true
     end
   end
 
-  planet.planet_restart_shake(self)
+  planet.restart_shake(self)
 end
 
-function M.planet_offer_trade(self, trade_offer)
+function M.offer_trade(self, trade_offer)
   local planet = require("game.planet")
   local resource = 0
   local bonus_resource = nil
@@ -113,7 +113,7 @@ function M.planet_offer_trade(self, trade_offer)
     any_resource = { kind = trade.RESOURCE_FIXED, number = fixed.from_int(resource) }
   end
 
-  assert(self.needs ~= nil, "planet_offer_trade: an offer goes to a planet holding needs")
+  assert(self.needs ~= nil, "planet_trade.offer_trade: an offer goes to a planet holding needs")
   needs = self.needs
 
   if bonus_resource ~= nil and trade.resource_equal(t_resource, bonus_resource) and self.production_bonus == nil then
@@ -182,7 +182,7 @@ function M.planet_offer_trade(self, trade_offer)
 end
 
 -- Updates self's outgoing routes in place and returns them, valid for the call only; nil for a nil planet.
-function M.planet_rebuild_trades(self)
+function M.rebuild_trades(self)
   local planet = require("game.planet")
   local slipway = require("game.slipway")
   local keys = trade_keys_zero()
@@ -197,7 +197,7 @@ function M.planet_rebuild_trades(self)
   end
 
   do
-    local kw = planet.planet_production_read(self)
+    local kw = planet.production_read(self)
     keys.resource = kw.resource
     amount = kw.amount
   end
@@ -210,7 +210,7 @@ function M.planet_rebuild_trades(self)
 
     -- New arrays: the route of the previous offer shares the old ones.
     local self_id = entity_id.of(self)
-    assert(self_id ~= nil, "planet_rebuild_trades: a route starts at a constructed planet")
+    assert(self_id ~= nil, "planet_trade.rebuild_trades: a route starts at a constructed planet")
     keys.planets = { self_id }
     keys.slipways = { entity_id.of(w) }
 
@@ -223,7 +223,7 @@ function M.planet_rebuild_trades(self)
       break
     end
 
-    assert(w.class == slipway.slipway_class(), "a planet's slipways list holds slipways only: planet_attach_slipway adds to it")
+    assert(w.class == slipway.slipway_class(), "a planet's slipways list holds slipways only: planet_trade.attach_slipway adds to it")
     other = slipway.slipway_other_end(w, self)
     -- The outgoing routes keep their old contents until the offer returns.
     if other ~= nil and other.class.offer_trade ~= nil then
@@ -236,12 +236,12 @@ function M.planet_rebuild_trades(self)
   return self.outgoing_routes
 end
 
-function M.planet_attach_slipway_method(self, slipway)
-  M.planet_attach_slipway(self, slipway)
+function M.attach_slipway_method(self, slipway)
+  M.attach_slipway(self, slipway)
 end
 
-function M.planet_offer_trade_method(self, offer)
-  M.planet_offer_trade(self, offer)
+function M.offer_trade_method(self, offer)
+  M.offer_trade(self, offer)
 end
 
 return M

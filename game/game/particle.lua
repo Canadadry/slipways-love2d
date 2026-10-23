@@ -56,7 +56,7 @@ function M.emitter_of(e)
   if bit.band(e.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_PROBE)) ~= 0 then
     return e.emitter
   end
-  if planet.planet_is_family(e) then
+  if planet.is_family(e) then
     return e.emitter
   end
   return nil

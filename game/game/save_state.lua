@@ -915,7 +915,7 @@ local function capture_economy(out)
 end
 
 local function capture_type_picker(out)
-  local picker = planet_module.planet_type_picker()
+  local picker = planet_module.type_picker()
   local walk
   assert(picker ~= nil, "save_state_capture: a running game has a type picker")
   walk = gen.weighted_picker_walk(picker)
@@ -965,7 +965,7 @@ end
 
 local function node_kind(cls)
   local classes = {}
-  classes[M.SAVE_NODE_PLANET] = planet_module.planet_class()
+  classes[M.SAVE_NODE_PLANET] = planet_module.class()
   classes[M.SAVE_NODE_PROTOSTAR] = planet_family.protostar_class()
   classes[M.SAVE_NODE_STRUCTURE] = planet_family.structure_class()
   classes[M.SAVE_NODE_PROCESSOR] = planet_family.processor_class()
@@ -1013,7 +1013,7 @@ end
 
 local function capture_node_fields(node, planet)
   local header = planet
-  local id = planet_module.planet_id_or_null(planet)
+  local id = planet_module.id_or_null(planet)
 
   node.kind = node_kind(header.class)
   node.state = bit.band(header.state, 0xFF)
@@ -1156,7 +1156,7 @@ end
 
 function M.save_state_capture(out)
   local ids = {}
-  local vanish_walk = planet_module.planet_vanish_roll()
+  local vanish_walk = planet_module.vanish_roll()
   local background = background_module.live()
   local ok, counter
 

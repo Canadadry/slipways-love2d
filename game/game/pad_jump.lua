@@ -168,7 +168,7 @@ function M.pad_jump_nearest(x, y, candidates)
 end
 
 local function is_colony(e)
-  return e.class == planet.planet_class() and e.state == entity_class.STATE_SETTLED
+  return e.class == planet.class() and e.state == entity_class.STATE_SETTLED
 end
 
 function M.pad_jump_seed(candidates, centre_x, centre_y)

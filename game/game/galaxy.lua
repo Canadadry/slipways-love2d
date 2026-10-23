@@ -25,7 +25,7 @@ function M.populate(planet_count)
   while planet_id <= planet_count do
     local p_vec
     local id_num_str
-    local keys = planet.planet_keys_zero()
+    local keys = planet.keys_zero()
     local made
 
     -- Not an inert loop: every accepted planet registers under the planet tag, so later candidates are rejected against it.
@@ -37,11 +37,11 @@ function M.populate(planet_count)
       threshold)
 
     id_num_str = str.tostr_fixed(planet_id)
-    planet.planet_keys_set_id(keys, str.concat2("p", id_num_str))
+    planet.keys_set_id(keys, str.concat2("p", id_num_str))
     keys.map_pos = p_vec
     keys.pos = vec.mul(p_vec, fixed.from_int(M.MAP_SCALE))
 
-    made = planet.planet_new(keys)
+    made = planet.new(keys)
     planet_id = fixed.add(planet_id, fixed_one)
   end
 
@@ -65,11 +65,11 @@ function M.install_rolls()
   type_picker_random = gen.random_walk_new(fixed.LIT(0x00008000, 0.5), difficulty_type_bias)
   type_picker_state = gen.weighted_picker_new(fixed.from_int(2), gen.random_walk_draw,
     type_picker_random)
-  planet.planet_set_type_picker(type_picker_state)
+  planet.set_type_picker(type_picker_state)
 
   vanish_roll_state = gen.random_walk_new(fixed.LIT(0x0000cccc, 0.8),
     fixed.LIT(0x00008000, 0.5))
-  planet.planet_set_vanish_roll(vanish_roll_state)
+  planet.set_vanish_roll(vanish_roll_state)
 end
 
 return M

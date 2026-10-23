@@ -90,15 +90,15 @@ function M.cart_load()
     data_init.init()
   end
 
-  planet.planet_init()
+  planet.init()
   slipway.slipway_init()
-  planet_family.planet_family_init()
-  assert(planet_family.structure_ready() and planet_family.burst_ready() and planet.planet_ready(),
-    "cart_load: structure and burst extend planet: planet_init() must run first")
-  planet_family_trade.planet_family_trade_init()
+  planet_family.init()
+  assert(planet_family.structure_ready() and planet_family.burst_ready() and planet.ready(),
+    "cart_load: structure and burst extend planet: planet.init() must run first")
+  planet_family_trade.init()
   assert(planet_family_trade.slipgate_ready() and planet_family_trade.synthesizer_ready()
       and planet_family.structure_ready() and planet_family.ascension_ready(),
-    "cart_load: slipgate extends structure and synthesizer extends ascension: planet_family_init() must run first")
+    "cart_load: slipgate extends structure and synthesizer extends ascension: planet_family.init() must run first")
   wormhole.wormhole_init()
 
   help.help_init()
@@ -124,10 +124,10 @@ function M.cart_shutdown()
   help.help_shutdown()
 
   wormhole.wormhole_shutdown()
-  planet_family_trade.planet_family_trade_shutdown()
-  planet_family.planet_family_shutdown()
+  planet_family_trade.shutdown()
+  planet_family.shutdown()
   slipway.slipway_shutdown()
-  planet.planet_shutdown()
+  planet.shutdown()
 
   data_init.shutdown()
 

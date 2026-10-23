@@ -72,7 +72,7 @@ file cut after fN>`, the file cut as help-me-debug cuts it:
 - f197-226: Select held 30 frames in aim mode, the camera unmoved: on
   f226, its 30th frame, the cursor on the year-skip button (154 5),
   pressed: year 3402, $192 -> $191. p47 pays its -1 off screen, so
-  planet_new_year returns before its toast. Until plan 12 step 9 this
+  planet.new_year returns before its toast. Until plan 12 step 9 this
   year was R1 R1, X on `end turn`.
 
 The state at f227: year 3402 month 1, credits 191, research 59,

@@ -1,4 +1,4 @@
--- Include cycle: game.planet is required at call time (planet_is_family, planet_spacer).
+-- Include cycle: game.planet is required at call time (planet.is_family, planet.spacer).
 local layout = require("game.layout")
 local map_tables = require("game.map_tables")
 local research = require("game.research")
@@ -205,7 +205,7 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
       layout.row_keys_append(keys, layout.row_cell_tuple(tuple))
     end
 
-    layout.row_keys_append(keys, layout.row_cell_row(planet.planet_spacer()))
+    layout.row_keys_append(keys, layout.row_cell_row(planet.spacer()))
   end
 
   out_keys = keys
@@ -278,7 +278,7 @@ local function available_projects_predicate(b, planet_instance)
     local planet = require("game.planet")
     local jo
 
-    assert(planet.planet_is_family(planet_instance),
+    assert(planet.is_family(planet_instance),
       "available_projects_predicate: the planet display passes its own planet")
     jo = planet_instance
     if jo.planet_type ~= nil then

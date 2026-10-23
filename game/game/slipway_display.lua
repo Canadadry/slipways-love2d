@@ -35,8 +35,8 @@ function M.slipway_spawn_transit_dot(self, f, t)
   end
 
   -- The mouse point slipway_drag hangs the end on is not a planet.
-  if t ~= nil and planet.planet_is_family(t) then
-    t_id = planet.planet_id_or_null(t)
+  if t ~= nil and planet.is_family(t) then
+    t_id = planet.id_or_null(t)
   else
     t_id = nil
   end

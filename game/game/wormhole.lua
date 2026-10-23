@@ -174,14 +174,14 @@ function M.wormhole_update_unfolding(self, t)
       local pt
 
       if e ~= nil then
-        assert(planet.planet_is_family(e), "wormhole_update_unfolding: the planet tag holds planets only")
+        assert(planet.is_family(e), "wormhole_update_unfolding: the planet tag holds planets only")
         pt = e
 
         if pt.state == entity_class.STATE_UNKNOWN then
           local planet_map_pos = entity_class.map_pos(pt)
           local diff = vec.sub(planet_map_pos, self_p)
           if vec.length(diff) < sr then
-            planet.planet_roll_type(pt)
+            planet.roll_type(pt)
           end
         end
       end

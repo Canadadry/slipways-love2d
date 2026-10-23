@@ -59,8 +59,8 @@ end
 local function add_position(line, e, camera)
   local ra = ra_of(e)
   local rest_y = ra.y
-  if planet_family.planet_family_bobs(e) then
-    rest_y = fixed.sub(ra.y, planet.planet_bob_total(e.state_time))
+  if planet_family.bobs(e) then
+    rest_y = fixed.sub(ra.y, planet.bob_total(e.state_time))
   end
   line_add(line, " world ")
   add_fixed(line, ra.x)
@@ -75,7 +75,7 @@ end
 
 local function class_of(e)
   local c = e.class
-  if c == planet.planet_class() then return "planet" end
+  if c == planet.class() then return "planet" end
   if c == planet_family.structure_class() then return "structure" end
   if c == planet_family.trading_hub_class() then return "trading_hub" end
   if c == planet_family.processor_class() then return "processor" end
@@ -97,7 +97,7 @@ end
 
 local function id_of(e)
   if e == nil or class_of(e) == nil then return "-" end
-  local id = planet.planet_id_or_null(e)
+  local id = planet.id_or_null(e)
   if id ~= nil then
     return id
   end
@@ -236,7 +236,7 @@ local function write_structures(sink, camera)
   end
 end
 
--- Not planet_is_colonized(): it skips labs, whose archetype has no is_planet.
+-- Not planet.is_colonized(): it skips labs, whose archetype has no is_planet.
 local function count_colonies()
   local planets = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
   local n = 0

@@ -74,7 +74,7 @@ function M.shake(p, e)
 
   if e ~= nil then
     assert(e.shake ~= nil,
-      "entity_geom.shake: the entity is a planet (planet_draw) or the camera (camera_update)")
+      "entity_geom.shake: the entity is a planet (planet_display.draw) or the camera (camera_update)")
   end
   decremented = fixed.sub((e ~= nil) and e.shake or fixed.from_int(0), fixed.LIT(0x00001999, 0.1))
   clamped = (decremented > 0) and decremented or 0

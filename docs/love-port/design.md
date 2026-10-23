@@ -816,8 +816,8 @@ clash with a C parameter or local takes the `_module` suffix
 (`local planet_module = require("game.planet")` in `save_load.lua`). A
 function the Lua adds is, when another module needs it, exported after
 the C functions as `M.<what>` in
-`game/p8/` (`gfx_software.slot_pixels`) or with a C-style name
-elsewhere (`planet_keys_zero`). `game/love/` names follow
+`game/p8/` (`gfx_software.slot_pixels`) and in the modules whose
+prefix is gone (`planet.keys_zero`), with a C-style name elsewhere. `game/love/` names follow
 `module_verb[_object]`.
 
 **Arrays and integers.** Every array is 1-based: a table whose integer key only

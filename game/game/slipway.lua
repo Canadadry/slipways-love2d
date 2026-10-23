@@ -273,7 +273,7 @@ function M.slipway_obstruction(self)
     local oe = nil
 
     if start_node ~= nil then
-      assert(require("game.planet").planet_is_family(start_node),
+      assert(require("game.planet").is_family(start_node),
         "a slipway's start is a planet: slipway_create asserts it")
       oe = start_node.slipways
     end
@@ -281,7 +281,7 @@ function M.slipway_obstruction(self)
       for i = 1, #oe do
         local w = entity_id.resolve(oe[i])
         assert(w.class == M.slipway_class(),
-          "the start's slipways list holds slipways: only planet_attach_slipway adds to it, and only slipways")
+          "the start's slipways list holds slipways: only planet_trade.attach_slipway adds to it, and only slipways")
         if M.slipway_other_end(w, start_node) == end_node then
           return w
         end
@@ -361,7 +361,7 @@ local function slipway_release_method(self)
 end
 
 local function slipway_is_endpoint_class(cls)
-  return cls.states[entity_class.STATE_SETTLED] ~= nil or cls == require("game.planet").planet_class()
+  return cls.states[entity_class.STATE_SETTLED] ~= nil or cls == require("game.planet").class()
 end
 
 M.slipway_class_def = {

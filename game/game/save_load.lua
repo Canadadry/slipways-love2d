@@ -94,7 +94,7 @@ local function load_production(planet, node)
 end
 
 M.node_constructors = {
-  [save_state.SAVE_NODE_PLANET] = planet_module.planet_new,
+  [save_state.SAVE_NODE_PLANET] = planet_module.new,
   [save_state.SAVE_NODE_PROTOSTAR] = planet_family.protostar_new,
   [save_state.SAVE_NODE_STRUCTURE] = planet_family.structure_new,
   [save_state.SAVE_NODE_PROCESSOR] = planet_family.processor_new,
@@ -110,11 +110,11 @@ local node_constructors = M.node_constructors
 -- constructors assert that their keys hold none, so it is set after.
 local function construct_node(node)
   local positions_are_keys = node.kind == save_state.SAVE_NODE_PLANET or node.kind == save_state.SAVE_NODE_PROTOSTAR
-  local keys = planet_module.planet_keys_zero()
+  local keys = planet_module.keys_zero()
   local planet
 
   if has(node, save_state.SAVE_NODE_HAS_PLANET_ID) then
-    planet_module.planet_keys_set_id(keys, node.planet_id)
+    planet_module.keys_set_id(keys, node.planet_id)
   end
   if positions_are_keys and has(node, save_state.SAVE_NODE_HAS_POS) then
     keys.pos = vec_of(node.pos)
@@ -141,9 +141,9 @@ local function load_node(node)
   end
   planet.planet_type = (node.planet_type ~= 0) and game_data.planet_types_table[node.planet_type] or nil
   if node.project ~= 0 then
-    planet_module.planet_install_project(planet, research.research_projects_at(node.project))
+    planet_module.install_project(planet, research.research_projects_at(node.project))
   end
-  -- After planet_install_project, which clears it.
+  -- After planet.install_project, which clears it.
   planet.description = (node.description_type ~= 0) and game_data.planet_types_table[node.description_type].description or nil
   load_needs(planet, node)
   planet.development_tier = nil
@@ -271,9 +271,9 @@ local function load_rolls(state)
   local vanish_walk
 
   galaxy.install_rolls()
-  picker = planet_module.planet_type_picker()
+  picker = planet_module.type_picker()
   walk = gen.weighted_picker_walk(picker)
-  vanish_walk = planet_module.planet_vanish_roll()
+  vanish_walk = planet_module.vanish_roll()
   assert(picker ~= nil and walk ~= nil and vanish_walk ~= nil)
 
   picker.tickets_count = saved.tickets_count

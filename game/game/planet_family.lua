@@ -22,31 +22,31 @@ local M = {}
 
 -- construct is a burst construct keys table of game_data, or nil.
 local function burst_keys_zero()
-  return { planet = planet.planet_keys_zero(), construct = nil }
+  return { planet = planet.keys_zero(), construct = nil }
 end
 
 local g_family_up = false
 
 function M.structure_update_settled_method(self, t)
-  planet.planet_bob(self, t)
+  planet.bob(self, t)
 end
 
 M.structure_class_def = {
-  draw = planet_display.planet_draw_method,
+  draw = planet_display.draw_method,
   skip_draw_off_screen = true,
   draw_overlay = probe.targeting_tooltip_method,
-  hit_test = planet.planet_hit_test_method,
-  new_year = planet.planet_new_year_method,
-  refresh = planet_display.planet_refresh_method,
-  release = planet_display.planet_release_method,
-  left_press = planet_display.planet_left_press_method,
-  accept_drop = planet_display.planet_accept_drop_method,
+  hit_test = planet.hit_test_method,
+  new_year = planet.new_year_method,
+  refresh = planet_display.refresh_method,
+  release = planet_display.release_method,
+  left_press = planet_display.left_press_method,
+  accept_drop = planet_display.accept_drop_method,
   drag = probe.targeting_track_method,
   drop = probe.targeting_confirm_method,
-  attach_slipway = planet_trade.planet_attach_slipway_method,
-  offer_trade = planet_trade.planet_offer_trade_method,
+  attach_slipway = planet_trade.attach_slipway_method,
+  offer_trade = planet_trade.offer_trade_method,
   states = {
-    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_VANISHING] = planet.update_vanishing_method,
     [entity_class.STATE_SETTLED] = M.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_STRUCTURE), entity_class.TAG(entity_class.TAG_PLANET),
@@ -55,7 +55,7 @@ M.structure_class_def = {
 }
 
 function M.structure_init_instance(self, cls, archetype)
-  planet.planet_init_instance(self, cls, archetype)
+  planet.init_instance(self, cls, archetype)
   self.targeting = targeting.targeting_zero()
   self.targeting.archetype = self.archetype.targeting
   self.targeting.cost = self.archetype.targeting.cost
@@ -66,13 +66,13 @@ end
 local function structure_create(keys)
   local self = {}
 
-  assert(g_family_up, "planet_family_init() must run first")
+  assert(g_family_up, "planet_family.init() must run first")
   M.structure_init_instance(self, M.structure_class_def, game_data.structure_archetype)
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "structure_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
     .. "-- stop, do not add one")
-  planet.planet_copy_keys(self, keys)
-  planet.planet_construct(self)
+  planet.copy_keys(self, keys)
+  planet.construct(self)
   entity.construct(self)
   return self
 end
@@ -81,7 +81,7 @@ function M.trading_hub_update_settled(self, t)
   if self == nil then
     return
   end
-  planet.planet_bob(self, t)
+  planet.bob(self, t)
 
   assert(self.development_tier ~= nil,
     "trading_hub_update_settled: a settled trading hub has a development tier; only ascension_draw checks for none")
@@ -96,8 +96,8 @@ local function trading_hub_update_settled_method(self, t)
   M.trading_hub_update_settled(self, t)
 end
 
--- True when e is settled and its settled update calls planet_bob.
-function M.planet_family_bobs(e)
+-- True when e is settled and its settled update calls planet.bob.
+function M.bobs(e)
   if e == nil or e.state ~= entity_class.STATE_SETTLED or e.class == nil then
     return false
   end
@@ -106,21 +106,21 @@ function M.planet_family_bobs(e)
 end
 
 M.trading_hub_class_def = {
-  draw = planet_display.planet_draw_method,
+  draw = planet_display.draw_method,
   skip_draw_off_screen = true,
   draw_overlay = probe.targeting_tooltip_method,
-  hit_test = planet.planet_hit_test_method,
-  new_year = planet.planet_new_year_method,
-  refresh = planet_display.planet_refresh_method,
-  release = planet_display.planet_release_method,
-  left_press = planet_display.planet_left_press_method,
-  accept_drop = planet_display.planet_accept_drop_method,
+  hit_test = planet.hit_test_method,
+  new_year = planet.new_year_method,
+  refresh = planet_display.refresh_method,
+  release = planet_display.release_method,
+  left_press = planet_display.left_press_method,
+  accept_drop = planet_display.accept_drop_method,
   drag = probe.targeting_track_method,
   drop = probe.targeting_confirm_method,
-  attach_slipway = planet_trade.planet_attach_slipway_method,
-  offer_trade = planet_trade.planet_offer_trade_method,
+  attach_slipway = planet_trade.attach_slipway_method,
+  offer_trade = planet_trade.offer_trade_method,
   states = {
-    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_VANISHING] = planet.update_vanishing_method,
     [entity_class.STATE_SETTLED] = trading_hub_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_PLANET), entity_class.TAG(entity_class.TAG_NODE)),
@@ -131,34 +131,34 @@ M.trading_hub_class_def = {
 local function trading_hub_create(keys)
   local self = {}
 
-  assert(g_family_up, "planet_family_init() must run first")
+  assert(g_family_up, "planet_family.init() must run first")
   M.structure_init_instance(self, M.trading_hub_class_def, game_data.trading_hub_archetype)
   self.palette_block = self.archetype.palette_block
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "trading_hub_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
     .. "-- stop, do not add one")
-  planet.planet_copy_keys(self, keys)
-  planet.planet_construct(self)
+  planet.copy_keys(self, keys)
+  planet.construct(self)
   entity.construct(self)
   return self
 end
 
 M.processor_class_def = {
-  draw = planet_display.planet_draw_method,
+  draw = planet_display.draw_method,
   skip_draw_off_screen = true,
   draw_overlay = probe.targeting_tooltip_method,
-  hit_test = planet.planet_hit_test_method,
-  new_year = planet.planet_new_year_method,
-  refresh = planet_display.planet_refresh_method,
-  release = planet_display.planet_release_method,
-  left_press = planet_display.planet_left_press_method,
-  accept_drop = planet_display.planet_accept_drop_method,
+  hit_test = planet.hit_test_method,
+  new_year = planet.new_year_method,
+  refresh = planet_display.refresh_method,
+  release = planet_display.release_method,
+  left_press = planet_display.left_press_method,
+  accept_drop = planet_display.accept_drop_method,
   drag = probe.targeting_track_method,
   drop = probe.targeting_confirm_method,
-  attach_slipway = planet_trade.planet_attach_slipway_method,
-  offer_trade = planet_trade.planet_offer_trade_method,
+  attach_slipway = planet_trade.attach_slipway_method,
+  offer_trade = planet_trade.offer_trade_method,
   states = {
-    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_VANISHING] = planet.update_vanishing_method,
     [entity_class.STATE_SETTLED] = M.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_PLANET), entity_class.TAG(entity_class.TAG_NODE)),
@@ -168,13 +168,13 @@ M.processor_class_def = {
 local function processor_create(keys)
   local self = {}
 
-  assert(g_family_up, "planet_family_init() must run first")
+  assert(g_family_up, "planet_family.init() must run first")
   M.structure_init_instance(self, M.processor_class_def, game_data.processor_archetype)
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "processor_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
     .. "-- stop, do not add one")
-  planet.planet_copy_keys(self, keys)
-  planet.planet_construct(self)
+  planet.copy_keys(self, keys)
+  planet.construct(self)
   entity.construct(self)
   return self
 end
@@ -186,7 +186,7 @@ function M.ascension_draw(gfx, mem, self, p)
   if self.development_tier ~= nil and self.development_tier >= fixed.from_int(2) then
     require("game.particle").emitter_update(gfx, mem, self)
   end
-  planet_display.planet_draw(gfx, mem, self, p)
+  planet_display.draw(gfx, mem, self, p)
 end
 
 function M.ascension_draw_method(self, screen_pos)
@@ -196,7 +196,7 @@ end
 function M.ascension_release_method(self)
   local particle = require("game.particle")
 
-  planet_display.planet_release_row(self)
+  planet_display.release_row(self)
   particle.emitter_release_particles(particle.emitter_of(self))
 end
 
@@ -204,19 +204,19 @@ M.ascension_class_def = {
   draw = M.ascension_draw_method,
   skip_draw_off_screen = false,
   draw_overlay = probe.targeting_tooltip_method,
-  hit_test = planet.planet_hit_test_method,
-  new_year = planet.planet_new_year_method,
-  refresh = planet_display.planet_refresh_method,
+  hit_test = planet.hit_test_method,
+  new_year = planet.new_year_method,
+  refresh = planet_display.refresh_method,
   release = M.ascension_release_method,
-  left_press = planet_display.planet_left_press_method,
-  accept_drop = planet_display.planet_accept_drop_method,
+  left_press = planet_display.left_press_method,
+  accept_drop = planet_display.accept_drop_method,
   drag = probe.targeting_track_method,
   drop = probe.targeting_confirm_method,
-  attach_slipway = planet_trade.planet_attach_slipway_method,
-  offer_trade = planet_trade.planet_offer_trade_method,
+  attach_slipway = planet_trade.attach_slipway_method,
+  offer_trade = planet_trade.offer_trade_method,
   spawn_particle = probe.probe_spawn_particle,
   states = {
-    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_VANISHING] = planet.update_vanishing_method,
     [entity_class.STATE_SETTLED] = M.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_ASCENSION), entity_class.TAG(entity_class.TAG_PLANET),
@@ -241,14 +241,14 @@ end
 local function ascension_create(keys)
   local self = {}
 
-  assert(g_family_up, "planet_family_init() must run first")
+  assert(g_family_up, "planet_family.init() must run first")
   M.ascension_init_instance(self, M.ascension_class_def, game_data.ascension_archetype)
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "ascension_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
     .. "-- stop, do not add one")
-  planet.planet_copy_keys(self, keys)
+  planet.copy_keys(self, keys)
   require("game.particle").emitter_init(self)
-  planet.planet_construct(self)
+  planet.construct(self)
   entity.construct(self)
   return self
 end
@@ -271,19 +271,19 @@ M.protostar_class_def = {
   draw = M.ascension_draw_method,
   skip_draw_off_screen = false,
   draw_overlay = probe.targeting_tooltip_method,
-  hit_test = planet.planet_hit_test_method,
-  new_year = planet.planet_new_year_method,
-  refresh = planet_display.planet_refresh_method,
+  hit_test = planet.hit_test_method,
+  new_year = planet.new_year_method,
+  refresh = planet_display.refresh_method,
   release = M.ascension_release_method,
-  left_press = planet_display.planet_left_press_method,
-  accept_drop = planet_display.planet_accept_drop_method,
+  left_press = planet_display.left_press_method,
+  accept_drop = planet_display.accept_drop_method,
   drag = probe.targeting_track_method,
   drop = probe.targeting_confirm_method,
-  attach_slipway = planet_trade.planet_attach_slipway_method,
-  offer_trade = planet_trade.planet_offer_trade_method,
+  attach_slipway = planet_trade.attach_slipway_method,
+  offer_trade = planet_trade.offer_trade_method,
   spawn_particle = probe.probe_spawn_particle,
   states = {
-    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_VANISHING] = planet.update_vanishing_method,
     [entity_class.STATE_SETTLED] = M.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_PLANET), entity_class.TAG(entity_class.TAG_NODE)),
@@ -293,12 +293,12 @@ M.protostar_class_def = {
 local function protostar_create(keys)
   local self = {}
 
-  assert(g_family_up, "planet_family_init() must run first")
+  assert(g_family_up, "planet_family.init() must run first")
   M.ascension_init_instance(self, M.protostar_class_def, game_data.protostar_archetype)
-  planet.planet_copy_keys(self, keys)
+  planet.copy_keys(self, keys)
   M.protostar_construct(self)
   require("game.particle").emitter_init(self)
-  planet.planet_construct(self)
+  planet.construct(self)
   entity.construct(self)
   return self
 end
@@ -416,16 +416,16 @@ end
 M.burst_class_def = {
   draw = burst_draw_method,
   skip_draw_off_screen = false,
-  hit_test = planet.planet_hit_test_method,
-  new_year = planet.planet_new_year_method,
-  refresh = planet_display.planet_refresh_method,
+  hit_test = planet.hit_test_method,
+  new_year = planet.new_year_method,
+  refresh = planet_display.refresh_method,
   release = burst_release_method,
-  left_press = planet_display.planet_left_press_method,
-  accept_drop = planet_display.planet_accept_drop_method,
-  attach_slipway = planet_trade.planet_attach_slipway_method,
-  offer_trade = planet_trade.planet_offer_trade_method,
+  left_press = planet_display.left_press_method,
+  accept_drop = planet_display.accept_drop_method,
+  attach_slipway = planet_trade.attach_slipway_method,
+  offer_trade = planet_trade.offer_trade_method,
   spawn_particle = M.burst_spawn_particle,
-  states = { [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method },
+  states = { [entity_class.STATE_VANISHING] = planet.update_vanishing_method },
   tags = 0,
   lineage = entity_class.LINEAGE(entity_class.LINEAGE_PLANET),
 }
@@ -433,8 +433,8 @@ M.burst_class_def = {
 local function burst_create(keys)
   local self = {}
 
-  assert(g_family_up, "planet_family_init() must run first")
-  planet.planet_init_instance(self, M.burst_class_def, game_data.burst_archetype)
+  assert(g_family_up, "planet_family.init() must run first")
+  planet.init_instance(self, M.burst_class_def, game_data.burst_archetype)
   self.emitter = require("game.particle").emitter_zero()
   self.emitter.archetype = self.archetype.emitter
   self.emitter.matrix_xx = self.archetype.emitter.matrix_xx
@@ -447,7 +447,7 @@ local function burst_create(keys)
   self.speed = self.archetype.speed
   self.outgoing_routes = {}
   if keys ~= nil then
-    planet.planet_copy_keys(self, keys.planet)
+    planet.copy_keys(self, keys.planet)
     if keys.construct ~= nil then
       self.emitter.matrix_xx = keys.construct.matrix_xx
       self.emitter.matrix_xy = keys.construct.matrix_xy
@@ -460,18 +460,18 @@ local function burst_create(keys)
     end
   end
   M.burst_construct(self)
-  planet.planet_construct_in(self)
+  planet.construct_in(self)
   entity.construct(self)
   return self
 end
 
-function M.planet_family_init()
-  assert(planet.planet_ready(), "planet_init() must run first")
-  M.planet_family_shutdown()
+function M.init()
+  assert(planet.ready(), "planet.init() must run first")
+  M.shutdown()
   g_family_up = true
 end
 
-function M.planet_family_shutdown()
+function M.shutdown()
   g_family_up = false
 end
 
@@ -619,17 +619,17 @@ function M.burst_new(keys)
   return burst_create(keys)
 end
 
-M.planet_kinds = {
+M.kinds = {
   { class_name = "protostar", kind = M.protostar_kind },
   { class_name = "burst", kind = M.burst_kind },
 }
 local PLANET_KINDS_COUNT = 2
-assert(#M.planet_kinds == PLANET_KINDS_COUNT, "planet_kinds: PLANET_KINDS_COUNT is the C sizeof planet_kinds / sizeof planet_kinds[0]")
+assert(#M.kinds == PLANET_KINDS_COUNT, "planet_family.kinds: PLANET_KINDS_COUNT is the C sizeof planet_family.kinds / sizeof planet_family.kinds[0]")
 
-function M.planet_kind_named(fz)
+function M.kind_named(fz)
   for i = 1, PLANET_KINDS_COUNT do
-    if M.planet_kinds[i].class_name == fz then
-      return M.planet_kinds[i].kind()
+    if M.kinds[i].class_name == fz then
+      return M.kinds[i].kind()
     end
   end
   return nil

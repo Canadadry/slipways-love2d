@@ -161,7 +161,7 @@ function M.slipgate_offer_trade(self, trade_offer)
       local other
 
       gf.route = trade.trade_extend(route, self, slipway)
-      assert(slipway.class == slipway_module.slipway_class(), "a slipgate's slipways list holds slipways only: planet_attach_slipway adds to it")
+      assert(slipway.class == slipway_module.slipway_class(), "a slipgate's slipways list holds slipways only: planet_trade.attach_slipway adds to it")
       other = slipway_module.slipway_other_end(slipway, self)
       if other ~= nil and other.class.offer_trade ~= nil then
         other.class.offer_trade(other, gf)
@@ -178,21 +178,21 @@ local function slipgate_offer_trade_method(self, offer)
 end
 
 M.slipgate_class_def = {
-  draw = planet_display.planet_draw_method,
+  draw = planet_display.draw_method,
   skip_draw_off_screen = true,
   draw_overlay = probe.targeting_tooltip_method,
-  hit_test = planet.planet_hit_test_method,
-  new_year = planet.planet_new_year_method,
+  hit_test = planet.hit_test_method,
+  new_year = planet.new_year_method,
   refresh = slipgate_refresh_method,
-  release = planet_display.planet_release_method,
+  release = planet_display.release_method,
   left_press = slipgate_left_press_method,
   accept_drop = slipgate_accept_drop_method,
   drag = probe.targeting_track_method,
   drop = probe.targeting_confirm_method,
-  attach_slipway = planet_trade.planet_attach_slipway_method,
+  attach_slipway = planet_trade.attach_slipway_method,
   offer_trade = slipgate_offer_trade_method,
   states = {
-    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_VANISHING] = planet.update_vanishing_method,
     [entity_class.STATE_SETTLED] = planet_family.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_SLIPGATE), entity_class.TAG(entity_class.TAG_NODE)),
@@ -206,30 +206,30 @@ end
 local function slipgate_create(keys)
   local self = {}
 
-  assert(g_family_trade_up, "planet_family_trade_init() must run first")
+  assert(g_family_trade_up, "planet_family_trade.init() must run first")
   slipgate_init_instance(self, M.slipgate_class_def, game_data.slipgate_archetype)
-  planet.planet_copy_keys(self, keys)
-  planet.planet_construct(self)
+  planet.copy_keys(self, keys)
+  planet.construct(self)
   entity.construct(self)
   return self
 end
 
 M.infraspace_gate_class_def = {
-  draw = planet_display.planet_draw_method,
+  draw = planet_display.draw_method,
   skip_draw_off_screen = true,
   draw_overlay = probe.targeting_tooltip_method,
-  hit_test = planet.planet_hit_test_method,
-  new_year = planet.planet_new_year_method,
+  hit_test = planet.hit_test_method,
+  new_year = planet.new_year_method,
   refresh = slipgate_refresh_method,
-  release = planet_display.planet_release_method,
+  release = planet_display.release_method,
   left_press = slipgate_left_press_method,
   accept_drop = slipgate_accept_drop_method,
   drag = probe.targeting_track_method,
   drop = probe.targeting_confirm_method,
-  attach_slipway = planet_trade.planet_attach_slipway_method,
+  attach_slipway = planet_trade.attach_slipway_method,
   offer_trade = slipgate_offer_trade_method,
   states = {
-    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_VANISHING] = planet.update_vanishing_method,
     [entity_class.STATE_SETTLED] = planet_family.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_SLIPGATE), entity_class.TAG(entity_class.TAG_NODE)),
@@ -239,14 +239,14 @@ M.infraspace_gate_class_def = {
 local function infraspace_gate_create(keys)
   local self = {}
 
-  assert(g_family_trade_up, "planet_family_trade_init() must run first")
+  assert(g_family_trade_up, "planet_family_trade.init() must run first")
   slipgate_init_instance(self, M.infraspace_gate_class_def, game_data.infraspace_gate_archetype)
   self.infraspace = self.archetype.infraspace
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "infraspace_gate_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
     .. "-- stop, do not add one")
-  planet.planet_copy_keys(self, keys)
-  planet.planet_construct(self)
+  planet.copy_keys(self, keys)
+  planet.construct(self)
   entity.construct(self)
   return self
 end
@@ -263,7 +263,7 @@ function M.synthesizer_attach_slipway(self, slipway)
   if other_end ~= nil then
     local jy
 
-    assert(planet.planet_is_family(other_end), "synthesizer_attach_slipway: the other end of a registered slipway is a planet")
+    assert(planet.is_family(other_end), "synthesizer_attach_slipway: the other end of a registered slipway is a planet")
     assert(other_end.needs ~= nil,
       "synthesizer_attach_slipway: the other end of a slipway to a synthesizer holds needs")
     jy = other_end.needs
@@ -285,7 +285,7 @@ function M.synthesizer_attach_slipway(self, slipway)
 
       if i.row.resource ~= nil and self.synthesizable_resources ~= nil
         and game_data.int_seq_has_fixed(self.synthesizable_resources, i.row.resource) then
-        local kw = planet.planet_production(self)
+        local kw = planet.production(self)
         kw.resource = i.row.resource
         self.synthesizable_resources = M.synthesizer_synthesizable_resources_spent
       end
@@ -293,7 +293,7 @@ function M.synthesizer_attach_slipway(self, slipway)
     end
   end
 
-  planet_trade.planet_attach_slipway(self, slipway)
+  planet_trade.attach_slipway(self, slipway)
 end
 
 function M.synthesizer_set_spent(self, spent)
@@ -310,19 +310,19 @@ M.synthesizer_class_def = {
   draw = planet_family.ascension_draw_method,
   skip_draw_off_screen = false,
   draw_overlay = probe.targeting_tooltip_method,
-  hit_test = planet.planet_hit_test_method,
-  new_year = planet.planet_new_year_method,
-  refresh = planet_display.planet_refresh_method,
+  hit_test = planet.hit_test_method,
+  new_year = planet.new_year_method,
+  refresh = planet_display.refresh_method,
   release = planet_family.ascension_release_method,
-  left_press = planet_display.planet_left_press_method,
-  accept_drop = planet_display.planet_accept_drop_method,
+  left_press = planet_display.left_press_method,
+  accept_drop = planet_display.accept_drop_method,
   drag = probe.targeting_track_method,
   drop = probe.targeting_confirm_method,
   attach_slipway = synthesizer_attach_slipway_method,
-  offer_trade = planet_trade.planet_offer_trade_method,
+  offer_trade = planet_trade.offer_trade_method,
   spawn_particle = probe.probe_spawn_particle,
   states = {
-    [entity_class.STATE_VANISHING] = planet.planet_update_vanishing_method,
+    [entity_class.STATE_VANISHING] = planet.update_vanishing_method,
     [entity_class.STATE_SETTLED] = planet_family.structure_update_settled_method,
   },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_PLANET), entity_class.TAG(entity_class.TAG_NODE)),
@@ -332,26 +332,26 @@ M.synthesizer_class_def = {
 local function synthesizer_create(keys)
   local self = {}
 
-  assert(g_family_trade_up, "planet_family_trade_init() must run first")
+  assert(g_family_trade_up, "planet_family_trade.init() must run first")
   planet_family.ascension_init_instance(self, M.synthesizer_class_def, game_data.synthesizer_archetype)
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "synthesizer_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "
     .. "-- stop, do not add one")
-  planet.planet_copy_keys(self, keys)
+  planet.copy_keys(self, keys)
   require("game.particle").emitter_init(self)
-  planet.planet_construct(self)
+  planet.construct(self)
   entity.construct(self)
   return self
 end
 
-function M.planet_family_trade_init()
+function M.init()
   assert(planet_family.structure_ready() and planet_family.ascension_ready(),
-    "planet_family_init() must run first")
-  M.planet_family_trade_shutdown()
+    "planet_family.init() must run first")
+  M.shutdown()
   g_family_trade_up = true
 end
 
-function M.planet_family_trade_shutdown()
+function M.shutdown()
   g_family_trade_up = false
 end
 

@@ -59,7 +59,7 @@ local function planet_row_signature(needs_list, output, amount, route_count)
   local planet = require("game.planet")
   local signature
 
-  signature = planet.planet_row_signature_zero()
+  signature = planet.row_signature_zero()
   signature.flags = (output ~= nil) and ROW_SIGNATURE_HAS_OUTPUT or 0
   -- An absent output is keyed as 0; ROW_SIGNATURE_HAS_OUTPUT tells it from a present 0.
   signature.output = output or 0
@@ -104,7 +104,7 @@ local function planet_row_signature_equal(left, right)
   return true
 end
 
-function M.planet_refresh(self)
+function M.refresh(self)
   local planet = require("game.planet")
   local research_display = require("game.research_display")
   local needs_list
@@ -123,7 +123,7 @@ function M.planet_refresh(self)
 
   needs_list = self.needs
   do
-    local kw = planet.planet_production_read(self)
+    local kw = planet.production_read(self)
     output = kw.resource
     mu = kw.amount
   end
@@ -143,15 +143,15 @@ function M.planet_refresh(self)
   self.layout_row_signature = signature
 end
 
-function M.planet_release_row(self)
+function M.release_row(self)
   local jo = self
 
   jo.layout_row = nil
   jo.layout_row_signature.flags = 0
 end
 
-function M.planet_release_method(self)
-  M.planet_release_row(self)
+function M.release_method(self)
+  M.release_row(self)
 end
 
 local function planet_inspection_panel_filter_step(e, ctx_ptr)
@@ -211,7 +211,7 @@ local function planet_append_button(buttons, count)
   return buttons[n], n
 end
 
-function M.planet_inspection_panel(self)
+function M.inspection_panel(self)
   local planet = require("game.planet")
   local message_box = require("game.message_box")
   local ui_button = require("game.ui_button")
@@ -234,7 +234,7 @@ function M.planet_inspection_panel(self)
     local mi = fixed.flr_int(self.development_tier)
 
     if mi >= 1 and mi <= game_data.PLANET_MOOD_ROWS_COUNT then
-      icon_row = planet.planet_mood_rows()[mi]
+      icon_row = planet.mood_rows()[mi]
     end
   end
   if icon_row ~= nil then
@@ -277,7 +277,7 @@ function M.planet_inspection_panel(self)
     end
   else
     local development_tier_fixed = self.development_tier or fixed.from_int(0)
-    local kw = planet.planet_production_read(self)
+    local kw = planet.production_read(self)
     local r_w = 0
     local resource_is_r_w = false
 
@@ -317,11 +317,11 @@ function M.planet_inspection_panel(self)
   end
 
   do
-    local kw = planet.planet_production_read(self)
+    local kw = planet.production_read(self)
     local mu = kw.amount
 
     if mu > fixed.from_int(0) then
-      local makes = kw.resource ~= nil and game_data.int_seq_has_fixed(planet.planet_made_resources(), kw.resource)
+      local makes = kw.resource ~= nil and game_data.int_seq_has_fixed(planet.made_resources(), kw.resource)
       local row
 
       row, row_count = planet_append_button(buttons, row_count)
@@ -352,7 +352,7 @@ function M.planet_inspection_panel(self)
   message_box.message_box_open_box(frame, buttons, row_count)
 end
 
-function M.planet_accept_drop(self, s)
+function M.accept_drop(self, s)
   local slipway = require("game.slipway")
   local out = down_zero()
 
@@ -363,7 +363,7 @@ function M.planet_accept_drop(self, s)
     return out
   end
   if s ~= nil and s.class == slipway.slipway_class() and slipway.slipway_start(s) == self then
-    M.planet_inspection_panel(self)
+    M.inspection_panel(self)
     return out
   end
   out.stop = true
@@ -387,9 +387,9 @@ local function planet_projects_panel_on_click_method(self)
     od = self.project_cost
   end
 
-  assert(pt ~= nil and planet.planet_is_family(pt), "the projects panel button lost its captured planet")
+  assert(pt ~= nil and planet.is_family(pt), "the projects panel button lost its captured planet")
   if economy.economy_spend(probe.main_economy_typed(), od) then
-    M.planet_apply_project(pt, b)
+    M.apply_project(pt, b)
   end
 end
 
@@ -420,7 +420,7 @@ local function planet_projects_panel_keys(self, b, keys)
   ui_button.button_keys_set_tooltip_row(keys, research_display.research_project_tooltip(b))
 end
 
-function M.planet_projects_panel(self)
+function M.projects_panel(self)
   local research_display = require("game.research_display")
   local message_box = require("game.message_box")
   local ui_button = require("game.ui_button")
@@ -467,7 +467,7 @@ end
 
 -- Draws no visual random number and reads no game state: the image cache's rule.
 local function planet_build_images(gfx, mem)
-  local ring_colors = require("game.planet").planet_ring_colors()
+  local ring_colors = require("game.planet").ring_colors()
 
   assert(gfx.fillp_pattern == 0, "planet images are built with no fill pattern")
   if planet_images_built then
@@ -483,7 +483,7 @@ local function planet_build_images(gfx, mem)
   planet_images_built = true
 end
 
-function M.planet_draw(graphics, memory, self, screen_pos)
+function M.draw(graphics, memory, self, screen_pos)
   if self == nil or not entity_geom.is_on_screen(self) then
     return
   end
@@ -532,11 +532,11 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
   gfx_module.spr(graphics, memory, spr_index, screen_x - 4, screen_y - 4, 2, 2)
   hud.hud_select_palette_block_default(memory)
 
-  if planet.planet_is_colonized(self) then
+  if planet.is_colonized(self) then
     local mi = fixed.flr_int(self.development_tier or fixed.from_int(0))
     local color = 0
     local found
-    found, color = game_data.int_seq_at(planet.planet_ring_colors().items, planet.planet_ring_colors().count, mi, color)
+    found, color = game_data.int_seq_at(planet.ring_colors().items, planet.ring_colors().count, mi, color)
     if found and graphics.fillp_pattern == 0 then
       planet_build_images(graphics, memory)
       image.draw(graphics, memory, image_slot.PLANET_RING_FIRST + mi - 1, screen_x - PLANET_RING_RADIUS,
@@ -582,32 +582,32 @@ planet_draw_on_screen = function(graphics, memory, self, screen_pos)
   end
 end
 
-function M.planet_refresh_method(self)
-  M.planet_refresh(self)
+function M.refresh_method(self)
+  M.refresh(self)
 end
 
-function M.planet_accept_drop_method(self, s)
-  return M.planet_accept_drop(self, s)
+function M.accept_drop_method(self, s)
+  return M.accept_drop(self, s)
 end
 
-function M.planet_draw_method(self, screen_pos)
+function M.draw_method(self, screen_pos)
   assert(self.class.skip_draw_off_screen and entity_geom.is_on_screen(self),
-    "planet_draw_method trusts draw_layers' cull: only a class with skip_draw_off_screen may use it")
+    "planet_display.draw_method trusts draw_layers' cull: only a class with skip_draw_off_screen may use it")
   planet_draw_on_screen(dispatch_context.gfx(), dispatch_context.mem(), self, screen_pos)
 end
 
-function M.planet_left_press_method(self, mouse)
-  return M.planet_left_press(self)
+function M.left_press_method(self, mouse)
+  return M.left_press(self)
 end
 
-function M.planet_left_press(self)
+function M.left_press(self)
   local out = down_zero()
 
   if self == nil then
     return out
   end
   if self.state == entity_class.STATE_KNOWN then
-    M.planet_projects_panel(self)
+    M.projects_panel(self)
     out.stop = true
     return out
   end
@@ -616,7 +616,7 @@ function M.planet_left_press(self)
     local keys = slipway.slipway_keys_zero()
     local made
 
-    assert(slipway.slipway_ready(), "slipway_init() must run before planet_left_press builds a slipway")
+    assert(slipway.slipway_ready(), "slipway_init() must run before planet_display.left_press builds a slipway")
     keys.start = entity_id.link(self)
     made = slipway.slipway_new(keys)
     out.held = entity_id.link(made)
@@ -625,7 +625,7 @@ function M.planet_left_press(self)
   return out
 end
 
-function M.planet_apply_project(self, research_project_instance)
+function M.apply_project(self, research_project_instance)
   local planet = require("game.planet")
   local result_planet
   local fp = fixed.from_int(2)
@@ -638,18 +638,18 @@ function M.planet_apply_project(self, research_project_instance)
 
   if research_project_instance ~= nil and research_project_instance.class_name ~= nil then
     local target_kind = nil
-    local keys = planet.planet_keys_zero()
+    local keys = planet.keys_zero()
 
     assert(#self.slipways == 0,
       "a linked planet never dies: the routes kept in outgoing_routes would name it, and the cart never drops them")
     self.is_dead = true
 
-    target_kind = require("game.planet_family").planet_kind_named(research_project_instance.class_name)
+    target_kind = require("game.planet_family").kind_named(research_project_instance.class_name)
 
     keys.map_pos = entity_class.map_pos(self)
     keys.pos = entity_class.pos(self)
     if self.planet_id ~= nil then
-      planet.planet_keys_set_id(keys, self.planet_id)
+      planet.keys_set_id(keys, self.planet_id)
     end
 
     result_planet = (target_kind ~= nil) and target_kind.new_entity(keys) or nil
@@ -657,14 +657,14 @@ function M.planet_apply_project(self, research_project_instance)
     self.planet_type = game_data.planet_types_lookup(research_project_instance.next_type)
   else
     entity.set_state(self, entity_class.STATE_SETTLED)
-    planet.planet_install_project(self, research_project_instance)
+    planet.install_project(self, research_project_instance)
     self.fold_anchor = true
     fp = tech_gate.tech_gate_if_unlocked("autoassemblers", fixed.from_int(3), fixed.from_int(2))
   end
 
   require("game.economy").economy_advance_clock(require("game.probe").main_economy_typed(), fp)
 
-  planet.planet_restart_shake(result_planet)
+  planet.restart_shake(result_planet)
 end
 
 return M

@@ -148,7 +148,7 @@ end
 
 local function placing_structure(e)
   e = live(e)
-  if e ~= nil and planet_module.planet_is_family(e) and e.state == entity_class.STATE_PLACING then
+  if e ~= nil and planet_module.is_family(e) and e.state == entity_class.STATE_PLACING then
     return e
   end
   return nil
@@ -974,7 +974,7 @@ local function slipway_step(nav, pad_buttons, pressed, back_returns, release, pl
   reset_aim_mode(nav)
   nav.focus = nil
   local start = M.pad_nav_slipway_start(nav)
-  if start == nil or not planet_module.planet_is_family(start) then
+  if start == nil or not planet_module.is_family(start) then
     drop_held_slipway()
     back_to_jump_mode(nav, M.pad_nav_slipway_target(nav))
     return shown

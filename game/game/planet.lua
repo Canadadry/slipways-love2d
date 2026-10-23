@@ -1,5 +1,5 @@
 -- Include cycle: game.planet_display and game.planet_trade are required at load, since their
--- methods fill planet_class_def; neither requires this module at load. game.message_box is
+-- methods fill planet.class_def; neither requires this module at load. game.message_box is
 -- required at call time.
 local bit = require("bit")
 local entity = require("engine.entity")
@@ -50,45 +50,45 @@ local g_planet_up = false
 local g_type_picker = nil
 local g_planet_vanish_roll = nil
 
--- Shared by every bare planet, written in place, until planet_install_project gives it its own.
+-- Shared by every bare planet, written in place, until planet.install_project gives it its own.
 local g_planet_production_shared = production_zero()
 
-function M.planet_hit_test_method(self, mouse)
+function M.hit_test_method(self, mouse)
   return entity_geom.contains_cursor(self, mouse)
 end
 
-function M.planet_new_year_method(self, year)
-  M.planet_new_year(self)
+function M.new_year_method(self, year)
+  M.new_year(self)
 end
 
-function M.planet_is_family(e)
+function M.is_family(e)
   return bit.band(e.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_PLANET)) ~= 0
 end
 
-function M.planet_update_vanishing_method(self, t)
-  M.planet_update_vanishing(self, t)
+function M.update_vanishing_method(self, t)
+  M.update_vanishing(self, t)
 end
 
-M.planet_class_def = {
-  draw = planet_display.planet_draw_method,
+M.class_def = {
+  draw = planet_display.draw_method,
   skip_draw_off_screen = true,
-  hit_test = M.planet_hit_test_method,
-  new_year = M.planet_new_year_method,
-  refresh = planet_display.planet_refresh_method,
-  release = planet_display.planet_release_method,
-  left_press = planet_display.planet_left_press_method,
-  accept_drop = planet_display.planet_accept_drop_method,
-  attach_slipway = planet_trade.planet_attach_slipway_method,
-  offer_trade = planet_trade.planet_offer_trade_method,
-  states = { [entity_class.STATE_VANISHING] = M.planet_update_vanishing_method },
+  hit_test = M.hit_test_method,
+  new_year = M.new_year_method,
+  refresh = planet_display.refresh_method,
+  release = planet_display.release_method,
+  left_press = planet_display.left_press_method,
+  accept_drop = planet_display.accept_drop_method,
+  attach_slipway = planet_trade.attach_slipway_method,
+  offer_trade = planet_trade.offer_trade_method,
+  states = { [entity_class.STATE_VANISHING] = M.update_vanishing_method },
   tags = bit.bor(entity_class.TAG(entity_class.TAG_PLANET), entity_class.TAG(entity_class.TAG_NODE)),
   lineage = entity_class.LINEAGE(entity_class.LINEAGE_PLANET),
 }
 
 -- planet_id, needs, production_bonus, net_income, incoming_routes, outgoing_routes,
 -- development_tier, production, targeting and emitter are nil when the planet has none.
-function M.planet_init_instance(self, instance_class, archetype)
-  assert(g_planet_up, "planet_init() must run first")
+function M.init_instance(self, instance_class, archetype)
+  assert(g_planet_up, "planet.init() must run first")
   entity.init_instance(self, instance_class, archetype.state, archetype.state_time)
   self.archetype = archetype
   entity_registry.set_layer(self, self.archetype.layer)
@@ -103,7 +103,7 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.description = nil
   self.planet_type = nil
   self.layout_row = nil
-  self.layout_row_signature = M.planet_row_signature_zero()
+  self.layout_row_signature = M.row_signature_zero()
   self.targeted_by = nil
   self.is_dead = false
   self.development_tier = self.archetype.development_tier
@@ -114,23 +114,23 @@ end
 local function planet_create(keys)
   local self = {}
 
-  M.planet_init_instance(self, M.planet_class_def, game_data.planet_archetype)
-  M.planet_copy_keys(self, keys)
-  M.planet_construct(self)
+  M.init_instance(self, M.class_def, game_data.planet_archetype)
+  M.copy_keys(self, keys)
+  M.construct(self)
   entity.construct(self)
   return self
 end
 
-function M.planet_keys_set_id(keys, id)
+function M.keys_set_id(keys, id)
   keys.planet_id = id
 end
 
-function M.planet_id_or_null(self)
+function M.id_or_null(self)
   return self.planet_id
 end
 
 -- Copies the keys' id and positions that are given; nil keys copy nothing.
-function M.planet_copy_keys(self, keys)
+function M.copy_keys(self, keys)
   if keys == nil then
     return
   end
@@ -145,83 +145,83 @@ function M.planet_copy_keys(self, keys)
   end
 end
 
-function M.planet_init()
-  M.planet_shutdown()
+function M.init()
+  M.shutdown()
   g_planet_up = true
   g_planet_production_shared.resource = nil
   g_planet_production_shared.amount = 0
 end
 
-function M.planet_shutdown()
+function M.shutdown()
   g_planet_up = false
   g_type_picker = nil
   g_planet_vanish_roll = nil
 end
 
-function M.planet_set_type_picker(picker)
+function M.set_type_picker(picker)
   g_type_picker = picker
 end
 
-function M.planet_set_vanish_roll(ir)
+function M.set_vanish_roll(ir)
   g_planet_vanish_roll = ir
 end
 
--- nil until set, and again after planet_shutdown.
-function M.planet_type_picker()
+-- nil until set, and again after planet.shutdown.
+function M.type_picker()
   return g_type_picker
 end
 
-function M.planet_vanish_roll()
+function M.vanish_roll()
   return g_planet_vanish_roll
 end
 
-function M.planet_ready()
+function M.ready()
   return g_planet_up
 end
 
-function M.planet_mood_rows()
+function M.mood_rows()
   return game_data.planet_mood_rows_rows
 end
 
-function M.planet_made_resources()
+function M.made_resources()
   return game_data.planet_made_resources_seq
 end
 
-function M.planet_ring_colors()
+function M.ring_colors()
   return game_data.planet_ring_colors_seq
 end
 
-function M.planet_spacer()
+function M.spacer()
   return game_data.planet_spacer_row
 end
 
-function M.planet_shared_production()
+function M.shared_production()
   return g_planet_production_shared
 end
 
 -- Without its own production, the result is the shared production: a write through it shows on
 -- every such planet.
-function M.planet_production(self)
+function M.production(self)
   return self.production or g_planet_production_shared
 end
 
-function M.planet_production_read(self)
+function M.production_read(self)
   return self.production or g_planet_production_shared
 end
 
-function M.planet_class()
-  return M.planet_class_def
+function M.class()
+  return M.class_def
 end
 
-function M.planet_new(keys)
+function M.new(keys)
   return planet_create(keys)
 end
 
-function M.planet_construct(self)
-  M.planet_construct_in(self)
+function M.construct(self)
+  M.construct_in(self)
 end
 
-function M.planet_construct_in(self)
+function M.construct_in(self)
   if self == nil then
     return
   end
@@ -234,7 +234,7 @@ function M.planet_construct_in(self)
     local target = research.research_projects_at(fixed.flr_int(self.archetype.project_index))
 
     if target ~= nil then
-      M.planet_install_project(self, target)
+      M.install_project(self, target)
     end
   end
 end
@@ -253,7 +253,7 @@ local function planet_project_need_count(project)
   return n
 end
 
-function M.planet_install_project(self, research_project_instance)
+function M.install_project(self, research_project_instance)
   local jy = {}
   local n
 
@@ -290,7 +290,7 @@ function M.planet_install_project(self, research_project_instance)
   self.production.amount = fixed.from_int(0)
 end
 
-function M.planet_is_colonized(self)
+function M.is_colonized(self)
   if self == nil then
     return false
   end
@@ -300,14 +300,14 @@ function M.planet_is_colonized(self)
   return self.state == entity_class.STATE_SETTLED
 end
 
-function M.planet_restart_shake(self)
+function M.restart_shake(self)
   if self == nil then
     return
   end
   self.shake = fixed.LIT(0x00014000, 1.25)
 end
 
-function M.planet_update_vanishing(self, t)
+function M.update_vanishing(self, t)
   if self == nil then
     return
   end
@@ -316,7 +316,7 @@ function M.planet_update_vanishing(self, t)
     "a linked planet never dies: the routes kept in outgoing_routes would name it, and the cart never drops them")
 end
 
-function M.planet_roll_type(self)
+function M.roll_type(self)
   local nk = nil
   if self == nil then
     return
@@ -343,10 +343,10 @@ function M.planet_roll_type(self)
   else
     entity.set_state(self, entity_class.STATE_KNOWN)
   end
-  M.planet_restart_shake(self)
+  M.restart_shake(self)
 end
 
-function M.planet_new_year(self)
+function M.new_year(self)
   if self == nil then
     return
   end
@@ -375,17 +375,17 @@ local function bob_delta(t)
     fixed.LIT(0x00000f5c, 0.06))
 end
 
-function M.planet_bob(self, t)
-  assert(self == nil or M.planet_is_family(self),
-    "planet_bob: self is a planet (structure and trading hub settled updates) -- stop")
+function M.bob(self, t)
+  assert(self == nil or M.is_family(self),
+    "planet.bob: self is a planet (structure and trading hub settled updates) -- stop")
   if self ~= nil and self.pos ~= nil then
     self.pos.y = fixed.add(self.pos.y, bob_delta(t))
   end
 end
 
--- The sum of what planet_bob adds at state times 0 up to state_time - 1;
+-- The sum of what planet.bob adds at state times 0 up to state_time - 1;
 -- wrong once state_time has wrapped past 65535 frames.
-function M.planet_bob_total(state_time)
+function M.bob_total(state_time)
   local frames = bit.rshift(state_time, 16)
   local total = 0
   local t = 0
@@ -397,12 +397,12 @@ function M.planet_bob_total(state_time)
 end
 
 -- A planet's keys: { planet_id, map_pos, pos }, planet_id a string, each nil when not given.
-function M.planet_keys_zero()
+function M.keys_zero()
   return {}
 end
 
--- What planet_refresh's row is built from; need_resources and need_flags hold one entry per need.
-function M.planet_row_signature_zero()
+-- What planet_display.refresh's row is built from; need_resources and need_flags hold one entry per need.
+function M.row_signature_zero()
   return {
     output = 0,
     amount = 0,

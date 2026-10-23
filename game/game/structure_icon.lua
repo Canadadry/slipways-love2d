@@ -106,7 +106,7 @@ function M.structure_icon_left_press(self)
   local new_id
   local entity_kind
   local id_num_str
-  local keys = planet.planet_keys_zero()
+  local keys = planet.keys_zero()
   local held
   local out = { stop = false, held = nil }
 
@@ -121,7 +121,7 @@ function M.structure_icon_left_press(self)
   end
 
   id_num_str = str.tostr_fixed(new_id)
-  planet.planet_keys_set_id(keys, str.concat2("s", id_num_str))
+  planet.keys_set_id(keys, str.concat2("s", id_num_str))
   held = entity_kind.new_entity(keys)
   out.held = entity_id.link(held)
   out.stop = held ~= nil

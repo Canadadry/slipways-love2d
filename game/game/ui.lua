@@ -366,7 +366,7 @@ end
 local function ui_hit_test(e, mouse)
   local hit_test = e.class.hit_test
 
-  if hit_test == require("game.planet").planet_hit_test_method then
+  if hit_test == require("game.planet").hit_test_method then
     return entity_geom.contains_cursor_inline(e, mouse)
   end
   return hit_test ~= nil and hit_test(e, mouse)

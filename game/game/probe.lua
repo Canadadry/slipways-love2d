@@ -89,7 +89,7 @@ local function probe_panel_box_contains(rp)
 end
 
 local function probe_is_target_class(cls)
-  return (cls.states[entity_class.STATE_SETTLED] ~= nil or cls == require("game.planet").planet_class() or
+  return (cls.states[entity_class.STATE_SETTLED] ~= nil or cls == require("game.planet").class() or
     cls == require("game.slipway").slipway_class() or cls == M.targeting_track_target_class())
 end
 
@@ -98,7 +98,7 @@ function M.probe_link_target(et, self)
   local slipway = require("game.slipway")
   local wormhole = require("game.wormhole")
 
-  if planet.planet_is_family(et) then
+  if planet.is_family(et) then
     assert(self.class.drag == M.targeting_track_method or self.class == slipway.slipway_class(),
       "probe_link_target: a planet's targeted_by takes NULL, a host whose drag is targeting_track_method "
         .. "or a slipway, nothing else -- stop, do not widen the member")
@@ -167,7 +167,7 @@ function M.targeting_of(e)
   if bit.band(e.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_PROBE)) ~= 0 then
     return e.targeting
   end
-  if planet_module.planet_is_family(e) then
+  if planet_module.is_family(e) then
     return e.targeting
   end
   if e.class == require("game.slipway").slipway_class() then
@@ -196,7 +196,7 @@ function M.targeting_track(self, mouse)
   mouse_world_vec = entity_class.mouse_pos_world(mouse)
   p_vec = vec.div(mouse_world_vec, fixed.from_int(128))
   assert(bit.band(self.class.lineage, entity_class.LINEAGE(entity_class.LINEAGE_PROBE)) ~= 0 or
-    require("game.planet").planet_is_family(self) or self.class == require("game.wormhole").wormhole_class(),
+    require("game.planet").is_family(self) or self.class == require("game.wormhole").wormhole_class(),
     "targeting_track: a host neither a probe, of the planet family nor a wormhole, none of whose drag runs it -- stop")
   if entity_class.mouse_pos_has_world(mouse) then
     entity_class.set_pos(self, mouse_world_vec)
