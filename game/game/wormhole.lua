@@ -11,7 +11,6 @@
 -- Include cycle: game.wormhole_display and game.probe are required at load, since
 -- wormhole_draw_method and targeting_tooltip_method fill wormhole_class_def; both must reach this
 -- module at call time only. game.planet is required at call time, inside the function that needs it.
-local bit = require("bit")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
@@ -41,7 +40,7 @@ entity_class.entity_init_header(M.g_wormhole_too_far_target_wrapper, M.wormhole_
 M.g_wormhole_too_far_target_wrapper.status_text = game_data.wormhole_too_far_target_status_text
 
 local function wormhole_is_anchor(p)
-  return (p ~= nil and p.is_dead == 0 and entity_class.entity_has(p, entity_class.ENTITY_HAS_FOLD_ANCHOR) ~= 0 and p.fold_anchor ~= 0)
+  return (p ~= nil and p.is_dead == 0 and p.fold_anchor ~= nil and p.fold_anchor ~= 0)
     and 1 or 0
 end
 
@@ -254,7 +253,6 @@ local function wormhole_create()
   self.anchors = {}
   probe.targeting_set_target(self.targeting, nil)
   self.anchor = nil
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.is_dead = 0
   M.wormhole_construct(self)
   entity.entity_construct(self)

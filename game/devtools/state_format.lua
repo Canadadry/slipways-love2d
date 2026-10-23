@@ -222,7 +222,7 @@ local function write_slipways(sink)
     local s = jc[i]
     if slipway_placed(s) == 0 then goto continue end
     line_add(line, "slipway %s %s %s", id_of(slipway.slipway_start(s)), id_of(slipway.slipway_end(s)),
-             (entity_class.entity_has(s, entity_class.ENTITY_HAS_INFRASPACE) ~= 0 and s.infraspace ~= 0) and "infragate" or "normal")
+             (s.infraspace ~= nil and s.infraspace ~= 0) and "infragate" or "normal")
     line_end(line)
     n = n + 1
     ::continue::

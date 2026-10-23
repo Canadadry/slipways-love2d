@@ -42,4 +42,4 @@
   - [x] Chunk 7 — UI, buttons and icons
   - [x] Chunk 8 — boxes and panels
   - [x] Chunk 9 — positions
-  - [ ] Chunk 10 — the header's other parts, docs and skills
+  - [x] Chunk 10 — the header's other parts, docs and skills

@@ -249,7 +249,6 @@ local function infraspace_gate_create(keys)
 
   assert(g_family_trade_up ~= 0, "planet_family_trade_init() must run first")
   slipgate_init_instance(self, M.infraspace_gate_class_def, game_data.infraspace_gate_archetype)
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_INFRASPACE)
   self.infraspace = self.archetype.infraspace
   assert(keys == nil or (keys.map_pos == nil and keys.pos == nil),
     "infraspace_gate_create: the only construction key is planet_id (structure_icon_left_press); another key has no member "

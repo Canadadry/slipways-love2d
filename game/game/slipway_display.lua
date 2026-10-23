@@ -8,7 +8,6 @@
 -- slipway_class_def), so game.slipway, game.planet and game.probe (home of targeting_target) are
 -- required at call time, inside the functions that need them.
 local dispatch_context = require("engine.dispatch_context")
-local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
 local vec = require("engine.vec")
@@ -157,7 +156,7 @@ function M.slipway_draw(graphics, memory, self)
     end
 
     target_or_targeted_by = probe.targeting_target(self.targeting) ~= nil or entity_id.entity_get(self.targeted_by) ~= nil
-    infraspace_truthy = entity_class.entity_has(self, entity_class.ENTITY_HAS_INFRASPACE)
+    infraspace_truthy = (self.infraspace ~= nil) and 1 or 0
 
     if target_or_targeted_by then
       line_color = fixed.p8_fixed_from_int(2)

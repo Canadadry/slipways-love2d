@@ -326,8 +326,6 @@ function M.targeting_tooltip_method(self, screen_pos)
 end
 
 local function probe_host_raise_is_dead(self)
-  assert(entity_class.entity_has(self, entity_class.ENTITY_HAS_IS_DEAD) ~= 0,
-    "targeting_confirm: a host that carries no is_dead, none of whose drop runs it -- stop")
   self.is_dead = 1
 end
 
@@ -461,9 +459,7 @@ function M.probe_init_instance(self, cls, archetype)
   self.targeting = targeting_module.targeting_zero()
   self.archetype = archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_FOLD_ANCHOR)
   self.fold_anchor = self.archetype.fold_anchor
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.emitter.archetype = self.archetype.emitter
   if self.archetype.pos ~= nil then
     entity_class.entity_set_pos(self, self.archetype.pos)

@@ -9,8 +9,7 @@
 --     `end_` (a Lua keyword), targeting a targeting_t (game.targeting).
 --   slipway_too_far_t: the entity header plus { status_text, targeted_by }, one table.
 --   slipway_obstruction_node_ctx_t: { start_point, end_point }.
---   slipway_obstruction_slipway_ctx_t: { start_point, end_point, self_has_infraspace,
---     self_infraspace }.
+--   slipway_obstruction_slipway_ctx_t: { start_point, end_point, self_infraspace }.
 --
 -- Declared in slipway.h, defined in src/game/slipway_display.c and ported there:
 -- slipway_draw_method.
@@ -19,7 +18,6 @@
 -- slipway_class_def; slipway_display must reach this module at call time only. game.economy,
 -- game.planet, game.probe and game.ui are required at call time, inside the functions that need
 -- them.
-local bit = require("bit")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -97,23 +95,21 @@ function M.slipway_too_far()
 end
 
 local function slipway_copy_infraspace(self, from)
-  if from == nil or entity_class.entity_has(from, entity_class.ENTITY_HAS_INFRASPACE) == 0 then
+  if from == nil or from.infraspace == nil then
     return 0
   end
   self.infraspace = from.infraspace
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_INFRASPACE)
   return 1
 end
 
 -- The start's infraspace, else the end's, and the layer that follows.
 local function slipway_inherit_infraspace(self)
-  -- An infraspace of 0 still counts as one.
-  self.infraspace = fixed.p8_fixed_from_int(0)
-  self.has = bit.band(bit.band(self.has, bit.bnot(entity_class.ENTITY_HAS_INFRASPACE)), 0xFFFF)
+  self.infraspace = nil
   if slipway_copy_infraspace(self, M.slipway_start(self)) == 0 then
     slipway_copy_infraspace(self, M.slipway_end(self))
   end
-  if entity_class.entity_has(self, entity_class.ENTITY_HAS_INFRASPACE) ~= 0 then
+  -- An infraspace of 0 still counts as one.
+  if self.infraspace ~= nil then
     entity_registry.entity_registry_set_layer(self, fixed.p8_fixed_from_int(2))
   else
     entity_registry.entity_registry_set_layer(self, fixed.p8_fixed_from_int(4))
@@ -265,8 +261,7 @@ local function slipway_obstruction_slipway_predicate(e, ctx_ptr)
   end
   assert(e.class == M.slipway_class(), "the slipway tag holds slipways only")
   sw = e
-  if entity_class.entity_has(sw, entity_class.ENTITY_HAS_INFRASPACE) ~= ctx.self_has_infraspace or
-    (entity_class.entity_has(sw, entity_class.ENTITY_HAS_INFRASPACE) ~= 0 and sw.infraspace ~= ctx.self_infraspace) then
+  if sw.infraspace ~= ctx.self_infraspace then
     return 0
   end
   return geom.geom_segments_cross(ctx.start_point, ctx.end_point, M.slipway_end_map_pos(M.slipway_start(sw)),
@@ -327,7 +322,6 @@ function M.slipway_obstruction(self)
     node_ctx.end_point = end_point
     slipway_ctx.start_point = start_point
     slipway_ctx.end_point = end_point
-    slipway_ctx.self_has_infraspace = entity_class.entity_has(self, entity_class.ENTITY_HAS_INFRASPACE)
     slipway_ctx.self_infraspace = self.infraspace
 
     -- Every predicate runs on every node, then every slipway: no early exit at the first match.
@@ -426,10 +420,8 @@ local function slipway_create(keys)
   self.end_ = nil
   self.end_is_point = 0
   self.targeting.cost = self.archetype.targeting.cost
-  self.infraspace = 0
   require("game.probe").targeting_set_target(self.targeting, nil)
   self.targeted_by = nil
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.is_dead = 0
   entity_class.entity_init_header(self.point, M.slipway_mouse_point_class_def)
   entity_class.entity_set_map_pos(self.point, vec.vec_make(fixed.p8_fixed_from_int(0), fixed.p8_fixed_from_int(0)))

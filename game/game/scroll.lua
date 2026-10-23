@@ -5,7 +5,6 @@
 --     table).
 --
 -- Include cycle: game.galaxy is required at call time (camera_pad_bound reads its map constants).
-local bit = require("bit")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -49,7 +48,6 @@ local function camera_create()
   entity.entity_init_instance(self, M.camera_class_def, game_data.camera_archetype.state,
     game_data.camera_archetype.state_time)
   self.archetype = game_data.camera_archetype
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_SHAKE)
   self.shake = self.archetype.shake
   entity_class.entity_set_map_pos(self, self.archetype.pos_before_shake)
   entity_class.entity_set_pos(self, self.archetype.pos)

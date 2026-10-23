@@ -44,7 +44,7 @@ local function emitter_host_carries_pos(self)
 end
 
 local function emitter_host_layer_pos(self)
-  assert(entity_class.entity_has(self, entity_class.ENTITY_HAS_LAYER) ~= 0 and emitter_host_carries_pos(self) ~= 0,
+  assert(self.layer ~= nil and emitter_host_carries_pos(self) ~= 0,
     "emitter_update: a host that carries no layer or no pos, none of whose draw runs it -- stop")
   return self.layer, entity_class.entity_pos(self)
 end

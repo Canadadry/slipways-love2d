@@ -199,16 +199,7 @@ local function project_zero(self)
   self.class = nil
   self.state = 0
   self.state_time = 0
-  self.has = 0
-  self.layer = 0
-  self.pos = nil
-  self.map_pos = nil
-  self.hit_box = { left = 0, top = 0, right = 0, bottom = 0 }
-  self.infraspace = 0
-  self.shake = 0
-  self.fold_anchor = 0
   self.is_dead = 0
-  self.is_hovered = 0
   self.id = nil
   self.archetype = nil
   self.name = nil

@@ -18,10 +18,10 @@ function M.entity_geom_contains_cursor_inline(e, mouse)
   local chosen
   local point
 
-  if e == nil or entity_class.entity_has(e, entity_class.ENTITY_HAS_HIT_BOX) == 0 then
+  if e == nil or e.hit_box == nil then
     return 0
   end
-  if entity_class.entity_has(e, entity_class.ENTITY_HAS_LAYER) ~= 0 and e.layer >= fixed.P8_FIXED_INT(10) then
+  if e.layer ~= nil and e.layer >= fixed.P8_FIXED_INT(10) then
     chosen = entity_class.mouse_pos_screen(mouse)
   else
     chosen = entity_class.mouse_pos_world(mouse)
@@ -74,7 +74,7 @@ function M.entity_geom_shake(p, e)
   local t = fixed.p8_fixed_from_int(0)
 
   if e ~= nil then
-    assert(entity_class.entity_has(e, entity_class.ENTITY_HAS_SHAKE) ~= 0,
+    assert(e.shake ~= nil,
       "entity_geom_shake: the entity is a planet (planet_draw) or the camera (camera_update)")
   end
   decremented = fixed.p8_fixed_sub((e ~= nil) and e.shake or fixed.p8_fixed_from_int(0), fixed.P8_FIXED_LIT(0x00001999, 0.1))

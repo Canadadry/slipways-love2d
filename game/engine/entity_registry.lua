@@ -212,7 +212,7 @@ end
 
 -- 0 for no layer or one outside 1..15: such an entity is never drawn.
 local function layer_key(e)
-  if entity_class.entity_has(e, entity_class.ENTITY_HAS_LAYER) == 0 then
+  if e.layer == nil then
     return 0
   end
   local layer = fixed.p8_fixed_flr_int(e.layer)
@@ -347,13 +347,13 @@ local function layer_order_reinsert(message, e, key)
   layer_order_insert(order, e, key, order.start[key - 1] + rank)
 end
 
--- Also sets ENTITY_HAS_LAYER. Re-sorts the draw order only for a constructed entity whose floored
+-- Re-sorts the draw order only for a constructed entity whose floored
 -- layer changed, else costs one compare. An entity registered bare (entity_register alone) must
 -- not change its layer afterwards.
 function M.entity_registry_set_layer(e, layer)
+  assert(layer ~= nil, "entity_registry_set_layer: a nil layer would clear the entity's layer")
   local old_key = layer_key(e)
 
-  e.has = bit.bor(e.has, entity_class.ENTITY_HAS_LAYER)
   e.layer = layer
   local new_key = layer_key(e)
   if new_key == old_key or entity_id.entity_id_of(e) == nil then

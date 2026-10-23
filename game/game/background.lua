@@ -7,7 +7,6 @@
 --     mem compared by identity.
 --
 -- Include cycle: game.probe and game.wormhole are required at call time (background_left_press).
-local bit = require("bit")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -60,7 +59,6 @@ local function background_create()
     game_data.background_archetype.state_time)
   self.archetype = game_data.background_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)
   self.is_hovered = 0
   self.seed = fixed.p8_fixed_rnd_state()
   M.background_construct(dispatch_context.dispatch_context_mem(), self)

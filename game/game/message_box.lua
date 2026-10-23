@@ -17,7 +17,6 @@
 --   Char arrays are Lua strings, "" at zero.
 --
 -- Include cycle: game.scroll, game.ui and game.ui_button are required at call time.
-local bit = require("bit")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -296,7 +295,6 @@ local function message_box_create(keys)
   for i = 0, M.MESSAGE_BOX_ITEMS_CAP - 1 do
     self.articles[i] = article_zero()
   end
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.is_dead = 0
   self.articles_count = 0
   if keys ~= nil then
@@ -422,7 +420,6 @@ local function toast_create(keys)
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
   self.fade = self.archetype.fade
   self.follow = nil
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.is_dead = 0
   self.text = ""
   self.color = fixed.p8_fixed_from_int(0)

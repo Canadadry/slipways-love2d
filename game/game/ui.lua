@@ -406,7 +406,7 @@ function M.ui_update_hover(self)
     local e = hit_test_bucket[index]
 
     if ui_hit_test(e, mouse) ~= 0 then
-      if entity_class.entity_has(e, entity_class.ENTITY_HAS_LAYER) ~= 0 then
+      if e.layer ~= nil then
         local fa = ui_to_int(e.layer)
 
         assert(fa >= 0 and fa < M.UI_HOVER_LAYERS,
@@ -430,13 +430,13 @@ function M.ui_update_hover(self)
   -- Clear before set, so an entity hovered two frames in a row stays hovered.
   previous = M.ui_previous_hovered(self)
   if previous ~= nil then
-    assert(entity_class.entity_has(previous, entity_class.ENTITY_HAS_IS_HOVERED) ~= 0,
+    assert(previous.is_hovered ~= nil,
       "ui_update_hover: the previously hovered entity has no is_hovered member -- stop, do not add one")
     previous.is_hovered = 0
   end
 
   if hovered ~= nil then
-    assert(entity_class.entity_has(hovered, entity_class.ENTITY_HAS_IS_HOVERED) ~= 0,
+    assert(hovered.is_hovered ~= nil,
       "ui_update_hover: the hovered entity has no is_hovered member -- stop, do not add one")
     hovered.is_hovered = 1
   end

@@ -113,7 +113,7 @@ local function candidates_all()
 end
 
 function M.pad_panel_is_candidate(e)
-  return (e.class.left_press ~= nil and entity_class.entity_has(e, entity_class.ENTITY_HAS_LAYER) ~= 0) and 1 or 0
+  return (e.class.left_press ~= nil and e.layer ~= nil) and 1 or 0
 end
 
 local function candidates_next(it)
@@ -159,7 +159,7 @@ end
 
 local function is_item_on(e, layer)
   return (M.pad_panel_is_candidate(e) ~= 0 and fixed.p8_fixed_flr_int(e.layer) == layer and
-    entity_class.entity_has(e, entity_class.ENTITY_HAS_HIT_BOX) ~= 0) and 1 or 0
+    e.hit_box ~= nil) and 1 or 0
 end
 
 function M.pad_panel_is_item(e)

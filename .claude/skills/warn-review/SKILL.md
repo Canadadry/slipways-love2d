@@ -43,7 +43,7 @@ The rules are the means, not the goal. If code breaks one in a case nobody antic
 Allowed table references: `self` and other tables as parameters (borrowed for the call only), an entity's own components (tables no one else holds), static data never changed after load (archetypes, data tables, strings), functions, runtime handles (the allocator table a module receives, the graphics backend, the vram), and the engine registry's internal lists. Anything else is a violation. Rule 11 (`const` pointer fields) has no Lua meaning and is dropped; the numbers of the others are kept so that warnings stay comparable across runs:
 
 12. A field holding another field of the same table (`self.x = self.x_own`): the component is a value.
-13. Presence or absence encoded by a `nil` field instead of a bit in the table's `has`.
+13. Presence or absence encoded by a bit or a `has_<x>` 0/1 number instead of a field that is `nil` when absent.
 14. A link to another entity held as the entity's table, alone or in a list, instead of its id.
 15. A dead entity's id left in a list instead of removed at its death, or a list walk that tolerates a dead id instead of asserting.
 16. A by-value table (a `vec`, a `box`) changed by a function that receives it.

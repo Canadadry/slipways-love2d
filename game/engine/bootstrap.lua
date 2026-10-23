@@ -67,7 +67,7 @@ function M.update_entities()
       qc.class.states[qc.state](qc, qc.state_time)
     end
 
-    if entity_class.entity_has(qc, entity_class.ENTITY_HAS_IS_DEAD) ~= 0 and qc.is_dead ~= 0 then
+    if qc.is_dead ~= 0 then
       entity_registry.entity_unregister(qc)
     end
 

@@ -3,9 +3,10 @@
 -- src/game/slipway.c and src/game/probe.c and ported with those files.
 --
 -- Shapes, with the C field names (a pointer is the table, NULL is nil):
---   entity_t: { class, state, state_time, has, layer, pos, map_pos, hit_box,
+--   entity_t: { class, state, state_time, layer, pos, map_pos, hit_box,
 --     infraspace, shake, fold_anchor, is_dead, is_hovered, id }; a game object
---     whose first member is the header is that same table.
+--     whose first member is the header is that same table. Every field but
+--     class, state, state_time and is_dead is nil when the entity lacks it.
 --   entity_class_t: { draw, draw_overlay, hit_test, new_year, refresh,
 --     has_refresh, left_press, accept_drop, drag, drop, attach_slipway,
 --     offer_trade, draw_at, spawn_particle, states (indexed from 0, STATE_COUNT
@@ -57,33 +58,14 @@ function M.LINEAGE(l)
   return bit_module.lshift(1, l)
 end
 
-M.ENTITY_HAS_LAYER = bit_module.lshift(1, 0)
-M.ENTITY_HAS_HIT_BOX = bit_module.lshift(1, 1)
-M.ENTITY_HAS_INFRASPACE = bit_module.lshift(1, 3)
-M.ENTITY_HAS_FOLD_ANCHOR = bit_module.lshift(1, 4)
-M.ENTITY_HAS_SHAKE = bit_module.lshift(1, 5)
-M.ENTITY_HAS_IS_DEAD = bit_module.lshift(1, 6)
-M.ENTITY_HAS_IS_HOVERED = bit_module.lshift(1, 7)
-
--- Writes the header fields only: the object's own fields stay, as the C
--- assignment writes the header bytes alone.
+-- Writes class, state, state_time, is_dead and id only: every other field,
+-- an optional header part included, stays as it was.
 function M.entity_init_header(self, cls)
   self.class = cls
   self.state = 0
   self.state_time = 0
-  self.has = 0
-  self.layer = 0
-  self.hit_box = { left = 0, top = 0, right = 0, bottom = 0 }
-  self.infraspace = 0
-  self.shake = 0
-  self.fold_anchor = 0
   self.is_dead = 0
-  self.is_hovered = 0
   self.id = nil
-end
-
-function M.entity_has(self, bit)
-  return (bit_module.band(self.has, bit) ~= 0) and 1 or 0
 end
 
 function M.entity_has_pos(self)

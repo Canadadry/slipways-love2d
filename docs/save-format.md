@@ -82,7 +82,7 @@ In this order.
 | planet id length | u8 | if `HAS_PLANET_ID` | 1–7 |
 | planet id bytes, × length | u8 each | if `HAS_PLANET_ID` | printable ASCII 0x21–0x7E, no NUL |
 | fold_anchor | i32 | always | any |
-| infraspace | i32 | always | any |
+| infraspace | i32 | always | any; 0 for a node without one |
 | planet_type | u8 | always | 0 = none, 1–11 the 1-based `planet_types_table` entry |
 | description_type | u8 | always | 0 = no description, 1–11 the 1-based `planet_types_table` entry whose `description` the node holds (terraform leaves the old type's) |
 | project | u8 | always | 0 = none, 1–42 the 1-based `research_projects_at` entry |

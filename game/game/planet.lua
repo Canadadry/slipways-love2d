@@ -116,15 +116,11 @@ function M.planet_init_instance(self, instance_class, archetype)
   entity.entity_init_instance(self, instance_class, archetype.state, archetype.state_time)
   self.archetype = archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_HIT_BOX)
   do
     local hit_box = self.archetype.hit_box
     self.hit_box = { left = hit_box.left, top = hit_box.top, right = hit_box.right, bottom = hit_box.bottom }
   end
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_SHAKE)
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_FOLD_ANCHOR)
   self.fold_anchor = 0
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.shake = self.archetype.shake
   self.slipways = {}
   self.project = { index = research.RESEARCH_PROJECT_ID_NONE.index, epoch = research.RESEARCH_PROJECT_ID_NONE.epoch }
@@ -135,7 +131,6 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.targeted_by = nil
   self.is_dead = 0
   self.development_tier = self.archetype.development_tier
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)
   self.is_hovered = 0
   self.synthesizable_resources = self.archetype.synthesizable_resources
 end

@@ -100,7 +100,6 @@ local function button_create(keys)
   self.side_tooltip = nil
   self.tooltip = nil
   self.on_click = nil
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)
   self.is_hovered = 0
   self.refresh = nil
   self.name = nil
@@ -182,7 +181,6 @@ function M.button_construct(self, keys)
 
   self.layout_row = layout.layout_row_new(keys.layout_row_keys)
   self.width = fixed.p8_fixed_add(self.layout_row.width, fixed.p8_fixed_from_int(2))
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_HIT_BOX)
   self.hit_box = { left = fixed.p8_fixed_from_int(0), top = fixed.p8_fixed_from_int(-1), right = self.width,
     bottom = fixed.p8_fixed_from_int(11) }
 
@@ -418,9 +416,7 @@ local function modal_backdrop_create(keys)
   self.archetype = game_data.modal_backdrop_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
   self.on_click = nil
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.is_dead = 0
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)
   self.is_hovered = 0
   if keys ~= nil then
     self.on_click = keys.on_click

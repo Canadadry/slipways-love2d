@@ -846,7 +846,10 @@ point at zeroes its fields in place and keeps its identity:
 `input_step_init` zeroes `played` and `played_frame` in place,
 `economy_score_set_difficulty` clears and refills `g_difficulty`. A
 static struct, or inline array of structs, is a table (or 0-indexed array of
-tables) with every field at its C zero value (0, or `nil` for a pointer). A
+tables) with every field at its C zero value (0, or `nil` for a pointer),
+except an optional value, which is `nil` when absent and tested with
+`~= nil`; no `has` bit or `has_<x>` number marks it (the by-value
+`mouse_pos_t` keeps its `has` bits). `is_dead` is on every entity. A
 zero constructor other modules use is exported by the module owning the
 struct (`button_zero` in `ui_button`, `emitter_zero` in `particle`,
 `targeting_zero` in `targeting`); a module needing one its owner does not

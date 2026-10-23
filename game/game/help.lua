@@ -3,7 +3,6 @@
 -- The help screen is a probe_t: one table with its entity header. button_fn_t is a Lua function, NULL is nil.
 --
 -- game.probe is required at load: help_screen_class_def holds its targeting and particle methods by identity.
-local bit = require("bit")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -138,10 +137,8 @@ local function screen_create()
   assert(g_help_screen_up ~= 0, "help_init() must run first")
   self = {}
   probe.probe_init_instance(self, M.help_screen_class_def, game_data.help_screen_archetype)
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_HIT_BOX)
   hit_box = self.archetype.hit_box
   self.hit_box = { left = hit_box.left, top = hit_box.top, right = hit_box.right, bottom = hit_box.bottom }
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)
   self.is_hovered = 0
   M.help_screen_construct(self)
   particle.emitter_init(self)

@@ -1027,8 +1027,9 @@ local function capture_node_fields(node, planet)
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_PLANET_ID)
     node.planet_id = id
   end
-  node.fold_anchor = header.fold_anchor
-  node.infraspace = header.infraspace
+  -- An absent fold anchor or infraspace is saved as 0.
+  node.fold_anchor = header.fold_anchor or 0
+  node.infraspace = header.infraspace or 0
   if planet.planet_type ~= nil then
     node.planet_type = planet_type_index(planet.planet_type) + 1
   end

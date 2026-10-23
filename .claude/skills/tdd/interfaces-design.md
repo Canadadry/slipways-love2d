@@ -28,7 +28,7 @@ Good interfaces make testing natural. Functions marked real are in `game/`; the 
 
 4. **Make illegal states unrepresentable**
 
-   A field meaningful only in some cases says the data is wrong. Here, presence is a bit in `has`, never a `nil` field, and a link to another entity is its id, never its table (see `warn-review`'s reference rules):
+   A field meaningful only in some cases says the data is wrong. Here, presence is a field that is `nil` when absent, never a bit or a `has_` flag, and a link to another entity is its id, never its table (see `warn-review`'s reference rules):
 
    ```lua
    -- Allows an impossible state: the end's table outlives the end's death

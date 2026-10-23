@@ -21,7 +21,6 @@ local targeting = require("game.targeting")
 local fixed = require("p8.fixed")
 local gfx_module = require("p8.gfx")
 local str = require("p8.str")
-local bit = require("bit")
 
 local M = {}
 
@@ -204,13 +203,11 @@ local function structure_icon_create(keys)
   entity.entity_init_instance(self, M.structure_icon_class_def, archetype.state, archetype.state_time)
   self.archetype = archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_HIT_BOX)
   hit_box = self.archetype.hit_box
   self.hit_box = { left = hit_box.left, top = hit_box.top, right = hit_box.right, bottom = hit_box.bottom }
   entity_class.entity_set_pos(self, self.archetype.pos)
   self.kind = nil
   self.tooltip = nil
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)
   self.is_hovered = 0
   if keys ~= nil then
     self.kind = keys.kind
