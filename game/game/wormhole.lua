@@ -18,7 +18,6 @@ local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
-local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
@@ -275,7 +274,7 @@ local function wormhole_create()
   self.has_ = M.WORMHOLE_HAS_TOO_FAR_TARGET
   self.anchors = id_list_zero()
   probe.targeting_set_target(self.targeting, nil)
-  self.anchor = { index = entity_id_type.ENTITY_ID_NONE.index, generation = entity_id_type.ENTITY_ID_NONE.generation }
+  self.anchor = nil
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_DEAD)
   self.is_dead = 0
   M.wormhole_construct(self)

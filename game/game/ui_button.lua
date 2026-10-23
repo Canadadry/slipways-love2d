@@ -13,7 +13,6 @@ local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
-local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local button_image = require("game.button_image")
@@ -31,8 +30,7 @@ local M = {}
 M.BUTTON_HAS_SLIDE_TARGET = bit.lshift(1, 0)
 
 local function entity_id_none()
-  local none = entity_id_type.ENTITY_ID_NONE
-  return { index = none.index, generation = none.generation }
+  return nil
 end
 
 local function research_project_id_none()
@@ -145,7 +143,7 @@ local function button_create(keys)
     self.type_bias = keys.type_bias
     self.has_type_bias = keys.has_type_bias
     self.technology = keys.technology
-    self.project_planet = { index = keys.project_planet.index, generation = keys.project_planet.generation }
+    self.project_planet = keys.project_planet
     self.project = { index = keys.project.index, epoch = keys.project.epoch }
     self.project_cost = keys.project_cost
     self.has_project_cost = keys.has_project_cost

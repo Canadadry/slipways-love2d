@@ -28,7 +28,6 @@ local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
-local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
 local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
@@ -57,8 +56,7 @@ M.PLANET_HAS_OUTGOING_ROUTES = bit.lshift(1, 5)
 M.PLANET_HAS_ID = bit.lshift(1, 6)
 
 local function entity_id_none()
-  local none = entity_id_type.ENTITY_ID_NONE
-  return { index = none.index, generation = none.generation }
+  return nil
 end
 
 -- production_t p = {0}.

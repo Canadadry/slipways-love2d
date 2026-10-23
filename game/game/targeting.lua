@@ -6,7 +6,6 @@
 --   targeting_target_t: { kind, id }.
 --   targeting_t: { archetype, target, cost, has_cost }.
 --   targeting_track_target_t: the entity header plus targeted_by, one table.
-local entity_id_type = require("engine.entity_id_type")
 
 local M = {}
 
@@ -18,10 +17,9 @@ M.TARGETING_TARGET_WORMHOLE_TOO_FAR = 4
 
 -- Lua only: targeting_t at its C zero, the inline sub-struct later code writes field by field.
 function M.targeting_zero()
-  local none = entity_id_type.ENTITY_ID_NONE
   return {
     archetype = nil,
-    target = { kind = M.TARGETING_TARGET_NONE, id = { index = none.index, generation = none.generation } },
+    target = { kind = M.TARGETING_TARGET_NONE, id = nil },
     cost = 0,
     has_cost = 0,
   }

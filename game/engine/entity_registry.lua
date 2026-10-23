@@ -14,7 +14,6 @@ local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local exit_queue = require("engine.exit_queue")
 local game_data = require("game.game_data")
-local fatal = require("p8.fatal")
 local fixed = require("p8.fixed")
 
 local M = {}
@@ -35,7 +34,6 @@ local ENTITY_MESSAGE_NEW_YEAR = M.ENTITY_MESSAGE_NEW_YEAR
 local ENTITY_MESSAGE_COUNT = M.ENTITY_MESSAGE_COUNT
 local ENTITY_REGISTRY_LAYERS = M.ENTITY_REGISTRY_LAYERS
 local TAG_COUNT = entity_class.TAG_COUNT
-local ENTITY_TABLE_CAP = entity_id.ENTITY_TABLE_CAP
 local UINT_WRAP = 4294967296
 
 local function zero_list()
@@ -229,10 +227,6 @@ end
 
 local function layer_order_insert(order, e, key, index)
   local count = order.start[ENTITY_REGISTRY_LAYERS]
-
-  if count >= ENTITY_TABLE_CAP then
-    fatal.p8_fatal(string.format("layer order full, limit %d", ENTITY_TABLE_CAP))
-  end
   for j = count - 1, index, -1 do
     order.items[j + 1] = order.items[j]
   end

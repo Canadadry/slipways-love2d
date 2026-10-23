@@ -18,7 +18,6 @@ local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
-local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
@@ -47,12 +46,7 @@ M.SEND_TO_HOVERED_LEFT_PRESS = 0
 M.SEND_TO_HOVERED_ACCEPT_DROP = 1
 
 local function entity_id_none()
-  local none = entity_id_type.ENTITY_ID_NONE
-  return { index = none.index, generation = none.generation }
-end
-
-local function entity_id_copy(id)
-  return { index = id.index, generation = id.generation }
+  return nil
 end
 
 -- (entity_id_list_t){0}.
@@ -377,7 +371,7 @@ function M.ui_update(mem, self)
     M.ui_clear_ephemerals(self)
   end
 
-  self.previous_hovered = entity_id_copy(self.hovered)
+  self.previous_hovered = self.hovered
 end
 
 local function ui_draw_pad_crosshair(gfx, mem)
@@ -505,7 +499,7 @@ function M.ui_handle_button(self, side)
         assert(ui_is_held_class(given.class) ~= 0,
           "ui_handle_button: a left press hands over a slipway; a probe or a wormhole from the background; a " ..
           "structure, processor, slipgate, infraspace_gate, trading_hub, synthesizer or ascension from an icon")
-        self.left_held = entity_id_copy(kn.held)
+        self.left_held = kn.held
       end
     end
   end
@@ -564,7 +558,7 @@ function M.ui_send_to_hovered(self, message, mouse, held, out_target, out_down)
         end
       end
       if kn.stop ~= 0 then
-        return 1, h, { stop = kn.stop, held = entity_id_copy(kn.held) }
+        return 1, h, { stop = kn.stop, held = kn.held }
       end
     end
   end

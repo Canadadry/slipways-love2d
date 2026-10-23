@@ -194,7 +194,7 @@ local function load_slipways(state, node_ids, out)
     local keys = slipway_module.slipway_keys_zero()
     local start = node_ids[state.slipways[i].start]
     local slipway
-    keys.start = { index = start.index, generation = start.generation }
+    keys.start = start
     slipway = slipway_module.slipway_new(keys)
     slipway_module.slipway_connect(slipway, entity_id.entity_get(node_ids[state.slipways[i].end_]))
     slipway.state_time = state.slipways[i].state_time

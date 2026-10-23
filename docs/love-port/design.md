@@ -830,13 +830,14 @@ over `1 .. #s`.
 
 **Structs and out-parameters.** A struct is a table with the C field names;
 a pointer to it is that table, and an init on `T *` fills the caller's table.
-A by-value struct (passed, returned, assigned, a constant such as
-`ENTITY_ID_NONE`) is a new table built by a constructor listing every field,
-copied at each use (`entity_id_none()`); a table received by value is never
-mutated. The copy is shallow as in C: pointer members are shared
-(`entity_id_list_copy` shares `items`), inline mutable sub-structs are
-copied by the caller. Entity ids are compared only through
-`entity_id_equal`. A re-init or `memset` of a table that another holder may
+A by-value struct (passed, returned, assigned, a constant) is a new table
+built by a constructor listing every field, copied at each use; a table
+received by value is never mutated. The copy is shallow as in C: pointer
+members are shared (`entity_id_list_copy` shares `items`), inline mutable
+sub-structs are copied by the caller. An entity id is a number handed out by
+`entity_id_take`, never reused, resolved by `entity_get` through the current
+table, which drops an entity when the exit queue flushes it; `nil` is "no
+link"; ids are compared with `==`. A re-init or `memset` of a table that another holder may
 point at zeroes its fields in place and keeps its identity:
 `pad_nav_init` keeps its sub-tables and bindings table,
 `input_step_init` zeroes `played` and `played_frame` in place,

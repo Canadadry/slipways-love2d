@@ -21,7 +21,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
-local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local draw_functions = require("game.draw_functions")
@@ -52,8 +51,7 @@ M.TOAST_TEXT_CAP = 16
 M.OPEN_BOX_DESCRIPTION_CAP = 17
 
 local function entity_id_none()
-  local none = entity_id_type.ENTITY_ID_NONE
-  return { index = none.index, generation = none.generation }
+  return nil
 end
 
 local function zero_vec()
@@ -446,7 +444,7 @@ local function toast_create(keys)
 
     if source ~= nil and entity_class.entity_has_pos(source) ~= 0 then
       entity_class.entity_set_pos(self, source.pos)
-      self.follow = { index = keys.source.index, generation = keys.source.generation }
+      self.follow = keys.source
     elseif keys.has_pos ~= 0 then
       entity_class.entity_set_pos(self, keys.pos)
     end

@@ -11,7 +11,6 @@ local dispatch_context = require("engine.dispatch_context")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
-local entity_id_type = require("engine.entity_id_type")
 local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
@@ -215,8 +214,7 @@ function M.slipway_draw(graphics, memory, self)
     M.slipway_spawn_transit_dot(self, end_node, start_node)
   end
 
-  local none = entity_id_type.ENTITY_ID_NONE
-  self.targeted_by = { index = none.index, generation = none.generation }
+  self.targeted_by = nil
 end
 
 function M.slipway_draw_method(self, screen_pos)

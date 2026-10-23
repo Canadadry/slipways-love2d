@@ -18,7 +18,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
-local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local geom = require("engine.geom")
@@ -35,8 +34,7 @@ local str = require("p8.str")
 local M = {}
 
 local function entity_id_none()
-  local none = entity_id_type.ENTITY_ID_NONE
-  return { index = none.index, generation = none.generation }
+  return nil
 end
 
 local g_probe_up = 0
@@ -74,7 +72,7 @@ M.targeting_track_target_class_def = {
 
 M.g_targeting_track_target = {}
 entity_class.entity_init_header(M.g_targeting_track_target, M.targeting_track_target_class_def)
-M.g_targeting_track_target.targeted_by = { index = 0, generation = 0 }
+M.g_targeting_track_target.targeted_by = nil
 
 local function probe_to_int(x)
   return fixed.p8_fixed_flr_int(x)

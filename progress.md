@@ -12,6 +12,8 @@
     - [x] Chunk 6 — engine containers and helpers without a zone
     - [x] Chunk 7 — game modules without a zone; allocator and zones deleted
   - [ ] Step 1.3 — entity ids as plain numbers
+    - [x] Chunk 1 — the id representation
+    - [ ] Chunk 2 — the old id API
   - [ ] Step 1.4 — the four list kinds as plain arrays
 - [ ] Phase 2 — The entity model
   - [ ] Step 2.1 — optional parts as nil-able fields

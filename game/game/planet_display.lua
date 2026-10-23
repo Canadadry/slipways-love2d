@@ -16,7 +16,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_id = require("engine.entity_id")
-local entity_id_type = require("engine.entity_id_type")
 local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
 local game_data = require("game.game_data")
@@ -37,8 +36,7 @@ local str = require("p8.str")
 local M = {}
 
 local function entity_id_none()
-  local none = entity_id_type.ENTITY_ID_NONE
-  return { index = none.index, generation = none.generation }
+  return nil
 end
 
 local function down_zero()

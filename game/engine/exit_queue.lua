@@ -36,7 +36,7 @@ function M.exit_queue_flush()
   for i = 0, g_count - 1 do
     local e = g_queue[i].entity
     local release = e.class.release
-    -- The slot goes before the memory: no slot may point at a returned block.
+    -- The entity stops resolving before its class release runs.
     entity_id.entity_id_release(e)
     if release ~= nil then release(e) end
   end

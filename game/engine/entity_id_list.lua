@@ -1,8 +1,7 @@
 -- Copy of src/engine/entity_id_list.h then src/engine/entity_id_list.c.
 -- An entity_id_list_t is { items, count, capacity }, items a block
--- indexed from 0 holding each id by value (a copy, compared through
--- entity_id_equal); an entity_id_list_iter_t is { list, index, last_count }.
-local entity_id_type = require("engine.entity_id_type")
+-- indexed from 0 holding each id; an entity_id_list_iter_t is
+-- { list, index, last_count }.
 local entity_id = require("engine.entity_id")
 
 local M = {}
@@ -57,16 +56,16 @@ function M.entity_id_list_add(list, id)
   if list.count == list.capacity then
     grow(list)
   end
-  list.items[list.count] = { index = id.index, generation = id.generation }
+  list.items[list.count] = id
   list.count = list.count + 1
 end
 
 -- Removes the first id equal to id; 1 when one was removed.
 function M.entity_id_list_del(list, id)
   for i = 0, list.count - 1 do
-    if entity_id_type.entity_id_equal(list.items[i], id) ~= 0 then
+    if list.items[i] == id then
       for j = i, list.count - 2 do
-        list.items[j] = { index = list.items[j + 1].index, generation = list.items[j + 1].generation }
+        list.items[j] = list.items[j + 1]
       end
       list.count = list.count - 1
       return 1
@@ -89,7 +88,7 @@ function M.entity_id_list_has(list, id)
     return 0
   end
   for i = 0, list.count - 1 do
-    if entity_id_type.entity_id_equal(list.items[i], id) ~= 0 then
+    if list.items[i] == id then
       return 1
     end
   end

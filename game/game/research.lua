@@ -218,7 +218,7 @@ local function project_zero(self)
   self.fold_anchor = 0
   self.is_dead = 0
   self.is_hovered = 0
-  self.id = { index = 0, generation = 0 }
+  self.id = nil
   self.archetype = nil
   self.name = nil
   self.planet_codes = nil

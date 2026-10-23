@@ -2,7 +2,7 @@
 --
 -- Shapes, with the C field names:
 --   candidate_iter_t: { from_ephemerals, index }; candidates_next advances index in place.
---   panel_key_t: { ui, economy, ephemerals_count, generation }, ui and economy entity id tables.
+--   panel_key_t: { ui, economy, ephemerals_count, generation }, ui and economy entity ids (nil for none).
 --   box_t: { left, top, right, bottom }; mouse_pos_t: { world, screen, has }; both by value.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
@@ -25,8 +25,7 @@ M.PAD_PANEL_ANY_LAYER = -32768
 local SCREEN_SPACE_LAYER = 10
 
 local function entity_id_none()
-  local none = entity_id_type.ENTITY_ID_NONE
-  return { index = none.index, generation = none.generation }
+  return nil
 end
 
 function M.pad_panel_box_open()
@@ -97,8 +96,8 @@ function M.pad_panel_open()
     return panel_open_now(ui, economy)
   end
   local key = {
-    ui = ui ~= nil and { index = ui.id.index, generation = ui.id.generation } or entity_id_none(),
-    economy = economy ~= nil and { index = economy.id.index, generation = economy.id.generation } or entity_id_none(),
+    ui = ui ~= nil and ui.id or entity_id_none(),
+    economy = economy ~= nil and economy.id or entity_id_none(),
     ephemerals_count = ui ~= nil and ui.ephemerals.count or 0,
     generation = entity_registry.entity_registry_generation(),
   }

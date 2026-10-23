@@ -1,7 +1,7 @@
 -- Copy of src/game/pad_slipway.h then src/game/pad_slipway.c.
 --
 -- Shapes, with the C field names:
---   pad_slipway_t: { start, target, phase, linked_before }, start and target entity id tables.
+--   pad_slipway_t: { start, target, phase, linked_before }, start and target entity ids (nil for none).
 local entity_class = require("engine.entity_class")
 local entity_id_list = require("engine.entity_id_list")
 local entity_id_type = require("engine.entity_id_type")
@@ -22,9 +22,8 @@ M.PAD_SLIPWAY_REFUSED = 0
 M.PAD_SLIPWAY_BUILT = 1
 
 function M.pad_slipway_init(slipway)
-  local none = entity_id_type.ENTITY_ID_NONE
-  slipway.start = { index = none.index, generation = none.generation }
-  slipway.target = { index = none.index, generation = none.generation }
+  slipway.start = nil
+  slipway.target = nil
   slipway.phase = M.PAD_SLIPWAY_NONE
   slipway.linked_before = 0
 end
@@ -81,10 +80,9 @@ end
 function M.pad_slipway_rebase(slipway, outcome)
   assert(slipway.phase == M.PAD_SLIPWAY_RELEASED, "pad_slipway_rebase: only the frame after a release rebases")
   if outcome == M.PAD_SLIPWAY_BUILT then
-    slipway.start = { index = slipway.target.index, generation = slipway.target.generation }
+    slipway.start = slipway.target
   end
-  local none = entity_id_type.ENTITY_ID_NONE
-  slipway.target = { index = none.index, generation = none.generation }
+  slipway.target = nil
   slipway.phase = M.PAD_SLIPWAY_PRESSED
 end
 

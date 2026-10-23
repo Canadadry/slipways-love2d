@@ -4,12 +4,11 @@
 --   pad_nav_t: { focus, build, cycle, placement, suspended_carry, pause_due, pause_choose_row_armed,
 --     menu_choose_row_armed, map_mode, marker_frames, release_pending, previous_pad, chord_held, left_was_down,
 --     cursor_x, cursor_y, held_frames, probe_or_fold_engaged, game, jump, slipway, back, select, bindings };
---     focus, suspended_carry and game entity id tables, held_frames 0-indexed. pad_nav_init creates the sub-tables
+--     focus, suspended_carry and game entity ids (nil for none), held_frames 0-indexed. pad_nav_init creates the sub-tables
 --     only when absent and fills bindings.masks in place, so a re-init keeps their identity as the C struct does.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
 local geom = require("engine.geom")
 local vec = require("engine.vec")
@@ -49,8 +48,7 @@ M.PAD_NAV_PLACEMENT_CARRYING = 2
 M.PAD_NAV_PLACEMENT_SUSPENDED = 3
 
 local function entity_id_none()
-  local none = entity_id_type.ENTITY_ID_NONE
-  return { index = none.index, generation = none.generation }
+  return nil
 end
 
 function M.pad_nav_panel_open()

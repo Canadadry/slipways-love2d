@@ -20,7 +20,6 @@
 local bit_module = require("bit")
 local fixed = require("p8.fixed")
 local vec = require("engine.vec")
-local entity_id_type = require("engine.entity_id_type")
 
 local M = {}
 
@@ -71,7 +70,6 @@ M.ENTITY_HAS_MAP_POS = bit_module.lshift(1, 9)
 -- Writes the header fields only: the object's own fields stay, as the C
 -- assignment writes the header bytes alone.
 function M.entity_init_header(self, cls)
-  local none = entity_id_type.ENTITY_ID_NONE
   self.class = cls
   self.state = 0
   self.state_time = 0
@@ -85,7 +83,7 @@ function M.entity_init_header(self, cls)
   self.fold_anchor = 0
   self.is_dead = 0
   self.is_hovered = 0
-  self.id = { index = none.index, generation = none.generation }
+  self.id = nil
 end
 
 function M.entity_has(self, bit)

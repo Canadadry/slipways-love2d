@@ -16,7 +16,6 @@ local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
 local draw_functions = require("game.draw_functions")
@@ -41,8 +40,7 @@ local data_item = map_tables.map_tables_make_data_item
 local data_row = map_tables.map_tables_make_data_row
 
 local function entity_id_none()
-  local none = entity_id_type.ENTITY_ID_NONE
-  return { index = none.index, generation = none.generation }
+  return nil
 end
 
 -- data_item_t assigned into storage: every field of src written into dst.

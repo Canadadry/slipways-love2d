@@ -25,7 +25,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
-local entity_id_type = require("engine.entity_id_type")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
 local geom = require("engine.geom")
@@ -45,8 +44,7 @@ M.SLIPWAY_SERVED_PLANETS_CAP = 90
 M.SLIPWAY_TRANSIT_DOTS_RESERVE = 24
 
 local function entity_id_none()
-  local none = entity_id_type.ENTITY_ID_NONE
-  return { index = none.index, generation = none.generation }
+  return nil
 end
 
 -- pointer_list_t list = {0}.
@@ -66,7 +64,7 @@ M.slipway_too_far_class_def = {
 M.g_slipway_too_far = {}
 entity_class.entity_init_header(M.g_slipway_too_far, M.slipway_too_far_class_def)
 M.g_slipway_too_far.status_text = "-too far-"
-M.g_slipway_too_far.targeted_by = { index = 0, generation = 0 }
+M.g_slipway_too_far.targeted_by = nil
 
 M.slipway_mouse_point_class_def = {
   states = {},

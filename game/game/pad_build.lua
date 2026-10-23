@@ -1,9 +1,8 @@
 -- Copy of src/game/pad_build.h then src/game/pad_build.c.
 --
 -- Shapes, with the C field names:
---   pad_build_t: { open, icon }, icon an entity id table.
+--   pad_build_t: { open, icon }, icon an entity id (nil for none).
 local entity_id = require("engine.entity_id")
-local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
 local pad_panel = require("game.pad_panel")
 local structure_icon = require("game.structure_icon")
@@ -13,9 +12,8 @@ local M = {}
 local INT_MAX = 2147483647
 
 function M.pad_build_init(b)
-  local none = entity_id_type.ENTITY_ID_NONE
   b.open = 0
-  b.icon = { index = none.index, generation = none.generation }
+  b.icon = nil
 end
 
 function M.pad_build_open(b)
