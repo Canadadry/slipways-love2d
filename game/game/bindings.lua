@@ -4,8 +4,8 @@
 -- bindings_default is the generated module game.bindings_default.
 --
 -- Shapes, with the C field names:
---   bindings_t: { masks }, masks[mode][action] indexed from 0, every entry
---     present, zeros included.
+--   bindings_t: { masks }, masks[mode][action] by BINDINGS_MODE_* and
+--     BINDINGS_ACTION_*, every entry present, zeros included.
 --   bindings_error_t: { line, text }, text a Lua string.
 -- A C pointer into a parsed text is a 1-based position in the Lua string; a
 -- range [start, end_) excludes end_; a position past the text reads 0.
@@ -16,60 +16,60 @@ local input = require("p8.input")
 
 local M = {}
 
-M.BINDINGS_MODE_TITLE = 0
-M.BINDINGS_MODE_JUMP = 1
-M.BINDINGS_MODE_AIM = 2
-M.BINDINGS_MODE_SLIPWAY = 3
-M.BINDINGS_MODE_MENU = 4
-M.BINDINGS_MODE_PAUSE = 5
-M.BINDINGS_MODE_BUILD_BAR = 6
-M.BINDINGS_MODE_PLACEMENT = 7
-M.BINDINGS_MODE_PANELS = 8
+M.BINDINGS_MODE_TITLE = 1
+M.BINDINGS_MODE_JUMP = 2
+M.BINDINGS_MODE_AIM = 3
+M.BINDINGS_MODE_SLIPWAY = 4
+M.BINDINGS_MODE_MENU = 5
+M.BINDINGS_MODE_PAUSE = 6
+M.BINDINGS_MODE_BUILD_BAR = 7
+M.BINDINGS_MODE_PLACEMENT = 8
+M.BINDINGS_MODE_PANELS = 9
 M.BINDINGS_MODE_COUNT = 9
 
-M.BINDINGS_ACTION_MOVE_UP = 0
-M.BINDINGS_ACTION_MOVE_DOWN = 1
-M.BINDINGS_ACTION_MOVE_LEFT = 2
-M.BINDINGS_ACTION_MOVE_RIGHT = 3
-M.BINDINGS_ACTION_CHOOSE_ROW = 4
-M.BINDINGS_ACTION_JUMP_UP = 5
-M.BINDINGS_ACTION_JUMP_DOWN = 6
-M.BINDINGS_ACTION_JUMP_LEFT = 7
-M.BINDINGS_ACTION_JUMP_RIGHT = 8
-M.BINDINGS_ACTION_ACT_ON_HOVERED = 9
-M.BINDINGS_ACTION_BACK = 10
-M.BINDINGS_ACTION_ENTER_AIM = 11
-M.BINDINGS_ACTION_OPEN_MENU = 12
-M.BINDINGS_ACTION_OPEN_BUILD_BAR = 13
-M.BINDINGS_ACTION_OPEN_TECH_PANEL = 14
-M.BINDINGS_ACTION_PAUSE = 15
-M.BINDINGS_ACTION_SELECT_TAP_OR_YEAR = 16
-M.BINDINGS_ACTION_PAN_UP = 17
-M.BINDINGS_ACTION_PAN_DOWN = 18
-M.BINDINGS_ACTION_PAN_LEFT = 19
-M.BINDINGS_ACTION_PAN_RIGHT = 20
-M.BINDINGS_ACTION_PROBE_OR_FOLD = 21
-M.BINDINGS_ACTION_LEAVE_AIM = 22
-M.BINDINGS_ACTION_BUILD_ON_TARGET = 23
-M.BINDINGS_ACTION_CANCEL_SLIPWAY = 24
-M.BINDINGS_ACTION_CLOSE_MENU = 25
-M.BINDINGS_ACTION_CLOSE_PAUSE = 26
-M.BINDINGS_ACTION_PICK_LEFT = 27
-M.BINDINGS_ACTION_PICK_RIGHT = 28
-M.BINDINGS_ACTION_TAKE_STRUCTURE = 29
-M.BINDINGS_ACTION_CLOSE_BAR = 30
-M.BINDINGS_ACTION_PLACE_STRUCTURE = 31
-M.BINDINGS_ACTION_CANCEL_PLACEMENT = 32
-M.BINDINGS_ACTION_CLOSE_PANEL = 33
-M.BINDINGS_ACTION_NEXT_PANEL = 34
+M.BINDINGS_ACTION_MOVE_UP = 1
+M.BINDINGS_ACTION_MOVE_DOWN = 2
+M.BINDINGS_ACTION_MOVE_LEFT = 3
+M.BINDINGS_ACTION_MOVE_RIGHT = 4
+M.BINDINGS_ACTION_CHOOSE_ROW = 5
+M.BINDINGS_ACTION_JUMP_UP = 6
+M.BINDINGS_ACTION_JUMP_DOWN = 7
+M.BINDINGS_ACTION_JUMP_LEFT = 8
+M.BINDINGS_ACTION_JUMP_RIGHT = 9
+M.BINDINGS_ACTION_ACT_ON_HOVERED = 10
+M.BINDINGS_ACTION_BACK = 11
+M.BINDINGS_ACTION_ENTER_AIM = 12
+M.BINDINGS_ACTION_OPEN_MENU = 13
+M.BINDINGS_ACTION_OPEN_BUILD_BAR = 14
+M.BINDINGS_ACTION_OPEN_TECH_PANEL = 15
+M.BINDINGS_ACTION_PAUSE = 16
+M.BINDINGS_ACTION_SELECT_TAP_OR_YEAR = 17
+M.BINDINGS_ACTION_PAN_UP = 18
+M.BINDINGS_ACTION_PAN_DOWN = 19
+M.BINDINGS_ACTION_PAN_LEFT = 20
+M.BINDINGS_ACTION_PAN_RIGHT = 21
+M.BINDINGS_ACTION_PROBE_OR_FOLD = 22
+M.BINDINGS_ACTION_LEAVE_AIM = 23
+M.BINDINGS_ACTION_BUILD_ON_TARGET = 24
+M.BINDINGS_ACTION_CANCEL_SLIPWAY = 25
+M.BINDINGS_ACTION_CLOSE_MENU = 26
+M.BINDINGS_ACTION_CLOSE_PAUSE = 27
+M.BINDINGS_ACTION_PICK_LEFT = 28
+M.BINDINGS_ACTION_PICK_RIGHT = 29
+M.BINDINGS_ACTION_TAKE_STRUCTURE = 30
+M.BINDINGS_ACTION_CLOSE_BAR = 31
+M.BINDINGS_ACTION_PLACE_STRUCTURE = 32
+M.BINDINGS_ACTION_CANCEL_PLACEMENT = 33
+M.BINDINGS_ACTION_CLOSE_PANEL = 34
+M.BINDINGS_ACTION_NEXT_PANEL = 35
 M.BINDINGS_ACTION_COUNT = 35
 
 M.mode_names = {
-  [0] = "title", "jump", "aim", "slipway", "menu", "pause", "build_bar", "placement", "panels",
+  "title", "jump", "aim", "slipway", "menu", "pause", "build_bar", "placement", "panels",
 }
 
 M.action_names = {
-  [0] = "move_up", "move_down", "move_left", "move_right", "choose_row",
+  "move_up", "move_down", "move_left", "move_right", "choose_row",
   "jump_up", "jump_down", "jump_left", "jump_right", "act_on_hovered",
   "back", "enter_aim", "open_menu", "open_build_bar", "open_tech_panel",
   "pause", "select_tap_or_year", "pan_up", "pan_down", "pan_left",
@@ -98,7 +98,7 @@ local MAP_SHORTCUTS = {
 -- actions, false for every other action, as the C's designated initializers.
 local function mode_actions_row(groups, ...)
   local row = {}
-  for action = 0, M.BINDINGS_ACTION_COUNT - 1 do
+  for action = 1, M.BINDINGS_ACTION_COUNT do
     row[action] = false
   end
   for _, group in ipairs(groups) do
@@ -148,9 +148,9 @@ end
 
 local function new_masks()
   local masks = {}
-  for mode = 0, M.BINDINGS_MODE_COUNT - 1 do
+  for mode = 1, M.BINDINGS_MODE_COUNT do
     masks[mode] = {}
-    for action = 0, M.BINDINGS_ACTION_COUNT - 1 do
+    for action = 1, M.BINDINGS_ACTION_COUNT do
       masks[mode][action] = 0
     end
   end
@@ -181,8 +181,8 @@ function M.bindings_read_button_number(text)
 end
 
 function M.bindings_mode_has_action(mode, action)
-  assert(mode >= 0 and mode < M.BINDINGS_MODE_COUNT, "bindings_mode_has_action: mode out of range")
-  assert(action >= 0 and action < M.BINDINGS_ACTION_COUNT, "bindings_mode_has_action: action out of range")
+  assert(mode >= 1 and mode <= M.BINDINGS_MODE_COUNT, "bindings_mode_has_action: mode out of range")
+  assert(action >= 1 and action <= M.BINDINGS_ACTION_COUNT, "bindings_mode_has_action: action out of range")
   return M.mode_actions[mode][action]
 end
 
@@ -195,12 +195,12 @@ function M.bindings_mask(bindings, mode, action)
 end
 
 function M.bindings_mode_name(mode)
-  assert(mode >= 0 and mode < M.BINDINGS_MODE_COUNT, "bindings_mode_name: mode out of range")
+  assert(mode >= 1 and mode <= M.BINDINGS_MODE_COUNT, "bindings_mode_name: mode out of range")
   return M.mode_names[mode]
 end
 
 function M.bindings_action_name(action)
-  assert(action >= 0 and action < M.BINDINGS_ACTION_COUNT, "bindings_action_name: action out of range")
+  assert(action >= 1 and action <= M.BINDINGS_ACTION_COUNT, "bindings_action_name: action out of range")
   return M.action_names[action]
 end
 
@@ -228,27 +228,29 @@ local function copy_token(s, start, end_)
   return s:sub(start, end_ - 1)
 end
 
+-- Returns nil for an unknown name.
 local function find_mode(name)
-  for mode = 0, M.BINDINGS_MODE_COUNT - 1 do
+  for mode = 1, M.BINDINGS_MODE_COUNT do
     if M.mode_names[mode] == name then
       return mode
     end
   end
-  return -1
+  return nil
 end
 
+-- Returns nil for an unknown name.
 local function find_action(name)
-  for action = 0, M.BINDINGS_ACTION_COUNT - 1 do
+  for action = 1, M.BINDINGS_ACTION_COUNT do
     if M.action_names[action] == name then
       return action
     end
   end
-  return -1
+  return nil
 end
 
 local function mode_mask(bindings, mode)
   local mask = 0
-  for action = 0, M.BINDINGS_ACTION_COUNT - 1 do
+  for action = 1, M.BINDINGS_ACTION_COUNT do
     mask = bit_module.bor(mask, bindings.masks[mode][action])
   end
   return mask
@@ -266,13 +268,13 @@ local function parse_line(file_name, line_number, text, start, end_, out, given_
   end
   local token = copy_token(text, start, trim_end(text, start, dot))
   local mode = find_mode(token)
-  if mode < 0 then
+  if mode == nil then
     return fail(error, file_name, line_number, "unknown mode \"%s\"", token)
   end
   local action_start = skip_blanks(text, dot + 1, left_end)
   token = copy_token(text, action_start, left_end)
   local action = find_action(token)
-  if action < 0 or not M.mode_actions[mode][action] then
+  if action == nil or not M.mode_actions[mode][action] then
     return fail(error, file_name, line_number, "unknown action \"%s\" in mode %s", token, M.mode_names[mode])
   end
   local first_line = given_on_line[mode][action]

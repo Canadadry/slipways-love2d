@@ -18,9 +18,9 @@ M.INPUT_STEP_BINDINGS_DEFAULT = 1
 -- Returns a new bindings_t, never an alias of bindings.
 local function copy_bindings(bindings)
   local copy = { masks = {} }
-  for mode = 0, bindings_module.BINDINGS_MODE_COUNT - 1 do
+  for mode = 1, bindings_module.BINDINGS_MODE_COUNT do
     copy.masks[mode] = {}
-    for action = 0, bindings_module.BINDINGS_ACTION_COUNT - 1 do
+    for action = 1, bindings_module.BINDINGS_ACTION_COUNT do
       copy.masks[mode][action] = bindings.masks[mode][action]
     end
   end

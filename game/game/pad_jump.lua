@@ -2,7 +2,6 @@
 --
 -- Shapes, with the C field names:
 --   pad_jump_t: { hovered, seeded, repeat_direction, repeat_frames }, hovered an entity id (nil for none).
---   directions_by_priority is 0-indexed.
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local bindings_module = require("game.bindings")
@@ -57,7 +56,7 @@ function M.pad_jump_reseed(jump, candidates, centre_x, centre_y)
 end
 
 M.directions_by_priority = {
-  [0] = pad_direction.PAD_DIRECTION_UP,
+  pad_direction.PAD_DIRECTION_UP,
   pad_direction.PAD_DIRECTION_DOWN,
   pad_direction.PAD_DIRECTION_LEFT,
   pad_direction.PAD_DIRECTION_RIGHT,
@@ -65,7 +64,7 @@ M.directions_by_priority = {
 local directions_by_priority = M.directions_by_priority
 
 function M.pad_jump_direction(index)
-  assert(index >= 0 and index < M.PAD_JUMP_DIRECTIONS, "pad_jump_direction: index 0 to PAD_JUMP_DIRECTIONS - 1")
+  assert(index >= 1 and index <= M.PAD_JUMP_DIRECTIONS, "pad_jump_direction: index 1 to PAD_JUMP_DIRECTIONS")
   return directions_by_priority[index]
 end
 
@@ -83,7 +82,7 @@ local function direction_mask(bindings, mode, direction)
 end
 
 local function first_pressed_direction(bindings, mode, pressed)
-  for i = 0, M.PAD_JUMP_DIRECTIONS - 1 do
+  for i = 1, M.PAD_JUMP_DIRECTIONS do
     if bit.band(pressed, direction_mask(bindings, mode, directions_by_priority[i])) ~= 0 then
       return directions_by_priority[i]
     end

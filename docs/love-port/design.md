@@ -833,7 +833,9 @@ is image slot `FIRST + i - 1`, image slot handles staying 0-based) with their ke
 buttons argument and articles, the menus' and panels' button lists, the score panel's readouts and the demo
 captions (`demo_overlay_find_caption` returns a position or `nil`); so are research's project table, project
 order and projects by name (`project_index_of` gives a position), the available-projects and
-available-technologies lists, a resource map's entries and a slipway's served planets; the other C arrays stay 0-based
+available-technologies lists, a resource map's entries and a slipway's served planets; so are the bindings
+(`BINDINGS_MODE_*` and `BINDINGS_ACTION_*` numbered from 1, the masks, names and mode-action rows,
+`bindings_default`) and the pad's direction tables (`pad_jump_direction` takes 1 to 4); the other C arrays stay 0-based
 until the rest of the 1-based step. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
 `%` is `cint.mod` (the dividend's sign); `math.floor` and Lua `%` appear only
 where the C floors. `(unsigned char)x` is `bit.band(x, 0xFF)`; a `bit`

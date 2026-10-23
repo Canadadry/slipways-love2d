@@ -4,7 +4,7 @@
 --   pad_nav_t: { focus, build, cycle, placement, suspended_carry, pause_due, pause_choose_row_armed,
 --     menu_choose_row_armed, map_mode, marker_frames, release_pending, previous_pad, chord_held, left_was_down,
 --     cursor_x, cursor_y, held_frames, probe_or_fold_engaged, game, jump, slipway, back, select, bindings };
---     focus, suspended_carry and game entity ids (nil for none), held_frames 0-indexed. pad_nav_init creates the sub-tables
+--     focus, suspended_carry and game entity ids (nil for none), held_frames indexed by pad_jump_direction's index. pad_nav_init creates the sub-tables
 --     only when absent and fills bindings.masks in place, so a re-init keeps their identity as the C struct does.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
@@ -191,7 +191,7 @@ end
 local HELD_FRAMES_CAP = 41
 
 local function reset_aim_mode(nav)
-  for i = 0, pad_jump.PAD_JUMP_DIRECTIONS - 1 do
+  for i = 1, pad_jump.PAD_JUMP_DIRECTIONS do
     nav.held_frames[i] = 0
   end
   nav.probe_or_fold_engaged = false
@@ -208,7 +208,7 @@ local function pan_speed(held_frames)
 end
 
 local pan_action = {
-  [0] = bindings_module.BINDINGS_ACTION_PAN_UP, bindings_module.BINDINGS_ACTION_PAN_DOWN,
+  bindings_module.BINDINGS_ACTION_PAN_UP, bindings_module.BINDINGS_ACTION_PAN_DOWN,
   bindings_module.BINDINGS_ACTION_PAN_LEFT, bindings_module.BINDINGS_ACTION_PAN_RIGHT,
 }
 
@@ -216,7 +216,7 @@ local function aim_pan(nav, mode, pad_buttons)
   assert(bindings_module.bindings_mode_has_action(mode, bindings_module.BINDINGS_ACTION_PAN_UP),
     "aim_pan: a mode with pan_* actions (aim or placement)")
   local speed = {}
-  for i = 0, pad_jump.PAD_JUMP_DIRECTIONS - 1 do
+  for i = 1, pad_jump.PAD_JUMP_DIRECTIONS do
     if bit.band(pad_buttons, bindings_module.bindings_mask(nav.bindings, mode, pan_action[i])) == 0 then
       nav.held_frames[i] = 0
     elseif nav.held_frames[i] < HELD_FRAMES_CAP then
@@ -224,14 +224,14 @@ local function aim_pan(nav, mode, pad_buttons)
     end
     speed[i] = pan_speed(nav.held_frames[i])
   end
-  assert(pad_jump.pad_jump_direction(0) == pad_direction.PAD_DIRECTION_UP and
-    pad_jump.pad_jump_direction(1) == pad_direction.PAD_DIRECTION_DOWN and
-    pad_jump.pad_jump_direction(2) == pad_direction.PAD_DIRECTION_LEFT and
-    pad_jump.pad_jump_direction(3) == pad_direction.PAD_DIRECTION_RIGHT,
+  assert(pad_jump.pad_jump_direction(1) == pad_direction.PAD_DIRECTION_UP and
+    pad_jump.pad_jump_direction(2) == pad_direction.PAD_DIRECTION_DOWN and
+    pad_jump.pad_jump_direction(3) == pad_direction.PAD_DIRECTION_LEFT and
+    pad_jump.pad_jump_direction(4) == pad_direction.PAD_DIRECTION_RIGHT,
     "aim_pan: speed[] and pan_action[] are indexed Up, Down, Left, Right")
   local camera = scroll.main_camera_typed()
   if camera ~= nil then
-    scroll.camera_pan(camera, speed[3] - speed[2], speed[1] - speed[0])
+    scroll.camera_pan(camera, speed[4] - speed[3], speed[2] - speed[1])
   end
 end
 
@@ -256,11 +256,11 @@ local function copy_bindings(nav, bindings)
     nav.bindings = { masks = {} }
   end
   local masks = nav.bindings.masks
-  for mode = 0, bindings_module.BINDINGS_MODE_COUNT - 1 do
+  for mode = 1, bindings_module.BINDINGS_MODE_COUNT do
     if masks[mode] == nil then
       masks[mode] = {}
     end
-    for action = 0, bindings_module.BINDINGS_ACTION_COUNT - 1 do
+    for action = 1, bindings_module.BINDINGS_ACTION_COUNT do
       masks[mode][action] = bindings.masks[mode][action]
     end
   end
@@ -339,14 +339,14 @@ local function panel_mode(nav)
 end
 
 local move_action = {
-  [0] = bindings_module.BINDINGS_ACTION_MOVE_UP, bindings_module.BINDINGS_ACTION_MOVE_DOWN,
+  bindings_module.BINDINGS_ACTION_MOVE_UP, bindings_module.BINDINGS_ACTION_MOVE_DOWN,
   bindings_module.BINDINGS_ACTION_MOVE_LEFT, bindings_module.BINDINGS_ACTION_MOVE_RIGHT,
 }
 
 local function first_pressed_move(nav, pressed, mode)
   assert(bindings_module.bindings_mode_has_action(mode, bindings_module.BINDINGS_ACTION_MOVE_UP),
     "first_pressed_move: a mode with move_* actions (title, menu, pause or panels)")
-  for i = 0, pad_jump.PAD_JUMP_DIRECTIONS - 1 do
+  for i = 1, pad_jump.PAD_JUMP_DIRECTIONS do
     if action_pressed(nav, pressed, mode, move_action[i]) then
       return pad_jump.pad_jump_direction(i)
     end
