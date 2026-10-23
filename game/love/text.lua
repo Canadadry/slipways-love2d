@@ -18,7 +18,7 @@ local font_image = nil
 
 -- A fresh ImageData is alpha 0 everywhere: only the lit pixels are set.
 local function build_font_image()
-  local data = screen.screen_font_data()
+  local data = screen.font_data()
   local white = love.image.newImageData(FONT_WIDTH, FONT_HEIGHT)
   for y = 0, FONT_HEIGHT - 1 do
     for x = 0, FONT_WIDTH - 1 do
@@ -35,7 +35,7 @@ end
 -- Draws str's glyphs in the current colour from x, y in screen coordinates:
 -- byte b is cell b when 32 <= b <= 126, else cell 127, the placeholder (the
 -- p8.gfx_software's font_glyph_rows sends bytes above 127 to it too).
-function M.text_draw(str, x, y)
+function M.draw(str, x, y)
   if font_image == nil then
     font_image = build_font_image()
   end

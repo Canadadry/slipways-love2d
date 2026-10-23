@@ -254,7 +254,7 @@ local function write_count(sink, name, count)
   line_end(line)
 end
 
-function M.state_format(sink)
+function M.dump(sink)
   write_clock(sink)
   write_difficulty(sink)
   write_resources(sink)
@@ -272,8 +272,8 @@ function M.state_format(sink)
 end
 
 -- Reads only state, which came out of a save_state_decode that returned true: its difficulty, clock
--- year, resources credits and count nodes lines in state_format's format, each after prefix.
-function M.state_format_save_summary(sink, state, prefix)
+-- year, resources credits and count nodes lines in state_format.dump's format, each after prefix.
+function M.save_summary(sink, state, prefix)
   assert(state ~= nil and prefix ~= nil)
   assert(state.difficulty >= 1 and state.difficulty <= game_data.DIFFICULTY_OPTIONS_COUNT)
   local line = line_start(sink)
@@ -291,13 +291,13 @@ function M.state_format_save_summary(sink, state, prefix)
   line_end(line)
 end
 
-function M.state_format_stopped(sink, frame)
+function M.stopped(sink, frame)
   local line = line_start(sink)
   line_add(line, "stopped p8_fatal frame %d", frame)
   line_end(line)
 end
 
-function M.state_format_cheat_activations(sink, count)
+function M.cheat_activations(sink, count)
   local line = line_start(sink)
   line_add(line, "cheat activations %d", count)
   line_end(line)

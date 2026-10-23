@@ -7,17 +7,17 @@ local vram = require("p8.vram")
 local M = {}
 
 -- One screen-wide span at any origin 0..3 fits.
-M.PATTERN_IMAGE_WIDTH = vram.SCREEN_WIDTH + 4
-M.PATTERN_IMAGE_HEIGHT = vram.SCREEN_HEIGHT + 4
+M.IMAGE_WIDTH = vram.SCREEN_WIDTH + 4
+M.IMAGE_HEIGHT = vram.SCREEN_HEIGHT + 4
 
 local images = {}
 
 local function build_image(pattern, col, transparent)
-  local data = love.image.newImageData(M.PATTERN_IMAGE_WIDTH, M.PATTERN_IMAGE_HEIGHT)
-  local clear_color = screen.SCREEN_COLORS[bit.band(col, 0x0F)]
-  local set_color = screen.SCREEN_COLORS[bit.band(bit.rshift(col, 4), 0x0F)]
-  for j = 0, M.PATTERN_IMAGE_HEIGHT - 1 do
-    for i = 0, M.PATTERN_IMAGE_WIDTH - 1 do
+  local data = love.image.newImageData(M.IMAGE_WIDTH, M.IMAGE_HEIGHT)
+  local clear_color = screen.COLORS[bit.band(col, 0x0F)]
+  local set_color = screen.COLORS[bit.band(bit.rshift(col, 4), 0x0F)]
+  for j = 0, M.IMAGE_HEIGHT - 1 do
+    for i = 0, M.IMAGE_WIDTH - 1 do
       local bit_index = 15 - ((j % 4) * 4 + i % 4)
       if bit.band(bit.rshift(pattern, bit_index), 1) == 0 then
         data:setPixel(i, j, clear_color.red, clear_color.green, clear_color.blue)
@@ -32,7 +32,7 @@ end
 -- The image whose pixel (i, j) is p8.gfx_software's fillp_color at world (i, j) for the
 -- current pattern of gfx, alpha 0 where it returns -1. Built on first use per
 -- draw_cost.pattern_key, kept for the run: never draw into it.
-function M.pattern_image(gfx, col)
+function M.image(gfx, col)
   local key = draw_cost.pattern_key(gfx, col)
   local image = images[key]
   if image == nil then

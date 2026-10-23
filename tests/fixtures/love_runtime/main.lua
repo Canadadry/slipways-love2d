@@ -222,22 +222,22 @@ function play_call(call)
 end
 
 function love.load()
-  screen.screen_init()
+  screen.init()
   vram.init(mem)
   gfx_module.init(gfx)
   sprite_sheet.load(mem)
-  gfx_module.draw_backend_set(backend.backend_get())
+  gfx_module.draw_backend_set(backend.get())
   draw_meter.install()
   frames = parse_scene(love.filesystem.read("scene.txt"))
 end
 
 function love.draw()
   assert(next_frame < #frames, "scene.txt: the replay has more frames than the scene")
-  screen.screen_frame_begin()
+  screen.frame_begin()
   for _, call in ipairs(frames[next_frame + 1]) do
     play_call(call)
   end
-  screen.screen_frame_end()
+  screen.frame_end()
   draw_meter.frame_end()
   next_frame = next_frame + 1
 end

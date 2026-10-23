@@ -23,7 +23,7 @@ local function check_color(call, col)
 end
 
 local function set_color(col)
-  local color = screen.SCREEN_COLORS[col]
+  local color = screen.COLORS[col]
   love.graphics.setColor(color.red, color.green, color.blue)
 end
 
@@ -201,7 +201,7 @@ local function begin_fill(gfx, col)
     return nil
   end
   love.graphics.setColor(1, 1, 1)
-  return pattern.pattern_image(gfx, col)
+  return pattern.image(gfx, col)
 end
 
 -- The world rectangle (x0, y0) <= (x1, y1) as begin_fill chose: one integer
@@ -217,7 +217,7 @@ local function fill_span(gfx, image, x0, y0, x1, y1)
     return
   end
   local quad = love.graphics.newQuad((sx0 + gfx.camera_x) % 4, (sy0 + gfx.camera_y) % 4, sx1 - sx0 + 1, sy1 - sy0 + 1,
-    pattern.PATTERN_IMAGE_WIDTH, pattern.PATTERN_IMAGE_HEIGHT)
+    pattern.IMAGE_WIDTH, pattern.IMAGE_HEIGHT)
   love.graphics.draw(image, quad, sx0, sy0)
 end
 
@@ -289,7 +289,7 @@ local function love_spr(gfx, mem, n, x, y, w, h)
       local qy = sheet_y + sy0 + gfx.camera_y - y
       local qw = sx1 - sx0 + 1
       local qh = sy1 - sy0 + 1
-      local image = sheet.sheet_image(mem, qx, qy, qx + qw - 1, qy + qh - 1)
+      local image = sheet.image(mem, qx, qy, qx + qw - 1, qy + qh - 1)
       local quad = love.graphics.newQuad(qx, qy, qw, qh, vram.SPRITE_SHEET_WIDTH, vram.SPRITE_SHEET_HEIGHT)
       love.graphics.setColor(1, 1, 1)
       love.graphics.draw(image, quad, sx0, sy0)
@@ -313,7 +313,7 @@ end
 local function love_print(gfx, mem, str, x, y, col)
   check_color("print", col)
   set_color(col)
-  text.text_draw(str, x - gfx.camera_x, y - gfx.camera_y)
+  text.draw(str, x - gfx.camera_x, y - gfx.camera_y)
 end
 
 -- p8.gfx_software's software_print_outlined order, copied.
@@ -343,11 +343,11 @@ end
 local function love_image_end(slot_index)
   SOFTWARE_BACKEND.image_end(slot_index)
   building = false
-  slot.slot_build(slot_index)
+  slot.build(slot_index)
 end
 
 local function love_image_draw(gfx, mem, slot_index, x, y)
-  slot.slot_draw(slot_index, x - gfx.camera_x, y - gfx.camera_y)
+  slot.draw(slot_index, x - gfx.camera_x, y - gfx.camera_y)
 end
 
 -- Between image_begin and image_end the software backend draws into the slot
@@ -374,7 +374,7 @@ local LOVE_BACKEND = {
 }
 
 -- Shared by every caller: never write it.
-function M.backend_get()
+function M.get()
   return LOVE_BACKEND
 end
 

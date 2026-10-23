@@ -81,11 +81,11 @@ local function read_pad_buttons()
 end
 
 function love.load(args)
-  screen.screen_init()
+  screen.init()
   vram.init(mem)
   gfx_module.init(gfx)
   sprite_sheet.load(mem)
-  gfx_module.draw_backend_set(backend.backend_get())
+  gfx_module.draw_backend_set(backend.get())
   dispatch_context.dispatch_context_set_gfx(gfx)
   dispatch_context.dispatch_context_set_mem(mem)
   local zero_frame = { mouse_x = 0, mouse_y = 0, mouse_buttons = 0, pad_buttons = 0 }
@@ -106,11 +106,11 @@ function love.update(dt)
 end
 
 function love.draw()
-  screen.screen_frame_begin()
+  screen.frame_begin()
   cart.cart_draw()
-  screen.screen_frame_end()
+  screen.frame_end()
   draw_meter.frame_end()
-  screen.screen_present()
+  screen.present()
 end
 
 -- Called by tmp/fake_love after the last frame, never by real LÖVE.
@@ -122,7 +122,7 @@ function debug_state()
     end,
     context = lines,
   }
-  state_format.state_format(sink)
-  state_format.state_format_cheat_activations(sink, cheat_activations)
+  state_format.dump(sink)
+  state_format.cheat_activations(sink, cheat_activations)
   return table.concat(lines)
 end

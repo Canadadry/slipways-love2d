@@ -13,7 +13,7 @@ local slot_images = {}
 
 -- Turns the slot's last software build into its image: a fresh ImageData is
 -- alpha 0 everywhere, so pixels the build never wrote are skipped.
-function M.slot_build(slot)
+function M.build(slot)
   local store, first, width, height, empty = gfx_software.slot_pixels(slot)
   slot_images[slot] = nil
   if width == 0 or height == 0 then
@@ -28,7 +28,7 @@ function M.slot_build(slot)
         if col > 15 then
           fatal.raise(string.format("love backend image slot %d: colour %d is not 0..15", slot, col))
         end
-        local color = screen.SCREEN_COLORS[col]
+        local color = screen.COLORS[col]
         data:setPixel(x, y, color.red, color.green, color.blue, 1)
       end
     end
@@ -38,7 +38,7 @@ end
 
 -- Draws the slot's image with its top-left at screen (sx, sy), clipped to the
 -- screen.
-function M.slot_draw(slot, sx, sy)
+function M.draw(slot, sx, sy)
   local slot_image = slot_images[slot]
   if slot_image == nil then
     return

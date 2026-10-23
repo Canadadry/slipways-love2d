@@ -5,13 +5,13 @@ local vram = require("p8.vram")
 
 local M = {}
 
-M.SCREEN_SCALE = 4
+M.SCALE = 4
 
 -- Indexed 0..15 like palette.RGB: { red, green, blue } as byte / 255.
-M.SCREEN_COLORS = {}
+M.COLORS = {}
 for c = 0, palette.COLORS - 1 do
   local rgb = palette.RGB[c]
-  M.SCREEN_COLORS[c] = { red = rgb.red / 255, green = rgb.green / 255, blue = rgb.blue / 255 }
+  M.COLORS[c] = { red = rgb.red / 255, green = rgb.green / 255, blue = rgb.blue / 255 }
 end
 
 local canvas = nil
@@ -20,7 +20,7 @@ local font_data = nil
 
 -- Must run first in love.load: the canvas has to be canvas 0, the one
 -- tmp/fake_love captures. It starts colour 0, as vram.init's screen.
-function M.screen_init()
+function M.init()
   love.graphics.setDefaultFilter("nearest", "nearest")
   canvas = love.graphics.newCanvas(vram.SCREEN_WIDTH, vram.SCREEN_HEIGHT)
   love.graphics.setCanvas(canvas)
@@ -30,30 +30,30 @@ function M.screen_init()
   font_data = love.image.newImageData("font.png")
 end
 
-function M.screen_frame_begin()
-  assert(canvas ~= nil, "screen_frame_begin: screen_init has not run")
+function M.frame_begin()
+  assert(canvas ~= nil, "screen.frame_begin: screen.init has not run")
   love.graphics.setCanvas(canvas)
 end
 
-function M.screen_frame_end()
+function M.frame_end()
   love.graphics.setCanvas()
 end
 
 -- design.md's present: call it once, last in love.draw, outside any push.
-function M.screen_present()
-  assert(canvas ~= nil, "screen_present: screen_init has not run")
+function M.present()
+  assert(canvas ~= nil, "screen.present: screen.init has not run")
   love.graphics.setCanvas()
   love.graphics.setColor(1, 1, 1)
-  love.graphics.draw(canvas, 0, 0, 0, M.SCREEN_SCALE, M.SCREEN_SCALE)
+  love.graphics.draw(canvas, 0, 0, 0, M.SCALE, M.SCALE)
 end
 
--- The ImageData of sprites.png, loaded once by screen_init: never write it.
-function M.screen_sprites_data()
+-- The ImageData of sprites.png, loaded once by screen.init: never write it.
+function M.sprites_data()
   return sprites_data
 end
 
--- The ImageData of font.png, loaded once by screen_init: never write it.
-function M.screen_font_data()
+-- The ImageData of font.png, loaded once by screen.init: never write it.
+function M.font_data()
   return font_data
 end
 

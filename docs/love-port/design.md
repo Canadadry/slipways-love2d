@@ -524,7 +524,7 @@ non-Canvas first argument, a non-number (no string coercion), a
 non-finite or fractional position and a rotation other than 0. **The rule
 for the game: present canvas 0 once per frame, last in `love.draw`, with
 the screen selected, after `setColor(1, 1, 1)`, outside any `push`, at
-`(0, 0)` and scale `SCREEN_SCALE`** (`screen.screen_present()`). Capture:
+`(0, 0)` and scale `screen.SCALE`** (`screen.present()`). Capture:
 `game_frame`.
 
 **Transforms.** `push()`, `pop()` and `translate(dx, dy)` are the only
@@ -634,9 +634,9 @@ It is an ordinary Lua error, like every refusal of the fake. Both binaries,
 `tmp/fake_love` and `tmp/love_capture_check`, run under this guard.
 
 The game shows its canvas in the window with `draw(canvas, 0, 0, 0,
-SCREEN_SCALE, SCREEN_SCALE)`: **present canvas 0 once per frame, last in
+screen.SCALE, screen.SCALE)`: **present canvas 0 once per frame, last in
 `love.draw`, with the screen selected, after `setColor(1, 1, 1)`, outside
-any `push`, at `(0, 0)` and scale `SCREEN_SCALE`** (see The present). The
+any `push`, at `(0, 0)` and scale `screen.SCALE`** (see The present). The
 fake reads the canvas, and the present changes nothing it models.
 
 The exact pixel conventions (where `points(x, y)` lands, how `rectangle`

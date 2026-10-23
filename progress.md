@@ -81,7 +81,7 @@
 - [ ] Step 3.4 chunks
   - [x] Chunk 1 — the check tool and lua-names target
   - [x] Chunk 2 — runtime p8/
-  - [ ] Chunk 3 — LÖVE glue and devtools
+  - [x] Chunk 3 — LÖVE glue and devtools
   - [ ] Chunk 4 — engine
   - [ ] Chunk 5 — data and generation
   - [ ] Chunk 6 — layout and images

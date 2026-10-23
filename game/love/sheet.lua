@@ -25,7 +25,7 @@ local cell_indices = {}
 local sheets = {}
 
 local function read_cell(cell)
-  local data = screen.screen_sprites_data()
+  local data = screen.sprites_data()
   local x0 = cint.mod(cell, CELLS_PER_ROW) * gfx_module.SPRITE_SIZE
   local y0 = cint.div(cell, CELLS_PER_ROW) * gfx_module.SPRITE_SIZE
   local indices = {}
@@ -59,7 +59,7 @@ local function fill_cell(sheet, draw_palette, cell)
     for dx = 0, gfx_module.SPRITE_SIZE - 1 do
       local entry = draw_palette[row[dx]]
       if bit.band(entry, vram.DRAW_PALETTE_TRANSPARENT_BIT) == 0 then
-        local color = screen.SCREEN_COLORS[bit.band(entry, 0x0F)]
+        local color = screen.COLORS[bit.band(entry, 0x0F)]
         sheet.data:setPixel(x0 + dx, y0 + dy, color.red, color.green, color.blue)
       end
     end
@@ -73,9 +73,9 @@ end
 -- the sheet pixels x0..x1, y0..y1, which must lie on the sheet. Each 8x8 cell
 -- is filled the first time a draw reaches it under that draw palette, then
 -- kept for the run: never draw into the image, and never keep it across calls.
-function M.sheet_image(mem, x0, y0, x1, y1)
+function M.image(mem, x0, y0, x1, y1)
   assert(x0 >= 0 and y0 >= 0 and x1 < vram.SPRITE_SHEET_WIDTH and y1 < vram.SPRITE_SHEET_HEIGHT
-    and x0 <= x1 and y0 <= y1, "sheet_image: the region must lie on the sprite sheet")
+    and x0 <= x1 and y0 <= y1, "sheet.image: the region must lie on the sprite sheet")
   local bytes = {}
   for c = 0, palette.COLORS - 1 do
     bytes[c + 1] = mem.draw_palette[c]
