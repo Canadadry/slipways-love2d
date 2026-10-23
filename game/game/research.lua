@@ -40,7 +40,7 @@ local g_projects_count = 0
 -- The name is borrowed, never copied: it must outlive the project.
 local g_projects_by_name = {}
 local g_projects_by_name_count = 0
-local g_projects_up = 0
+local g_projects_up = false
 local g_required_tech = nil
 
 local function project_id_issue(project)
@@ -146,7 +146,7 @@ local function research_project_positions(self, ri, input_codes)
     self.output = resource_code_of(ri.output)
   end
   if n >= 7 then
-    if ri.upgrade_tech_false ~= 0 then
+    if ri.upgrade_tech_false then
       self.upgrade_tech = nil
     else
       self.upgrade_tech = ri.upgrade_tech
@@ -246,7 +246,7 @@ local function project_create(keys)
   end
 
   if self.name ~= nil then
-    assert(g_projects_up ~= 0,
+    assert(g_projects_up,
       "project_create: a named project registers itself, so research_build_projects() runs first")
     projects_register(index)
   end
@@ -292,7 +292,7 @@ end
 
 function M.research_shutdown()
   forget_projects()
-  g_projects_up = 0
+  g_projects_up = false
   g_required_tech = nil
   g_research_project_up = false
 end
@@ -315,7 +315,7 @@ end
 
 function M.research_build_projects()
   forget_projects()
-  g_projects_up = 1
+  g_projects_up = true
   g_required_tech = nil
 
   for i = 0, PROJECT_RECORDS_COUNT - 1 do
@@ -367,7 +367,7 @@ function M.research_project_production(self)
   end
 
   il = M.research_project_upgrade_tech(self)
-  if il ~= nil and tech_gate.tech_gate_is_unlocked(il) ~= 0 and qp ~= nil and qp.upgraded_entry ~= nil then
+  if il ~= nil and tech_gate.tech_gate_is_unlocked(il) and qp ~= nil and qp.upgraded_entry ~= nil then
     local production_tables_upgraded_entry = map_tables.production_tables_lookup(qp.upgraded_entry)
 
     if production_tables_upgraded_entry ~= nil then
@@ -386,10 +386,10 @@ function M.research_project_cost(self)
   if self ~= nil and self.base_cost ~= nil then
     od = self.base_cost
   end
-  if self ~= nil and il ~= nil and tech_gate.tech_gate_is_unlocked(il) ~= 0 then
+  if self ~= nil and il ~= nil and tech_gate.tech_gate_is_unlocked(il) then
     od = fixed.p8_fixed_mul(od, fixed.P8_FIXED_LIT(0x00018000, 1.5))
   end
-  if (self == nil or self.icon_sprite == nil) and tech_gate.tech_gate_is_unlocked("nanomaterials") ~= 0 then
+  if (self == nil or self.icon_sprite == nil) and tech_gate.tech_gate_is_unlocked("nanomaterials") then
     od = fixed.p8_fixed_mul(od, fixed.P8_FIXED_LIT(0x0000d999, 0.85))
   end
   return fixed.p8_fixed_flr(od)

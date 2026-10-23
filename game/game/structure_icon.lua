@@ -75,13 +75,13 @@ function M.structure_icon_refresh(self)
     return
   end
 
-  if self.is_revealed ~= nil and self.is_revealed ~= 0 then
+  if self.is_revealed then
     return
   end
 
   rr = M.structure_icon_kind_view(self).required_tech
 
-  if require("game.tech_gate").tech_gate_is_unlocked(rr) == 0 then
+  if not require("game.tech_gate").tech_gate_is_unlocked(rr) then
     return
   end
 
@@ -92,7 +92,7 @@ function M.structure_icon_refresh(self)
   else
     entity_class.entity_clear_pos(self)
   end
-  self.is_revealed = 1
+  self.is_revealed = true
 
   M.structure_icon_set_cursor(vec.vec_sub(M.structure_icon_cursor(),
     vec.vec_make(fixed.p8_fixed_from_int(10), fixed.p8_fixed_from_int(0))))
@@ -100,10 +100,10 @@ end
 
 function M.structure_icon_is_revealed(e)
   if e == nil or e.is_dead or e.class ~= M.structure_icon_class() then
-    return 0
+    return false
   end
   local icon = e
-  return (icon.is_revealed ~= nil and icon.is_revealed ~= 0) and 1 or 0
+  return icon.is_revealed or false
 end
 
 local function structure_icon_refresh_method(self)
@@ -144,7 +144,7 @@ end
 function M.structure_icon_draw(gfx, mem, self, p)
   local view
 
-  if self == nil or not (self.is_revealed ~= nil and self.is_revealed ~= 0) then
+  if self == nil or not self.is_revealed then
     return
   end
   if gfx == nil or mem == nil then
@@ -248,7 +248,7 @@ function M.structure_icon_rest_cursor()
 end
 
 function M.structure_icon_has_cursor()
-  return (g_cursor ~= nil) and 1 or 0
+  return g_cursor ~= nil
 end
 
 -- Zero while the cursor is absent.
@@ -267,9 +267,9 @@ end
 
 function M.structure_icon_id_counter(out)
   if g_id_counter == nil then
-    return 0, out
+    return false, out
   end
-  return 1, g_id_counter
+  return true, g_id_counter
 end
 
 function M.structure_icon_set_cursor(cursor)

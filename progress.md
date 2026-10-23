@@ -55,7 +55,7 @@
   - [x] Chunk 3 — class callbacks
   - [x] Chunk 4 — data lookups
   - [x] Chunk 5 — planets, slipways, wormholes
-  - [ ] Chunk 6 — economy, research, targeting
+  - [x] Chunk 6 — economy, research, targeting
   - [ ] Chunk 7 — UI
   - [ ] Chunk 8 — input, cart and save
   - [ ] Chunk 9 — pad layer, docs, full check

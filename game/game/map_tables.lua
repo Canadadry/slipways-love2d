@@ -85,7 +85,7 @@ local function project_record(fields)
     output = fields.output,
     upgrade_tech = fields.upgrade_tech,
     byproduct = fields.byproduct,
-    upgrade_tech_false = fields.upgrade_tech_false or 0,
+    upgrade_tech_false = fields.upgrade_tech_false or false,
     icon_sprite = fields.icon_sprite,
     next_type = fields.next_type,
     class_name = fields.class_name,
@@ -136,7 +136,7 @@ M.project_records_table = {
   }),
   project_record({
     npos = 8, name = "", planet_codes = "", base_cost = 0, production_key = "f-", inputs = "??", output = "w",
-    upgrade_tech_false = 1, byproduct = "?",
+    upgrade_tech_false = true, byproduct = "?",
   }),
   project_record({
     npos = 6, name = "nanotech", planet_codes = "f", base_cost = 8, production_key = "-", inputs = "o", output = "t",
@@ -152,7 +152,7 @@ M.project_records_table = {
   }),
   project_record({
     npos = 8, name = "hiveworld", planet_codes = "e", base_cost = 5, production_key = "+", inputs = "f", output = "p",
-    upgrade_tech_false = 1, byproduct = "g",
+    upgrade_tech_false = true, byproduct = "g",
   }),
   project_record({
     npos = 8, name = "colony", planet_codes = "o", base_cost = 10, production_key = "-", inputs = "of", output = "p",
@@ -200,12 +200,12 @@ M.project_records_table = {
   project_record({ header = "xenofoods" }),
   project_record({
     npos = 8, name = "farm", planet_codes = "xj", base_cost = 10, production_key = "-", inputs = "b", output = "f",
-    upgrade_tech_false = 1, byproduct = "l",
+    upgrade_tech_false = true, byproduct = "l",
   }),
   project_record({ header = "geneseeds" }),
   project_record({
     npos = 8, name = "habitat", planet_codes = "si", base_cost = 12, production_key = "-", inputs = "lf", output = "p",
-    upgrade_tech_false = 1, byproduct = "g",
+    upgrade_tech_false = true, byproduct = "g",
   }),
   project_record({
     npos = 6, name = "genefarm", planet_codes = "si", base_cost = 12, production_key = "-", inputs = "lb",

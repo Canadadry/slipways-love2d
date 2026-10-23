@@ -51,7 +51,7 @@ M.g_main_economy_placeholder = {}
 entity_class.entity_init_header(M.g_main_economy_placeholder, M.main_economy_placeholder_class_def)
 
 local function targeting_track_target_is_holder_class(cls)
-  return (cls.drag == M.targeting_track_method or cls == require("game.wormhole").wormhole_class()) and 1 or 0
+  return cls.drag == M.targeting_track_method or cls == require("game.wormhole").wormhole_class()
 end
 
 M.targeting_track_target_class_def = {
@@ -77,7 +77,7 @@ local function targeting_track_slipway_predicate(e, ctx_ptr)
   local end_p
 
   if e == nil then
-    return 0
+    return false
   end
   assert(e.class == slipway.slipway_class(), "the slipway tag holds slipways only")
   sw = e
@@ -85,21 +85,21 @@ local function targeting_track_slipway_predicate(e, ctx_ptr)
   start_p = slipway.slipway_end_map_pos(slipway.slipway_start(sw))
   end_p = slipway.slipway_end_map_pos(slipway.slipway_end(sw))
 
-  return geom.geom_near_segment(start_p, end_p, ctx.self_map_pos, fixed.P8_FIXED_LIT(0x000000d1, 0.0032)) and 1 or 0
+  return geom.geom_near_segment(start_p, end_p, ctx.self_map_pos, fixed.P8_FIXED_LIT(0x000000d1, 0.0032))
 end
 
 local function probe_panel_box_contains(rp)
   local hw = require("game.ui").ui_panel_box()
 
   if hw == nil then
-    return 0
+    return false
   end
-  return geom.box_contains(hw, rp) and 1 or 0
+  return geom.box_contains(hw, rp)
 end
 
 local function probe_is_target_class(cls)
   return (cls.states[entity_class.ENTITY_STATE_SETTLED] ~= nil or cls == require("game.planet").planet_class() or
-    cls == require("game.slipway").slipway_class() or cls == M.targeting_track_target_class()) and 1 or 0
+    cls == require("game.slipway").slipway_class() or cls == M.targeting_track_target_class())
 end
 
 function M.probe_link_target(et, self)
@@ -131,7 +131,7 @@ function M.probe_link_target(et, self)
   end
   assert(et == M.g_targeting_track_target,
     "probe_link_target: the target is a planet, a slipway or the static throwaway struct, nothing else")
-  assert(targeting_track_target_is_holder_class(self.class) ~= 0,
+  assert(targeting_track_target_is_holder_class(self.class),
     "probe_link_target: the throwaway target's targeted_by takes NULL, a host whose drag is "
       .. "targeting_track_method or a wormhole, nothing else -- stop, do not widen the member")
   M.g_targeting_track_target.targeted_by = entity_id.entity_id_link(self)
@@ -230,7 +230,7 @@ function M.targeting_track(self, mouse)
     ctx.self_map_pos = p_vec
     if slipways ~= nil then
       for i = 1, #slipways do
-        if targeting_track_slipway_predicate(slipways[i], ctx) ~= 0 then
+        if targeting_track_slipway_predicate(slipways[i], ctx) then
           first = slipways[i]
           break
         end
@@ -240,7 +240,7 @@ function M.targeting_track(self, mouse)
     if first ~= nil then
       target = first
     else
-      if probe_panel_box_contains(entity_class.mouse_pos_screen(mouse)) == 0 then
+      if not probe_panel_box_contains(entity_class.mouse_pos_screen(mouse)) then
         target = M.g_targeting_track_target
       else
         target = nil
@@ -248,7 +248,7 @@ function M.targeting_track(self, mouse)
     end
   end
 
-  assert(target == nil or probe_is_target_class(target.class) ~= 0,
+  assert(target == nil or probe_is_target_class(target.class),
     "targeting_track: the target is NULL or what it aims at (a planet, a class with a settled state, a slipway, "
       .. "or the static throwaway struct), nothing else")
   M.targeting_set_target(targeting, target)
@@ -332,7 +332,7 @@ end
 local function targeting_charge(self)
   local targeting
   local target
-  local spend_ok = 0
+  local spend_ok = false
 
   if self == nil then
     return nil
@@ -352,10 +352,10 @@ local function targeting_charge(self)
     spend_ok = require("game.economy").economy_spend(M.main_economy_typed(), cost)
   end
 
-  assert(target == nil or spend_ok == 0,
+  assert(target == nil or not spend_ok,
     "targeting_confirm: economy_spend must stay short-circuited when a target is set")
 
-  if target == nil and spend_ok ~= 0 then
+  if target == nil and spend_ok then
     local confirmed = targeting.archetype.confirmed_state
 
     if confirmed ~= entity_class.ENTITY_STATE_NONE then
@@ -375,19 +375,19 @@ function M.targeting_confirm(self)
   local targeting = targeting_charge(self)
 
   if targeting == nil then
-    return 0
+    return false
   end
-  if targeting.archetype.clock_skips_recompute ~= 0 then
+  if targeting.archetype.clock_skips_recompute then
     economy.economy_tick_clock(M.main_economy_typed(), targeting.archetype.clock_ticks)
   else
     economy.economy_advance_clock(M.main_economy_typed(), targeting.archetype.clock_ticks)
   end
-  return 1
+  return true
 end
 
 -- targeting_confirm without its clock advance: the caller advances the clock.
 function M.targeting_confirm_without_clock(self)
-  return (targeting_charge(self) ~= nil) and 1 or 0
+  return targeting_charge(self) ~= nil
 end
 
 function M.targeting_confirm_method(self, dropped)
@@ -397,7 +397,7 @@ end
 function M.probe_spawn_particle(self)
   local emitter = nil
   local angle_slices, state_time, base_radius, speed_factor, lifetime = 0, 0, 0, 0, 0
-  local pk = 0
+  local pk = false
   local a, rnd_angle_slices, rnd_half
   local p, v
   local particle
@@ -410,7 +410,7 @@ function M.probe_spawn_particle(self)
     base_radius = emitter.base_radius
     speed_factor = emitter.speed_factor
     lifetime = emitter.archetype.lifetime
-    pk = (emitter.archetype.quarter_turn ~= 0) and 1 or 0
+    pk = emitter.archetype.quarter_turn
   end
 
   -- Two statements: C leaves argument order unspecified, and rnd(angle_slices) must come first.
@@ -423,7 +423,7 @@ function M.probe_spawn_particle(self)
   p = vec.vec_from_polar(fixed.p8_fixed_add(base_radius, visual_random.visual_random_draw_one()), a)
   v = vec.vec_mul(p, speed_factor)
 
-  if pk ~= 0 then
+  if pk then
     v = vec.vec_perpendicular(v)
   end
 

@@ -153,7 +153,7 @@ function M.wormhole_drop(self)
   if t < fixed.p8_fixed_from_int(15) then
     result = true
   else
-    result = probe.targeting_confirm(self) == 0
+    result = not probe.targeting_confirm(self)
   end
 
   self.is_dead = result

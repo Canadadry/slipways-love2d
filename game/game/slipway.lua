@@ -208,7 +208,7 @@ function M.slipway_drop(self, end_planet)
   end
 
   -- The charge spends credits: keep it behind the NULL test. The clock advances once, after both attaches.
-  refused = (end_planet == nil) or probe.targeting_confirm_without_clock(self) == 0
+  refused = (end_planet == nil) or not probe.targeting_confirm_without_clock(self)
   if refused then
     self.is_dead = true
     return

@@ -79,7 +79,7 @@ local function tech_tree_screen_step(t, b)
 
   ui_button.button_keys_set_tooltip_row(b, t.tooltip_rows)
 
-  if tech_gate.tech_gate_affordable_flags(t) ~= 0 then
+  if tech_gate.tech_gate_affordable_flags(t) then
     b.technology = t
     b.on_click = tech_tree_screen_row_on_click_method
   end
@@ -130,8 +130,8 @@ function M.menu_show_tech_tree_screen()
     next_threshold = fixed.p8_fixed_from_int(tier_thresholds)
   end
 
-  -- 1 lists every tech of the era, affordable or not; the galaxy row's refresh must pass 0.
-  available_technologies_list = tech_gate.tech_gate_available_technologies(1)
+  -- true lists every tech of the era, affordable or not; the galaxy row's refresh must pass false.
+  available_technologies_list = tech_gate.tech_gate_available_technologies(true)
   buttons = {}
   for i = 0, available_technologies_list.count do
     buttons[i] = ui_button.button_keys_zero({})
@@ -214,8 +214,8 @@ local function galaxy_menu_button2_refresh_method(self)
     return
   end
 
-  -- Passing 1 here would light the icon whenever any tech of the era is left.
-  available_technologies_list = tech_gate.tech_gate_available_technologies(0)
+  -- Passing true here would light the icon whenever any tech of the era is left.
+  available_technologies_list = tech_gate.tech_gate_available_technologies(false)
   available_technologies_count = available_technologies_list.count
 
   layout.layout_row_keys_append(keys,
@@ -228,7 +228,7 @@ local function galaxy_menu_button3_on_click_method(self)
   local keys = modal_backdrop_keys_zero()
   local built
   if ju ~= nil then
-    ju.is_shown = 1
+    ju.is_shown = true
   end
   keys.on_click = score_panel_display.score_panel_toggle_on_click()
   built = ui_button.modal_backdrop_new(keys)

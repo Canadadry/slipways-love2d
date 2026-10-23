@@ -110,7 +110,7 @@ end
 local function score_panel_toggle_visibility()
   local ju = require("game.score_panel").main_score_panel()
   if ju ~= nil then
-    ju.is_shown = (ju.is_shown ~= nil and ju.is_shown ~= 0) and 0 or 1
+    ju.is_shown = not ju.is_shown
   end
 end
 
@@ -125,7 +125,7 @@ end
 
 local function score_panel_update_keep_open_method(self)
   local ju = require("game.score_panel").main_score_panel()
-  return ju ~= nil and ju.is_shown ~= nil and ju.is_shown ~= 0
+  return ju ~= nil and (ju.is_shown or false)
 end
 
 local function score_panel_final_score_text(s, i)
@@ -237,23 +237,23 @@ function M.score_panel_update(self)
     made2 = ui_button.button_new(toggle_keys)
 
     if self ~= nil then
-      self.is_shown = 1
+      self.is_shown = true
       self.curtain = 0
       entity_registry.entity_registry_set_layer(self, fixed.p8_fixed_from_int(13))
     end
   end
 
   do
-    local is_shown = (self ~= nil and self.is_shown ~= nil and self.is_shown ~= 0) and 1 or 0
-    local last_box_equals_shown_message_box = 0
+    local is_shown = self ~= nil and (self.is_shown or false)
+    local last_box_equals_shown_message_box = false
 
     -- Without the NULL test, NULL == NULL would fire on the first eligible tick.
     if self ~= nil then
       local last_box = score_panel.score_panel_last_box(self)
-      last_box_equals_shown_message_box = (last_box ~= nil and message_box.shown_message_box() == last_box) and 1 or 0
+      last_box_equals_shown_message_box = last_box ~= nil and message_box.shown_message_box() == last_box
     end
 
-    if is_shown ~= 0 and last_box_equals_shown_message_box == 0 then
+    if is_shown and not last_box_equals_shown_message_box then
       local ctx = { final_score = economy_score.economy_score_final() }
       local is_ready = score_panel.score_panel_ready()
       local keys = message_box_keys_zero()

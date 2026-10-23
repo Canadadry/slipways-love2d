@@ -27,7 +27,7 @@ end
 local function research_project_tooltip_join(self)
   local i_list
   local names = ""
-  local first = 1
+  local first = true
 
   i_list = self.inputs
   for index = 1, #i_list do
@@ -54,11 +54,11 @@ local function research_project_tooltip_join(self)
       piece = resource_names_name
     end
 
-    if first == 0 then
+    if not first then
       names = names .. ","
     end
     names = names .. piece
-    first = 0
+    first = false
   end
   return names
 end
@@ -128,10 +128,10 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
   local wide
 
   if output == nil then
-    return 0, out_keys
+    return false, out_keys
   end
 
-  crowded = (is_count >= 3) and 1 or 0
+  crowded = (is_count >= 3) and fixed.p8_fixed_from_int(1) or fixed.p8_fixed_from_int(0)
 
   do
     local found_w, r_w = map_tables.resource_code_lookup("w", nil)
@@ -147,21 +147,21 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
     end
   end
 
-  wide = (fixed.p8_fixed_mul(amount, fixed.p8_fixed_from_int(outputs_count)) >= fixed.p8_fixed_from_int(3)) and 1 or 0
+  wide = fixed.p8_fixed_mul(amount, fixed.p8_fixed_from_int(outputs_count)) >= fixed.p8_fixed_from_int(3)
 
   if inputs ~= nil then
     for index = 1, #inputs do
       local entry = inputs[index]
       local tuple = tuple_zero()
       local qe = { kind = trade.RESOURCE_NIL, number = 0 }
-      local gc_zero = 0
+      local gc_zero = false
 
       tuple.count = 3
       if entry ~= nil then
         local i = entry
 
         qe = research.need_resource(i)
-        gc_zero = (i.satisfied ~= nil and i.satisfied == 0) and 1 or 0
+        gc_zero = i.satisfied ~= nil and i.satisfied == 0
       end
       if qe.kind == trade.RESOURCE_FIXED then
         tuple.scalars[0] = layout.layout_row_scalar_fixed(qe.number)
@@ -169,18 +169,18 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
         tuple.scalars[0] = layout.layout_row_scalar_nothing()
       end
       tuple.scalars[1] = layout.layout_row_scalar_fixed(
-        fixed.p8_fixed_sub(fixed.p8_fixed_from_int(3), fixed.p8_fixed_from_int(crowded)))
-      tuple.scalars[2] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int((gc_zero ~= 0) and 7 or 0))
+        fixed.p8_fixed_sub(fixed.p8_fixed_from_int(3), crowded))
+      tuple.scalars[2] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(gc_zero and 7 or 0))
       layout.layout_row_keys_append(keys, layout.layout_row_cell_tuple(tuple))
     end
   end
 
   if is_count > 0 then
-    local use_35 = (spacing == fixed.p8_fixed_from_int(1) or wide ~= 0) and 1 or 0
+    local use_35 = spacing == fixed.p8_fixed_from_int(1) or wide
 
     layout.layout_row_keys_append(keys, planet_resource_row_pair(layout.layout_row_scalar_nothing(),
-      fixed.p8_fixed_add(spacing, fixed.p8_fixed_from_int(crowded))))
-    if use_35 ~= 0 then
+      fixed.p8_fixed_add(spacing, crowded)))
+    if use_35 then
       layout.layout_row_keys_append(keys, planet_resource_row_pair(
         layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(35)), fixed.p8_fixed_add(fixed.p8_fixed_from_int(2), spacing)))
     else
@@ -205,14 +205,14 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
 
     for i = 1, n do
       local i_fixed = fixed.p8_fixed_from_int(i)
-      local within = (i_fixed <= amount and i_fixed > used) and 1 or 0
+      local within = i_fixed <= amount and i_fixed > used
       local tuple = tuple_zero()
 
       tuple.count = 4
       tuple.scalars[0] = layout.layout_row_scalar_fixed(qq)
       tuple.scalars[1] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(6))
-      tuple.scalars[2] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int((within ~= 0) and 0 or 7))
-      tuple.scalars[3] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int((wide ~= 0) and -4 or -3))
+      tuple.scalars[2] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(within and 0 or 7))
+      tuple.scalars[3] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(wide and -4 or -3))
       layout.layout_row_keys_append(keys, layout.layout_row_cell_tuple(tuple))
     end
 
@@ -220,15 +220,15 @@ local function planet_resource_row_keys(inputs, output, amount, used, spacing, o
   end
 
   out_keys = keys
-  return 1, out_keys
+  return true, out_keys
 end
 
--- Fills `out_keys` and returns 1; returns 0, keys untouched, when there is no output.
+-- Fills `out_keys` and returns true; returns false, keys untouched, when there is no output.
 function M.research_display_planet_resource_row_keys(inputs, output, amount, used, spacing, out_keys)
   return planet_resource_row_keys(inputs, output, amount, used, spacing, out_keys)
 end
 
--- Fills `out_keys` and returns 1; returns 0, keys untouched, when the project has no output.
+-- Fills `out_keys` and returns true; returns false, keys untouched, when the project has no output.
 function M.research_project_layout_row_keys(self, out_keys)
   local jq
   local po
@@ -236,7 +236,7 @@ function M.research_project_layout_row_keys(self, out_keys)
 
   research.research_project_assert(self)
   if self == nil or not research.research_project_ready() then
-    return 0, out_keys
+    return false, out_keys
   end
 
   po = research.research_project_production(self)
@@ -248,15 +248,15 @@ function M.research_project_layout_row_keys(self, out_keys)
 
   found, out_keys = planet_resource_row_keys(self.inputs, self.output, jq, fixed.p8_fixed_from_int(0),
     fixed.p8_fixed_from_int(1), out_keys)
-  if found == 0 then
-    return 0, out_keys
+  if not found then
+    return false, out_keys
   end
 
   layout.layout_row_keys_append(out_keys, layout.layout_row_cell_row(research.research_project_row_tail()))
   if self.name ~= nil then
     layout.layout_row_keys_append(out_keys, layout.layout_row_cell_string(self.name))
   end
-  return 1, out_keys
+  return true, out_keys
 end
 
 -- Keys of the row {name, 32, {icon_sprite, 8}}, for a project with an icon sprite.
@@ -277,12 +277,12 @@ end
 
 local function available_projects_predicate(b, planet_instance)
   local name_str = nil
-  local mg = 0
+  local mg = false
 
   research.research_project_assert(b)
 
-  if tech_gate.tech_gate_is_unlocked(b.required_tech) == 0 then
-    return 0
+  if not tech_gate.tech_gate_is_unlocked(b.required_tech) then
+    return false
   end
 
   if planet_instance ~= nil then
@@ -302,7 +302,7 @@ local function available_projects_predicate(b, planet_instance)
 
     for i = 1, n do
       if string.byte(b.planet_codes, i) == string.byte(name_str, 1) then
-        mg = 1
+        mg = true
         break
       end
     end
@@ -317,7 +317,7 @@ function M.research_display_available_projects(planet_instance)
   for k = 1, research.research_projects_count() do
     local b = research.research_projects_at(k)
 
-    if available_projects_predicate(b, planet_instance) ~= 0 then
+    if available_projects_predicate(b, planet_instance) then
       result.items[result.count] = research.research_project_id_of(b)
       result.count = result.count + 1
     end

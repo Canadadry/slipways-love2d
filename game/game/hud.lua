@@ -48,10 +48,10 @@ end
 function M.hud_palette_block_default_in_force(mem)
   for i = 0, 15 do
     if mem.draw_palette[i] ~= palette_blocks[0][i] then
-      return 0
+      return false
     end
   end
-  return 1
+  return true
 end
 
 function M.hud_draw_bar(gfx, mem, y1, y2, col)

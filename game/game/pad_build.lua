@@ -30,7 +30,7 @@ end
 
 function M.pad_build_icon(b)
   local icon = entity_id.entity_get(b.icon)
-  return structure_icon.structure_icon_is_revealed(icon) ~= 0 and icon or nil
+  return structure_icon.structure_icon_is_revealed(icon) and icon or nil
 end
 
 local function icon_beside(x, step)
@@ -39,7 +39,7 @@ local function icon_beside(x, step)
   local bucket = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_HIT_TEST)
   for i = 1, #bucket do
     local e = bucket[i]
-    if structure_icon.structure_icon_is_revealed(e) ~= 0 then
+    if structure_icon.structure_icon_is_revealed(e) then
       local at_x = pad_panel.pad_panel_focus_point(e, 0, 0)
       if (step < 0 and at_x < x or step >= 0 and at_x > x) and
         (nearest == nil or (step < 0 and at_x > nearest_x or step >= 0 and at_x < nearest_x)) then

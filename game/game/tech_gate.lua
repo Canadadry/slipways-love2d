@@ -22,31 +22,31 @@ end
 
 local g_affordable_flags = {}
 for i = 0, TECHNOLOGIES_COUNT - 1 do
-  g_affordable_flags[i] = 0
+  g_affordable_flags[i] = false
 end
 
 function M.tech_gate_is_unlocked(px)
   local fm = require("game.probe").main_economy_typed()
   local invented_list = nil
   if px == nil then
-    return 1
+    return true
   end
   if fm ~= nil then
     invented_list = fm.invented
   end
   if invented_list == nil then
-    return 0
+    return false
   end
   for i = 1, #invented_list do
     if invented_list[i] == px then
-      return 1
+      return true
     end
   end
-  return 0
+  return false
 end
 
 function M.tech_gate_if_unlocked(px, lk, mc)
-  if M.tech_gate_is_unlocked(px) ~= 0 then
+  if M.tech_gate_is_unlocked(px) then
     return mc
   end
   return lk
@@ -84,25 +84,26 @@ local function available_technologies_predicate(t, bi)
   elseif provisional ~= nil and provisional.research_points ~= nil then
     jk = provisional.research_points
   end
-  affordable = (M.tech_gate_research_cost(t) <= jk) and 1 or 0
+  affordable = M.tech_gate_research_cost(t) <= jk
   -- Written for every entry, before any early return: tech_gate_affordable_flags() reads it back.
   g_affordable_flags[technology_index_of[t]] = affordable
   if fm ~= nil then
     ew = fm.era
   end
   if fixed.p8_fixed_from_int(t.era) ~= ew then
-    return 0
+    return false
   end
-  if M.tech_gate_is_unlocked(t.name) ~= 0 then
-    return 0
+  if M.tech_gate_is_unlocked(t.name) then
+    return false
   end
-  return (affordable ~= 0 or bi ~= 0) and 1 or 0
+  return affordable or bi
 end
 
 function M.tech_gate_available_technologies(bi)
+  assert(type(bi) == "boolean", "tech_gate_available_technologies: bi is a boolean, and 0 is truthy")
   local result = { items = {}, count = 0 }
   for i = 0, TECHNOLOGIES_COUNT - 1 do
-    if available_technologies_predicate(technologies_table[i], bi) ~= 0 then
+    if available_technologies_predicate(technologies_table[i], bi) then
       result.items[result.count] = technologies_table[i]
       result.count = result.count + 1
     end
@@ -119,7 +120,7 @@ end
 
 function M.tech_gate_reset_affordable_flags()
   for i = 0, TECHNOLOGIES_COUNT - 1 do
-    g_affordable_flags[i] = 0
+    g_affordable_flags[i] = false
   end
 end
 

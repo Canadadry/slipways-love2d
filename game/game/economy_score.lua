@@ -46,10 +46,10 @@ end
 local function is_colonized_truthy(pt)
   local planet = require("game.planet")
   if pt == nil then
-    return 0
+    return false
   end
   assert(planet.planet_is_family(pt), "is_colonized_truthy: the entity is a planet")
-  return planet.planet_is_colonized(pt) and 1 or 0
+  return planet.planet_is_colonized(pt)
 end
 
 function M.economy_score_planet_upkeep(pt)
@@ -58,7 +58,7 @@ function M.economy_score_planet_upkeep(pt)
     local structure_list = entity_registry.entities_by_tag(entity_class.TAG_STRUCTURE)
     return fixed.p8_fixed_from_int(structure_list ~= nil and #structure_list or 0)
   end
-  if is_colonized_truthy(pt) ~= 0 then
+  if is_colonized_truthy(pt) then
     local jo = pt
     local found
     local es
@@ -75,7 +75,7 @@ end
 
 local function colony_upkeep_predicate(e, ctx)
   if e == nil then
-    return 0
+    return false
   end
   return is_colonized_truthy(e)
 end
@@ -86,7 +86,7 @@ function M.economy_score_colony_upkeep()
   local result
   if planet_list ~= nil then
     for i = 1, #planet_list do
-      if colony_upkeep_predicate(planet_list[i], nil) ~= 0 then
+      if colony_upkeep_predicate(planet_list[i], nil) then
         mu = mu + 1
       end
     end
@@ -170,7 +170,7 @@ local function sum_by_development_tier_visit(pt, ctx)
   local jo
   local found
   local v
-  if is_colonized_truthy(pt) == 0 then
+  if not is_colonized_truthy(pt) then
     return
   end
   jo = pt

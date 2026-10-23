@@ -198,7 +198,7 @@ function M.economy_spend(self, jt)
     message_box.toast_keys_set_text(keys, "-no money-")
     keys.color = fixed.p8_fixed_from_int(8)
     message_box.toast_new(keys)
-    return 0
+    return false
   end
 
   if self ~= nil then
@@ -215,7 +215,7 @@ function M.economy_spend(self, jt)
     message_box.toast_new(keys)
   end
 
-  return 1
+  return true
 end
 
 function M.economy_recompute(self)
@@ -235,7 +235,7 @@ function M.economy_recompute(self)
   -- Terminates only because update_tiers reports tier increases, capped at 4; a "changed" test spins forever.
   repeat
     economy_tiers.economy_tiers_rebuild_incoming_routes()
-  until economy_tiers.economy_tiers_update_tiers() == 0
+  until not economy_tiers.economy_tiers_update_tiers()
 
   -- Filled in place once created: a reader may hold either map across recomputes.
   if self.production == nil then

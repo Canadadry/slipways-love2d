@@ -341,7 +341,7 @@ local function button_image_build_draw(gfx, mem, context)
 end
 
 local function button_draw_image(graphics, memory, self, draw_pos, look)
-  if graphics.fillp_pattern ~= 0 or hud.hud_palette_block_default_in_force(memory) == 0 then
+  if graphics.fillp_pattern ~= 0 or not hud.hud_palette_block_default_in_force(memory) then
     return 0
   end
   local width = button_image_width(self)

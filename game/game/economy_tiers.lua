@@ -131,7 +131,7 @@ local function update_tiers_visit(entity, context)
     end
     planet.development_tier = tier
     development_tier = tier
-    changed.value = 1
+    changed.value = true
   end
 
   production = planet_module.planet_production(planet)
@@ -139,7 +139,7 @@ local function update_tiers_visit(entity, context)
   _, production.amount = M.economy_tiers_compute_production_amount(planet, production.amount)
 end
 
--- Returns 0, leaving *out untouched, when the tier or the project gives no amount.
+-- Returns false, leaving *out untouched, when the tier or the project gives no amount.
 -- Returns found, out.
 function M.economy_tiers_compute_production_amount(planet, out)
   local project
@@ -151,12 +151,12 @@ function M.economy_tiers_compute_production_amount(planet, out)
 
   assert(planet ~= nil and out ~= nil)
   if planet.development_tier == nil or planet.development_tier == fixed.p8_fixed_from_int(0) then
-    return 0, out
+    return false, out
   end
   project = research.research_project_get(planet.project)
   production_table = (project ~= nil) and research.research_project_production(project) or nil
   if production_table == nil then
-    return 0, out
+    return false, out
   end
   idx = fixed.p8_fixed_flr_int(planet.development_tier)
   clamped_idx = (idx < production_table.count) and idx or production_table.count
@@ -167,11 +167,11 @@ function M.economy_tiers_compute_production_amount(planet, out)
     bonus = planet.production_bonus
   end
   out = fixed.p8_fixed_add(base, bonus)
-  return 1, out
+  return true, out
 end
 
 function M.economy_tiers_update_tiers()
-  local jg = { value = 0 }
+  local jg = { value = false }
   for_each_tagged(entity_class.TAG_PLANET, update_tiers_visit, jg)
   return jg.value
 end

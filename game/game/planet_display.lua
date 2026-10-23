@@ -142,7 +142,7 @@ function M.planet_refresh(self)
 
   found, keys = research_display.research_display_planet_resource_row_keys(needs_list, output, mu,
     fixed.p8_fixed_from_int(route_count), fixed.p8_fixed_from_int(0), layout.layout_row_keys_zero())
-  if found ~= 0 then
+  if found then
     layout_row_result = layout.layout_row_new(keys)
   end
   self.layout_row = layout_row_result
@@ -385,7 +385,7 @@ local function planet_projects_panel_on_click_method(self)
   end
 
   assert(pt ~= nil and planet.planet_is_family(pt), "the projects panel button lost its captured planet")
-  if economy.economy_spend(probe.main_economy_typed(), od) ~= 0 then
+  if economy.economy_spend(probe.main_economy_typed(), od) then
     M.planet_apply_project(pt, b)
   end
 end
