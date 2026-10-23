@@ -8,7 +8,6 @@
 -- direction only: g_difficulty is built by ui_button.button_zero() at load, and none of
 -- ui_button's load-time requires reaches economy_score.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local entity_class = require("engine.entity_class")
 local entity_list = require("engine.entity_list")
 local entity_registry = require("engine.entity_registry")
@@ -192,12 +191,8 @@ local function sum_by_development_tier_visit(pt, ctx)
   end
 end
 
--- Returns `value` printed with a trailing '%', allocated in `zone`.
-function M.economy_score_percent_text(zone, value)
-  local s = str.p8_tostr_fixed(value)
-  local len = #s
-  allocator.allocator_alloc(zone, len + 2)
-  return s .. "%"
+function M.economy_score_percent_text(value)
+  return str.p8_tostr_fixed(value) .. "%"
 end
 
 function M.economy_score_final()

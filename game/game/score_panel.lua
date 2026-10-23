@@ -11,7 +11,6 @@
 -- score_panel_display_shutdown are defined in game.score_panel_display, required at load: the class holds
 -- the two methods by identity.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local collect = require("engine.collect")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
@@ -32,11 +31,6 @@ local str = require("p8.str")
 local vram = require("p8.vram")
 
 local M = {}
-
-M.SIZEOF = {
-  score_panel_t = 112,
-}
-local SIZEOF = M.SIZEOF
 
 M.SCORE_PANEL_LAYOUT_BLOCK_HAS_FIXED_POS = bit.lshift(1, 0)
 M.SCORE_PANEL_LAYOUT_BLOCK_HAS_ROW_STEP = bit.lshift(1, 1)
@@ -332,7 +326,7 @@ local function score_panel_create()
   local self
 
   assert(g_score_panel_up ~= 0, "score_panel_init() must run first")
-  self = allocator.allocator_alloc(nil, SIZEOF.score_panel_t)
+  self = {}
   entity.entity_init_instance(self, M.score_panel_class_def, game_data.score_panel_archetype.state,
     game_data.score_panel_archetype.state_time)
   self.archetype = game_data.score_panel_archetype

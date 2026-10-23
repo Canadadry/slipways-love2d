@@ -194,7 +194,7 @@ local function is_candidate(e, ctx)
   return pad_target.pad_target_is_candidate(e)
 end
 
-function M.pad_jump_candidates(zone, nodes)
+function M.pad_jump_candidates(nodes)
   return entity_list.entity_list_filter(nodes, is_candidate, nil)
 end
 

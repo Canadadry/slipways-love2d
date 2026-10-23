@@ -203,21 +203,21 @@ function M.button_construct(self, keys)
     keys = none
   end
 
-  self.layout_row = layout.layout_row_new(nil, keys.layout_row_keys)
+  self.layout_row = layout.layout_row_new(keys.layout_row_keys)
   self.width = fixed.p8_fixed_add(self.layout_row.width, fixed.p8_fixed_from_int(2))
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_HIT_BOX)
   self.hit_box = { left = fixed.p8_fixed_from_int(0), top = fixed.p8_fixed_from_int(-1), right = self.width,
     bottom = fixed.p8_fixed_from_int(11) }
 
   if keys.has_side_tooltip_row ~= 0 then
-    self.side_tooltip = layout.layout_row_new(nil, keys.side_tooltip_row)
+    self.side_tooltip = layout.layout_row_new(keys.side_tooltip_row)
     self.has_side_tooltip = 1
   elseif keys.has_side_tooltip ~= 0 and keys.side_tooltip_is_false ~= 0 then
     self.side_tooltip = nil
     self.has_side_tooltip = 1
   end
   if keys.has_tooltip_row ~= 0 then
-    self.tooltip = layout.tooltip_new(nil, keys.tooltip_row)
+    self.tooltip = layout.tooltip_new(keys.tooltip_row)
   end
 end
 

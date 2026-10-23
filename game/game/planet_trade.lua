@@ -72,7 +72,7 @@ local function planet_rebuild_trades_attach_slipway_closure(self, a)
   if contains_trade(self.accepted_routes, a) == 0 then
     local kept
 
-    kept = trade.trade_copy(nil, a)
+    kept = trade.trade_copy(a)
     trade.trade_route_list_add(self.accepted_routes, kept)
     self.amount = fixed.p8_fixed_sub(self.amount, fixed.p8_fixed_from_int(1))
   end
@@ -156,7 +156,7 @@ function M.planet_offer_trade(self, trade_offer)
     end
 
     do
-      local fresh = research.need_new(nil, bonus_resource)
+      local fresh = research.need_new(bonus_resource)
       local prefix = {}
 
       pointer_list.pointer_list_init(prefix)
@@ -201,7 +201,7 @@ function M.planet_offer_trade(self, trade_offer)
 
     if trade.resource_equal(t_resource, resource_val) ~= 0
       and not (has_any_resource ~= 0 and trade.resource_equal(resource_val, any_resource) ~= 0) then
-      local extended = trade.trade_extend(nil, route, self, nil)
+      local extended = trade.trade_extend(route, self, nil)
       if trade_offer.accept ~= nil then
         trade_offer.accept(trade_offer, extended)
       end
@@ -225,7 +225,7 @@ function M.planet_rebuild_trades(self)
   end
 
   if bit.band(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES) == 0 then
-    trade.trade_route_list_init(self.outgoing_routes, nil)
+    trade.trade_route_list_init(self.outgoing_routes)
     self.has_ = bit.bor(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES)
   end
 

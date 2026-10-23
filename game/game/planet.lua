@@ -304,10 +304,10 @@ function M.planet_new(keys)
 end
 
 function M.planet_construct(self)
-  M.planet_construct_in(self, nil)
+  M.planet_construct_in(self)
 end
 
-function M.planet_construct_in(self, zone_)
+function M.planet_construct_in(self)
   if self == nil then
     return
   end

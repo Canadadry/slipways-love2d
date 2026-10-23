@@ -41,7 +41,7 @@ local function is_not_start(e, start)
   return (e ~= start) and 1 or 0
 end
 
-function M.pad_slipway_candidates(zone, candidates, start)
+function M.pad_slipway_candidates(candidates, start)
   return entity_list.entity_list_filter(candidates, is_not_start, start)
 end
 

@@ -10,7 +10,6 @@
 -- A planet is one table with its entity header: the planet's own `has` (PLANET_HAS_* bits) is
 -- `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local collect = require("engine.collect")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
@@ -36,11 +35,6 @@ local image = require("p8.image")
 local str = require("p8.str")
 
 local M = {}
-
-M.SIZEOF = {
-  button_keys_t = 1800,
-}
-local SIZEOF = M.SIZEOF
 
 local function entity_id_none()
   local none = entity_id_type.ENTITY_ID_NONE
@@ -173,7 +167,7 @@ function M.planet_refresh(self)
   found, keys = research_display.research_display_planet_resource_row_keys(needs_list, has_output, output, mu,
     fixed.p8_fixed_from_int(route_count), fixed.p8_fixed_from_int(0), layout.layout_row_keys_zero())
   if found ~= 0 then
-    layout_row_result = layout.layout_row_new(nil, keys)
+    layout_row_result = layout.layout_row_new(keys)
   end
   self.layout_row = layout_row_result
   self.layout_row_signature = signature
@@ -468,7 +462,7 @@ function M.planet_projects_panel(self)
 
   available_projects_list = research_display.research_display_available_projects(self)
   cap = (available_projects_list.count > 0) and available_projects_list.count or 1
-  bs = allocator.allocator_alloc(nil, cap * SIZEOF.button_keys_t)
+  bs = {}
   for i = 0, cap - 1 do
     bs[i] = ui_button.button_keys_zero({})
   end

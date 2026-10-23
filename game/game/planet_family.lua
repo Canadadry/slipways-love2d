@@ -477,7 +477,7 @@ local function burst_create(keys)
     end
   end
   M.burst_construct(self)
-  planet.planet_construct_in(self, nil)
+  planet.planet_construct_in(self)
   entity.entity_construct(self)
   return self
 end

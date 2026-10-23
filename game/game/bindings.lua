@@ -7,7 +7,7 @@
 --   bindings_t: { masks }, masks[mode][action] indexed from 0, every entry
 --     present, zeros included.
 --   bindings_error_t: { line, text }, text a Lua string of at most
---     SIZEOF["bindings_error_t.text"] - 1 bytes.
+--     ERROR_TEXT_CAPACITY - 1 bytes.
 -- A C pointer into a parsed text is a 1-based position in the Lua string; a
 -- range [start, end_) excludes end_; a position past the text reads 0.
 -- fail, parse_line and bindings_parse keep the C parameter name error, which
@@ -65,10 +65,7 @@ M.BINDINGS_ACTION_CLOSE_PANEL = 33
 M.BINDINGS_ACTION_NEXT_PANEL = 34
 M.BINDINGS_ACTION_COUNT = 35
 
-M.SIZEOF = {
-  ["bindings_error_t.text"] = 256,
-}
-local SIZEOF = M.SIZEOF
+local ERROR_TEXT_CAPACITY = 256
 
 local BINDINGS_MAX_LINE_LENGTH = 127
 
@@ -214,7 +211,7 @@ end
 
 -- What snprintf and vsnprintf leave in the C's 256 bytes: at most 255.
 local function fail(error, file_name, line_number, format, ...)
-  local capacity = SIZEOF["bindings_error_t.text"]
+  local capacity = ERROR_TEXT_CAPACITY
   error.line = line_number
   local prefix = string.format("%s:%d: ", file_name, line_number)
   if #prefix >= capacity then

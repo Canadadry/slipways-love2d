@@ -4,7 +4,6 @@
 --
 -- game.probe is required at load: help_screen_class_def holds its targeting and particle methods by identity.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -20,11 +19,6 @@ local ui_button = require("game.ui_button")
 local fixed = require("p8.fixed")
 
 local M = {}
-
-M.SIZEOF = {
-  probe_t = 200,
-}
-local SIZEOF = M.SIZEOF
 
 local g_help_screen_up = 0
 
@@ -150,7 +144,7 @@ local function screen_create()
   local hit_box
 
   assert(g_help_screen_up ~= 0, "help_init() must run first")
-  self = allocator.allocator_alloc(nil, SIZEOF.probe_t)
+  self = {}
   probe.probe_init_instance(self, M.help_screen_class_def, game_data.help_screen_archetype)
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_HIT_BOX)
   hit_box = self.archetype.hit_box

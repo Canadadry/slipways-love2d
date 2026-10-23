@@ -73,7 +73,6 @@ local function article_zero()
     arguments[i] = { kind = M.MESSAGE_BOX_ARGUMENT_NUMBER, number = 0 }
   end
   entity_class.entity_init_header(row, nil)
-  row.zone = nil
   row.color = 0
   row.has_color = 0
   row.background = 0
@@ -279,7 +278,7 @@ function M.message_box_add_layout_row(self, keys, pos, has_pos, align)
 
   article.kind = M.MESSAGE_BOX_ARTICLE_LAYOUT_ROW
   article.draw_function = map_tables.DRAW_FUNCTION_DRAW_ROW
-  layout.layout_row_init(article.as.layout.row, nil, keys)
+  layout.layout_row_init(article.as.layout.row, keys)
   article.as.layout.has_pos = has_pos
   if has_pos ~= 0 then
     article.as.layout.pos = vec_copy(pos)

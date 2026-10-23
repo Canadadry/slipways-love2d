@@ -81,7 +81,7 @@ local function load_needs(planet, node)
       resource.kind = trade.RESOURCE_FIXED
       resource.number = node.needs[i].resource
     end
-    pointer_list.pointer_list_add(needs, research.need_new(nil, resource))
+    pointer_list.pointer_list_add(needs, research.need_new(resource))
   end
   planet.needs = needs
   planet.has_ = bit.bor(planet.has_, planet_module.PLANET_HAS_NEEDS)
@@ -248,7 +248,7 @@ local function load_outgoing_routes(state, node_ids, slipway_ids)
     if has(node, save_state.SAVE_NODE_HAS_OUTGOING_ROUTES) == 0 then
       goto continue
     end
-    trade.trade_route_list_init(planet.outgoing_routes, nil)
+    trade.trade_route_list_init(planet.outgoing_routes)
     planet.has_ = bit.bor(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES)
     for k = 0, node.route_count - 1 do
       local saved = state.routes[node.first_route + k]

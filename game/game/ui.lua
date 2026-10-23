@@ -12,7 +12,6 @@
 -- Include cycle: game.scroll, game.planet, game.planet_family, game.probe, game.slipway and
 -- game.wormhole are required at call time.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -30,11 +29,6 @@ local gfx_module = require("p8.gfx")
 local vram = require("p8.vram")
 
 local M = {}
-
-M.SIZEOF = {
-  ui_t = 552,
-}
-local SIZEOF = M.SIZEOF
 
 M.UI_HOVER_LAYERS = 16
 M.UI_EPHEMERALS_RESERVE = 8
@@ -180,7 +174,7 @@ local function ui_create()
   local self
 
   assert(g_ui_up ~= 0, "ui_init() must run first")
-  self = allocator.allocator_alloc(nil, SIZEOF.ui_t)
+  self = {}
   entity.entity_init_instance(self, M.ui_class_def, game_data.ui_archetype.state, game_data.ui_archetype.state_time)
   self.archetype = game_data.ui_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)

@@ -113,8 +113,7 @@ the build bar). The score panel is reached by R1, 9 frames later.
 
 The state at f224: clock year 3421 month 1, credits 100, research 20,
 income 0, camera world 182 196, planets 90, colonies 0, slipways 0,
-structures 0, techs 0; button 4, modal_backdrop 0 (peak 1), message_box
-0 (peak 2). The score panel looked at changes nothing but the boxes.
+structures 0, techs 0. The score panel looked at changes nothing but the boxes.
 
 Covers message_box_hold (mouse, deleted in the remove-mouse-mode PRD):
 twenty year skips to "5 years remain" held by its keep_open, the score

@@ -8,7 +8,6 @@
 --
 -- Include cycle: game.probe and game.wormhole are required at call time (background_left_press).
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -26,11 +25,7 @@ local M = {}
 
 M.BACKGROUND_GRID_EDGE = 262
 
-M.SIZEOF = {
-  background_t = 96,
-  ["p8_vram_t.draw_palette"] = 16,
-}
-local SIZEOF = M.SIZEOF
+local DRAW_PALETTE_LENGTH = 16
 
 local BACKGROUND_IMAGE_SIDE = vram.P8_MAP_WIDTH * gfx_module.P8_SPRITE_SIZE
 
@@ -59,7 +54,7 @@ M.background_class_def = {
 }
 
 local function background_create()
-  local self = allocator.allocator_alloc(nil, SIZEOF.background_t)
+  local self = {}
 
   entity.entity_init_instance(self, M.background_class_def, game_data.background_archetype.state,
     game_data.background_archetype.state_time)
@@ -128,7 +123,7 @@ function M.background_construct(memory, self)
     row_values_set[x] = 0
   end
 
-  walk = gen.random_walk_new(nil, fixed.P8_FIXED_LIT(0x00001999, 0.1), fixed.p8_fixed_from_int(0))
+  walk = gen.random_walk_new(fixed.P8_FIXED_LIT(0x00001999, 0.1), fixed.p8_fixed_from_int(0))
 
   for y = 0, 31 do
     for x = 0, 31 do
@@ -161,7 +156,7 @@ function M.background_construct(memory, self)
 end
 
 local g_background_image_key = { built = 0, mem = nil, map_version = 0, draw_palette = {} }
-for i = 0, SIZEOF["p8_vram_t.draw_palette"] - 1 do
+for i = 0, DRAW_PALETTE_LENGTH - 1 do
   g_background_image_key.draw_palette[i] = 0
 end
 
@@ -170,7 +165,7 @@ local function background_draw_map(gfx, mem, context)
 end
 
 local function draw_palette_differs(key, mem)
-  for i = 0, SIZEOF["p8_vram_t.draw_palette"] - 1 do
+  for i = 0, DRAW_PALETTE_LENGTH - 1 do
     if key.draw_palette[i] ~= mem.draw_palette[i] then
       return true
     end
@@ -187,7 +182,7 @@ local function background_draw_map_image(gfx, mem)
     key.built = 1
     key.mem = mem
     key.map_version = mem.map_version
-    for i = 0, SIZEOF["p8_vram_t.draw_palette"] - 1 do
+    for i = 0, DRAW_PALETTE_LENGTH - 1 do
       key.draw_palette[i] = mem.draw_palette[i]
     end
   end

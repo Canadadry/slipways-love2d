@@ -53,7 +53,7 @@ local function rebuild_incoming_routes_reset_visit(pt, ctx)
     trade.trade_route_list_clear(jo.incoming_routes)
     return
   end
-  trade.trade_route_list_init(jo.incoming_routes, nil)
+  trade.trade_route_list_init(jo.incoming_routes)
   jo.has_ = bit.bor(jo.has_, planet.PLANET_HAS_INCOMING_ROUTES)
 end
 
@@ -139,7 +139,7 @@ local function update_tiers_visit(entity, context)
       local hn = research.research_project_get(planet.project)
       if hn ~= nil and hn.has_byproduct ~= 0 then
         if bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) ~= 0 then
-          local entry = research.need_new(nil,
+          local entry = research.need_new(
             { kind = trade.RESOURCE_FIXED, number = hn.byproduct })
           pointer_list.pointer_list_add(planet.needs, entry)
         end

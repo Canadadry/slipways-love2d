@@ -79,9 +79,8 @@ function M.trade_new(keys)
   return route_value(keys.planets, keys.slipways, keys.resource, keys.has_resource, keys.resource_is_bool)
 end
 
--- The ids of list, then extra unless it is nil, in a new list of zone; an empty list with no
--- zone when there is no id.
-local function id_list_extended(zone, list, extra)
+-- The ids of list, then extra unless it is nil, in a new list; an empty list when there is no id.
+local function id_list_extended(list, extra)
   local count = list.count + ((extra ~= nil) and 1 or 0)
   local out = empty_id_list()
   if count == 0 then
@@ -100,12 +99,12 @@ local function id_list_extended(zone, list, extra)
   return out
 end
 
--- The copy's id lists are new lists in zone.
-function M.trade_copy(zone, self)
+-- The copy's id lists are new lists.
+function M.trade_copy(self)
   assert(self ~= nil, "trade_copy: a route value is always there to copy")
   local copy = copy_route(self)
-  copy.planets = id_list_extended(zone, self.planets, nil)
-  copy.slipways = id_list_extended(zone, self.slipways, nil)
+  copy.planets = id_list_extended(self.planets, nil)
+  copy.slipways = id_list_extended(self.slipways, nil)
   return copy
 end
 
@@ -118,15 +117,15 @@ function M.trade_last_planet(self, out)
   return 1, out
 end
 
--- The new route's id lists are new lists in zone; a nil node or slipway adds nothing.
-function M.trade_extend(zone, self, node, slipway)
+-- The new route's id lists are new lists; a nil node or slipway adds nothing.
+function M.trade_extend(self, node, slipway)
   assert(self ~= nil, "trade_extend: a route value is always there to extend")
   local extended = route_value(empty_id_list(), empty_id_list(), 0, 0, 0)
   extended.has_resource = 1
   extended.resource_is_bool = (self.has_resource ~= 0) and self.resource_is_bool or 1
   extended.resource = (self.has_resource ~= 0) and self.resource or 0
-  extended.planets = id_list_extended(zone, self.planets, node)
-  extended.slipways = id_list_extended(zone, self.slipways, slipway)
+  extended.planets = id_list_extended(self.planets, node)
+  extended.slipways = id_list_extended(self.slipways, slipway)
   return extended
 end
 
@@ -148,7 +147,7 @@ function M.trade_equal(l, r)
   return (l_last == r_last) and 1 or 0
 end
 
-function M.trade_route_list_init(list, zone)
+function M.trade_route_list_init(list)
   list.values = {}
   value_list.value_list_init(list.values)
 end

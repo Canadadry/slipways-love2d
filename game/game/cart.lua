@@ -48,10 +48,7 @@ local M = {}
 
 M.CART_NO_DEMO_FRAME = -1
 
-M.SIZEOF = {
-  g_save_bytes = 8192,
-}
-local SIZEOF = M.SIZEOF
+local SAVE_BUFFER_BYTES = 8192
 
 local g_title_built = 0
 local g_save_cut = 0
@@ -168,7 +165,7 @@ local function resume_saved_game(self)
 end
 
 local function title_resume_handler()
-  local count = save_storage.save_storage_read(g_save_bytes, SIZEOF.g_save_bytes)
+  local count = save_storage.save_storage_read(g_save_bytes, SAVE_BUFFER_BYTES)
 
   if count > 0 and save_state.save_state_decode(g_save_bytes, count, g_save_state) ~= 0 then
     return resume_saved_game
@@ -288,7 +285,7 @@ local function start_interface()
     local keys = { kind = nil, tooltip = nil }
 
     keys.kind = kind_table[index]
-    keys.tooltip = layout.tooltip_new(nil, map_tables.icon_tooltips_table[index])
+    keys.tooltip = layout.tooltip_new(map_tables.icon_tooltips_table[index])
     structure_icon.structure_icon_new(keys)
   end
 end

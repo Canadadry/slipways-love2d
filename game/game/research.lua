@@ -13,7 +13,6 @@
 -- research_project_cost and research_project_production read the main economy through
 -- tech_gate: they cannot run before game.probe exists.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local entity_class = require("engine.entity_class")
 local pointer_list = require("engine.pointer_list")
 local vec = require("engine.vec")
@@ -25,11 +24,6 @@ local fatal = require("p8.fatal")
 local fixed = require("p8.fixed")
 
 local M = {}
-
-M.SIZEOF = {
-  need_t = 48,
-}
-local SIZEOF = M.SIZEOF
 
 local PROJECT_RECORDS_COUNT = map_tables.PROJECT_RECORDS_COUNT
 
@@ -192,11 +186,11 @@ function M.need_resource(i)
   return { kind = trade.RESOURCE_NIL, number = 0 }
 end
 
-function M.need_new(zone, resource)
+function M.need_new(resource)
   local i
 
   assert(resource.kind ~= trade.RESOURCE_FALSE, "need_new: a need holds a fixed resource or none, never false")
-  i = allocator.allocator_alloc(zone, SIZEOF.need_t)
+  i = {}
   i.row = map_tables.map_tables_make_data_row({})
   i.has_satisfied = 0
   i.satisfied = 0
@@ -317,9 +311,9 @@ local function project_create(keys)
 
     if found ~= 0 then
       pointer_list.pointer_list_add(self.inputs,
-        M.need_new(nil, { kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(r_resource) }))
+        M.need_new({ kind = trade.RESOURCE_FIXED, number = fixed.p8_fixed_from_int(r_resource) }))
     else
-      pointer_list.pointer_list_add(self.inputs, M.need_new(nil, { kind = trade.RESOURCE_NIL, number = 0 }))
+      pointer_list.pointer_list_add(self.inputs, M.need_new({ kind = trade.RESOURCE_NIL, number = 0 }))
     end
   end
   return self

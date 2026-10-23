@@ -172,8 +172,7 @@ The state at f501: year 3403 month 1, credits 122, research 39,
 income 23, techs + geneseeds, slipgates, trade league, starbirth; camera
 141 193; p78 colonized f, p23 colonized o, p47 colonized protostar, s1
 colonized trading_hub, structure s2 slipgate links 3; slipways s1 p23,
-s2 s1, p78 s2, p47 s2; planets 91, colonies 4. Peaks: bytes_row 720
-(712 with the C, against tech_trade_league_hub's 600), burst 1.
+s2 s1, p78 s2, p47 s2; planets 91, colonies 4.
 
 Replaces tech_slipgates_relay (a mine's ore relayed by a slipgate to a
 forgeworld, "content" panel), slipgate_outgoing_first (the slipgate's

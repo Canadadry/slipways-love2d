@@ -2,7 +2,7 @@
 --
 -- Shapes, with the C field names:
 --   offset_t: { along, perpendicular }, by value: a new table each time.
---   an entity_list_t is { items, count, capacity, zone }, items indexed from 0.
+--   an entity_list_t is { items, count, capacity }, items indexed from 0.
 local entity_class = require("engine.entity_class")
 local pad_direction = require("game.pad_direction")
 local planet = require("game.planet")

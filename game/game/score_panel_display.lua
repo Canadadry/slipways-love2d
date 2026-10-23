@@ -138,7 +138,7 @@ local function score_panel_final_score_text(s, i)
   elseif i == 3 then
     return str.p8_tostr_fixed(s.technology)
   elseif i == 4 then
-    return economy_score.economy_score_percent_text(nil, s.happiness)
+    return economy_score.economy_score_percent_text(s.happiness)
   elseif i == 5 then
     return str.p8_tostr_fixed(s.total)
   elseif i == 6 then

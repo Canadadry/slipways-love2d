@@ -8,7 +8,6 @@
 --   down_t: { stop, held }.
 --
 -- game.planet, game.probe, game.tech_gate and game.layout are required at call time.
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -25,11 +24,6 @@ local str = require("p8.str")
 local bit = require("bit")
 
 local M = {}
-
-M.SIZEOF = {
-  structure_icon_t = 112,
-}
-local SIZEOF = M.SIZEOF
 
 local function entity_id_none()
   local none = entity_id_type.ENTITY_ID_NONE
@@ -220,7 +214,7 @@ M.structure_icon_class_def = {
 }
 
 local function structure_icon_create(keys)
-  local self = allocator.allocator_alloc(nil, SIZEOF.structure_icon_t)
+  local self = {}
   local archetype = game_data.structure_icon_archetype
   local hit_box
 

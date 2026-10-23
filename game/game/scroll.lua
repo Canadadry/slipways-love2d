@@ -6,7 +6,6 @@
 --
 -- Include cycle: game.galaxy is required at call time (camera_pad_bound reads its map constants).
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -20,11 +19,6 @@ local gfx_module = require("p8.gfx")
 local vram = require("p8.vram")
 
 local M = {}
-
-M.SIZEOF = {
-  camera_t = 88,
-}
-local SIZEOF = M.SIZEOF
 
 -- The camera's map position is its position before shake; its position is the shaken one.
 function M.camera_pos_before_shake(self)
@@ -50,7 +44,7 @@ M.camera_class_def = {
 }
 
 local function camera_create()
-  local self = allocator.allocator_alloc(nil, SIZEOF.camera_t)
+  local self = {}
 
   entity.entity_init_instance(self, M.camera_class_def, game_data.camera_archetype.state,
     game_data.camera_archetype.state_time)

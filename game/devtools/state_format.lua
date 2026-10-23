@@ -7,7 +7,6 @@ local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
 local entity_registry = require("engine.entity_registry")
 local vec = require("engine.vec")
-local zone_sizes = require("engine.zone_sizes")
 local economy_score = require("game.economy_score")
 local game_data = require("game.game_data")
 local planet = require("game.planet")
@@ -15,16 +14,9 @@ local planet_family = require("game.planet_family")
 local planet_family_trade = require("game.planet_family_trade")
 local probe = require("game.probe")
 local slipway = require("game.slipway")
-local draw_meter = require("p8.draw_meter")
 local fixed = require("p8.fixed")
 
 local M = {}
-
--- src/p8/gpu_sizes.h stays not ported (step 2.1): copies of its values.
-local GPU_FRAME_BUFFER_BYTES = 73728
-local GPU_BUILD_BUFFER_BYTES = 14336
-local GPU_CLUT_SLOTS = 6
-local GPU_PATTERN_SLOTS = 4
 
 local LINE_CAP = 256
 
@@ -267,33 +259,6 @@ local function write_count(sink, name, count)
   line_end(line)
 end
 
-local function write_zone(sink, name, current, peak, limit)
-  local line = line_start(sink)
-  line_add(line, "zone %s %d %d %d", name, current, peak, limit)
-  line_end(line)
-end
-
-local function write_zones(sink)
-  local line = line_start(sink)
-  line_add(line, "budget zones %d %d", zone_sizes.ZONE_BUDGET_USED_BYTES, zone_sizes.ZONE_BUDGET_BYTES)
-  line_end(line)
-  write_zone(sink, "gpu_frame", draw_meter.p8_draw_meter_last_frame().bytes, draw_meter.p8_draw_meter_peak().bytes,
-             GPU_FRAME_BUFFER_BYTES)
-  write_zone(sink, "gpu_build", draw_meter.p8_draw_meter_last_frame().build_bytes,
-             draw_meter.p8_draw_meter_peak().build_bytes, GPU_BUILD_BUFFER_BYTES)
-end
-
-local function write_peak(sink, name, peak, limit)
-  local line = line_start(sink)
-  line_add(line, "cap %s - %d %d", name, peak, limit)
-  line_end(line)
-end
-
-local function write_caps(sink)
-  write_peak(sink, "gpu_cluts", draw_meter.p8_draw_meter_peak().cluts, GPU_CLUT_SLOTS)
-  write_peak(sink, "gpu_patterns", draw_meter.p8_draw_meter_peak().patterns, GPU_PATTERN_SLOTS)
-end
-
 function M.state_format(sink)
   write_clock(sink)
   write_difficulty(sink)
@@ -309,8 +274,6 @@ function M.state_format(sink)
   write_count(sink, "structures", count_of(entity_registry.entities_by_tag(entity_class.TAG_SLIPGATE)))
   write_count(sink, "techs", techs)
   write_count(sink, "nodes", count_of(entity_registry.entities_by_tag(entity_class.TAG_NODE)))
-  write_zones(sink)
-  write_caps(sink)
 end
 
 -- Reads only state, which came out of a save_state_decode that returned 1: its difficulty, clock

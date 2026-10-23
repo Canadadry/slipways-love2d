@@ -4,7 +4,6 @@
 --   mouse_t: one table holding the entity header and archetype (the
 --     game_data mouse_archetype table).
 local bit_module = require("bit")
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -15,11 +14,6 @@ local fixed = require("p8.fixed")
 local input_module = require("p8.input")
 
 local M = {}
-
-M.SIZEOF = {
-  mouse_t = 88,
-}
-local SIZEOF = M.SIZEOF
 
 local g_mouse_up = 0
 local g_left_button = { has_held = 0, held = 0, pressed = 0, released = 0 }
@@ -36,7 +30,7 @@ M.mouse_class_def = {
 }
 
 local function mouse_create()
-  local self = allocator.allocator_alloc(nil, SIZEOF.mouse_t)
+  local self = {}
 
   entity.entity_init_instance(self, M.mouse_class_def, game_data.mouse_archetype.state,
     game_data.mouse_archetype.state_time)

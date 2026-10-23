@@ -9,7 +9,6 @@
 -- Include cycle: game.planet is required at call time (planet_is_family, planet_spacer).
 --
 -- layout_row_tuple_t zeroes are local.
-local allocator = require("engine.allocator")
 local pointer_list = require("engine.pointer_list")
 local layout = require("game.layout")
 local map_tables = require("game.map_tables")
@@ -20,11 +19,6 @@ local fixed = require("p8.fixed")
 local str = require("p8.str")
 
 local M = {}
-
-M.SIZEOF = {
-  research_project_tooltip_t = 240,
-}
-local SIZEOF = M.SIZEOF
 
 -- layout_row_tuple_t tuple = {0}.
 local function tuple_zero()
@@ -37,9 +31,6 @@ end
 
 local function research_project_tooltip_join(self)
   local i_list
-  local capacity = 16
-  local length = 0
-  local block = allocator.allocator_alloc(nil, capacity)
   local names = ""
   local first = 1
   local iter
@@ -53,8 +44,6 @@ local function research_project_tooltip_join(self)
     local num_str
     local resource_names_name
     local piece = ""
-    local piece_len
-    local add_len
 
     more, entry = pointer_list.pointer_list_iter_next(iter, entry)
     if more == 0 then
@@ -77,20 +66,10 @@ local function research_project_tooltip_join(self)
       piece = resource_names_name
     end
 
-    piece_len = #piece
-    add_len = ((first ~= 0) and 0 or 1) + piece_len
-    if length + add_len + 1 > capacity then
-      local new_cap = (length + add_len + 1) * 2
-
-      block = allocator.allocator_grow(nil, block, capacity, new_cap)
-      capacity = new_cap
-    end
     if first == 0 then
       names = names .. ","
-      length = length + 1
     end
     names = names .. piece
-    length = length + piece_len
     first = 0
   end
   return names
@@ -107,7 +86,7 @@ function M.research_project_tooltip(self)
     return nil
   end
 
-  jb = allocator.allocator_alloc(nil, SIZEOF.research_project_tooltip_t)
+  jb = {}
   jb.outer = map_tables.map_tables_make_data_row({})
   jb.outer_item = map_tables.map_tables_make_data_item({})
   jb.inner = map_tables.map_tables_make_data_row({})

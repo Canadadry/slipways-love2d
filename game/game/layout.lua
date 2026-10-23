@@ -8,14 +8,13 @@
 --     (fixed, text or tuple).
 --   layout_row_keys_t: { items, count, has_color, color, has_background, background_is_bool,
 --     background, has_score, score, has_pos, pos }, items 0-indexed of LAYOUT_ROW_KEYS_CAP cells.
---   layout_row_t: one table holding the entity header and { zone, color, has_color, background,
+--   layout_row_t: one table holding the entity header and { color, has_color, background,
 --     has_background, background_is_bool, score, has_score, placed_items, placed_items_count,
 --     width, serial }, placed_items 0-indexed.
---   tooltip_t: one table holding the entity header and { zone, rows, rows_count }, rows 0-indexed.
+--   tooltip_t: one table holding the entity header and { rows, rows_count }, rows 0-indexed.
 -- Scalars, tuples and cells are by value and never changed after their constructor: passing or
 -- storing one shares the table.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local dispatch_context = require("engine.dispatch_context")
 local entity_class = require("engine.entity_class")
 local vec = require("engine.vec")
@@ -45,14 +44,6 @@ M.LAYOUT_ROW_SCALAR_FIXED = 1
 M.LAYOUT_ROW_TUPLE_CAP = 4
 
 M.LAYOUT_ROW_KEYS_CAP = 16
-
-M.SIZEOF = {
-  layout_row_item_t = 40,
-  layout_row_t = 144,
-  ["layout_row_t *"] = 8,
-  tooltip_t = 104,
-}
-local SIZEOF = M.SIZEOF
 
 local g_layout_up = 0
 local g_row_serial = 0
@@ -162,11 +153,8 @@ local function row_scalar_item(item)
   return M.layout_row_cell_item(item)
 end
 
-local function row_copy_text(zone, s)
-  local n = c_strlen(s) + 1
-
-  allocator.allocator_alloc(zone, n)
-  return s:sub(1, n - 1)
+local function row_copy_text(s)
+  return s:sub(1, c_strlen(s))
 end
 
 -- memset(out_item, 0, sizeof *out_item) on the caller's table.
@@ -185,7 +173,6 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
   local have_spacing = 0
   local spacing = fixed.p8_fixed_from_int(0)
 
-  -- Zones never clear memory: without this, the fields a kind leaves unset hold stale bytes.
   item_zero(out_item)
   if cell.kind == M.LAYOUT_ROW_CELL_TUPLE then
     local t = cell.as.tuple
@@ -253,7 +240,7 @@ local function layout_row_construct(self, cells, n)
   local w = fixed.p8_fixed_from_int(0)
   local fs = fixed.p8_fixed_from_int(0)
 
-  self.placed_items = allocator.allocator_alloc(self.zone, (n > 0 and n or 1) * SIZEOF.layout_row_item_t)
+  self.placed_items = {}
   for i = 0, n - 1 do
     local w_i = fixed.p8_fixed_from_int(0)
     local spacing_i = fixed.p8_fixed_from_int(0)
@@ -262,7 +249,7 @@ local function layout_row_construct(self, cells, n)
     self.placed_items[i] = {}
     w_i, spacing_i = row_measure_item(self, cells[i], self.placed_items[i], w_i, spacing_i)
     if self.placed_items[i].kind == M.LAYOUT_ROW_ITEM_TEXT then
-      self.placed_items[i].text = row_copy_text(self.zone, self.placed_items[i].text)
+      self.placed_items[i].text = row_copy_text(self.placed_items[i].text)
     end
     self.placed_items[i].offset = vec.vec_make(x, fixed.p8_fixed_from_int(0))
     w = fixed.p8_fixed_add(w, fixed.p8_fixed_add(w_i, spacing_i))
@@ -362,15 +349,15 @@ local function keys_zero()
   }
 end
 
-local function tooltip_line(zone, item)
+local function tooltip_line(item)
   local keys = keys_zero()
 
   if item.text ~= nil then
     M.layout_row_keys_append(keys, M.layout_row_cell_string(item.text))
-    return M.layout_row_new(zone, keys)
+    return M.layout_row_new(keys)
   end
   if item.row == nil then
-    return M.layout_row_new(zone, nil)
+    return M.layout_row_new(nil)
   end
   assert(item.row.draw_function == map_tables.DRAW_FUNCTION_NONE,
     "tooltip_line: a line's only named key is its color; a draw_function has no member -- stop, do not add one")
@@ -379,16 +366,16 @@ local function tooltip_line(zone, item)
   end
   keys.has_color = item.row.has_color
   keys.color = fixed.p8_fixed_from_int(item.row.color)
-  return M.layout_row_new(zone, keys)
+  return M.layout_row_new(keys)
 end
 
 local function tooltip_construct(self, row)
   local n = row ~= nil and row.count or 0
 
-  -- Allocated even for no line: tooltip_draw_at() skips a NULL `rows` but draws an empty tooltip's frame.
-  self.rows = allocator.allocator_alloc(self.zone, (n > 0 and n or 1) * SIZEOF["layout_row_t *"])
+  -- A table even for no line: tooltip_draw_at() skips a nil `rows` but draws an empty tooltip's frame.
+  self.rows = {}
   for i = 0, n - 1 do
-    self.rows[i] = tooltip_line(self.zone, row.items[i])
+    self.rows[i] = tooltip_line(row.items[i])
   end
   self.rows_count = n
 end
@@ -435,7 +422,7 @@ M.layout_row_class_def = {
   skip_draw_off_screen = 0,
 }
 
-local function row_struct_init(self, zone)
+local function row_struct_init(self)
   entity_class.entity_init_header(self, M.layout_row_class_def)
   self.color = 0
   self.has_color = 0
@@ -448,7 +435,6 @@ local function row_struct_init(self, zone)
   self.placed_items_count = 0
   self.width = 0
   self.serial = 0
-  self.zone = zone
 end
 
 local function row_fill(self, keys)
@@ -481,18 +467,16 @@ local function row_fill(self, keys)
   layout_row_construct(self, keys.items, keys.count)
 end
 
-local function row_create(zone, keys)
-  local self
+local function row_create(keys)
+  local self = {}
 
-  self = allocator.allocator_alloc(zone, SIZEOF.layout_row_t)
-  row_struct_init(self, zone)
+  row_struct_init(self)
   row_fill(self, keys)
   return self
 end
 
--- Lays the row out into `self`; its placed items and their texts go in `zone`, which must outlive `self`.
-function M.layout_row_init(self, zone, keys)
-  row_struct_init(self, zone)
+function M.layout_row_init(self, keys)
+  row_struct_init(self)
   row_fill(self, keys)
 end
 
@@ -525,24 +509,21 @@ M.tooltip_class_def = {
   skip_draw_off_screen = 0,
 }
 
-local function tooltip_struct_alloc(zone)
-  local self
-
-  self = allocator.allocator_alloc(zone, SIZEOF.tooltip_t)
+local function tooltip_struct_alloc()
+  local self = {}
 
   entity_class.entity_init_header(self, M.tooltip_class_def)
-  self.zone = zone
   self.rows = nil
   self.rows_count = 0
   return self
 end
 
-local function tooltip_create(zone, row)
+local function tooltip_create(row)
   local self
 
   assert(row == nil or (row.has_color == 0 and row.draw_function == map_tables.DRAW_FUNCTION_NONE),
     "tooltip_create: every line is positional; a named key has no member -- stop, do not add one")
-  self = tooltip_struct_alloc(zone)
+  self = tooltip_struct_alloc()
   tooltip_construct(self, row)
   return self
 end
@@ -572,12 +553,12 @@ function M.tooltip_class()
   return M.tooltip_class_def
 end
 
-function M.layout_row_new(zone, keys)
-  return row_create(zone, keys)
+function M.layout_row_new(keys)
+  return row_create(keys)
 end
 
-function M.tooltip_new(zone, row)
-  return tooltip_create(zone, row)
+function M.tooltip_new(row)
+  return tooltip_create(row)
 end
 
 -- Lua only: a new layout_row_keys_t at its C zero, for the keys other modules hold inline.

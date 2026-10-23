@@ -3,7 +3,6 @@
 -- pause_menu_open_box_t is the entity header plus { has_, fixed_pos, row_step, back_color, has_back_color }: its
 -- own `has` (PAUSE_MENU_OPEN_BOX_HAS_* bits) is `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local entity_class = require("engine.entity_class")
 local entity_id_list = require("engine.entity_id_list")
 local entity_registry = require("engine.entity_registry")
@@ -23,13 +22,6 @@ local fixed = require("p8.fixed")
 local str = require("p8.str")
 
 local M = {}
-
-M.SIZEOF = {
-  data_row_t = 40,
-  data_item_t = 40,
-  button_keys_t = 1800,
-}
-local SIZEOF = M.SIZEOF
 
 local function vec_copy(v)
   return vec.vec_make(v.x, v.y)
@@ -109,8 +101,7 @@ end
 
 local function invented_lines(list)
   local n = (list ~= nil) and list.count or 0
-  local size = SIZEOF.data_row_t + n * SIZEOF.data_item_t
-  local row = allocator.allocator_alloc(nil, size)
+  local row = {}
   local items = {}
 
   row.count = 0
@@ -159,8 +150,7 @@ function M.menu_show_tech_tree_screen()
 
   -- 1 lists every tech of the era, affordable or not; the galaxy row's refresh must pass 0.
   available_technologies_list = tech_gate.tech_gate_available_technologies(1)
-  buttons = allocator.allocator_alloc(nil,
-    (available_technologies_list.count + 1) * SIZEOF.button_keys_t)
+  buttons = {}
   for i = 0, available_technologies_list.count do
     buttons[i] = ui_button.button_keys_zero({})
   end
@@ -253,7 +243,7 @@ local function galaxy_menu_button2_refresh_method(self)
 
   layout.layout_row_keys_append(keys,
     layout.layout_row_cell_fixed(fixed.p8_fixed_from_int((available_technologies_count > 0) and 24 or 37)))
-  self.layout_row = layout.layout_row_new(nil, keys)
+  self.layout_row = layout.layout_row_new(keys)
 end
 
 local function galaxy_menu_button3_on_click_method(self)

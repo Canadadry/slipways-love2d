@@ -7,21 +7,14 @@
 --     indexed from 0, created when first written. A ticket and a recent entry
 --     are the very planet_types_table entry; random is a function taking
 --     random_ctx (a random_walk_t when random is M.random_walk_draw).
-local allocator = require("engine.allocator")
 local game_data = require("game.game_data")
 local cint = require("p8.cint")
 local fixed = require("p8.fixed")
 
 local M = {}
 
-M.SIZEOF = {
-  random_walk_t = 8,
-  weighted_picker_t = 592,
-}
-local SIZEOF = M.SIZEOF
-
-function M.random_walk_new(zone, n_, b)
-  local state = allocator.allocator_alloc(zone, SIZEOF.random_walk_t)
+function M.random_walk_new(n_, b)
+  local state = {}
   state.step = n_
   state.bias = b
   return state
@@ -71,8 +64,8 @@ local function weighted_picker_fill(state)
   end
 end
 
-function M.weighted_picker_new(zone, multiplier, r, r_ctx)
-  local state = allocator.allocator_alloc(zone, SIZEOF.weighted_picker_t)
+function M.weighted_picker_new(multiplier, r, r_ctx)
+  local state = {}
 
   state.recent = {}
   state.recent_set = {}
@@ -139,7 +132,7 @@ function M.weighted_picker_next(state)
   return e
 end
 
--- The live walk the picker draws from, owned by the picker's zone; nil unless its source is random_walk_draw.
+-- The live walk the picker draws from; nil unless its source is random_walk_draw.
 function M.weighted_picker_walk(state)
   if state.random ~= M.random_walk_draw then
     return nil

@@ -8,7 +8,6 @@
 -- required at call time, inside the functions that need them, so that this module loads before
 -- they exist.
 local bit = require("bit")
-local allocator = require("engine.allocator")
 local collect = require("engine.collect")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
@@ -23,11 +22,6 @@ local tech_gate = require("game.tech_gate")
 local fixed = require("p8.fixed")
 
 local M = {}
-
-M.SIZEOF = {
-  economy_t = 432,
-}
-local SIZEOF = M.SIZEOF
 
 local g_economy_up = 0
 
@@ -46,7 +40,7 @@ M.economy_archetype = {
 }
 
 local function economy_create()
-  local self = allocator.allocator_alloc(nil, SIZEOF.economy_t)
+  local self = {}
 
   entity_class.entity_init_header(self, M.economy_class_def)
   self.archetype = M.economy_archetype

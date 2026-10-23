@@ -78,11 +78,8 @@ M.SAVE_NODE_KNOWN_FLAGS = bit.lshift(1, 11) - 1
 -- Every fixed-point value is its raw 16.16 int32_t; every reference is a
 -- 0-based table index, except difficulty (1-based in difficulty_options_table).
 
-M.SIZEOF = {
-  magic = 4,
-  ["save_node_t.planet_id"] = 8,
-}
-local SIZEOF = M.SIZEOF
+local MAGIC_LENGTH = 4
+local NODE_PLANET_ID_LENGTH = 8
 
 local HEADER_BYTES = 8
 local TRAILER_BYTES = 4
@@ -278,7 +275,7 @@ local function write_node(bytes, writer, state, node)
   end
   if bit.band(node.flags, M.SAVE_NODE_HAS_PLANET_ID) ~= 0 then
     local length = 0
-    while length < SIZEOF["save_node_t.planet_id"] and (string.byte(node.planet_id, length + 1) or 0) ~= 0 do
+    while length < NODE_PLANET_ID_LENGTH and (string.byte(node.planet_id, length + 1) or 0) ~= 0 do
       length = length + 1
     end
     write_u8(bytes, writer, length)
@@ -405,7 +402,7 @@ end
 function M.save_state_encode(state, buffer)
   local writer = { position = 0, end_ = M.SAVE_STATE_MAX_BYTES, failed = 0 }
   local length = { position = LENGTH_OFFSET, end_ = LENGTH_OFFSET + 2, failed = 0 }
-  for i = 0, SIZEOF.magic - 1 do
+  for i = 0, MAGIC_LENGTH - 1 do
     write_u8(buffer, writer, magic[i])
   end
   write_u16(buffer, writer, M.SAVE_STATE_VERSION)
@@ -750,12 +747,12 @@ end
 -- Returns 1 for a valid record, 0 otherwise, never asserts on the bytes. On 0,
 -- out is unspecified.
 function M.save_state_decode(bytes, count, out)
-  local reader = { position = SIZEOF.magic, end_ = count, failed = 0 }
+  local reader = { position = MAGIC_LENGTH, end_ = count, failed = 0 }
   local trailer = { position = count - TRAILER_BYTES, end_ = count, failed = 0 }
   if count < HEADER_BYTES + TRAILER_BYTES or count > M.SAVE_STATE_MAX_BYTES then
     return 0
   end
-  for i = 0, SIZEOF.magic - 1 do
+  for i = 0, MAGIC_LENGTH - 1 do
     if bytes[i] ~= magic[i] then
       return 0
     end
