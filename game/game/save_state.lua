@@ -27,7 +27,6 @@ local planet_family_trade = require("game.planet_family_trade")
 local probe = require("game.probe")
 local research = require("game.research")
 local structure_icon = require("game.structure_icon")
-local trade = require("game.trade")
 local cint = require("p8.cint")
 local fixed = require("p8.fixed")
 
@@ -1076,11 +1075,11 @@ end
 local function capture_node_links(out, node, planet, ids)
   node.first_route = out.route_count
   if bit.band(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES) ~= 0 then
-    local count = trade.trade_route_list_count(planet.outgoing_routes)
+    local count = #planet.outgoing_routes
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_OUTGOING_ROUTES)
     assert(out.route_count + count <= M.SAVE_STATE_ROUTES_CAP)
-    for i = 0, count - 1 do
-      local route = trade.trade_route_list_at(planet.outgoing_routes, i)
+    for i = 1, count do
+      local route = planet.outgoing_routes[i]
       local saved = save_route_zero()
       out.routes[out.route_count] = saved
       out.route_count = out.route_count + 1

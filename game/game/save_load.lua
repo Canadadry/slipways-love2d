@@ -248,7 +248,9 @@ local function load_outgoing_routes(state, node_ids, slipway_ids)
     if has(node, save_state.SAVE_NODE_HAS_OUTGOING_ROUTES) == 0 then
       goto continue
     end
-    trade.trade_route_list_init(planet.outgoing_routes)
+    for r = #planet.outgoing_routes, 1, -1 do
+      planet.outgoing_routes[r] = nil
+    end
     planet.has_ = bit.bor(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES)
     for k = 0, node.route_count - 1 do
       local saved = state.routes[node.first_route + k]

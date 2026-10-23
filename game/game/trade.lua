@@ -4,12 +4,11 @@
 --   trade_route_t, trade_keys_t: { planets, slipways, resource, has_resource,
 --     resource_is_bool }, planets and slipways entity_id_list_t tables.
 --   resource_t: { kind, number }, a new table at every creation.
---   trade_route_list_t: { values }, a value_list_t of trade_route_t.
+--   trade_route_list_t: a plain 1-based array of trade_route_t.
 -- The id lists are immutable once built: a value copy of a route is a new table with the five
 -- fields whose two list tables are shared, as the C copies share their items.
 local entity_id = require("engine.entity_id")
 local entity_id_list = require("engine.entity_id_list")
-local value_list = require("engine.value_list")
 
 local M = {}
 
@@ -146,33 +145,10 @@ function M.trade_equal(l, r)
   return (l_last == r_last) and 1 or 0
 end
 
-function M.trade_route_list_init(list)
-  list.values = {}
-  value_list.value_list_init(list.values)
-end
-
-function M.trade_route_list_free(list)
-  value_list.value_list_free(list.values)
-end
-
-function M.trade_route_list_clear(list)
-  value_list.value_list_clear(list.values)
-end
-
 -- Stores a copy of the route; its id lists are shared, not copied.
 function M.trade_route_list_add(list, route)
-  -- route may point into this list: copy it before the add grows the list.
-  local copy = copy_route(route)
-  value_list.value_list_add(list.values, copy)
-end
-
-function M.trade_route_list_count(list)
-  return value_list.value_list_count(list.values)
-end
-
--- Valid until the next add or free on this list: never store it.
-function M.trade_route_list_at(list, index)
-  return value_list.value_list_at(list.values, index)
+  assert(route ~= nil, "a trade route list holds routes")
+  list[#list + 1] = copy_route(route)
 end
 
 return M

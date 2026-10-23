@@ -33,17 +33,18 @@ local function trade_keys_zero()
   }
 end
 
--- A trade_route_list_t assigned by value: a new header sharing the items, as the C copy shares
--- its buffer.
-local function trade_route_list_value(list)
-  local values = list.values
-  return {
-    values = {
-      items = values.items,
-      count = values.count,
-      capacity = values.capacity,
-    },
-  }
+local function route_list_copy(list)
+  local copy = {}
+  for i = 1, #list do
+    copy[i] = list[i]
+  end
+  return copy
+end
+
+local function route_list_empty(list)
+  for i = #list, 1, -1 do
+    list[i] = nil
+  end
 end
 
 -- A pointer_list_t assigned by value into dst, the inline list of its owner.
@@ -57,8 +58,8 @@ local function contains_trade(list, v)
   if list == nil then
     return 0
   end
-  for i = 0, trade.trade_route_list_count(list) - 1 do
-    if trade.trade_equal(trade.trade_route_list_at(list, i), v) ~= 0 then
+  for i = 1, #list do
+    if trade.trade_equal(list[i], v) ~= 0 then
       return 1
     end
   end
@@ -225,7 +226,7 @@ function M.planet_rebuild_trades(self)
   end
 
   if bit.band(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES) == 0 then
-    trade.trade_route_list_init(self.outgoing_routes)
+    route_list_empty(self.outgoing_routes)
     self.has_ = bit.bor(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES)
   end
 
@@ -260,7 +261,7 @@ function M.planet_rebuild_trades(self)
 
     lw.route = trade.trade_new(keys)
     -- Recomputed each iteration: an earlier offer's accept may have grown the outgoing routes.
-    lw.amount = fixed.p8_fixed_sub(amount, fixed.p8_fixed_from_int(trade.trade_route_list_count(self.outgoing_routes)))
+    lw.amount = fixed.p8_fixed_sub(amount, fixed.p8_fixed_from_int(#self.outgoing_routes))
     lw.accept = planet_rebuild_trades_attach_slipway_closure
 
     if lw.amount == fixed.p8_fixed_from_int(0) then
@@ -269,11 +270,12 @@ function M.planet_rebuild_trades(self)
 
     assert(w.class == slipway.slipway_class(), "a planet's slipways list holds slipways only: planet_attach_slipway adds to it")
     other = slipway.slipway_other_end(w, self)
-    -- The offer is on the stack: a callee that keeps a pointer to it dangles.
+    -- The offer is on the stack: a callee that keeps a pointer to it dangles. The outgoing
+    -- routes keep their old contents until the offer returns.
     if other ~= nil and other.class.offer_trade ~= nil then
-      lw.accepted_routes = trade_route_list_value(self.outgoing_routes)
+      lw.accepted_routes = route_list_copy(self.outgoing_routes)
       other.class.offer_trade(other, lw)
-      self.outgoing_routes = trade_route_list_value(lw.accepted_routes)
+      self.outgoing_routes = lw.accepted_routes
     end
   end
 

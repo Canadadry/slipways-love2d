@@ -32,17 +32,12 @@ local function down_zero()
   return { stop = 0, held = nil }
 end
 
--- A trade_route_list_t assigned by value: a new header sharing the items, as the C copy shares
--- its buffer.
-local function trade_route_list_value(list)
-  local values = list.values
-  return {
-    values = {
-      items = values.items,
-      count = values.count,
-      capacity = values.capacity,
-    },
-  }
+local function route_list_copy(list)
+  local copy = {}
+  for i = 1, #list do
+    copy[i] = list[i]
+  end
+  return copy
 end
 
 M.synthesizer_synthesizable_resources_spent = { count = 0, items = nil }
@@ -170,7 +165,7 @@ function M.slipgate_offer_trade(self, trade_offer)
         route = trade_offer.route,
         amount = trade_offer.amount,
         accept = trade_offer.accept,
-        accepted_routes = trade_route_list_value(trade_offer.accepted_routes),
+        accepted_routes = route_list_copy(trade_offer.accepted_routes),
       }
       local other
 
@@ -182,7 +177,7 @@ function M.slipgate_offer_trade(self, trade_offer)
         other.class.offer_trade(other, gf)
       end
       trade_offer.amount = gf.amount
-      trade_offer.accepted_routes = trade_route_list_value(gf.accepted_routes)
+      trade_offer.accepted_routes = gf.accepted_routes
     end
     ::continue::
   end

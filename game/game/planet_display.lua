@@ -151,7 +151,7 @@ function M.planet_refresh(self)
     mu = kw.amount
   end
   by_list = (bit.band(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES) ~= 0) and self.outgoing_routes or nil
-  route_count = (by_list ~= nil) and trade.trade_route_list_count(by_list) or 0
+  route_count = (by_list ~= nil) and #by_list or 0
   signature = planet_row_signature(needs_list, has_output, output, mu, route_count)
   if bit.band(signature.flags, ROW_SIGNATURE_VALID) ~= 0
     and planet_row_signature_equal(signature, self.layout_row_signature) ~= 0 then
@@ -344,7 +344,7 @@ function M.planet_inspection_panel(self)
         layout.layout_row_keys_append(buttons[row_count].layout_row_keys, layout.layout_row_cell_string(amount_str))
       else
         local by = (bit.band(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES) ~= 0) and self.outgoing_routes or nil
-        local by_count = (by ~= nil) and trade.trade_route_list_count(by) or 0
+        local by_count = (by ~= nil) and #by or 0
         local count_str = str.p8_tostr_fixed(fixed.p8_fixed_from_int(by_count))
         local amount_str = str.p8_tostr_fixed(mu)
         local combined = str.p8_concat2(str.p8_concat2(count_str, "/"),

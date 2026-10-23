@@ -49,11 +49,12 @@ local function rebuild_incoming_routes_reset_visit(pt, ctx)
   end
   assert(planet.planet_is_family(pt) ~= 0, "rebuild_incoming_routes_reset_visit: the planet tag holds planets only")
   jo = pt
+  for i = #jo.incoming_routes, 1, -1 do
+    jo.incoming_routes[i] = nil
+  end
   if bit.band(jo.has_, planet.PLANET_HAS_INCOMING_ROUTES) ~= 0 then
-    trade.trade_route_list_clear(jo.incoming_routes)
     return
   end
-  trade.trade_route_list_init(jo.incoming_routes)
   jo.has_ = bit.bor(jo.has_, planet.PLANET_HAS_INCOMING_ROUTES)
 end
 
@@ -72,8 +73,8 @@ local function rebuild_incoming_routes_route_visit(entity, context)
   from_planet = entity
   outgoing = planet_trade.planet_rebuild_trades(from_planet)
 
-  for route_index = 0, trade.trade_route_list_count(outgoing) - 1 do
-    local route = trade.trade_route_list_at(outgoing, route_index)
+  for route_index = 1, #outgoing do
+    local route = outgoing[route_index]
     local slipways = route.slipways
     local planets = route.planets
     local to_val
@@ -222,8 +223,8 @@ function M.economy_tiers_compute_tier(entity)
         local gc = 0
 
         if incoming_routes ~= nil then
-          for j = 0, trade.trade_route_list_count(incoming_routes) - 1 do
-            local im = trade.trade_route_list_at(incoming_routes, j)
+          for j = 1, #incoming_routes do
+            local im = incoming_routes[j]
             if im.has_resource ~= 0 and trade.resource_equal(trade.trade_resource(im), resource_val) ~= 0 then
               gc = gc + 1
             end
@@ -269,8 +270,8 @@ function M.economy_tiers_compute_tier(entity)
 
   do
     local by = (bit.band(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES) ~= 0) and planet.outgoing_routes or nil
-    local by_count = (by ~= nil) and trade.trade_route_list_count(by) or 0
-    local incoming_routes_count = (incoming_routes ~= nil) and trade.trade_route_list_count(incoming_routes) or 0
+    local by_count = (by ~= nil) and #by or 0
+    local incoming_routes_count = (incoming_routes ~= nil) and #incoming_routes or 0
     local mid_val = fixed.p8_fixed_mid(fixed.p8_fixed_from_int(by_count), fixed.p8_fixed_from_int(incoming_routes_count),
       fixed.p8_fixed_from_int(1))
     return fixed_min(fixed.p8_fixed_from_int(4), fixed.p8_fixed_add(fixed.p8_fixed_from_int(1), mid_val))

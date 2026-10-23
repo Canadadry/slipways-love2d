@@ -60,11 +60,6 @@ local function production_zero()
   return { has_resource = 0, resource = 0, amount = 0 }
 end
 
--- trade_route_list_t list = {0}.
-local function trade_route_list_zero()
-  return { values = { items = nil, count = 0, capacity = 0 } }
-end
-
 -- pointer_list_t / entity_id_list_t list = {0}.
 local function list_zero()
   return { items = nil, count = 0, capacity = 0 }
@@ -162,8 +157,8 @@ function M.planet_init_instance(self, instance_class, archetype)
   self.is_dead = 0
   self.net_income = 0
   self.has_net_income = 0
-  self.incoming_routes = trade_route_list_zero()
-  self.outgoing_routes = trade_route_list_zero()
+  self.incoming_routes = {}
+  self.outgoing_routes = {}
   self.development_tier = self.archetype.development_tier
   self.has_development_tier = self.archetype.has_development_tier
   self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)

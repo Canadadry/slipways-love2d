@@ -819,8 +819,8 @@ elsewhere (`planet_keys_zero`). `game/love/` names follow
 on one, and `memcpy`/`memcmp` are loops over the C length. A pointer into an
 array is an integer index, `NULL` is `nil`; a pointer difference into a
 table goes through a Lua-only reverse map built at load
-(`project_index_of` in `research.lua`). Lists handed to LÖVE are plain
-1-based. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
+(`project_index_of` in `research.lua`). Lists handed to LÖVE and the trade
+route lists are plain 1-based arrays without holes. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
 `%` is `cint.mod` (the dividend's sign); `math.floor` and Lua `%` appear only
 where the C floors. `(unsigned char)x` is `bit.band(x, 0xFF)`; a `bit`
 result above 2^31 − 1 is brought back to unsigned where it is compared or
@@ -857,8 +857,10 @@ mouse_buttons`).
 
 **Memory.** A new object is a table built where it is needed. A list that
 grows gets a fresh items table holding a copy of its items, and copies of a
-list header share that table. `copy_value` (`value_list.lua`) copies a list
-value one level deep. Strings are Lua strings, compared with `==`.
+list header share that table. A trade route list is a plain 1-based array of
+route values: a list held by several owners is emptied in place, and an
+offer's routes are a copy of the source list, assigned back when the offer
+returns. Strings are Lua strings, compared with `==`.
 
 **Truth values.** A C int predicate returns 1 or 0, never a Lua boolean;
 `if (x)` on an int is `if x ~= 0`, `!x` is `x == 0` as a test and

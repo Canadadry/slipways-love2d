@@ -119,10 +119,10 @@ function M.economy_score_trade_income(entity)
   outgoing = (bit.band(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES) ~= 0) and planet.outgoing_routes or nil
 
   if outgoing ~= nil then
-    for i = 0, trade.trade_route_list_count(outgoing) - 1 do
+    for i = 1, #outgoing do
       local found
       local partner
-      found, partner = trade.trade_last_planet(trade.trade_route_list_at(outgoing, i), partner)
+      found, partner = trade.trade_last_planet(outgoing[i], partner)
       if found ~= 0 then
         local oz
         assert(planet_module.planet_is_family(partner) ~= 0, "economy_score_trade_income: a trade leads to a planet")

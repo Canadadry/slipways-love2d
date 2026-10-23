@@ -15,6 +15,11 @@
     - [x] Chunk 1 — the id representation
     - [x] Chunk 2 — the old id API
   - [ ] Step 1.4 — the four list kinds as plain arrays
+    - [x] Chunk 1 — value_list and the trade route lists
+    - [ ] Chunk 2 — pointer_list and collect
+    - [ ] Chunk 3 — entity_id_list
+    - [ ] Chunk 4 — entity_list and the registry buckets
+    - [ ] Chunk 5 — the exit queue, design.md and the tdd examples
 - [ ] Phase 2 — The entity model
   - [ ] Step 2.1 — optional parts as nil-able fields
 - [ ] Phase 3 — The surface
