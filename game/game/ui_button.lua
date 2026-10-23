@@ -173,7 +173,6 @@ function M.button_keys_set_tooltip_row(keys, row)
     keys.tooltip_row = map_tables.map_tables_make_data_row({
       count = row.count,
       items = row.items,
-      has_color = row.has_color,
       color = row.color,
       draw_function = row.draw_function,
       has_resource = row.has_resource,
@@ -274,7 +273,7 @@ local function button_draw_body(graphics, memory, self, draw_pos, body, top, thr
     local bg = 2
     local x2 = fixed.p8_fixed_add(right, c.width)
 
-    if c.has_background ~= 0 and c.background_is_bool == 0 then
+    if c.background ~= nil and c.background_is_bool == 0 then
       bg = ui_to_int(c.background)
     end
     gfx_module.p8_rectfill(graphics, memory, ui_to_int(right) + 3, top_pixel + 1, ui_to_int(x2) + 4, bottom_pixel, bg)

@@ -32,3 +32,14 @@
   - [x] Decisions reopened with the user
   - [ ] Step 2.2 — research project ids as plain numbers
   - [ ] Step 2.3 — capacity limits that are not a game rule removed
+- [ ] Step 2.1 chunks
+  - [x] Chunk 1 — display rows
+  - [ ] Chunk 2 — resources
+  - [ ] Chunk 3 — research projects
+  - [ ] Chunk 4 — the planet's parts
+  - [ ] Chunk 5 — particles, probes and targeting
+  - [ ] Chunk 6 — the economy
+  - [ ] Chunk 7 — UI, buttons and icons
+  - [ ] Chunk 8 — boxes and panels
+  - [ ] Chunk 9 — positions
+  - [ ] Chunk 10 — the header's other parts, docs and skills

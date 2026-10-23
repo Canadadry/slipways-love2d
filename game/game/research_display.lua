@@ -207,7 +207,6 @@ local function planet_resource_row_keys(inputs, has_output, output, amount, used
 
     layout.layout_row_keys_append(keys, layout.layout_row_cell_string(amount_text))
     layout.layout_row_keys_append(keys, layout.layout_row_cell_row(tail_row))
-    keys.has_color = 1
     keys.color = fixed.p8_fixed_from_int(13)
     amount = fixed.p8_fixed_from_int(1)
   end

@@ -77,7 +77,6 @@ local function tech_tree_screen_step(t, b)
 
   layout.layout_row_keys_append(b.layout_row_keys, layout.layout_row_cell_fixed(fixed.p8_fixed_from_int(t.icon)))
   layout.layout_row_keys_append(b.layout_row_keys, layout.layout_row_cell_string(t.name))
-  b.layout_row_keys.has_color = 1
   b.layout_row_keys.color = fixed.p8_fixed_from_int(6)
 
   research_cost_result = tech_gate.tech_gate_research_cost(t)
@@ -106,8 +105,6 @@ local function invented_lines(list)
 
   row.count = 0
   row.items = nil
-  row.has_color = 0
-  row.color = 0
   row.draw_function = map_tables.DRAW_FUNCTION_NONE
   row.has_resource = 0
   row.resource = 0
@@ -166,7 +163,6 @@ function M.menu_show_tech_tree_screen()
     local label = str.p8_concat2(invented_text, " invented")
     layout.layout_row_keys_append(extra.layout_row_keys, layout.layout_row_cell_fixed(fixed.p8_fixed_from_int(30)))
     layout.layout_row_keys_append(extra.layout_row_keys, layout.layout_row_cell_string(label))
-    extra.layout_row_keys.has_color = 1
     extra.layout_row_keys.color = fixed.p8_fixed_from_int(3)
     extra.has_tooltip = 1
     ui_button.button_keys_set_tooltip_row(extra, invented_lines(economy.invented))

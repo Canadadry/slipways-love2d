@@ -74,7 +74,6 @@ local function need_copy_into(copy, input)
   copy.row = map_tables.map_tables_make_data_row({
     count = row.count,
     items = row.items,
-    has_color = row.has_color,
     color = row.color,
     draw_function = row.draw_function,
     has_resource = row.has_resource,

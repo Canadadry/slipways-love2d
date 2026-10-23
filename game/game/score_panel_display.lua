@@ -150,15 +150,9 @@ end
 local function score_panel_update_add_row(box, entry, context)
   local score_i
   local values = {}
-  local has_value = {}
   local keys = layout.layout_row_keys_zero()
 
-  for index = 0, 4 do
-    values[index] = data_item({})
-    has_value[index] = 0
-  end
-
-  if entry.has_score == 0 then
+  if entry.score == nil then
     message_box.message_box_add_row(box, entry.row)
     return
   end
@@ -166,14 +160,13 @@ local function score_panel_update_add_row(box, entry, context)
   assert(entry.row.count <= 5,
     "score_panel_update_add_row: a scored row holds at most the five items its line lays out")
   for index = 0, entry.row.count - 1 do
+    values[index] = data_item({})
     data_item_assign(values[index], entry.row.items[index])
-    has_value[index] = 1
   end
 
   score_i = entry.score
 
   values[2] = data_item({ text = score_panel_final_score_text(context.final_score, score_i) })
-  has_value[2] = 1
 
   if score_i == 0 then
     local fm = require("game.probe").main_economy_typed()
@@ -192,25 +185,23 @@ local function score_panel_update_add_row(box, entry, context)
     piece1 = str.p8_concat2(end_status_str, " (")
     piece2 = str.p8_concat2(piece1, px)
     values[0] = data_item({ text = str.p8_concat2(piece2, ")") })
-    has_value[0] = 1
   end
 
   if score_i == 6 then
     for index = 0, 4 do
       local icon = (index + 1 <= fixed.p8_fixed_flr_int(context.final_score.tier)) and 56 or 57
       values[index] = data_item({ number = icon })
-      has_value[index] = 1
     end
   end
 
   for index = 0, 4 do
-    if has_value[index] ~= 0 then
+    if values[index] ~= nil then
       layout.layout_row_keys_append(keys, layout.layout_row_cell_item(values[index]))
     end
   end
-  keys.has_color = entry.row.has_color
-  keys.color = fixed.p8_fixed_from_int(entry.row.color)
-  keys.has_score = 1
+  if entry.row.color ~= nil then
+    keys.color = fixed.p8_fixed_from_int(entry.row.color)
+  end
   keys.score = fixed.p8_fixed_from_int(score_i)
   message_box.message_box_add_layout_row(box, keys,
     vec.vec_make(fixed.p8_fixed_from_int(entry.pos_x), fixed.p8_fixed_from_int(entry.pos_y)), entry.has_pos,

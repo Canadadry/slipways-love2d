@@ -6,7 +6,7 @@
 --   resource_names_entry_t: { key, name }.
 --   production_tables_entry_t: { key, count, values (4 entries), upgraded_entry }.
 --   data_item_t: { text, number, row, is_false, is_fixed, fixed, is_nil }.
---   data_row_t: { count, items, has_color, color, draw_function, has_resource,
+--   data_row_t: { count, items, color (nil when absent), draw_function, has_resource,
 --     resource }.
 --   project_records_entry_t: { header, npos, name, planet_codes, base_cost,
 --     production_key, inputs, output, upgrade_tech, byproduct,
@@ -63,8 +63,7 @@ function M.map_tables_make_data_row(fields)
   return check_fields(fields, {
     count = fields.count or 0,
     items = fields.items,
-    has_color = fields.has_color or 0,
-    color = fields.color or 0,
+    color = fields.color,
     draw_function = fields.draw_function or M.DRAW_FUNCTION_NONE,
     has_resource = fields.has_resource or 0,
     resource = fields.resource or 0,
@@ -247,7 +246,7 @@ M.project_records_table = {
 }
 
 M.icon_tooltips_1_1_items = { [0] = data_item({ text = "-lab-" }) }
-M.icon_tooltips_1_1 = data_row({ count = 1, items = M.icon_tooltips_1_1_items, has_color = 1, color = 9 })
+M.icon_tooltips_1_1 = data_row({ count = 1, items = M.icon_tooltips_1_1_items, color = 9 })
 M.icon_tooltips_1_2_items = {
   [0] = data_item({ text = "makes" }),
   data_item({ number = 24 }),
@@ -272,7 +271,7 @@ M.icon_tooltips_1_items = {
   data_item({ row = M.icon_tooltips_1_5 }),
 }
 M.icon_tooltips_2_1_items = { [0] = data_item({ text = "-food processor-" }) }
-M.icon_tooltips_2_1 = data_row({ count = 1, items = M.icon_tooltips_2_1_items, has_color = 1, color = 9 })
+M.icon_tooltips_2_1 = data_row({ count = 1, items = M.icon_tooltips_2_1_items, color = 9 })
 M.icon_tooltips_2_2_items = {
   [0] = data_item({ text = "converts" }),
   data_item({ number = 20 }),
@@ -282,12 +281,12 @@ M.icon_tooltips_2_2_items = {
 M.icon_tooltips_2_2 = data_row({ count = 4, items = M.icon_tooltips_2_2_items })
 M.icon_tooltips_2_items = { [0] = data_item({ row = M.icon_tooltips_2_1 }), data_item({ row = M.icon_tooltips_2_2 }) }
 M.icon_tooltips_3_1_items = { [0] = data_item({ text = "-slipgate-" }) }
-M.icon_tooltips_3_1 = data_row({ count = 1, items = M.icon_tooltips_3_1_items, has_color = 1, color = 9 })
+M.icon_tooltips_3_1 = data_row({ count = 1, items = M.icon_tooltips_3_1_items, color = 9 })
 M.icon_tooltips_3_2_items = { [0] = data_item({ text = "connects up to 3 slipways" }) }
 M.icon_tooltips_3_2 = data_row({ count = 1, items = M.icon_tooltips_3_2_items })
 M.icon_tooltips_3_items = { [0] = data_item({ row = M.icon_tooltips_3_1 }), data_item({ row = M.icon_tooltips_3_2 }) }
 M.icon_tooltips_4_1_items = { [0] = data_item({ text = "-infragate-" }) }
-M.icon_tooltips_4_1 = data_row({ count = 1, items = M.icon_tooltips_4_1_items, has_color = 1, color = 9 })
+M.icon_tooltips_4_1 = data_row({ count = 1, items = M.icon_tooltips_4_1_items, color = 9 })
 M.icon_tooltips_4_2_items = { [0] = data_item({ text = "connects up to 3 slipways" }) }
 M.icon_tooltips_4_2 = data_row({ count = 1, items = M.icon_tooltips_4_2_items })
 M.icon_tooltips_4_3_items = { [0] = data_item({ text = "routes through infragates" }) }
@@ -301,7 +300,7 @@ M.icon_tooltips_4_items = {
   data_item({ row = M.icon_tooltips_4_4 }),
 }
 M.icon_tooltips_5_1_items = { [0] = data_item({ text = "-trading hub-" }) }
-M.icon_tooltips_5_1 = data_row({ count = 1, items = M.icon_tooltips_5_1_items, has_color = 1, color = 9 })
+M.icon_tooltips_5_1 = data_row({ count = 1, items = M.icon_tooltips_5_1_items, color = 9 })
 M.icon_tooltips_5_2_items = {
   [0] = data_item({ text = "generates" }),
   data_item({ number = 25 }),
@@ -317,7 +316,7 @@ M.icon_tooltips_5_items = {
   data_item({ row = M.icon_tooltips_5_3 }),
 }
 M.icon_tooltips_6_1_items = { [0] = data_item({ text = "-synthesizer-" }) }
-M.icon_tooltips_6_1 = data_row({ count = 1, items = M.icon_tooltips_6_1_items, has_color = 1, color = 9 })
+M.icon_tooltips_6_1 = data_row({ count = 1, items = M.icon_tooltips_6_1_items, color = 9 })
 M.icon_tooltips_6_2_items = {
   [0] = data_item({ text = "can provide" }),
   data_item({ number = 28 }),
@@ -334,7 +333,7 @@ M.icon_tooltips_6_items = {
   data_item({ row = M.icon_tooltips_6_3 }),
 }
 M.icon_tooltips_7_1_items = { [0] = data_item({ text = "-ascension gate-" }) }
-M.icon_tooltips_7_1 = data_row({ count = 1, items = M.icon_tooltips_7_1_items, has_color = 1, color = 9 })
+M.icon_tooltips_7_1 = data_row({ count = 1, items = M.icon_tooltips_7_1_items, color = 9 })
 M.icon_tooltips_7_2_items = {
   [0] = data_item({ text = "accepts" }),
   data_item({ number = 19 }),

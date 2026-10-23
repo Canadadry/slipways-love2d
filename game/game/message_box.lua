@@ -66,13 +66,7 @@ local function article_zero()
     arguments[i] = { kind = M.MESSAGE_BOX_ARGUMENT_NUMBER, number = 0 }
   end
   entity_class.entity_init_header(row, nil)
-  row.color = 0
-  row.has_color = 0
-  row.background = 0
-  row.has_background = 0
   row.background_is_bool = 0
-  row.score = 0
-  row.has_score = 0
   row.placed_items = nil
   row.placed_items_count = 0
   row.width = 0
@@ -543,7 +537,6 @@ function M.message_box_open_box(frame, buttons, button_count)
 
   if frame.has_description ~= 0 then
     layout.layout_row_keys_append(description_row.layout_row_keys, layout.layout_row_cell_string(frame.description))
-    description_row.layout_row_keys.has_color = 1
     description_row.layout_row_keys.color = fixed.p8_fixed_from_int(13)
   end
 

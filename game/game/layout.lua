@@ -6,11 +6,12 @@
 --   layout_row_tuple_t: { count, scalars }, scalars 0-indexed of LAYOUT_ROW_TUPLE_CAP.
 --   layout_row_cell_t: { kind, as }, the union as a table holding the member the kind uses
 --     (fixed, text or tuple).
---   layout_row_keys_t: { items, count, has_color, color, has_background, background_is_bool,
---     background, has_score, score, has_pos, pos }, items 0-indexed of LAYOUT_ROW_KEYS_CAP cells.
---   layout_row_t: one table holding the entity header and { color, has_color, background,
---     has_background, background_is_bool, score, has_score, placed_items, placed_items_count,
---     width, serial }, placed_items 0-indexed.
+--   layout_row_keys_t: { items, count, color, background_is_bool, background, score, has_pos,
+--     pos }, items 0-indexed of LAYOUT_ROW_KEYS_CAP cells; color, background and score nil when
+--     absent, background_is_bool read only with a background.
+--   layout_row_t: one table holding the entity header and { color, background,
+--     background_is_bool, score, placed_items, placed_items_count, width, serial }, placed_items
+--     0-indexed, the same three nil when absent.
 --   tooltip_t: one table holding the entity header and { rows, rows_count }, rows 0-indexed.
 -- Scalars, tuples and cells are by value and never changed after their constructor: passing or
 -- storing one shares the table.
@@ -205,7 +206,7 @@ local function row_measure_item(self, cell, out_item, out_w, out_spacing)
   if cell.kind == M.LAYOUT_ROW_CELL_STRING then
     local c = fixed.p8_fixed_from_int(6)
 
-    if self ~= nil and self.has_color ~= 0 then
+    if self ~= nil and self.color ~= nil then
       c = self.color
     end
     out_item.kind = M.LAYOUT_ROW_ITEM_TEXT
@@ -337,13 +338,7 @@ local function keys_zero()
   return {
     items = items,
     count = 0,
-    has_color = 0,
-    color = 0,
-    has_background = 0,
     background_is_bool = 0,
-    background = 0,
-    has_score = 0,
-    score = 0,
     has_pos = 0,
     pos = vec.vec_make(0, 0),
   }
@@ -364,8 +359,9 @@ local function tooltip_line(item)
   for i = 0, item.row.count - 1 do
     M.layout_row_keys_append(keys, row_scalar_item(item.row.items[i]))
   end
-  keys.has_color = item.row.has_color
-  keys.color = fixed.p8_fixed_from_int(item.row.color)
+  if item.row.color ~= nil then
+    keys.color = fixed.p8_fixed_from_int(item.row.color)
+  end
   return M.layout_row_new(keys)
 end
 
@@ -424,13 +420,10 @@ M.layout_row_class_def = {
 
 local function row_struct_init(self)
   entity_class.entity_init_header(self, M.layout_row_class_def)
-  self.color = 0
-  self.has_color = 0
-  self.background = 0
-  self.has_background = 0
+  self.color = nil
+  self.background = nil
   self.background_is_bool = 0
-  self.score = 0
-  self.has_score = 0
+  self.score = nil
   self.placed_items = nil
   self.placed_items_count = 0
   self.width = 0
@@ -448,19 +441,12 @@ local function row_fill(self, keys)
     layout_row_construct(self, nil, 0)
     return
   end
-  if keys.has_color ~= 0 then
-    self.color = keys.color
-    self.has_color = 1
-  end
-  if keys.has_background ~= 0 then
+  self.color = keys.color
+  if keys.background ~= nil then
     self.background = keys.background
-    self.has_background = 1
     self.background_is_bool = keys.background_is_bool
   end
-  if keys.has_score ~= 0 then
-    self.score = keys.score
-    self.has_score = 1
-  end
+  self.score = keys.score
   if keys.has_pos ~= 0 then
     entity_class.entity_set_pos(self, keys.pos)
   end
@@ -496,8 +482,9 @@ function M.layout_row_keys_of_row(row)
   for i = 0, row.count - 1 do
     M.layout_row_keys_append(keys, M.layout_row_cell_item(row.items[i]))
   end
-  keys.has_color = row.has_color
-  keys.color = fixed.p8_fixed_from_int(row.color)
+  if row.color ~= nil then
+    keys.color = fixed.p8_fixed_from_int(row.color)
+  end
   return keys
 end
 
@@ -521,7 +508,7 @@ end
 local function tooltip_create(row)
   local self
 
-  assert(row == nil or (row.has_color == 0 and row.draw_function == map_tables.DRAW_FUNCTION_NONE),
+  assert(row == nil or (row.color == nil and row.draw_function == map_tables.DRAW_FUNCTION_NONE),
     "tooltip_create: every line is positional; a named key has no member -- stop, do not add one")
   self = tooltip_struct_alloc()
   tooltip_construct(self, row)

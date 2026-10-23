@@ -9,7 +9,7 @@
 --   pause_menu_tail_t: { fixed_pos_x, fixed_pos_y, row_step_x, row_step_y,
 --     back_color }.
 --   difficulty_options_entry_t: { layout_row, name, trade, type_bias }.
---   score_rows_entry_t: { row (a data_row_t held inline), has_score, score,
+--   score_rows_entry_t: { row (a data_row_t held inline), score (nil when unscored),
 --     has_pos, pos_x, pos_y }.
 --   kind_record_t: { required_tech, has_sprite, sprite, state, has_cost, cost,
 --     archetype }.
@@ -54,8 +54,7 @@ local data_row = map_tables.map_tables_make_data_row
 local function score_row(fields)
   return check_fields(fields, {
     row = fields.row or data_row({}),
-    has_score = fields.has_score or 0,
-    score = fields.score or 0,
+    score = fields.score,
     has_pos = fields.has_pos or 0,
     pos_x = fields.pos_x or 0,
     pos_y = fields.pos_y or 0,
@@ -214,32 +213,32 @@ M.score_rows_table = {
   score_row({ row = data_row({ count = 3, items = M.score_rows_4_items, draw_function = DRAW_BAR }) }),
   score_row({ row = data_row({ count = 3, items = M.score_rows_5_items, draw_function = DRAW_BAR }) }),
   score_row({
-    row = data_row({ count = 1, items = M.score_rows_6_items, has_color = 1, color = 5 }),
-    has_score = 1, score = 0, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 43,
+    row = data_row({ count = 1, items = M.score_rows_6_items, color = 5 }),
+    score = 0, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 43,
   }),
   score_row({
     row = data_row({ count = 2, items = M.score_rows_7_items }),
-    has_score = 1, score = 1, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 30,
+    score = 1, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 30,
   }),
   score_row({
     row = data_row({ count = 2, items = M.score_rows_8_items }),
-    has_score = 1, score = 2, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 21,
+    score = 2, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 21,
   }),
   score_row({
     row = data_row({ count = 2, items = M.score_rows_9_items }),
-    has_score = 1, score = 3, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 12,
+    score = 3, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 12,
   }),
   score_row({
     row = data_row({ count = 5, items = M.score_rows_10_items }),
-    has_score = 1, score = 4, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 3,
+    score = 4, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT - 3,
   }),
   score_row({
     row = data_row({ count = 2, items = M.score_rows_11_items }),
-    has_score = 1, score = 5, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT + 10,
+    score = 5, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT + 10,
   }),
   score_row({
     row = data_row({ count = 0, items = nil }),
-    has_score = 1, score = 6, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT + 18,
+    score = 6, has_pos = 1, pos_x = HALF_WIDTH, pos_y = HALF_HEIGHT + 18,
   }),
 }
 
@@ -251,10 +250,10 @@ M.planet_mood_rows_2_items = { [0] = data_item({ text = "content" }) }
 M.planet_mood_rows_3_items = { [0] = data_item({ text = "prosperous" }) }
 M.planet_mood_rows_4_items = { [0] = data_item({ text = "rich" }) }
 M.planet_mood_rows_rows = {
-  [0] = data_row({ count = 1, items = M.planet_mood_rows_1_items, has_color = 1, color = 8 }),
-  data_row({ count = 1, items = M.planet_mood_rows_2_items, has_color = 1, color = 3 }),
-  data_row({ count = 1, items = M.planet_mood_rows_3_items, has_color = 1, color = 9 }),
-  data_row({ count = 1, items = M.planet_mood_rows_4_items, has_color = 1, color = 12 }),
+  [0] = data_row({ count = 1, items = M.planet_mood_rows_1_items, color = 8 }),
+  data_row({ count = 1, items = M.planet_mood_rows_2_items, color = 3 }),
+  data_row({ count = 1, items = M.planet_mood_rows_3_items, color = 9 }),
+  data_row({ count = 1, items = M.planet_mood_rows_4_items, color = 12 }),
 }
 M.planet_made_resources_items = { [0] = 12, 36, 24, 25 }
 M.planet_made_resources_seq = { count = 4, items = M.planet_made_resources_items }
@@ -266,17 +265,17 @@ M.planet_spacer_items = {
 }
 M.planet_spacer_row = data_row({ count = 4, items = M.planet_spacer_items })
 M.structure_name_items = { [0] = data_item({ text = "laboratory" }) }
-M.structure_name_row = data_row({ count = 1, items = M.structure_name_items, has_color = 1, color = 13 })
+M.structure_name_row = data_row({ count = 1, items = M.structure_name_items, color = 13 })
 M.trading_hub_name_items = { [0] = data_item({ text = "trading hub" }) }
-M.trading_hub_name_row = data_row({ count = 1, items = M.trading_hub_name_items, has_color = 1, color = 13 })
+M.trading_hub_name_row = data_row({ count = 1, items = M.trading_hub_name_items, color = 13 })
 M.processor_name_items = { [0] = data_item({ text = "processor" }) }
-M.processor_name_row = data_row({ count = 1, items = M.processor_name_items, has_color = 1, color = 13 })
+M.processor_name_row = data_row({ count = 1, items = M.processor_name_items, color = 13 })
 M.ascension_name_items = { [0] = data_item({ text = "ascension nr" }) }
-M.ascension_name_row = data_row({ count = 1, items = M.ascension_name_items, has_color = 1, color = 13 })
+M.ascension_name_row = data_row({ count = 1, items = M.ascension_name_items, color = 13 })
 M.protostar_name_items = { [0] = data_item({ text = "protostar" }) }
-M.protostar_name_row = data_row({ count = 1, items = M.protostar_name_items, has_color = 1, color = 13 })
+M.protostar_name_row = data_row({ count = 1, items = M.protostar_name_items, color = 13 })
 M.synthesizer_name_items = { [0] = data_item({ text = "synthesizer" }) }
-M.synthesizer_name_row = data_row({ count = 1, items = M.synthesizer_name_items, has_color = 1, color = 13 })
+M.synthesizer_name_row = data_row({ count = 1, items = M.synthesizer_name_items, color = 13 })
 M.structure_accepted_resources_items = { [0] = 28, 18, 20, 21, 22, 48 }
 M.structure_accepted_resources_seq = { count = 6, items = M.structure_accepted_resources_items }
 M.trading_hub_accepted_resources_items = { [0] = 28, 48, 18, 20, 21, 22 }

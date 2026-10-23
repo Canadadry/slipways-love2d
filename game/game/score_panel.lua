@@ -95,7 +95,6 @@ local function score_panel_row_copy(dst, items, cap, src)
   end
   dst.count = src.count
   dst.items = src.items
-  dst.has_color = src.has_color
   dst.color = src.color
   dst.draw_function = src.draw_function
   dst.has_resource = src.has_resource

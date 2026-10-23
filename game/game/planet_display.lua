@@ -264,7 +264,6 @@ function M.planet_inspection_panel(self)
 
     signed, discard_color = economy_formulas.economy_formulas_format_signed(self.net_income, 0, nil, discard_color)
     layout.layout_row_keys_append(h_keys, layout.layout_row_cell_string(planet_dollar(signed)))
-    h_keys.has_background = 1
     h_keys.background_is_bool = (self.net_income < fixed.p8_fixed_from_int(0)) and 1 or 0
     h_keys.background = (self.net_income >= fixed.p8_fixed_from_int(0)) and fixed.p8_fixed_from_int(1) or 0
     buttons[0].has_side_tooltip_row = 1
@@ -423,7 +422,6 @@ local function planet_projects_panel_keys(self, b, keys)
   if od > fixed.p8_fixed_from_int(0) then
     layout.layout_row_keys_append(keys.side_tooltip_row,
       layout.layout_row_cell_string(planet_dollar(str.p8_tostr_fixed(od))))
-    keys.side_tooltip_row.has_color = 1
     keys.side_tooltip_row.color = fixed.p8_fixed_from_int(13)
     keys.has_side_tooltip_row = 1
   end
