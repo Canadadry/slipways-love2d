@@ -296,7 +296,7 @@ function M.set_main_ui(ui)
   g_main_ui = entity_id.link(ui)
 end
 
--- Called once per frame by `cart_update60()`. TODO: `mem` is no longer read; drop it.
+-- Called once per frame by `cart.update60()`. TODO: `mem` is no longer read; drop it.
 function M.update(mem, self)
   local scroll = require("game.scroll")
   local ephemerals_before

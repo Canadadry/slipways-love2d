@@ -30,17 +30,17 @@ local cheat_activations = 0
 local function read_bindings()
   local text = love.filesystem.read("bindings.cfg")
   if text == nil then
-    return bindings_default.bindings_default
+    return bindings_default.bindings
   end
   local parsed = {}
   local error_report = {}
-  if not bindings.bindings_parse("bindings.cfg", text, parsed, error_report) then
+  if not bindings.parse("bindings.cfg", text, parsed, error_report) then
     fatal.raise(error_report.text)
   end
   return parsed
 end
 
--- Returns ATTRACT_AFTER_DEFAULT when args hold no --attract-after; ignores every other argument.
+-- Returns attract.AFTER_DEFAULT when args hold no --attract-after; ignores every other argument.
 local function read_attract_after(args)
   local frames = nil
   local i = 1
@@ -63,7 +63,7 @@ local function read_attract_after(args)
       i = i + 1
     end
   end
-  return frames or attract.ATTRACT_AFTER_DEFAULT
+  return frames or attract.AFTER_DEFAULT
 end
 
 local function read_pad_buttons()
@@ -91,23 +91,23 @@ function love.load(args)
   local zero_frame = { mouse_x = 0, mouse_y = 0, mouse_buttons = 0, pad_buttons = 0 }
   dispatch_context.set_input({ frames = { zero_frame }, frame_count = 1, current_frame = 1 })
   draw_meter.install()
-  cart.cart_load()
-  cart.cart_init()
-  input_step.input_step_init(step, read_bindings())
-  input_step.input_step_set_attract_after(step, read_attract_after(args))
+  cart.load()
+  cart.init()
+  input_step.init(step, read_bindings())
+  input_step.set_attract_after(step, read_attract_after(args))
 end
 
 function love.update(dt)
   local raw = { mouse_x = 0, mouse_y = 0, mouse_buttons = 0, pad_buttons = read_pad_buttons() }
-  if input_step.input_step_run(step, raw) then
+  if input_step.run(step, raw) then
     cheat_activations = cheat_activations + 1
   end
-  cart.cart_update60()
+  cart.update60()
 end
 
 function love.draw()
   screen.frame_begin()
-  cart.cart_draw()
+  cart.draw()
   screen.frame_end()
   draw_meter.frame_end()
   screen.present()

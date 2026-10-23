@@ -67,13 +67,13 @@ end
 
 local function direction_mask(bindings, mode, direction)
   if direction == pad_direction.PAD_DIRECTION_UP then
-    return bindings_module.bindings_mask(bindings, mode, bindings_module.BINDINGS_ACTION_JUMP_UP)
+    return bindings_module.mask(bindings, mode, bindings_module.ACTION_JUMP_UP)
   elseif direction == pad_direction.PAD_DIRECTION_DOWN then
-    return bindings_module.bindings_mask(bindings, mode, bindings_module.BINDINGS_ACTION_JUMP_DOWN)
+    return bindings_module.mask(bindings, mode, bindings_module.ACTION_JUMP_DOWN)
   elseif direction == pad_direction.PAD_DIRECTION_LEFT then
-    return bindings_module.bindings_mask(bindings, mode, bindings_module.BINDINGS_ACTION_JUMP_LEFT)
+    return bindings_module.mask(bindings, mode, bindings_module.ACTION_JUMP_LEFT)
   elseif direction == pad_direction.PAD_DIRECTION_RIGHT then
-    return bindings_module.bindings_mask(bindings, mode, bindings_module.BINDINGS_ACTION_JUMP_RIGHT)
+    return bindings_module.mask(bindings, mode, bindings_module.ACTION_JUMP_RIGHT)
   end
   return 0
 end
@@ -89,7 +89,7 @@ end
 
 function M.pad_jump_repeat_step(jump, bindings, mode, pad_buttons, pressed)
   assert(bindings ~= nil and
-    bindings_module.bindings_mode_has_action(mode, bindings_module.BINDINGS_ACTION_JUMP_UP),
+    bindings_module.mode_has_action(mode, bindings_module.ACTION_JUMP_UP),
     "pad_jump_repeat_step: a mode with jump_* actions (jump or slipway)")
   local direction = first_pressed_direction(bindings, mode, pressed)
   if direction ~= pad_direction.PAD_DIRECTION_NONE then

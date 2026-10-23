@@ -5,12 +5,12 @@ local bit = require("bit")
 
 local M = {}
 
-M.CHEAT_CHORDS = 4
+M.CHORDS = 4
 
 local CHORD_FIRST = input.PAD_BUTTON_5
 local CHORD_SECOND = input.PAD_BUTTON_6
 
-function M.cheat_init(cheat)
+function M.init(cheat)
   cheat.previous_first = false
   cheat.previous_second = false
   cheat.chords = 0
@@ -33,11 +33,11 @@ local function apply()
   hy.credits = fixed.from_int(200)
 end
 
-function M.cheat_chord_buttons()
+function M.chord_buttons()
   return bit.bor(CHORD_FIRST, CHORD_SECOND)
 end
 
-function M.cheat_step(cheat, pad_buttons)
+function M.step(cheat, pad_buttons)
   local first = bit.band(pad_buttons, CHORD_FIRST) ~= 0
   local second = bit.band(pad_buttons, CHORD_SECOND) ~= 0
   local first_edge = first and not cheat.previous_first
@@ -54,7 +54,7 @@ function M.cheat_step(cheat, pad_buttons)
     return false
   end
   cheat.chords = cheat.chords + 1
-  if cheat.chords < M.CHEAT_CHORDS then
+  if cheat.chords < M.CHORDS then
     return false
   end
   cheat.chords = 0

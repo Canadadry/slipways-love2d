@@ -1,4 +1,4 @@
--- Help and the score panel receive cart_request_start_game and cart_init_method at cart_load time,
+-- Help and the score panel receive cart.request_start_game and cart.init_method at cart.load time,
 -- never by require: no game module requires the cart, so it requires everything at load.
 local bootstrap = require("engine.bootstrap")
 local dispatch_context = require("engine.dispatch_context")
@@ -44,32 +44,32 @@ local gfx = require("p8.gfx")
 
 local M = {}
 
-M.CART_NO_DEMO_FRAME = -1
+M.NO_DEMO_FRAME = -1
 
 local g_title_built = false
 local g_save_cut = false
-local g_demo_frame = M.CART_NO_DEMO_FRAME
+local g_demo_frame = M.NO_DEMO_FRAME
 -- 0 when not loading, else the loading frame being played, from 1 (the press) to loading_screen.FRAMES.
 local g_loading_frame = 0
 local g_requested_option = nil
 
 local function quit_game()
   entity_registry.abandon_live_entities()
-  M.cart_flush_exit_queue()
+  M.flush_exit_queue()
   entity_registry.forget_registries()
 end
 
 -- Do not list the inits data_init.init() and score_panel.init() run themselves: they would run twice.
-function M.cart_load()
+function M.load()
   local memory
 
   quit_game()
   g_title_built = false
   g_save_cut = false
-  g_demo_frame = M.CART_NO_DEMO_FRAME
+  g_demo_frame = M.NO_DEMO_FRAME
   g_loading_frame = 0
   entity.init()
-  assert(entity.ready(), "cart_load: entity.init() must run before every class that extends entity_t")
+  assert(entity.ready(), "cart.load: entity.init() must run before every class that extends entity_t")
   scroll.camera_init()
   mouse.init()
   ui.init()
@@ -94,29 +94,29 @@ function M.cart_load()
   slipway.init()
   planet_family.init()
   assert(planet_family.structure_ready() and planet_family.burst_ready() and planet.ready(),
-    "cart_load: structure and burst extend planet: planet.init() must run first")
+    "cart.load: structure and burst extend planet: planet.init() must run first")
   planet_family_trade.init()
   assert(planet_family_trade.slipgate_ready() and planet_family_trade.synthesizer_ready()
       and planet_family.structure_ready() and planet_family.ascension_ready(),
-    "cart_load: slipgate extends structure and synthesizer extends ascension: planet_family.init() must run first")
+    "cart.load: slipgate extends structure and synthesizer extends ascension: planet_family.init() must run first")
   wormhole.init()
 
   help.init()
   assert(help.screen_ready() and probe.ready(),
-    "cart_load: the help screen extends probe: probe.init() must run first")
+    "cart.load: the help screen extends probe: probe.init() must run first")
   score_panel.init()
   structure_icon.init()
   menu.init()
 
-  help.set_start_game(M.cart_request_start_game)
-  score_panel.set_init(M.cart_init_method)
+  help.set_start_game(M.request_start_game)
+  score_panel.set_init(M.init_method)
 end
 
-function M.cart_flush_exit_queue()
+function M.flush_exit_queue()
   exit_queue.flush()
 end
 
-function M.cart_shutdown()
+function M.shutdown()
   quit_game()
   menu.shutdown()
   structure_icon.shutdown()
@@ -156,7 +156,7 @@ for i = 1, save_state.SAVE_STATE_MAX_BYTES do
 end
 
 local function resume_saved_game(self)
-  M.cart_resume_game(g_save_state)
+  M.resume_game(g_save_state)
 end
 
 local function title_resume_handler()
@@ -169,11 +169,11 @@ local function title_resume_handler()
   end
 end
 
-function M.cart_init()
-  assert(structure_icon.ready(), "cart_init: cart_load() must run first")
-  assert(help.start_game_field_value() == M.cart_request_start_game
-      and score_panel.init_field_value() == M.cart_init_method,
-    "cart_init: help.init() and score_panel.init() reset these bridges, so cart_load() must "
+function M.init()
+  assert(structure_icon.ready(), "cart.init: cart.load() must run first")
+  assert(help.start_game_field_value() == M.request_start_game
+      and score_panel.init_field_value() == M.init_method,
+    "cart.init: help.init() and score_panel.init() reset these bridges, so cart.load() must "
       .. "install them afterwards: every button copies the value when it is built")
 
   g_loading_frame = 0
@@ -193,38 +193,38 @@ function M.cart_init()
   g_title_built = true
 end
 
-function M.cart_title_shown()
+function M.title_shown()
   return g_title_built and g_loading_frame == 0 and message_box.shown_message_box() == nil
     and entity_registry.count_tagged(entity_class.TAG_MESSAGE_BOX) == 0
 end
 
 -- Between frames only, never from a handler inside ui.update or update_entities: it releases
 -- every live entity while they are still being walked.
-function M.cart_return_to_title()
+function M.return_to_title()
   entity_registry.abandon_live_entities()
-  M.cart_flush_exit_queue()
+  M.flush_exit_queue()
   -- After the flush: reset_world's own abandon would walk the released entries.
   entity_registry.forget_registries()
   g_save_cut = false
-  g_demo_frame = M.CART_NO_DEMO_FRAME
-  M.cart_init()
+  g_demo_frame = M.NO_DEMO_FRAME
+  M.init()
 end
 
-function M.cart_cut_save()
+function M.cut_save()
   g_save_cut = true
 end
 
-function M.cart_set_demo_frame(frame)
+function M.set_demo_frame(frame)
   g_demo_frame = frame
 end
 
-function M.cart_init_method(self)
-  M.cart_init()
+function M.init_method(self)
+  M.init()
 end
 
 local function start_world(difficulty)
   assert(economy_module.ready() and planet_family.structure_ready(),
-    "game start: cart_load() must run first")
+    "game start: cart.load() must run first")
 
   economy_score.set_difficulty(difficulty)
   g_title_built = false
@@ -269,7 +269,7 @@ local function recompute_economy()
   economy_module.recompute(probe.main_economy_typed())
 end
 
-function M.cart_start_game(chosen_option)
+function M.start_game(chosen_option)
   start_world(chosen_option)
   galaxy.populate(fixed.from_int(90))
   start_interface()
@@ -278,7 +278,7 @@ end
 
 -- The title's difficulty buttons: copies the option's value, then the press frame and the next
 -- draw the loading screen and the frame after generates the galaxy. nil starts with no difficulty.
-function M.cart_request_start_game(chosen_option)
+function M.request_start_game(chosen_option)
   g_requested_option = nil
   if chosen_option ~= nil then
     g_requested_option = ui_button.button_zero()
@@ -289,18 +289,18 @@ function M.cart_request_start_game(chosen_option)
   g_loading_frame = 1
 end
 
-function M.cart_loading()
+function M.loading()
   return g_loading_frame ~= 0
 end
 
-function M.cart_resume_game(state)
+function M.resume_game(state)
   local difficulty = {}
 
   save_load.save_load_difficulty(state, difficulty)
   save_load.save_load_background_seed(state)
   start_world(difficulty)
   assert(background.live().seed == state.background_seed,
-    "cart_resume_game: the RNG moved between the reseed and the background")
+    "cart.resume_game: the RNG moved between the reseed and the background")
   save_load.save_load_world(state)
   start_interface()
   save_load.save_load_globals(state)
@@ -321,25 +321,25 @@ local function save_at_frame_end()
   end
 end
 
-function M.cart_update60()
+function M.update60()
   if g_loading_frame > 0 and g_loading_frame < loading_screen.FRAMES then
     g_loading_frame = g_loading_frame + 1
     return
   end
   if g_loading_frame == loading_screen.FRAMES then
-    M.cart_flush_exit_queue()
-    M.cart_start_game(g_requested_option)
+    M.flush_exit_queue()
+    M.start_game(g_requested_option)
     g_loading_frame = 0
     if not g_save_cut then save_at_frame_end() end
     return
   end
-  M.cart_flush_exit_queue()
+  M.flush_exit_queue()
   bootstrap.update_entities()
   ui.update(dispatch_context.mem(), ui.main_ui())
   if not g_save_cut then save_at_frame_end() end
 end
 
-function M.cart_draw()
+function M.draw()
   local mem = dispatch_context.mem()
 
   if g_loading_frame ~= 0 then

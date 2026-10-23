@@ -294,7 +294,7 @@ end
 local node_ids = {}
 local slipway_ids = {}
 
--- Where cart_start_game calls galaxy.populate: the saved nodes, then the
+-- Where cart.start_game calls galaxy.populate: the saved nodes, then the
 -- type picker and vanish walk.
 function M.save_load_world(state)
   assert(state ~= nil)

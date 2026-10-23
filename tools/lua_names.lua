@@ -9,6 +9,9 @@ local PREFIX_EXCEPTIONS = {
         draw_row_text_image = "the verb is the module's first word; draw_functions.row_text_image would lose its action",
         draw_rows_default = "the verb is the module's first word; draw_functions.rows_default would lose its action",
     },
+    ["game.bindings_default"] = {
+        bindings = "the stripped name is empty; the export is the default bindings table, named by its role",
+    },
 }
 
 -- Keyed by path under the game directory, then alias, then field.

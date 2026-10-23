@@ -200,16 +200,16 @@ local function pan_speed(held_frames)
 end
 
 local pan_action = {
-  bindings_module.BINDINGS_ACTION_PAN_UP, bindings_module.BINDINGS_ACTION_PAN_DOWN,
-  bindings_module.BINDINGS_ACTION_PAN_LEFT, bindings_module.BINDINGS_ACTION_PAN_RIGHT,
+  bindings_module.ACTION_PAN_UP, bindings_module.ACTION_PAN_DOWN,
+  bindings_module.ACTION_PAN_LEFT, bindings_module.ACTION_PAN_RIGHT,
 }
 
 local function aim_pan(nav, mode, pad_buttons)
-  assert(bindings_module.bindings_mode_has_action(mode, bindings_module.BINDINGS_ACTION_PAN_UP),
+  assert(bindings_module.mode_has_action(mode, bindings_module.ACTION_PAN_UP),
     "aim_pan: a mode with pan_* actions (aim or placement)")
   local speed = {}
   for i = 1, pad_jump.PAD_JUMP_DIRECTIONS do
-    if bit.band(pad_buttons, bindings_module.bindings_mask(nav.bindings, mode, pan_action[i])) == 0 then
+    if bit.band(pad_buttons, bindings_module.mask(nav.bindings, mode, pan_action[i])) == 0 then
       nav.held_frames[i] = 0
     elseif nav.held_frames[i] < HELD_FRAMES_CAP then
       nav.held_frames[i] = nav.held_frames[i] + 1
@@ -248,11 +248,11 @@ local function copy_bindings(nav, bindings)
     nav.bindings = { masks = {} }
   end
   local masks = nav.bindings.masks
-  for mode = 1, bindings_module.BINDINGS_MODE_COUNT do
+  for mode = 1, bindings_module.MODE_COUNT do
     if masks[mode] == nil then
       masks[mode] = {}
     end
-    for action = 1, bindings_module.BINDINGS_ACTION_COUNT do
+    for action = 1, bindings_module.ACTION_COUNT do
       masks[mode][action] = bindings.masks[mode][action]
     end
   end
@@ -299,11 +299,11 @@ function M.pad_nav_bindings(nav)
 end
 
 local function action_pressed(nav, pressed, mode, action)
-  return bit.band(pressed, bindings_module.bindings_mask(nav.bindings, mode, action)) ~= 0
+  return bit.band(pressed, bindings_module.mask(nav.bindings, mode, action)) ~= 0
 end
 
 local function action_held(nav, pad_buttons, mode, action)
-  return bit.band(pad_buttons, bindings_module.bindings_mask(nav.bindings, mode, action)) ~= 0
+  return bit.band(pad_buttons, bindings_module.mask(nav.bindings, mode, action)) ~= 0
 end
 
 function M.pad_nav_focus(nav)
@@ -325,21 +325,21 @@ end
 
 local function panel_mode(nav)
   if menu.pause_menu_shown() then
-    return bindings_module.BINDINGS_MODE_PAUSE
+    return bindings_module.MODE_PAUSE
   end
   if probe.main_economy_typed() == nil then
-    return bindings_module.BINDINGS_MODE_TITLE
+    return bindings_module.MODE_TITLE
   end
-  return cycle_open(nav) and bindings_module.BINDINGS_MODE_PANELS or bindings_module.BINDINGS_MODE_MENU
+  return cycle_open(nav) and bindings_module.MODE_PANELS or bindings_module.MODE_MENU
 end
 
 local move_action = {
-  bindings_module.BINDINGS_ACTION_MOVE_UP, bindings_module.BINDINGS_ACTION_MOVE_DOWN,
-  bindings_module.BINDINGS_ACTION_MOVE_LEFT, bindings_module.BINDINGS_ACTION_MOVE_RIGHT,
+  bindings_module.ACTION_MOVE_UP, bindings_module.ACTION_MOVE_DOWN,
+  bindings_module.ACTION_MOVE_LEFT, bindings_module.ACTION_MOVE_RIGHT,
 }
 
 local function first_pressed_move(nav, pressed, mode)
-  assert(bindings_module.bindings_mode_has_action(mode, bindings_module.BINDINGS_ACTION_MOVE_UP),
+  assert(bindings_module.mode_has_action(mode, bindings_module.ACTION_MOVE_UP),
     "first_pressed_move: a mode with move_* actions (title, menu, pause or panels)")
   for i = 1, pad_jump.PAD_JUMP_DIRECTIONS do
     if action_pressed(nav, pressed, mode, move_action[i]) then
@@ -352,14 +352,14 @@ end
 local function panel_step(nav, pad_buttons, pressed, played)
   local mode = panel_mode(nav)
   local direction = first_pressed_move(nav, pressed, mode)
-  local choose_held = action_held(nav, pad_buttons, mode, bindings_module.BINDINGS_ACTION_CHOOSE_ROW)
+  local choose_held = action_held(nav, pad_buttons, mode, bindings_module.ACTION_CHOOSE_ROW)
   if menu.pause_menu_shown() then
     nav.pause_choose_row_armed = nav.pause_choose_row_armed or
-      action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PAUSE, bindings_module.BINDINGS_ACTION_CHOOSE_ROW)
+      action_pressed(nav, pressed, bindings_module.MODE_PAUSE, bindings_module.ACTION_CHOOSE_ROW)
     choose_held = choose_held and nav.pause_choose_row_armed
   elseif armed_panel_open(nav) then
     nav.menu_choose_row_armed = nav.menu_choose_row_armed or
-      action_pressed(nav, pressed, mode, bindings_module.BINDINGS_ACTION_CHOOSE_ROW)
+      action_pressed(nav, pressed, mode, bindings_module.ACTION_CHOOSE_ROW)
     choose_held = choose_held and nav.menu_choose_row_armed
   end
   local at
@@ -497,7 +497,7 @@ local function aim_mode_step(nav, pad_buttons, pressed, back_returns, release, s
   nav.cursor_x = cint.div(vram.SCREEN_WIDTH, 2)
   nav.cursor_y = cint.div(vram.SCREEN_HEIGHT, 2)
   if not still then
-    aim_pan(nav, bindings_module.BINDINGS_MODE_AIM, pad_buttons)
+    aim_pan(nav, bindings_module.MODE_AIM, pad_buttons)
   end
   if select_tapped and not nav.probe_or_fold_engaged then
     local jumps
@@ -506,16 +506,16 @@ local function aim_mode_step(nav, pad_buttons, pressed, back_returns, release, s
       return shown
     end
   end
-  if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_AIM, bindings_module.BINDINGS_ACTION_LEAVE_AIM) and
+  if action_pressed(nav, pressed, bindings_module.MODE_AIM, bindings_module.ACTION_LEAVE_AIM) and
     not nav.probe_or_fold_engaged then
     leave_aim_mode(nav)
     return shown
   end
-  if not action_held(nav, pad_buttons, bindings_module.BINDINGS_MODE_AIM,
-      bindings_module.BINDINGS_ACTION_PROBE_OR_FOLD) then
+  if not action_held(nav, pad_buttons, bindings_module.MODE_AIM,
+      bindings_module.ACTION_PROBE_OR_FOLD) then
     nav.probe_or_fold_engaged = false
-  elseif action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_AIM,
-      bindings_module.BINDINGS_ACTION_PROBE_OR_FOLD) and not release then
+  elseif action_pressed(nav, pressed, bindings_module.MODE_AIM,
+      bindings_module.ACTION_PROBE_OR_FOLD) and not release then
     nav.probe_or_fold_engaged = entity_under(nav.cursor_x, nav.cursor_y, presses_off_background) == nil
   end
   if nav.probe_or_fold_engaged then
@@ -619,65 +619,65 @@ end
 
 local function map_binding_mode(nav)
   if M.pad_nav_placing(nav) ~= nil then
-    return bindings_module.BINDINGS_MODE_PLACEMENT
+    return bindings_module.MODE_PLACEMENT
   end
   local mode = map_mode_now(nav)
   if mode == M.PAD_NAV_MAP_AIM then
-    return bindings_module.BINDINGS_MODE_AIM
+    return bindings_module.MODE_AIM
   elseif mode == M.PAD_NAV_MAP_SLIPWAY then
-    return bindings_module.BINDINGS_MODE_SLIPWAY
+    return bindings_module.MODE_SLIPWAY
   end
-  return bindings_module.BINDINGS_MODE_JUMP
+  return bindings_module.MODE_JUMP
 end
 
 -- The mode the dispatch would run from the nav state at the call: decide it before anything is unwound.
 local function nav_mode(nav)
   if on_the_map(nav) and M.pad_nav_placing(nav) ~= nil then
-    return bindings_module.BINDINGS_MODE_PLACEMENT
+    return bindings_module.MODE_PLACEMENT
   end
   if M.pad_nav_panel_open() then
     return panel_mode(nav)
   end
   if cycle_open(nav) then
-    return bindings_module.BINDINGS_MODE_PANELS
+    return bindings_module.MODE_PANELS
   end
   if pad_build.pad_build_is_open(nav.build) then
-    return bindings_module.BINDINGS_MODE_BUILD_BAR
+    return bindings_module.MODE_BUILD_BAR
   end
   return map_binding_mode(nav)
 end
 
 local function back_mode(nav)
   if pad_panel.pad_panel_box_open() and not menu.pause_menu_shown() then
-    return cycle_open(nav) and bindings_module.BINDINGS_MODE_PANELS or bindings_module.BINDINGS_MODE_MENU
+    return cycle_open(nav) and bindings_module.MODE_PANELS or bindings_module.MODE_MENU
   end
   return map_binding_mode(nav)
 end
 
 local function back_action(mode)
-  if mode == bindings_module.BINDINGS_MODE_JUMP or mode == bindings_module.BINDINGS_MODE_AIM then
-    return bindings_module.BINDINGS_ACTION_BACK
-  elseif mode == bindings_module.BINDINGS_MODE_SLIPWAY then
-    return bindings_module.BINDINGS_ACTION_CANCEL_SLIPWAY
-  elseif mode == bindings_module.BINDINGS_MODE_PLACEMENT then
-    return bindings_module.BINDINGS_ACTION_CANCEL_PLACEMENT
-  elseif mode == bindings_module.BINDINGS_MODE_MENU then
-    return bindings_module.BINDINGS_ACTION_CLOSE_MENU
-  elseif mode == bindings_module.BINDINGS_MODE_PANELS then
-    return bindings_module.BINDINGS_ACTION_CLOSE_PANEL
+  if mode == bindings_module.MODE_JUMP or mode == bindings_module.MODE_AIM then
+    return bindings_module.ACTION_BACK
+  elseif mode == bindings_module.MODE_SLIPWAY then
+    return bindings_module.ACTION_CANCEL_SLIPWAY
+  elseif mode == bindings_module.MODE_PLACEMENT then
+    return bindings_module.ACTION_CANCEL_PLACEMENT
+  elseif mode == bindings_module.MODE_MENU then
+    return bindings_module.ACTION_CLOSE_MENU
+  elseif mode == bindings_module.MODE_PANELS then
+    return bindings_module.ACTION_CLOSE_PANEL
   end
   assert(false, "back_action: back_mode returns only a map, menu or panels mode")
-  return bindings_module.BINDINGS_ACTION_BACK
+  return bindings_module.ACTION_BACK
 end
 
 local function tech_shoulder_action(mode)
-  return (mode == bindings_module.BINDINGS_MODE_PANELS) and bindings_module.BINDINGS_ACTION_NEXT_PANEL or
-    bindings_module.BINDINGS_ACTION_OPEN_TECH_PANEL
+  return (mode == bindings_module.MODE_PANELS) and bindings_module.ACTION_NEXT_PANEL or
+    bindings_module.ACTION_OPEN_TECH_PANEL
 end
 
 local function one_shoulder(nav, pressed, mode)
   return action_pressed(nav, pressed, mode, tech_shoulder_action(mode)) ~=
-    action_pressed(nav, pressed, mode, bindings_module.BINDINGS_ACTION_OPEN_BUILD_BAR)
+    action_pressed(nav, pressed, mode, bindings_module.ACTION_OPEN_BUILD_BAR)
 end
 
 local function shoulder_switch(nav, pressed, mode, played)
@@ -710,21 +710,21 @@ end
 
 local function build_step(nav, pressed, release, played)
   local icon = pad_build.pad_build_focus(nav.build)
-  if icon ~= nil and action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_BUILD_BAR,
-      bindings_module.BINDINGS_ACTION_TAKE_STRUCTURE) and not release then
+  if icon ~= nil and action_pressed(nav, pressed, bindings_module.MODE_BUILD_BAR,
+      bindings_module.ACTION_TAKE_STRUCTURE) and not release then
     played.mouse_buttons = input.MOUSE_LEFT
     nav.placement = M.PAD_NAV_PLACEMENT_PRESSED
   end
   -- The bar has no up or down: it borrows the panels' pair, which ranks before left and right.
-  if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PANELS, bindings_module.BINDINGS_ACTION_MOVE_UP) or
-    action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PANELS, bindings_module.BINDINGS_ACTION_MOVE_DOWN) then
+  if action_pressed(nav, pressed, bindings_module.MODE_PANELS, bindings_module.ACTION_MOVE_UP) or
+    action_pressed(nav, pressed, bindings_module.MODE_PANELS, bindings_module.ACTION_MOVE_DOWN) then
     return
   end
-  if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_BUILD_BAR,
-      bindings_module.BINDINGS_ACTION_PICK_LEFT) then
+  if action_pressed(nav, pressed, bindings_module.MODE_BUILD_BAR,
+      bindings_module.ACTION_PICK_LEFT) then
     pad_build.pad_build_pick(nav.build, -1)
-  elseif action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_BUILD_BAR,
-      bindings_module.BINDINGS_ACTION_PICK_RIGHT) then
+  elseif action_pressed(nav, pressed, bindings_module.MODE_BUILD_BAR,
+      bindings_module.ACTION_PICK_RIGHT) then
     pad_build.pad_build_pick(nav.build, 1)
   end
 end
@@ -800,17 +800,17 @@ end
 local function placement_step(nav, pad_buttons, pressed, played)
   nav.focus = nil
   nav.probe_or_fold_engaged = false
-  if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PLACEMENT,
-      bindings_module.BINDINGS_ACTION_CANCEL_PLACEMENT) or M.pad_nav_panel_open() then
+  if action_pressed(nav, pressed, bindings_module.MODE_PLACEMENT,
+      bindings_module.ACTION_CANCEL_PLACEMENT) or M.pad_nav_panel_open() then
     cancel_point(nav)
     return
   end
   nav.cursor_x = cint.div(vram.SCREEN_WIDTH, 2)
   nav.cursor_y = cint.div(vram.SCREEN_HEIGHT, 2)
-  aim_pan(nav, bindings_module.BINDINGS_MODE_PLACEMENT, pad_buttons)
+  aim_pan(nav, bindings_module.MODE_PLACEMENT, pad_buttons)
   -- place_structure drops by letting the held left button go for one frame: the ui's drop runs the cart's rules.
-  if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PLACEMENT,
-      bindings_module.BINDINGS_ACTION_PLACE_STRUCTURE) then
+  if action_pressed(nav, pressed, bindings_module.MODE_PLACEMENT,
+      bindings_module.ACTION_PLACE_STRUCTURE) then
     return
   end
   played.mouse_buttons = input.MOUSE_LEFT
@@ -897,13 +897,13 @@ local function jump_step(nav, pad_buttons, pressed, release, back_returns, selec
   reset_aim_mode(nav)
   nav.focus = nil
   seed_hovered(nav)
-  if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_JUMP, bindings_module.BINDINGS_ACTION_ENTER_AIM) then
+  if action_pressed(nav, pressed, bindings_module.MODE_JUMP, bindings_module.ACTION_ENTER_AIM) then
     enter_aim_mode(nav)
     return shown
   end
   -- Before the click check: the hold-repeat count keeps running through a click's frames.
   local direction =
-    pad_jump.pad_jump_repeat_step(nav.jump, nav.bindings, bindings_module.BINDINGS_MODE_JUMP, pad_buttons, pressed)
+    pad_jump.pad_jump_repeat_step(nav.jump, nav.bindings, bindings_module.MODE_JUMP, pad_buttons, pressed)
   local hovered = pad_jump.pad_jump_hovered(nav.jump)
   local clicking = release or nav.release_pending
   local back = nil
@@ -922,19 +922,19 @@ local function jump_step(nav, pad_buttons, pressed, release, back_returns, selec
     nav.cursor_y = cint.div(vram.SCREEN_HEIGHT, 2)
     return shown
   end
-  if not clicking and action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_JUMP,
-      bindings_module.BINDINGS_ACTION_OPEN_MENU) then
+  if not clicking and action_pressed(nav, pressed, bindings_module.MODE_JUMP,
+      bindings_module.ACTION_OPEN_MENU) then
     clicking = click_hovered(nav, hovered, played)
   end
-  if not clicking and action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_JUMP,
-      bindings_module.BINDINGS_ACTION_ACT_ON_HOVERED) and hovered.state == entity_class.STATE_KNOWN then
+  if not clicking and action_pressed(nav, pressed, bindings_module.MODE_JUMP,
+      bindings_module.ACTION_ACT_ON_HOVERED) and hovered.state == entity_class.STATE_KNOWN then
     clicking = click_hovered(nav, hovered, played)
     if clicking then
       pad_back.pad_back_record(nav.back, hovered)
     end
   end
-  if not clicking and action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_JUMP,
-      bindings_module.BINDINGS_ACTION_ACT_ON_HOVERED) and act_on_hovered_starts_slipway(nav, hovered, played) then
+  if not clicking and action_pressed(nav, pressed, bindings_module.MODE_JUMP,
+      bindings_module.ACTION_ACT_ON_HOVERED) and act_on_hovered_starts_slipway(nav, hovered, played) then
     pad_back.pad_back_record(nav.back, hovered)
     return shown
   end
@@ -1006,11 +1006,11 @@ local function slipway_step(nav, pad_buttons, pressed, back_returns, release, pl
     return shown
   end
   local direction =
-    pad_jump.pad_jump_repeat_step(nav.jump, nav.bindings, bindings_module.BINDINGS_MODE_SLIPWAY, pad_buttons, pressed)
+    pad_jump.pad_jump_repeat_step(nav.jump, nav.bindings, bindings_module.MODE_SLIPWAY, pad_buttons, pressed)
   local target = M.pad_nav_slipway_target(nav)
   nav.slipway.target = entity_id.link(target)
-  local build_on_target = action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_SLIPWAY,
-    bindings_module.BINDINGS_ACTION_BUILD_ON_TARGET)
+  local build_on_target = action_pressed(nav, pressed, bindings_module.MODE_SLIPWAY,
+    bindings_module.ACTION_BUILD_ON_TARGET)
   if build_on_target and not release and target ~= nil and pressable(target) then
     pad_slipway.pad_slipway_release(nav.slipway, pad_slipway.pad_slipway_between(start, target) ~= nil)
     nav.cursor_x, nav.cursor_y = screen_point(target, nav.cursor_x, nav.cursor_y)
@@ -1046,7 +1046,7 @@ local function map_step(nav, pad_buttons, pressed, release, back_returns, select
     placement_step(nav, pad_buttons, pressed, played)
   elseif M.pad_nav_panel_open() then
     reset_aim_mode(nav)
-    if action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_MENU, bindings_module.BINDINGS_ACTION_OPEN_MENU) and
+    if action_pressed(nav, pressed, bindings_module.MODE_MENU, bindings_module.ACTION_OPEN_MENU) and
       not release and not nav.release_pending and planet_menu_open(nav) then
       ui_module.clear_ephemerals(ui_module.main_ui())
     else
@@ -1084,11 +1084,11 @@ local function switch_panels(nav, pressed, release, foreign_was_open, cancelled,
   local bar = pad_build.pad_build_is_open(nav.build)
   local leaving
   if bar then
-    leaving = action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_BUILD_BAR,
-      bindings_module.BINDINGS_ACTION_CLOSE_BAR)
+    leaving = action_pressed(nav, pressed, bindings_module.MODE_BUILD_BAR,
+      bindings_module.ACTION_CLOSE_BAR)
   else
-    leaving = action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PANELS,
-      bindings_module.BINDINGS_ACTION_CLOSE_PANEL)
+    leaving = action_pressed(nav, pressed, bindings_module.MODE_PANELS,
+      bindings_module.ACTION_CLOSE_PANEL)
   end
   if not on_the_map(nav) and leaving and not foreign_was_open and not release then
     leave_panel(nav, played)
@@ -1135,7 +1135,7 @@ end
 
 local function pause_step(nav, pressed, release, played)
   if menu.pause_menu_shown() then
-    if not action_pressed(nav, pressed, bindings_module.BINDINGS_MODE_PAUSE, bindings_module.BINDINGS_ACTION_CLOSE_PAUSE) or
+    if not action_pressed(nav, pressed, bindings_module.MODE_PAUSE, bindings_module.ACTION_CLOSE_PAUSE) or
       release then
       return false
     end
@@ -1147,7 +1147,7 @@ local function pause_step(nav, pressed, release, played)
   local due = nav.pause_due
   nav.pause_due = false
   local opening = due or
-    action_pressed(nav, pressed, nav_mode(nav), bindings_module.BINDINGS_ACTION_PAUSE)
+    action_pressed(nav, pressed, nav_mode(nav), bindings_module.ACTION_PAUSE)
   local button = nil
   if opening then
     button = pause_button_free(nav, release)
@@ -1203,10 +1203,10 @@ end
 
 -- Read in every mode, so the latch sees a Select held from elsewhere. Jump's and aim's buttons both count in either.
 local function select_held(nav, pad_buttons)
-  return action_held(nav, pad_buttons, bindings_module.BINDINGS_MODE_JUMP,
-      bindings_module.BINDINGS_ACTION_SELECT_TAP_OR_YEAR) or
-    action_held(nav, pad_buttons, bindings_module.BINDINGS_MODE_AIM,
-      bindings_module.BINDINGS_ACTION_SELECT_TAP_OR_YEAR)
+  return action_held(nav, pad_buttons, bindings_module.MODE_JUMP,
+      bindings_module.ACTION_SELECT_TAP_OR_YEAR) or
+    action_held(nav, pad_buttons, bindings_module.MODE_AIM,
+      bindings_module.ACTION_SELECT_TAP_OR_YEAR)
 end
 
 local function select_ends_year(nav, played)
@@ -1221,7 +1221,7 @@ local function select_ends_year(nav, played)
 end
 
 local function without_chord(nav, raw_buttons)
-  local face = cheat.cheat_chord_buttons()
+  local face = cheat.chord_buttons()
   if bit.band(raw_buttons, bit.bnot(nav.previous_pad), face) == face then
     nav.chord_held = true
   elseif bit.band(raw_buttons, face) == 0 then
@@ -1263,7 +1263,7 @@ local function run_step(nav, raw_buttons, played)
   end
   local foreign_was_open = foreign_panel_open(nav)
   local back_in = back_mode(nav)
-  local back = bindings_module.bindings_mask(nav.bindings, back_in, back_action(back_in))
+  local back = bindings_module.mask(nav.bindings, back_in, back_action(back_in))
   local back_returns = bit.band(pressed, back) ~= 0 and not pad_panel.pad_panel_box_open()
   if bit.band(pressed, back) ~= 0 then
     back_closes_the_box()

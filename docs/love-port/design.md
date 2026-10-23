@@ -843,7 +843,7 @@ game's own caches compute slot `FIRST + i - 1`), a byte (`crc32_table`), a disk 
 value (the layer order's `start`, `start[0]` the empty prefix; `ui`'s hover layers),
 a draw-function code, a disk rank (the save validators' `seen` sets) and a demo frame
 (`demo_data.pad_buttons`). An enum that only indexes tables is numbered from 1
-(`entity_registry.MESSAGE_*`, `BINDINGS_MODE_*`, `BINDINGS_ACTION_*`). The save state mirrors the
+(`entity_registry.MESSAGE_*`, `bindings.MODE_*`, `bindings.ACTION_*`). The save state mirrors the
 bytes: its arrays are 1-based but every reference it holds keeps its on-disk value, a
 0-based rank, converted to a position only where the capture writes it
 (`position - 1`) and where the loader and the decoder's node-slipway check read it
@@ -872,7 +872,7 @@ convention from `research`'s own counter and table, and goes stale when
 `research.expire_project_ids` runs. A re-init or `memset` of a table that another holder may
 point at zeroes its fields in place and keeps its identity:
 `pad_nav_init` keeps its sub-tables and bindings table,
-`input_step_init` zeroes `played` and `played_frame` in place,
+`input_step.init` zeroes `played` and `played_frame` in place,
 `economy_score.set_difficulty` clears and refills `g_difficulty`. A
 static struct, or inline array of structs, is a table (or array of
 tables) with every field at its C zero value (0, or `nil` for a pointer),
