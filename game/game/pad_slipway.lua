@@ -31,7 +31,7 @@ function M.pad_slipway_can_start(e)
     return 0
   end
   return (bit.band(e.class.tags, entity_class.TAG(entity_class.TAG_SLIPGATE)) == 0 or
-    planet_family_trade.slipgate_takes_slipway(e) ~= 0) and 1 or 0
+    planet_family_trade.slipgate_takes_slipway(e)) and 1 or 0
 end
 
 -- An empty array for a nil list.

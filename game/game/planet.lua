@@ -75,7 +75,7 @@ local g_planet_vanish_roll = nil
 local g_planet_production_shared = production_zero()
 
 function M.planet_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse) and 1 or 0
+  return entity_geom.entity_geom_contains_cursor(self, mouse)
 end
 
 function M.planet_new_year_method(self, year)

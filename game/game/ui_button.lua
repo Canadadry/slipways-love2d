@@ -52,7 +52,7 @@ local function button_draw_method(self, screen_pos)
 end
 
 local function button_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse) and 1 or 0
+  return entity_geom.entity_geom_contains_cursor(self, mouse)
 end
 
 local function button_left_press_method(self, mouse)
@@ -60,7 +60,7 @@ local function button_left_press_method(self, mouse)
 end
 
 local function button_has_refresh(self)
-  return (self.refresh ~= nil) and 1 or 0
+  return self.refresh ~= nil
 end
 
 local function button_refresh_method(self)
@@ -380,7 +380,7 @@ end
 
 function M.button_left_press(self)
   local clickable = self ~= nil and self.on_click ~= nil
-  local out = { stop = 1, held = nil }
+  local out = { stop = true, held = nil }
 
   if clickable then
     self.on_click(self)
@@ -441,7 +441,7 @@ function M.modal_backdrop_new(keys)
 end
 
 function M.modal_backdrop_left_press(self)
-  local out = { stop = 1, held = nil }
+  local out = { stop = true, held = nil }
 
   if self == nil then
     return out

@@ -165,7 +165,7 @@ function M.message_box_draw_overlay(gfx, mem, self)
   t = fixed.p8_fixed_sub(fixed.p8_fixed_div(self_t, rh), fixed.p8_fixed_from_int(10))
 
   if t >= 0 then
-    if self.keep_open ~= nil and self.keep_open(self) ~= 0 then
+    if self.keep_open ~= nil and self.keep_open(self) then
       self.state_time = fixed.p8_fixed_mul(rh, fixed.p8_fixed_from_int(10))
       t = fixed.p8_fixed_from_int(0)
     end

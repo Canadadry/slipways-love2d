@@ -117,7 +117,7 @@ function M.structure_icon_left_press(self)
   local id_num_str
   local keys = planet.planet_keys_zero()
   local held
-  local out = { stop = 0, held = nil }
+  local out = { stop = false, held = nil }
 
   assert(g_structure_icon_up,
     "structure_icon_init() must run before structure_icon_left_press bumps the shared identifier counter")
@@ -133,7 +133,7 @@ function M.structure_icon_left_press(self)
   planet.planet_keys_set_id(keys, str.p8_concat2("s", id_num_str))
   held = entity_kind.new_entity(keys)
   out.held = entity_id.entity_id_link(held)
-  out.stop = (held ~= nil) and 1 or 0
+  out.stop = held ~= nil
   return out
 end
 
@@ -180,7 +180,7 @@ local function structure_icon_draw_method(self, screen_pos)
 end
 
 local function structure_icon_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse) and 1 or 0
+  return entity_geom.entity_geom_contains_cursor(self, mouse)
 end
 
 M.structure_icon_class_def = {

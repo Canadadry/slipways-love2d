@@ -50,7 +50,7 @@ function M.help_set_resume_game(fn)
 end
 
 local function help_screen_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse) and 1 or 0
+  return entity_geom.entity_geom_contains_cursor(self, mouse)
 end
 
 function M.help_screen_construct(self)

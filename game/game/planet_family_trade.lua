@@ -24,7 +24,7 @@ local fixed = require("p8.fixed")
 local M = {}
 
 local function down_zero()
-  return { stop = 0, held = nil }
+  return { stop = false, held = nil }
 end
 
 local function route_list_copy(list)
@@ -40,7 +40,7 @@ M.synthesizer_synthesizable_resources_spent = { count = 0, items = nil }
 local g_family_trade_up = false
 
 function M.slipgate_takes_slipway(self)
-  return (#self.slipways < 3) and 1 or 0
+  return #self.slipways < 3
 end
 
 function M.slipgate_accept_drop(self, s)
@@ -54,7 +54,7 @@ function M.slipgate_accept_drop(self, s)
   start_not_self = not (s ~= nil and s.class == require("game.slipway").slipway_class()
     and require("game.slipway").slipway_start(s) == self)
 
-  out.stop = (start_not_self and M.slipgate_takes_slipway(self) ~= 0) and 1 or 0
+  out.stop = start_not_self and M.slipgate_takes_slipway(self)
   return out
 end
 
@@ -84,7 +84,7 @@ function M.slipgate_left_press(self)
 
   accept_drop_result = M.slipgate_accept_drop(self, M.slipgate_left_press_empty)
 
-  if accept_drop_result.stop == 0 then
+  if not accept_drop_result.stop then
     return accept_drop_result
   end
 
@@ -92,7 +92,7 @@ function M.slipgate_left_press(self)
   keys.start = entity_id.entity_id_link(self)
   made = slipway.slipway_new(keys)
   accept_drop_result.held = entity_id.entity_id_link(made)
-  accept_drop_result.stop = (made ~= nil) and 1 or 0
+  accept_drop_result.stop = made ~= nil
   return accept_drop_result
 end
 

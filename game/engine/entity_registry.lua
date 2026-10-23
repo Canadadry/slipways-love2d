@@ -182,11 +182,11 @@ local function is_message_name(e, message)
   elseif message == ENTITY_MESSAGE_NEW_YEAR then
     return cls.new_year ~= nil
   end
-  return cls.refresh ~= nil and (cls.has_refresh == nil or cls.has_refresh(e) ~= 0)
+  return cls.refresh ~= nil and (cls.has_refresh == nil or cls.has_refresh(e))
 end
 
 function M.entity_registry_hit_test_always(self, mouse)
-  return 1
+  return true
 end
 
 function M.entities_by_tag(tag)

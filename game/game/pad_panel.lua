@@ -43,7 +43,7 @@ function M.pad_panel_entity_under(x, y, above, accept)
   for i = 1, #bucket do
     local e = bucket[i]
     if not e.is_dead and (above == M.PAD_PANEL_ANY_LAYER or fixed.p8_fixed_flr_int(e.layer) > above) and
-      accept(e) ~= 0 and e.class.hit_test ~= nil and e.class.hit_test(e, mouse) ~= 0 then
+      accept(e) ~= 0 and e.class.hit_test ~= nil and e.class.hit_test(e, mouse) then
       return e
     end
   end

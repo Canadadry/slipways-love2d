@@ -52,7 +52,7 @@
 - [ ] Step 3.1 chunks
   - [x] Chunk 1 — runtime
   - [x] Chunk 2 — engine
-  - [ ] Chunk 3 — class callbacks
+  - [x] Chunk 3 — class callbacks
   - [ ] Chunk 4 — data lookups
   - [ ] Chunk 5 — planets, slipways, wormholes
   - [ ] Chunk 6 — economy, research, targeting

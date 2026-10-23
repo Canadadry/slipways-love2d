@@ -374,9 +374,9 @@ local function ui_hit_test(e, mouse)
   local hit_test = e.class.hit_test
 
   if hit_test == require("game.planet").planet_hit_test_method then
-    return entity_geom.entity_geom_contains_cursor_inline(e, mouse) and 1 or 0
+    return entity_geom.entity_geom_contains_cursor_inline(e, mouse)
   end
-  return (hit_test ~= nil and hit_test(e, mouse) ~= 0) and 1 or 0
+  return hit_test ~= nil and hit_test(e, mouse)
 end
 
 function M.ui_update_hover(self)
@@ -405,7 +405,7 @@ function M.ui_update_hover(self)
   while index <= #hit_test_bucket do
     local e = hit_test_bucket[index]
 
-    if ui_hit_test(e, mouse) ~= 0 then
+    if ui_hit_test(e, mouse) then
       if e.layer ~= nil then
         local fa = ui_to_int(e.layer)
 
@@ -526,7 +526,7 @@ function M.ui_send_to_hovered(self, message, mouse, held, out_target, out_down)
 
     for i = 1, #hovered_ids do
       local h = entity_id.entity_id_resolve(hovered_ids[i])
-      local kn = { stop = 0, held = nil }
+      local kn = { stop = false, held = nil }
 
       if message == M.SEND_TO_HOVERED_LEFT_PRESS then
         if h.class.left_press ~= nil then
@@ -537,7 +537,7 @@ function M.ui_send_to_hovered(self, message, mouse, held, out_target, out_down)
           kn = h.class.accept_drop(h, held)
         end
       end
-      if kn.stop ~= 0 then
+      if kn.stop then
         return 1, h, { stop = kn.stop, held = kn.held }
       end
     end

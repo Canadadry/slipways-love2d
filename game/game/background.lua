@@ -218,7 +218,7 @@ function M.background_left_press(self)
   else
     made = require("game.probe").probe_new(nil)
   end
-  out.stop = (made ~= nil) and 1 or 0
+  out.stop = made ~= nil
   out.held = entity_id.entity_id_link(made)
   return out
 end

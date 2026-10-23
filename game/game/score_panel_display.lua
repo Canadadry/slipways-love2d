@@ -43,7 +43,7 @@ local g_score_panel_new_year_keep_open = 0
 
 local function score_panel_new_year_keep_open_method(self)
   g_score_panel_new_year_keep_open = g_score_panel_new_year_keep_open - 1
-  return (g_score_panel_new_year_keep_open > 0) and 1 or 0
+  return g_score_panel_new_year_keep_open > 0
 end
 
 local function score_panel_year_banner_label_row()
@@ -125,7 +125,7 @@ end
 
 local function score_panel_update_keep_open_method(self)
   local ju = require("game.score_panel").main_score_panel()
-  return (ju ~= nil and ju.is_shown ~= nil and ju.is_shown ~= 0) and 1 or 0
+  return ju ~= nil and ju.is_shown ~= nil and ju.is_shown ~= 0
 end
 
 local function score_panel_final_score_text(s, i)

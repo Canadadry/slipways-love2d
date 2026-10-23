@@ -32,7 +32,7 @@ local str = require("p8.str")
 local M = {}
 
 local function down_zero()
-  return { stop = 0, held = nil }
+  return { stop = false, held = nil }
 end
 
 -- layout_row_tuple_t tuple = {0}.
@@ -363,7 +363,7 @@ function M.planet_accept_drop(self, s)
     M.planet_inspection_panel(self)
     return out
   end
-  out.stop = 1
+  out.stop = true
   return out
 end
 
@@ -605,7 +605,7 @@ function M.planet_left_press(self)
   end
   if self.state == entity_class.ENTITY_STATE_KNOWN then
     M.planet_projects_panel(self)
-    out.stop = 1
+    out.stop = true
     return out
   end
   if self.state == entity_class.ENTITY_STATE_SETTLED then
@@ -617,7 +617,7 @@ function M.planet_left_press(self)
     keys.start = entity_id.entity_id_link(self)
     made = slipway.slipway_new(keys)
     out.held = entity_id.entity_id_link(made)
-    out.stop = (made ~= nil) and 1 or 0
+    out.stop = made ~= nil
   end
   return out
 end
