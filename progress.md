@@ -2,6 +2,7 @@
   - [x] Step 0.1 — grilling with the user
 - [ ] Phase 1 — The engine foundation
   - [ ] Step 1.1 — lua-test-modules checks only that every module loads
+    - [x] PRD phase1-step1-module-load-check
   - [ ] Step 1.2 — zones and allocators removed
   - [ ] Step 1.3 — entity ids as plain numbers
   - [ ] Step 1.4 — the four list kinds as plain arrays

@@ -922,14 +922,9 @@ field (`SIZEOF["p8_vram_t.draw_palette"]`), read through `local SIZEOF =
 M.SIZEOF`, never a bare number. `make test` runs two checks over the whole
 tree: `lua-guard` (every file compiles, no undeclared global, only this
 file's `love.` names) and `lua-test-modules`, which requires every module
-under plain LuaJIT and compares every ported table, constant and `SIZEOF`
-entry with `tests/lua/table_reference.txt`, a reference frozen from the C
-before plan 4 deleted it; the once-generated data modules have no entry
-there and are only loaded. A module listed in `LUA_DEFERRED_MODULES` (passed as `--defer`,
-now empty) is skipped with its tables only when it fails on a module not yet
-in `game/`, and fails the check once it loads; the check clears the
-sentinels a failed `require` leaves in `package.loaded`, so each failing
-module reports its own missing module.
+except `main` and `conf` under plain LuaJIT and reports each one that fails
+to load; it clears the sentinels a failed `require` leaves in
+`package.loaded`, so each failing module reports its own missing module.
 
 ## Rules for the fork
 

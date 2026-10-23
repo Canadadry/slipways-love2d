@@ -455,12 +455,8 @@ lua-test-game: $(LUA_GAME_TEST_RUNS) ## runs the Lua regression tests of game/ m
 
 .PHONY: lua-test-game $(LUA_GAME_TEST_RUNS)
 
-# Modules that may fail to load only on a module not yet in game/: their
-# tables are skipped, and the check fails once one of them loads.
-LUA_DEFERRED_MODULES :=
-
-lua-test-modules: tests/lua/test_modules.lua tests/lua/table_reference.txt ## requires every game/ module under plain LuaJIT, compares its data tables and constants with the frozen reference
-	@luajit tests/lua/test_modules.lua $(addprefix --defer ,$(LUA_DEFERRED_MODULES)) game tests/lua/table_reference.txt $(LUA_GUARD_FILES)
+lua-test-modules: tests/lua/test_modules.lua $(LUA_GUARD_FILES) ## requires every game/ module under plain LuaJIT and reports each that fails to load
+	@luajit tests/lua/test_modules.lua game $(LUA_GUARD_FILES)
 
 .PHONY: lua-test-modules
 
