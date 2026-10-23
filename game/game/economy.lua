@@ -1,18 +1,14 @@
 -- Copy of src/game/economy.h then src/game/economy.c.
 --
--- economy_t is the shape listed in game.main_economy. The economy's own `has` (ECONOMY_HAS_*
--- bits) is `has_`: the header's `has` holds the ENTITY_HAS_* bits on the same table.
--- end_status is a Lua string or nil.
+-- economy_t is the shape listed in game.main_economy. end_status is a Lua string or nil.
 --
 -- Include cycle: game.economy_score, game.economy_tiers, game.message_box and game.planet are
 -- required at call time, inside the functions that need them, so that this module loads before
 -- they exist.
-local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_registry = require("engine.entity_registry")
 local economy_formulas = require("game.economy_formulas")
-local main_economy = require("game.main_economy")
 local game_data = require("game.game_data")
 local map_tables = require("game.map_tables")
 local tech_gate = require("game.tech_gate")
@@ -47,17 +43,7 @@ local function economy_create()
   self.era = fixed.p8_fixed_from_int(0)
   self.year_ticks = fixed.p8_fixed_from_int(0)
   self.year = fixed.p8_fixed_from_int(0)
-  -- Lua only: the inline sub-structs the C writes into in place.
   self.invented = {}
-  self.production = { count = 0, entries = {} }
-  self.demand = { count = 0, entries = {} }
-  self.production.count = 0
-  self.demand.count = 0
-  self.has_ = 0
-  self.happiness = fixed.p8_fixed_from_int(0)
-  self.has_happiness = 0
-  self.end_status = nil
-  self.has_end_status = 0
   self.save_pending = 0
 
   self.credits = self.archetype.credits
@@ -109,7 +95,6 @@ local function economy_refresh_after_figures(self)
   else
     self.end_status = nil
   end
-  self.has_end_status = 1
 
   refresh_list = entity_registry.entities_by_message(entity_registry.ENTITY_MESSAGE_REFRESH)
   for i = 1, #refresh_list do
@@ -173,7 +158,7 @@ function M.economy_new_year(self)
   income = self.income
   research_points = self.research_points
 
-  if bit.band(self.has_, main_economy.ECONOMY_HAS_PRODUCTION) ~= 0 then
+  if self.production ~= nil then
     local found
     local k = 0
     found, k = map_tables.resource_code_lookup("k", k)
@@ -252,9 +237,15 @@ function M.economy_recompute(self)
     economy_tiers.economy_tiers_rebuild_incoming_routes()
   until economy_tiers.economy_tiers_update_tiers() == 0
 
+  -- Filled in place once created: a reader may hold either map across recomputes.
+  if self.production == nil then
+    self.production = { count = 0, entries = {} }
+  end
+  if self.demand == nil then
+    self.demand = { count = 0, entries = {} }
+  end
   M.economy_total_production(self.production)
   M.economy_crowding_penalty(self.demand)
-  self.has_ = bit.bor(self.has_, main_economy.ECONOMY_HAS_PRODUCTION, main_economy.ECONOMY_HAS_DEMAND)
 
   planet_list = entity_registry.entities_by_tag(entity_class.TAG_PLANET)
   if planet_list ~= nil then
@@ -273,7 +264,6 @@ function M.economy_recompute(self)
 
   happiness = economy_score.economy_score_happiness()
   self.happiness = happiness
-  self.has_happiness = 1
 
   economy_refresh_after_figures(self)
 end

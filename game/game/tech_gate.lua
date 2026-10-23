@@ -6,10 +6,8 @@
 -- The main economy is read through game.probe at call time: these functions cannot run before
 -- game.probe exists.
 local economy_formulas = require("game.economy_formulas")
-local main_economy = require("game.main_economy")
 local map_tables = require("game.map_tables")
 local fixed = require("p8.fixed")
-local bit = require("bit")
 
 local M = {}
 
@@ -54,12 +52,12 @@ function M.tech_gate_if_unlocked(px, lk, mc)
   return lk
 end
 
-local function research_cost_with_discount(od, has_planet_type, nk)
+local function research_cost_with_discount(od, nk)
   local fm = require("game.probe").main_economy_typed()
   local fu = fixed.p8_fixed_from_int(0)
   local threshold = fixed.P8_FIXED_LIT(0x00008ccc, 0.55)
   local factor
-  if has_planet_type ~= 0 and fm ~= nil and bit.band(fm.has_, main_economy.ECONOMY_HAS_DEMAND) ~= 0 then
+  if nk ~= nil and fm ~= nil and fm.demand ~= nil then
     local _
     _, fu = economy_formulas.resource_map_get(fm.demand, nk, fu)
   end
@@ -69,9 +67,9 @@ end
 
 function M.tech_gate_research_cost(t)
   if t == nil then
-    return research_cost_with_discount(fixed.p8_fixed_from_int(0), 0, 0)
+    return research_cost_with_discount(fixed.p8_fixed_from_int(0), nil)
   end
-  return research_cost_with_discount(fixed.p8_fixed_from_int(t.cost), 1, fixed.p8_fixed_from_int(t.icon))
+  return research_cost_with_discount(fixed.p8_fixed_from_int(t.cost), fixed.p8_fixed_from_int(t.icon))
 end
 
 local function available_technologies_predicate(t, bi)

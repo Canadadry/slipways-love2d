@@ -21,7 +21,6 @@ local draw_functions = require("game.draw_functions")
 local economy_formulas = require("game.economy_formulas")
 local game_data = require("game.game_data")
 local hud = require("game.hud")
-local main_economy = require("game.main_economy")
 local map_tables = require("game.map_tables")
 local score_panel_display = require("game.score_panel_display")
 local fixed = require("p8.fixed")
@@ -173,7 +172,7 @@ function M.score_panel_refresh()
   local main_economy_income = (economy ~= nil) and economy.income or fixed.p8_fixed_from_int(0)
   local main_economy_credits = fixed.p8_fixed_from_int(0)
   local main_economy_research_points = data_item({ is_nil = 1 })
-  local main_economy_happiness = (economy ~= nil and economy.has_happiness ~= 0) and economy.happiness
+  local main_economy_happiness = (economy ~= nil and economy.happiness ~= nil) and economy.happiness
     or fixed.p8_fixed_from_int(0)
   local main_economy_year_ticks = (economy ~= nil) and economy.year_ticks or fixed.p8_fixed_from_int(0)
   local main_economy_year
@@ -191,7 +190,7 @@ function M.score_panel_refresh()
   else
     main_economy_year = data_item({ is_nil = 1 })
   end
-  if economy ~= nil and bit.band(economy.has_, main_economy.ECONOMY_HAS_PRODUCTION) ~= 0 then
+  if economy ~= nil then
     main_economy_production = economy.production
   end
 

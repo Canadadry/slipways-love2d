@@ -1,7 +1,7 @@
 -- Copy of src/game/economy_score.h then src/game/economy_score.c.
 --
--- The economy's own `has` (ECONOMY_HAS_* bits) is `has_`, and so is the button's: the header's
--- `has` holds the ENTITY_HAS_* bits on the same table.
+-- The button's own `has` is `has_`: the header's `has` holds the ENTITY_HAS_* bits on the same
+-- table.
 --
 -- Include cycle: game.planet and game.probe are required at call time, inside the functions that
 -- need them, so that this module loads before they exist. game.ui_button is required at load, one
@@ -11,7 +11,6 @@ local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_registry = require("engine.entity_registry")
 local economy_formulas = require("game.economy_formulas")
-local main_economy = require("game.main_economy")
 local game_data = require("game.game_data")
 local map_tables = require("game.map_tables")
 local trade = require("game.trade")
@@ -197,10 +196,9 @@ function M.economy_score_final()
   local technology
   local total
   local fm = require("game.probe").main_economy_typed()
-  local happiness = (fm ~= nil and fm.has_happiness ~= 0) and fm.happiness or fixed.p8_fixed_from_int(0)
+  local happiness = (fm ~= nil and fm.happiness ~= nil) and fm.happiness or fixed.p8_fixed_from_int(0)
   local invented_count = fm ~= nil and #fm.invented or 0
-  local main_economy_production = (fm ~= nil and bit.band(fm.has_, main_economy.ECONOMY_HAS_PRODUCTION) ~= 0)
-    and fm.production or nil
+  local main_economy_production = (fm ~= nil) and fm.production or nil
   local result = final_score_zero()
 
   development_ctx.total = fixed.p8_fixed_from_int(0)
@@ -242,8 +240,7 @@ end
 
 function M.economy_score_happiness()
   local fm = require("game.probe").main_economy_typed()
-  local main_economy_production = (fm ~= nil and bit.band(fm.has_, main_economy.ECONOMY_HAS_PRODUCTION) ~= 0)
-    and fm.production or nil
+  local main_economy_production = (fm ~= nil) and fm.production or nil
   local r_h = fixed.p8_fixed_from_int(0)
   local r_w = fixed.p8_fixed_from_int(0)
   local h_val

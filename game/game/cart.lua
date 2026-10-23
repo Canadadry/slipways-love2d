@@ -318,7 +318,7 @@ local function save_at_frame_end()
   local economy = probe.main_economy_typed()
 
   if economy == nil or economy.save_pending == 0 or economy_score.economy_score_difficulty() == nil then return end
-  if economy.has_end_status ~= 0 and economy.end_status ~= nil then
+  if economy.end_status ~= nil then
     save_storage.save_storage_erase()
     economy.save_pending = 0
   elseif wormhole.wormhole_live_count() == 0 then

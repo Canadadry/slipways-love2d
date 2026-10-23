@@ -176,7 +176,7 @@ local function score_panel_update_add_row(box, entry, context)
     local piece1
     local piece2
 
-    if fm ~= nil and fm.has_end_status ~= 0 and fm.end_status ~= nil then
+    if fm ~= nil and fm.end_status ~= nil then
       end_status_str = fm.end_status
     end
     if dk ~= nil and dk.name ~= nil then
@@ -215,10 +215,9 @@ local back = data_row({ count = 2, items = back_items })
 function M.score_panel_update(self)
   local score_panel = require("game.score_panel")
   local economy = require("game.probe").main_economy_typed()
-  local has_end_status = (economy ~= nil and economy.has_end_status ~= 0 and economy.end_status ~= nil) and 1 or 0
   local has_curtain = (self ~= nil and self.has_curtain ~= 0) and 1 or 0
 
-  if has_end_status ~= 0 and has_curtain == 0 then
+  if economy ~= nil and economy.end_status ~= nil and has_curtain == 0 then
     local restart_keys = ui_button.button_keys_zero({})
     local toggle_keys = ui_button.button_keys_zero({})
     local made1
