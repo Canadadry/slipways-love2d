@@ -242,7 +242,7 @@ function M.research_project_layout_row_keys(self, out_keys)
   po = research.research_project_production(self)
   jq = fixed.p8_fixed_from_int(1)
   if po ~= nil and po.count >= 1 then
-    local first_production = fixed.p8_fixed_from_int(po.values[0])
+    local first_production = fixed.p8_fixed_from_int(po.values[1])
     jq = (first_production > fixed.p8_fixed_from_int(1)) and first_production or fixed.p8_fixed_from_int(1)
   end
 

@@ -14,14 +14,14 @@ local M = {}
 local TECHNOLOGIES_COUNT = map_tables.TECHNOLOGIES_COUNT
 local technologies_table = map_tables.technologies_table
 
--- Lua only: t - technologies_table, the C index of each entry.
+-- Lua only: each entry's position in technologies_table.
 local technology_index_of = {}
-for i = 0, TECHNOLOGIES_COUNT - 1 do
+for i = 1, TECHNOLOGIES_COUNT do
   technology_index_of[technologies_table[i]] = i
 end
 
 local g_affordable_flags = {}
-for i = 0, TECHNOLOGIES_COUNT - 1 do
+for i = 1, TECHNOLOGIES_COUNT do
   g_affordable_flags[i] = false
 end
 
@@ -102,7 +102,7 @@ end
 function M.tech_gate_available_technologies(bi)
   assert(type(bi) == "boolean", "tech_gate_available_technologies: bi is a boolean, and 0 is truthy")
   local result = { items = {}, count = 0 }
-  for i = 0, TECHNOLOGIES_COUNT - 1 do
+  for i = 1, TECHNOLOGIES_COUNT do
     if available_technologies_predicate(technologies_table[i], bi) then
       result.items[result.count] = technologies_table[i]
       result.count = result.count + 1
@@ -113,13 +113,13 @@ end
 
 function M.tech_gate_affordable_flags(t)
   local index = technology_index_of[t]
-  assert(index ~= nil and index >= 0 and index < TECHNOLOGIES_COUNT,
+  assert(index ~= nil and index >= 1 and index <= TECHNOLOGIES_COUNT,
     "tech_gate_affordable_flags: the flag is kept for technologies_table entries only")
   return g_affordable_flags[index]
 end
 
 function M.tech_gate_reset_affordable_flags()
-  for i = 0, TECHNOLOGIES_COUNT - 1 do
+  for i = 1, TECHNOLOGIES_COUNT do
     g_affordable_flags[i] = false
   end
 end

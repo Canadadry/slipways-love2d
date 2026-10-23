@@ -318,7 +318,7 @@ function M.research_build_projects()
   g_projects_up = true
   g_required_tech = nil
 
-  for i = 0, PROJECT_RECORDS_COUNT - 1 do
+  for i = 1, PROJECT_RECORDS_COUNT do
     local e = map_tables.project_records_table[i]
 
     if e.header ~= nil then

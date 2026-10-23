@@ -664,7 +664,7 @@ local function node_flags_are_valid(node)
 end
 
 local function is_resource_code(resource)
-  for i = 0, map_tables.RESOURCE_CODE_COUNT - 1 do
+  for i = 1, map_tables.RESOURCE_CODE_COUNT do
     if resource == bit.lshift(map_tables.resource_codes[i].resource, 16) then
       return true
     end
@@ -857,8 +857,9 @@ local function difficulty_index()
   return 0
 end
 
+-- Lua only: invented tech name -> its technologies_table position; the disk rank is position - 1.
 local function technology_index(name)
-  for i = 0, map_tables.TECHNOLOGIES_COUNT - 1 do
+  for i = 1, map_tables.TECHNOLOGIES_COUNT do
     if map_tables.technologies_table[i].name == name then
       return i
     end
@@ -908,7 +909,7 @@ local function capture_economy(out)
   out.year_ticks = economy.year_ticks
   out.invented_count = #economy.invented
   for i = 0, #economy.invented - 1 do
-    out.invented[i] = technology_index(economy.invented[i + 1])
+    out.invented[i] = technology_index(economy.invented[i + 1]) - 1
   end
 end
 

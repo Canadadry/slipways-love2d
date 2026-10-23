@@ -47,7 +47,7 @@ In this order.
 | year | i32 | any |
 | year_ticks | i32 | any |
 | invented count | u8 | 0–19 |
-| invented tech, × invented count | u8 each | 0–18, a `technologies_table` index; no duplicate; in invention order |
+| invented tech, × invented count | u8 each | 0–18, the 0-based rank of a `technologies_table` entry (its position − 1); no duplicate; in invention order |
 | `rnd_state` | u32 | any; the game stream, which only game decisions draw from |
 | `background_seed` | u32 | any; the `rnd_state` the galaxy background drew its tile map from |
 | type picker tickets count | u8 | 0–66 (`WEIGHTED_PICKER_TICKETS_CAP`) |

@@ -248,15 +248,15 @@ local function start_interface()
     end
   end
 
-  kind_table[0] = planet_family.structure_kind()
-  kind_table[1] = planet_family.processor_kind()
-  kind_table[2] = planet_family_trade.slipgate_kind()
-  kind_table[3] = planet_family_trade.infraspace_gate_kind()
-  kind_table[4] = planet_family.trading_hub_kind()
-  kind_table[5] = planet_family_trade.synthesizer_kind()
-  kind_table[6] = planet_family.ascension_kind()
+  kind_table[1] = planet_family.structure_kind()
+  kind_table[2] = planet_family.processor_kind()
+  kind_table[3] = planet_family_trade.slipgate_kind()
+  kind_table[4] = planet_family_trade.infraspace_gate_kind()
+  kind_table[5] = planet_family.trading_hub_kind()
+  kind_table[6] = planet_family_trade.synthesizer_kind()
+  kind_table[7] = planet_family.ascension_kind()
 
-  for index = 0, 6 do
+  for index = 1, map_tables.ICON_TOOLTIPS_COUNT do
     local keys = { kind = nil, tooltip = nil }
 
     keys.kind = kind_table[index]

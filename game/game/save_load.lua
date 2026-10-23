@@ -332,7 +332,7 @@ end
 local function load_invented(economy, saved)
   refresh_structure_icons()
   for i = 0, saved.invented_count - 1 do
-    local name = map_tables.technologies_table[saved.invented[i]].name
+    local name = map_tables.technologies_table[saved.invented[i] + 1].name
     assert(name ~= nil, "economy.invented holds technology names")
     economy.invented[#economy.invented + 1] = name
     refresh_structure_icons()

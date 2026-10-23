@@ -1,7 +1,7 @@
 -- Copy of src/game/map_tables.h then src/game/map_tables.c.
 --
--- Shapes, with the C field names (a pointer is the table, NULL is nil, arrays
--- indexed from 0):
+-- Shapes, with the C field names (a pointer is the table, NULL is nil; the
+-- lookup tables and production values indexed from 1, data_row_t items from 0):
 --   resource_code_t: { key, resource }.
 --   resource_names_entry_t: { key, name }.
 --   production_tables_entry_t: { key, count, values (4 entries), upgraded_entry }.
@@ -93,7 +93,7 @@ local function project_record(fields)
 end
 
 M.resource_codes = {
-  [0] = { key = "f", resource = 28 }, { key = "o", resource = 21 }, { key = "b", resource = 18 },
+  { key = "f", resource = 28 }, { key = "o", resource = 21 }, { key = "b", resource = 18 },
   { key = "p", resource = 19 }, { key = "g", resource = 48 }, { key = "t", resource = 22 },
   { key = "l", resource = 20 }, { key = "w", resource = 12 }, { key = "k", resource = 24 },
   { key = "?", resource = 36 }, { key = "a", resource = 33 }, { key = "e", resource = 54 },
@@ -101,23 +101,23 @@ M.resource_codes = {
 }
 
 M.resource_names_table = {
-  [0] = { key = "28", name = "food" }, { key = "21", name = "ore" }, { key = "18", name = "bots" },
+  { key = "28", name = "food" }, { key = "21", name = "ore" }, { key = "18", name = "bots" },
   { key = "19", name = "people" }, { key = "48", name = "goods" }, { key = "22", name = "tech" },
   { key = "20", name = "organics" }, { key = "12", name = "luxury" }, { key = "24", name = "science" },
   { key = "54", name = "energy" }, { key = "25", name = "joy" },
 }
 
 M.production_tables_table = {
-  [0] = { key = "f-", count = 4, values = { [0] = 0, 1, 2, 3 }, upgraded_entry = "f+" },
-  { key = "f+", count = 4, values = { [0] = 0, 2, 3, 4 }, upgraded_entry = nil },
-  { key = "-", count = 3, values = { [0] = 1, 2, 3, 0 }, upgraded_entry = "+" },
-  { key = "+", count = 3, values = { [0] = 2, 3, 4, 0 }, upgraded_entry = nil },
-  { key = "structure", count = 4, values = { [0] = 0, 1, 3, 5 }, upgraded_entry = "structure+" },
-  { key = "structure+", count = 4, values = { [0] = 0, 2, 5, 8 }, upgraded_entry = nil },
+  { key = "f-", count = 4, values = { 0, 1, 2, 3 }, upgraded_entry = "f+" },
+  { key = "f+", count = 4, values = { 0, 2, 3, 4 }, upgraded_entry = nil },
+  { key = "-", count = 3, values = { 1, 2, 3, 0 }, upgraded_entry = "+" },
+  { key = "+", count = 3, values = { 2, 3, 4, 0 }, upgraded_entry = nil },
+  { key = "structure", count = 4, values = { 0, 1, 3, 5 }, upgraded_entry = "structure+" },
+  { key = "structure+", count = 4, values = { 0, 2, 5, 8 }, upgraded_entry = nil },
 }
 
 M.project_records_table = {
-  [0] = project_record({
+  project_record({
     npos = 7, name = "", planet_codes = "", base_cost = 0, production_key = "structure", inputs = "p?", output = "k",
     upgrade_tech = "superhuman ai",
   }),
@@ -351,7 +351,7 @@ M.icon_tooltips_7_items = {
   data_item({ row = M.icon_tooltips_7_3 }),
 }
 M.icon_tooltips_table = {
-  [0] = data_row({ count = 5, items = M.icon_tooltips_1_items }),
+  data_row({ count = 5, items = M.icon_tooltips_1_items }),
   data_row({ count = 2, items = M.icon_tooltips_2_items }),
   data_row({ count = 2, items = M.icon_tooltips_3_items }),
   data_row({ count = 4, items = M.icon_tooltips_4_items }),
@@ -655,7 +655,7 @@ M.technologies_19_tooltip_rows_items = {
 M.technologies_19_tooltip_rows = data_row({ count = 2, items = M.technologies_19_tooltip_rows_items })
 
 M.technologies_table = {
-  [0] = { name = "space folding", era = 1, icon_key = "t", icon = 22, cost = 4, tooltip_rows = M.technologies_1_tooltip_rows },
+  { name = "space folding", era = 1, icon_key = "t", icon = 22, cost = 4, tooltip_rows = M.technologies_1_tooltip_rows },
   { name = "geneseeds", era = 1, icon_key = "l", icon = 20, cost = 5, tooltip_rows = M.technologies_2_tooltip_rows },
   { name = "nanomaterials", era = 1, icon_key = "o", icon = 21, cost = 6, tooltip_rows = M.technologies_3_tooltip_rows },
   { name = "drillbots", era = 1, icon_key = "b", icon = 18, cost = 7, tooltip_rows = M.technologies_4_tooltip_rows },
@@ -678,7 +678,7 @@ M.technologies_table = {
 
 function M.resource_code_lookup(key, out_resource)
   assert(key ~= nil, "resource_code_lookup: key must not be NULL")
-  for i = 0, M.RESOURCE_CODE_COUNT - 1 do
+  for i = 1, M.RESOURCE_CODE_COUNT do
     if M.resource_codes[i].key == key then
       out_resource = M.resource_codes[i].resource
       return true, out_resource
@@ -689,7 +689,7 @@ end
 
 function M.resource_names_lookup(key)
   assert(key ~= nil, "resource_names_lookup: key must not be NULL")
-  for i = 0, M.RESOURCE_NAMES_COUNT - 1 do
+  for i = 1, M.RESOURCE_NAMES_COUNT do
     if M.resource_names_table[i].key == key then
       return M.resource_names_table[i].name
     end
@@ -699,7 +699,7 @@ end
 
 function M.production_tables_lookup(key)
   assert(key ~= nil, "production_tables_lookup: key must not be NULL")
-  for i = 0, M.PRODUCTION_TABLES_COUNT - 1 do
+  for i = 1, M.PRODUCTION_TABLES_COUNT do
     if M.production_tables_table[i].key == key then
       return M.production_tables_table[i]
     end
@@ -711,7 +711,7 @@ function M.map_tables_technologies_lookup(px)
   if px == nil then
     return nil
   end
-  for i = 0, M.TECHNOLOGIES_COUNT - 1 do
+  for i = 1, M.TECHNOLOGIES_COUNT do
     if M.technologies_table[i].name == px then
       return M.technologies_table[i]
     end

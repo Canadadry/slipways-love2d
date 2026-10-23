@@ -37,7 +37,7 @@ local function test_fill_gives_every_resource_code_the_same_value()
   economy_formulas.resource_map_set(map, resource(99), 1)
   economy_formulas.economy_formulas_fill_resource_map(map, 9)
   expect(map.count, map_tables.RESOURCE_CODE_COUNT, "count after fill")
-  for i = 0, map_tables.RESOURCE_CODE_COUNT - 1 do
+  for i = 1, map_tables.RESOURCE_CODE_COUNT do
     local code = map_tables.resource_codes[i].resource
     local found, value = economy_formulas.resource_map_get(map, resource(code), -1)
     expect(found, true, "resource " .. code .. " found")

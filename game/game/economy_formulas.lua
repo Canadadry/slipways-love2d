@@ -46,7 +46,7 @@ end
 
 function M.economy_formulas_fill_resource_map(out, jm)
   out.count = 0
-  for i = 0, map_tables.RESOURCE_CODE_COUNT - 1 do
+  for i = 1, map_tables.RESOURCE_CODE_COUNT do
     M.resource_map_set(out, fixed.p8_fixed_from_int(map_tables.resource_codes[i].resource), jm)
   end
 end

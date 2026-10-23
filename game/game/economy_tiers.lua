@@ -161,7 +161,7 @@ function M.economy_tiers_compute_production_amount(planet, out)
   idx = fixed.p8_fixed_flr_int(planet.development_tier)
   clamped_idx = (idx < production_table.count) and idx or production_table.count
   if clamped_idx >= 1 then
-    base = fixed.p8_fixed_from_int(production_table.values[clamped_idx - 1])
+    base = fixed.p8_fixed_from_int(production_table.values[clamped_idx])
   end
   if planet.production_bonus ~= nil then
     bonus = planet.production_bonus
