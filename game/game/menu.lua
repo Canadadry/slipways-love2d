@@ -1,8 +1,7 @@
 -- Copy of src/game/menu.h then src/game/menu.c.
 --
--- pause_menu_open_box_t is the entity header plus { has_, fixed_pos, row_step, back_color, has_back_color }: its
--- own `has` (PAUSE_MENU_OPEN_BOX_HAS_* bits) is `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
-local bit = require("bit")
+-- pause_menu_open_box_t is the entity header plus { fixed_pos, row_step, back_color }, each nil while the menu is
+-- down.
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
 local entity_registry = require("engine.entity_registry")
@@ -40,9 +39,6 @@ end
 
 local galaxy_menu_button4_on_click_method
 
-local PAUSE_MENU_OPEN_BOX_HAS_FIXED_POS = bit.lshift(1, 0)
-local PAUSE_MENU_OPEN_BOX_HAS_ROW_STEP = bit.lshift(1, 1)
-
 M.pause_menu_open_box_class_def = {
   states = {},
   tags = 0,
@@ -52,11 +48,6 @@ M.pause_menu_open_box_class_def = {
 
 M.g_pause_menu_open_box = {}
 entity_class.entity_init_header(M.g_pause_menu_open_box, M.pause_menu_open_box_class_def)
-M.g_pause_menu_open_box.has_ = 0
-M.g_pause_menu_open_box.fixed_pos = vec.vec_make(0, 0)
-M.g_pause_menu_open_box.row_step = vec.vec_make(0, 0)
-M.g_pause_menu_open_box.back_color = 0
-M.g_pause_menu_open_box.has_back_color = 0
 
 local function tech_tree_screen_row_on_click_method(self)
   if self == nil then
@@ -191,14 +182,11 @@ function M.menu_show_tech_tree_screen()
     ep = str.p8_concat2(tmp2, ")")
 
     message_box.open_box_frame_set_description(frame, ep)
-    if bit.band(layout_block.has_, score_panel.SCORE_PANEL_LAYOUT_BLOCK_HAS_FIXED_POS) ~= 0 then
-      frame.has_fixed_pos = 1
+    if layout_block.fixed_pos ~= nil then
       frame.fixed_pos = vec_copy(layout_block.fixed_pos)
     end
-    frame.has_back_color = 1
     frame.back_color = layout_block.back_color
-    if bit.band(layout_block.has_, score_panel.SCORE_PANEL_LAYOUT_BLOCK_HAS_ROW_STEP) ~= 0 then
-      frame.has_row_step = 1
+    if layout_block.row_step ~= nil then
       frame.row_step = vec_copy(layout_block.row_step)
     end
     message_box.message_box_open_box(frame, buttons, row_count)
@@ -241,7 +229,6 @@ local function galaxy_menu_button3_on_click_method(self)
   local built
   if ju ~= nil then
     ju.is_shown = 1
-    ju.has_is_shown = 1
   end
   keys.on_click = score_panel_display.score_panel_toggle_on_click()
   built = ui_button.modal_backdrop_new(keys)
@@ -286,12 +273,9 @@ galaxy_menu_button4_on_click_method = function(self)
     bs[i].layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
     bs[i].on_click = my[i]
   end
-  frame.has_fixed_pos = (bit.band(M.g_pause_menu_open_box.has_, PAUSE_MENU_OPEN_BOX_HAS_FIXED_POS) ~= 0) and 1 or 0
-  frame.fixed_pos = vec_copy(M.g_pause_menu_open_box.fixed_pos)
-  frame.has_back_color = M.g_pause_menu_open_box.has_back_color
+  frame.fixed_pos = M.g_pause_menu_open_box.fixed_pos and vec_copy(M.g_pause_menu_open_box.fixed_pos)
   frame.back_color = M.g_pause_menu_open_box.back_color
-  frame.has_row_step = (bit.band(M.g_pause_menu_open_box.has_, PAUSE_MENU_OPEN_BOX_HAS_ROW_STEP) ~= 0) and 1 or 0
-  frame.row_step = vec_copy(M.g_pause_menu_open_box.row_step)
+  frame.row_step = M.g_pause_menu_open_box.row_step and vec_copy(M.g_pause_menu_open_box.row_step)
   message_box.message_box_open_box(frame, bs, game_data.PAUSE_MENU_COUNT)
 end
 M.galaxy_menu_on_click_table[3] = galaxy_menu_button4_on_click_method
@@ -367,19 +351,15 @@ function M.menu_init()
     fixed.p8_fixed_from_int(game_data.pause_menu_tail.fixed_pos_y))
   M.g_pause_menu_open_box.row_step = vec.vec_make(fixed.p8_fixed_from_int(game_data.pause_menu_tail.row_step_x),
     fixed.p8_fixed_from_int(game_data.pause_menu_tail.row_step_y))
-  M.g_pause_menu_open_box.has_ = bit.bor(M.g_pause_menu_open_box.has_,
-    bit.bor(PAUSE_MENU_OPEN_BOX_HAS_FIXED_POS, PAUSE_MENU_OPEN_BOX_HAS_ROW_STEP))
   M.g_pause_menu_open_box.back_color = fixed.p8_fixed_from_int(game_data.pause_menu_tail.back_color)
-  M.g_pause_menu_open_box.has_back_color = 1
   g_menu_up = 1
 end
 
 function M.menu_shutdown()
   g_menu_up = 0
-  M.g_pause_menu_open_box.has_ = bit.band(M.g_pause_menu_open_box.has_,
-    bit.band(bit.bnot(bit.bor(PAUSE_MENU_OPEN_BOX_HAS_FIXED_POS, PAUSE_MENU_OPEN_BOX_HAS_ROW_STEP)), 0xFFFF))
-  M.g_pause_menu_open_box.back_color = 0
-  M.g_pause_menu_open_box.has_back_color = 0
+  M.g_pause_menu_open_box.fixed_pos = nil
+  M.g_pause_menu_open_box.row_step = nil
+  M.g_pause_menu_open_box.back_color = nil
 end
 
 return M

@@ -71,12 +71,9 @@ function M.help_screen_construct(self)
     bs[i].type_bias = e.type_bias
     bs[i].on_click = M.help_start_game_field_value()
   end
-  frame.has_fixed_pos = 1
   frame.fixed_pos = vec.vec_make(self.archetype.fixed_pos.x, self.archetype.fixed_pos.y)
   frame.clear_ephemerals_after = 1
-  frame.has_back_color = 1
   frame.back_color = self.archetype.back_color
-  frame.has_row_step = 1
   frame.row_step = vec.vec_make(self.archetype.row_step.x, self.archetype.row_step.y)
   frame.has_pos = entity_class.entity_has_pos(self)
   frame.pos = vec.vec_make(self.pos.x, self.pos.y)

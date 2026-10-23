@@ -198,9 +198,7 @@ local function planet_open_box_frame(self)
   if self.description ~= nil then
     message_box.open_box_frame_set_description(frame, self.description)
   end
-  frame.has_back_color = 1
   frame.back_color = self.archetype.back_color
-  frame.has_row_step = 1
   frame.row_step = vec.vec_make(self.archetype.row_step.x, self.archetype.row_step.y)
   frame.has_pos = entity_class.entity_has_pos(self)
   frame.pos = vec.vec_make(self.pos.x, self.pos.y)

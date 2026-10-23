@@ -40,6 +40,6 @@
   - [x] Chunk 5 — particles, probes and targeting
   - [x] Chunk 6 — the economy
   - [x] Chunk 7 — UI, buttons and icons
-  - [ ] Chunk 8 — boxes and panels
+  - [x] Chunk 8 — boxes and panels
   - [ ] Chunk 9 — positions
   - [ ] Chunk 10 — the header's other parts, docs and skills

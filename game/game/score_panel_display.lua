@@ -2,7 +2,7 @@
 --
 -- Also defines score_panel_new_year_method, score_panel_update_method, score_panel_display_init and
 -- score_panel_display_shutdown, declared in score_panel.h. message_box_keys_t is
--- { has_duration_scale, duration_scale, keep_open }.
+-- { duration_scale, keep_open }, duration_scale nil when not given.
 --
 -- Include cycle: game.score_panel requires this module at load (its class holds the two methods), so
 -- game.score_panel is required here at call time.
@@ -36,7 +36,7 @@ local function data_item_assign(dst, src)
 end
 
 local function message_box_keys_zero()
-  return { has_duration_scale = 0, duration_scale = 0, keep_open = nil }
+  return { duration_scale = nil, keep_open = nil }
 end
 
 local g_score_panel_new_year_keep_open = 0
@@ -111,8 +111,7 @@ end
 local function score_panel_toggle_visibility()
   local ju = require("game.score_panel").main_score_panel()
   if ju ~= nil then
-    ju.is_shown = (ju.has_is_shown ~= 0 and ju.is_shown ~= 0) and 0 or 1
-    ju.has_is_shown = 1
+    ju.is_shown = (ju.is_shown ~= nil and ju.is_shown ~= 0) and 0 or 1
   end
 end
 
@@ -127,7 +126,7 @@ end
 
 local function score_panel_update_keep_open_method(self)
   local ju = require("game.score_panel").main_score_panel()
-  return (ju ~= nil and ju.has_is_shown ~= 0 and ju.is_shown ~= 0) and 1 or 0
+  return (ju ~= nil and ju.is_shown ~= nil and ju.is_shown ~= 0) and 1 or 0
 end
 
 local function score_panel_final_score_text(s, i)
@@ -215,9 +214,8 @@ local back = data_row({ count = 2, items = back_items })
 function M.score_panel_update(self)
   local score_panel = require("game.score_panel")
   local economy = require("game.probe").main_economy_typed()
-  local has_curtain = (self ~= nil and self.has_curtain ~= 0) and 1 or 0
 
-  if economy ~= nil and economy.end_status ~= nil and has_curtain == 0 then
+  if economy ~= nil and economy.end_status ~= nil and (self == nil or self.curtain == nil) then
     local restart_keys = ui_button.button_keys_zero({})
     local toggle_keys = ui_button.button_keys_zero({})
     local made1
@@ -245,15 +243,13 @@ function M.score_panel_update(self)
 
     if self ~= nil then
       self.is_shown = 1
-      self.has_is_shown = 1
       self.curtain = 0
-      self.has_curtain = 1
       entity_registry.entity_registry_set_layer(self, fixed.p8_fixed_from_int(13))
     end
   end
 
   do
-    local is_shown = (self ~= nil and self.has_is_shown ~= 0 and self.is_shown ~= 0) and 1 or 0
+    local is_shown = (self ~= nil and self.is_shown ~= nil and self.is_shown ~= 0) and 1 or 0
     local last_box_equals_shown_message_box = 0
 
     -- Without the NULL test, NULL == NULL would fire on the first eligible tick.
@@ -269,7 +265,6 @@ function M.score_panel_update(self)
       local made
       local i = 0
 
-      keys.has_duration_scale = 1
       keys.duration_scale = fixed.p8_fixed_from_int(3)
       keys.keep_open = score_panel_update_keep_open_method
       made = message_box.message_box_new(keys)

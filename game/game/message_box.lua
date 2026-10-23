@@ -10,8 +10,9 @@
 --     MESSAGE_BOX_ARGUMENTS_CAP { kind, number }; layout = { row, has_pos, pos, align }, row a
 --     layout_row_t filled in place by layout_row_init; row_of a Lua function or nil.
 --   toast_t: one table holding the entity header and { follow, text, archetype, fade, color }.
---   message_box_keys_t: { has_duration_scale, duration_scale, keep_open }.
---   toast_keys_t, open_box_frame_t: the fields of toast_keys_zero and open_box_frame_zero.
+--   message_box_keys_t: { duration_scale, keep_open }, duration_scale nil when not given.
+--   toast_keys_t, open_box_frame_t: the fields of toast_keys_zero and open_box_frame_zero, plus a toast's text and
+--     a frame's description, fixed_pos, back_color and row_step, each nil when not given.
 --   Char arrays are Lua strings, "" at zero.
 --
 -- Include cycle: game.scroll, game.ui and game.ui_button are required at call time.
@@ -302,7 +303,7 @@ local function message_box_create(keys)
   self.is_dead = 0
   self.articles_count = 0
   if keys ~= nil then
-    if keys.has_duration_scale ~= 0 then
+    if keys.duration_scale ~= nil then
       self.duration_scale = keys.duration_scale
     end
     self.keep_open = keys.keep_open
@@ -437,7 +438,7 @@ local function toast_create(keys)
     elseif keys.has_pos ~= 0 then
       entity_class.entity_set_pos(self, keys.pos)
     end
-    if keys.has_text ~= 0 then
+    if keys.text ~= nil then
       self.text = keys.text
     end
     self.color = keys.color
@@ -464,7 +465,6 @@ function M.toast_keys_set_text(keys, text)
   assert(#text <= M.TOAST_TEXT_CAP,
     "toast_keys_set_text: a toast's text is a price or \"-no money-\": a longer one needs a bigger text array")
   keys.text = text
-  keys.has_text = 1
 end
 
 function M.toast_new(keys)
@@ -476,7 +476,6 @@ function M.open_box_frame_set_description(frame, description)
     "open_box_frame_set_description: the longest is the tech tree's \"level 4 (-12/-12)\" -- stop, measure before "
     .. "widening")
   frame.description = description
-  frame.has_description = 1
 end
 
 -- button_keys_t b = *row: every field of row, one level deep (nested tables shared, as
@@ -498,11 +497,11 @@ local function open_box_step(ctx, frame, row)
   b.pos = vec_copy(ctx.pos)
   b.slide_target = vec_copy(ctx.button_pos)
 
-  if frame.has_back_color ~= 0 then
+  if frame.back_color ~= nil then
     b.layer = frame.back_color
   end
 
-  if frame.has_row_step ~= 0 then
+  if frame.row_step ~= nil then
     gq = vec_copy(frame.row_step)
   else
     gq = zero_vec()
@@ -512,8 +511,9 @@ local function open_box_step(ctx, frame, row)
   return ui_button.button_new(b)
 end
 
-local function open_box_add(le, has_list, button)
-  if has_list ~= 0 then
+-- A nil list drops the button.
+local function open_box_add(le, button)
+  if le ~= nil then
     assert(button ~= nil, "open_box_add: the ephemerals list holds button ids")
     le[#le + 1] = entity_id.entity_id_link(button)
   end
@@ -524,21 +524,20 @@ function M.message_box_open_box(frame, buttons, button_count)
   local ui_button = require("game.ui_button")
   local box_pos
   local step_context = {}
-  local ephemerals = {}
+  local ephemerals
   local dispatcher
   local description_row = ui_button.button_keys_zero({})
-  local has_dispatcher
 
   if frame == nil then
     return
   end
 
-  if frame.has_description ~= 0 then
+  if frame.description ~= nil then
     layout.layout_row_keys_append(description_row.layout_row_keys, layout.layout_row_cell_string(frame.description))
     description_row.layout_row_keys.color = fixed.p8_fixed_from_int(13)
   end
 
-  if frame.has_fixed_pos ~= 0 then
+  if frame.fixed_pos ~= nil then
     box_pos = vec_copy(frame.fixed_pos)
   elseif frame.has_pos ~= 0 then
     box_pos = vec_copy(frame.pos)
@@ -551,16 +550,15 @@ function M.message_box_open_box(frame, buttons, button_count)
 
   dispatcher = ui.main_ui()
   ui.ui_clear_ephemerals(dispatcher)
-  has_dispatcher = (dispatcher ~= nil) and 1 or 0
 
   if dispatcher ~= nil then
     ephemerals = ui.ui_ephemerals_new()
   end
-  if frame.has_description ~= 0 then
-    open_box_add(ephemerals, has_dispatcher, open_box_step(step_context, frame, description_row))
+  if frame.description ~= nil then
+    open_box_add(ephemerals, open_box_step(step_context, frame, description_row))
   end
   for index = 0, button_count - 1 do
-    open_box_add(ephemerals, has_dispatcher, open_box_step(step_context, frame, buttons[index]))
+    open_box_add(ephemerals, open_box_step(step_context, frame, buttons[index]))
   end
   if dispatcher ~= nil then
     ui.ui_set_ephemerals(dispatcher, ephemerals)
@@ -577,8 +575,6 @@ function M.toast_keys_zero()
     has_pos = 0,
     pos = vec.vec_make(0, 0),
     source = nil,
-    has_text = 0,
-    text = "",
     color = 0,
   }
 end
@@ -586,15 +582,7 @@ end
 -- Lua only: open_box_frame_t frame = {0}, a new table.
 function M.open_box_frame_zero()
   return {
-    has_description = 0,
-    description = "",
-    has_fixed_pos = 0,
-    fixed_pos = vec.vec_make(0, 0),
     clear_ephemerals_after = 0,
-    has_back_color = 0,
-    back_color = 0,
-    has_row_step = 0,
-    row_step = vec.vec_make(0, 0),
     has_pos = 0,
     pos = vec.vec_make(0, 0),
   }

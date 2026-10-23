@@ -1,16 +1,15 @@
 -- Copy of src/game/score_panel.h then src/game/score_panel.c.
 --
 -- Shapes, with the C field names:
---   score_panel_t: the entity header plus { archetype, last_box, is_shown, has_is_shown, curtain, has_curtain }.
---   score_panel_layout_block_t: the entity header plus { has_, fixed_pos, row_step, back_color }: its own
---     `has` (SCORE_PANEL_LAYOUT_BLOCK_HAS_* bits) is `has_`, since the header's `has` holds the ENTITY_HAS_* bits.
+--   score_panel_t: the entity header plus { archetype, last_box, is_shown, curtain }, is_shown and curtain nil
+--     until first set.
+--   score_panel_layout_block_t: the entity header plus { fixed_pos, row_step, back_color }.
 --   score_panel_readouts_t: { row, items, subs, sub_items, texts }; score_panel_year_banner_t: { row, items,
 --     second, second_items, year, keep_open }. Arrays from 0, char arrays Lua strings ("" at zero).
 --
 -- score_panel_new_year_method, score_panel_update_method, score_panel_display_init and
 -- score_panel_display_shutdown are defined in game.score_panel_display, required at load: the class holds
 -- the two methods by identity.
-local bit = require("bit")
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
@@ -28,9 +27,6 @@ local str = require("p8.str")
 local vram = require("p8.vram")
 
 local M = {}
-
-M.SCORE_PANEL_LAYOUT_BLOCK_HAS_FIXED_POS = bit.lshift(1, 0)
-M.SCORE_PANEL_LAYOUT_BLOCK_HAS_ROW_STEP = bit.lshift(1, 1)
 
 M.SCORE_PANEL_TEXT_CAP = 16
 
@@ -109,8 +105,6 @@ M.score_panel_layout_block_class_def = {
 
 M.g_score_panel_layout_block = {}
 entity_class.entity_init_header(M.g_score_panel_layout_block, M.score_panel_layout_block_class_def)
-M.g_score_panel_layout_block.has_ = bit.bor(M.SCORE_PANEL_LAYOUT_BLOCK_HAS_FIXED_POS,
-  M.SCORE_PANEL_LAYOUT_BLOCK_HAS_ROW_STEP)
 M.g_score_panel_layout_block.fixed_pos = vec.vec_make(0x0, 0xb0000)
 M.g_score_panel_layout_block.row_step = vec.vec_make(0x0, 0xb0000)
 M.g_score_panel_layout_block.back_color = 0xa0000
@@ -285,7 +279,7 @@ function M.score_panel_draw(gfx, mem, self)
 
   draw_functions.draw_functions_draw_rows_default(gfx, mem, combined, n)
 
-  if self ~= nil and self.has_curtain ~= 0 then
+  if self ~= nil and self.curtain ~= nil then
     local gz = fixed.p8_fixed_add(self.curtain, fixed.P8_FIXED_LIT(0x00003333, 0.2))
     local capped = fixed_min(gz, fixed.P8_FIXED_LIT(0x00033333, 3.2))
     local h = fixed.p8_fixed_mul(capped, capped)
@@ -322,10 +316,6 @@ local function score_panel_create()
   self.archetype = game_data.score_panel_archetype
   entity_registry.entity_registry_set_layer(self, self.archetype.layer)
   self.last_box = nil
-  self.is_shown = 0
-  self.has_is_shown = 0
-  self.curtain = 0
-  self.has_curtain = 0
   entity.entity_construct(self)
   return self
 end

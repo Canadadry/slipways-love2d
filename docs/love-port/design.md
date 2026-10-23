@@ -803,9 +803,7 @@ has no C original.
 `M.NAME = {` or `local NAME = {`, its header constants and enum values
 `M.<MACRO> = value`, computed as the C does; a `.c`-local macro is a module
 local. A C identifier that is a Lua keyword takes a trailing underscore
-(the slipway's `end_`). An entity's own field named like an entity header
-field takes one too: the economy's, wormhole's and button's own
-`has` bits are `has_`, the header keeps `has`. A module local that would
+(the slipway's `end_`). A module local that would
 clash with a C parameter or local takes the `_module` suffix
 (`local planet_module = require("game.planet")` in `save_load.lua`). A
 function the Lua adds is marked `-- Lua only` and, when another module
