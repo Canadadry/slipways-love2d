@@ -175,7 +175,6 @@ function M.button_keys_set_tooltip_row(keys, row)
       items = row.items,
       color = row.color,
       draw_function = row.draw_function,
-      has_resource = row.has_resource,
       resource = row.resource,
     })
   end

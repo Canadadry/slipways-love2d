@@ -335,7 +335,7 @@ local function total_production_visit(pt, ctx)
     return
   end
   kw = planet.planet_production_read(jo)
-  if kw.has_resource == 0 then
+  if kw.resource == nil then
     return
   end
   found, current = economy_formulas.resource_map_get(p, kw.resource, current)
@@ -373,7 +373,7 @@ local function crowding_penalty_visit(l, ctx)
     return
   end
   last = last_val
-  if last.row.has_resource == 0 then
+  if last.row.resource == nil then
     return
   end
   -- Fallback 1, not 0: the map was seeded with 1 for every resource code.

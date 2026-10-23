@@ -290,15 +290,14 @@ function M.synthesizer_attach_slipway(self, slipway)
       end
       i = i_val
 
-      gc = (i.has_satisfied ~= 0) and i.satisfied or fixed.p8_fixed_from_int(0)
+      gc = i.satisfied or fixed.p8_fixed_from_int(0)
       if gc ~= fixed.p8_fixed_from_int(0) then
         goto continue
       end
 
-      if i.row.has_resource ~= 0 and self.synthesizable_resources ~= nil
+      if i.row.resource ~= nil and self.synthesizable_resources ~= nil
         and game_data.int_seq_has_fixed(self.synthesizable_resources, i.row.resource) ~= 0 then
         local kw = planet.planet_production(self)
-        kw.has_resource = 1
         kw.resource = i.row.resource
         self.synthesizable_resources = M.synthesizer_synthesizable_resources_spent
       end

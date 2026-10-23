@@ -213,12 +213,11 @@ function M.economy_tiers_compute_tier(entity)
         if incoming_routes ~= nil then
           for j = 1, #incoming_routes do
             local im = incoming_routes[j]
-            if im.has_resource ~= 0 and trade.resource_equal(trade.trade_resource(im), resource_val) ~= 0 then
+            if im.resource ~= nil and trade.resource_equal(trade.trade_resource(im), resource_val) ~= 0 then
               gc = gc + 1
             end
           end
         end
-        want.has_satisfied = 1
         want.satisfied = fixed.p8_fixed_from_int(gc)
         tier = fixed.p8_fixed_mul(tier, fixed.p8_fixed_from_int(gc))
       end
@@ -235,7 +234,7 @@ function M.economy_tiers_compute_tier(entity)
       for index = 1, #needs do
         local want = needs[index]
         if want ~= nil then
-          if want.has_satisfied ~= 0 and want.satisfied > fixed.p8_fixed_from_int(0) then
+          if want.satisfied ~= nil and want.satisfied > fixed.p8_fixed_from_int(0) then
             count = count + 1
           end
         end
@@ -248,7 +247,7 @@ function M.economy_tiers_compute_tier(entity)
     if needs ~= nil and #needs > 0 then
       local last = needs[#needs]
       if last ~= nil then
-        if last.has_satisfied ~= 0 then
+        if last.satisfied ~= nil then
           return fixed_min(fixed.p8_fixed_add(last.satisfied, fixed.p8_fixed_from_int(1)), fixed.p8_fixed_from_int(4))
         end
       end

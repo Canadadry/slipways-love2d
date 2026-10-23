@@ -152,7 +152,7 @@ function M.economy_score_trade_income(entity)
     local kw = planet_module.planet_production_read(planet)
     local found
     local w
-    if kw.has_resource ~= 0 then
+    if kw.resource ~= nil then
       found, w = map_tables.resource_code_lookup("w", w)
       if found ~= 0 and kw.resource == fixed.p8_fixed_from_int(w) then
         local mu = kw.amount

@@ -1,9 +1,9 @@
 -- Copy of src/game/research.h then src/game/research.c.
 --
 -- Shapes, with the C field names:
---   need_t: { row, has_satisfied, satisfied }, row a data_row_t of map_tables.
+--   need_t: { row, satisfied }, row a data_row_t of map_tables, satisfied nil until counted.
 --   research_project_t: one table holding the entity header and { archetype, name,
---     planet_codes, base_cost, has_base_cost, production_key, inputs, output, has_output,
+--     planet_codes, base_cost, has_base_cost, production_key, inputs, output (nil when absent),
 --     upgrade_tech, has_upgrade_tech, byproduct, has_byproduct, required_tech, icon_sprite,
 --     has_icon_sprite, class_name, next_type }, inputs an array of need_t.
 --   research_project_id_t: { index, epoch }, both 16-bit, a new table at every creation.
@@ -161,7 +161,6 @@ local function research_project_positions(self, ri, input_codes)
   end
   if n >= 6 then
     self.output = resource_code_of(ri.output)
-    self.has_output = 1
   end
   if n >= 7 then
     if ri.upgrade_tech_false ~= 0 then
@@ -179,7 +178,7 @@ local function research_project_positions(self, ri, input_codes)
 end
 
 function M.need_resource(i)
-  if i.row.has_resource ~= 0 then
+  if i.row.resource ~= nil then
     return { kind = trade.RESOURCE_FIXED, number = i.row.resource }
   end
   return { kind = trade.RESOURCE_NIL, number = 0 }
@@ -191,10 +190,7 @@ function M.need_new(resource)
   assert(resource.kind ~= trade.RESOURCE_FALSE, "need_new: a need holds a fixed resource or none, never false")
   i = {}
   i.row = map_tables.map_tables_make_data_row({})
-  i.has_satisfied = 0
-  i.satisfied = 0
   if resource.kind == trade.RESOURCE_FIXED then
-    i.row.has_resource = 1
     i.row.resource = resource.number
   end
   return i
@@ -227,8 +223,7 @@ local function project_zero(self)
   for i = #inputs, 1, -1 do
     inputs[i] = nil
   end
-  self.output = 0
-  self.has_output = 0
+  self.output = nil
   self.upgrade_tech = nil
   self.has_upgrade_tech = 0
   self.byproduct = 0
@@ -258,8 +253,6 @@ local function project_create(keys)
   self.base_cost = 0
   self.has_base_cost = 0
   self.production_key = nil
-  self.output = 0
-  self.has_output = 0
   self.upgrade_tech = nil
   self.has_upgrade_tech = 0
   self.byproduct = 0

@@ -1,11 +1,11 @@
 -- Copy of src/game/trade.h then src/game/trade.c.
 --
 -- Shapes, with the C field names:
---   trade_route_t, trade_keys_t: { planets, slipways, resource, has_resource,
---     resource_is_bool }, planets and slipways plain 1-based arrays of ids.
+--   trade_route_t, trade_keys_t: { planets, slipways, resource, resource_is_bool }, planets
+--     and slipways plain 1-based arrays of ids, resource nil when absent.
 --   resource_t: { kind, number }, a new table at every creation.
 --   trade_route_list_t: a plain 1-based array of trade_route_t.
--- The id lists are immutable once built: a value copy of a route is a new table with the five
+-- The id lists are immutable once built: a value copy of a route is a new table with the four
 -- fields whose two id arrays are shared.
 local entity_id = require("engine.entity_id")
 
@@ -17,22 +17,21 @@ M.RESOURCE_FIXED = 2
 
 local g_trade_up = 0
 
-local function route_value(planets, slipways, resource, has_resource, resource_is_bool)
+local function route_value(planets, slipways, resource, resource_is_bool)
   return {
     planets = planets,
     slipways = slipways,
     resource = resource,
-    has_resource = has_resource,
     resource_is_bool = resource_is_bool,
   }
 end
 
 local function copy_route(route)
-  return route_value(route.planets, route.slipways, route.resource, route.has_resource, route.resource_is_bool)
+  return route_value(route.planets, route.slipways, route.resource, route.resource_is_bool)
 end
 
 function M.trade_resource(self)
-  if self == nil or self.has_resource == 0 then
+  if self == nil or self.resource == nil then
     return { kind = M.RESOURCE_NIL, number = 0 }
   end
   assert(not (self.resource_is_bool ~= 0 and self.resource ~= 0),
@@ -63,13 +62,13 @@ end
 -- nil keys give a route with empty lists and no resource; the route shares the keys' lists.
 function M.trade_new(keys)
   if keys == nil then
-    return route_value({}, {}, 0, 0, 0)
+    return route_value({}, {}, nil, 0)
   end
+  assert(keys.resource ~= nil or keys.resource_is_bool == 0,
+    "trade_new: an absent resource carries no kind")
   assert(keys.resource_is_bool == 0 or keys.resource == 0 or keys.resource == 1,
     "trade_new: a boolean key holds 0 or 1; trade_resource would read any other as a fixed")
-  assert(keys.has_resource ~= 0 or (keys.resource_is_bool == 0 and keys.resource == 0),
-    "trade_new: an absent key carries neither a kind nor a value; the member reads 0 when absent")
-  return route_value(keys.planets, keys.slipways, keys.resource, keys.has_resource, keys.resource_is_bool)
+  return route_value(keys.planets, keys.slipways, keys.resource, keys.resource_is_bool)
 end
 
 -- The ids of list, then extra unless it is nil, in a new list; an empty list when there is no id.
@@ -108,10 +107,9 @@ end
 -- The new route's id lists are new lists; a nil node or slipway adds nothing.
 function M.trade_extend(self, node, slipway)
   assert(self ~= nil, "trade_extend: a route value is always there to extend")
-  local extended = route_value({}, {}, 0, 0, 0)
-  extended.has_resource = 1
-  extended.resource_is_bool = (self.has_resource ~= 0) and self.resource_is_bool or 1
-  extended.resource = (self.has_resource ~= 0) and self.resource or 0
+  local extended = route_value({}, {}, nil, 0)
+  extended.resource_is_bool = (self.resource ~= nil) and self.resource_is_bool or 1
+  extended.resource = self.resource or 0
   extended.planets = id_list_extended(self.planets, node)
   extended.slipways = id_list_extended(self.slipways, slipway)
   return extended

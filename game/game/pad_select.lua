@@ -64,7 +64,7 @@ function M.pad_select_year_just_ended(s)
 end
 
 local function need_is_unmet(need)
-  return (need == nil or need.has_satisfied == 0 or need.satisfied == 0) and 1 or 0
+  return (need == nil or need.satisfied == nil or need.satisfied == 0) and 1 or 0
 end
 
 function M.pad_select_needs_attention(e)

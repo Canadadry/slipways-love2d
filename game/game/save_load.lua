@@ -71,7 +71,7 @@ local function load_needs(planet, node)
   end
   for i = 0, node.need_count - 1 do
     local resource = { kind = trade.RESOURCE_NIL, number = 0 }
-    if node.needs[i].has_resource ~= 0 then
+    if node.needs[i].resource ~= nil then
       resource.kind = trade.RESOURCE_FIXED
       resource.number = node.needs[i].resource
     end
@@ -86,8 +86,8 @@ local function load_production(planet, node)
     planet.has_ = bit.band(bit.band(planet.has_, bit.bnot(planet_module.PLANET_HAS_PRODUCTION)), 0xFFFF)
     return
   end
-  planet.production.has_resource = has(node, save_state.SAVE_NODE_PRODUCTION_HAS_RESOURCE)
-  planet.production.resource = (planet.production.has_resource ~= 0) and node.production_resource or 0
+  planet.production.resource = (has(node, save_state.SAVE_NODE_PRODUCTION_HAS_RESOURCE) ~= 0)
+    and node.production_resource or nil
   -- The routes rebuild of the first recompute reads the amount before update_tiers sets it.
   planet.production.amount = fixed.p8_fixed_from_int(0)
   local _, amount = economy_tiers.economy_tiers_compute_production_amount(planet, planet.production.amount)
@@ -249,11 +249,10 @@ local function load_outgoing_routes(state, node_ids, slipway_ids)
     planet.has_ = bit.bor(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES)
     for k = 0, node.route_count - 1 do
       local saved = state.routes[node.first_route + k]
-      local keys = { planets = nil, slipways = nil, resource = 0, has_resource = 0, resource_is_bool = 0 }
+      local keys = { planets = nil, slipways = nil, resource = nil, resource_is_bool = 0 }
       local route
       keys.planets = route_id_list(state, saved.first_planet, saved.planet_count, node_ids)
       keys.slipways = route_id_list(state, saved.first_slipway, saved.slipway_count, slipway_ids)
-      keys.has_resource = saved.has_resource
       keys.resource_is_bool = saved.resource_is_bool
       keys.resource = saved.resource
       route = trade.trade_new(keys)

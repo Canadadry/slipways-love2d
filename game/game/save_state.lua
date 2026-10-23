@@ -3,7 +3,8 @@
 -- Shapes, with the C field names:
 --   A byte buffer is a 0-indexed array of integers 0 .. 255, owned and filled in place as the C's.
 --   cursor_t: { position, end_, failed }.
---   save_vec_t: { x, y }; save_need_t: { has_resource, resource }.
+--   save_vec_t: { x, y }; save_need_t: { resource }, nil when absent. A save_route_t's resource
+--     is nil when absent too; the flag bytes are written from presence.
 --   save_state_t: { difficulty, economy, rnd_state, background_seed, type_picker, vanish_walk,
 --     structure_id_counter, has_probe, probe, camera_map_pos, node_count, nodes, slipway_count,
 --     slipways, route_count, routes, route_index_count, route_indices, node_slipway_count,
@@ -140,7 +141,7 @@ end
 local function save_node_zero()
   local needs = {}
   for i = 0, M.SAVE_STATE_NEEDS_CAP - 1 do
-    needs[i] = { has_resource = 0, resource = 0 }
+    needs[i] = {}
   end
   return {
     kind = 0,
@@ -174,9 +175,7 @@ local function save_route_zero()
     planet_count = 0,
     first_slipway = 0,
     slipway_count = 0,
-    has_resource = 0,
     resource_is_bool = 0,
-    resource = 0,
   }
 end
 
@@ -255,8 +254,8 @@ end
 local function write_route(bytes, writer, state, route)
   write_indices(bytes, writer, state, route.first_planet, route.planet_count)
   write_indices(bytes, writer, state, route.first_slipway, route.slipway_count)
-  write_u8(bytes, writer, bit.bor(route.has_resource, bit.lshift(route.resource_is_bool, 1)))
-  if route.has_resource ~= 0 then
+  write_u8(bytes, writer, bit.bor((route.resource ~= nil) and 1 or 0, bit.lshift(route.resource_is_bool, 1)))
+  if route.resource ~= nil then
     write_i32(bytes, writer, route.resource)
   end
 end
@@ -291,8 +290,8 @@ local function write_node(bytes, writer, state, node)
     write_u8(bytes, writer, node.need_count)
     local i = 0
     while i < node.need_count and i < M.SAVE_STATE_NEEDS_CAP do
-      write_u8(bytes, writer, node.needs[i].has_resource)
-      if node.needs[i].has_resource ~= 0 then
+      write_u8(bytes, writer, (node.needs[i].resource ~= nil) and 1 or 0)
+      if node.needs[i].resource ~= nil then
         write_i32(bytes, writer, node.needs[i].resource)
       end
       i = i + 1
@@ -471,9 +470,8 @@ local function read_route(bytes, reader, out, route)
     reader.failed = 1
     return
   end
-  route.has_resource = bit.band(resource_flags, 1)
   route.resource_is_bool = bit.band(bit.rshift(resource_flags, 1), 1)
-  if route.has_resource ~= 0 then
+  if bit.band(resource_flags, 1) ~= 0 then
     route.resource = read_i32(bytes, reader)
   end
 end
@@ -515,8 +513,12 @@ local function read_node(bytes, reader, out, node)
       return
     end
     for i = 0, node.need_count - 1 do
-      node.needs[i].has_resource = read_u8(bytes, reader)
-      if node.needs[i].has_resource ~= 0 then
+      local resource_flag = read_u8(bytes, reader)
+      if resource_flag > 1 then
+        reader.failed = 1
+        return
+      end
+      if resource_flag == 1 then
         node.needs[i].resource = read_i32(bytes, reader)
       end
     end
@@ -668,7 +670,7 @@ end
 local function resources_are_valid(node)
   for i = 0, node.need_count - 1 do
     local need = node.needs[i]
-    if is_flag(need.has_resource) == 0 or (need.has_resource ~= 0 and is_resource_code(need.resource) == 0) then
+    if need.resource ~= nil and is_resource_code(need.resource) == 0 then
       return 0
     end
   end
@@ -1033,8 +1035,7 @@ local function capture_node_fields(node, planet)
     for i = 0, #planet.needs - 1 do
       local need = planet.needs[i + 1]
       assert(need ~= nil)
-      node.needs[i].has_resource = (need.row.has_resource ~= 0) and 1 or 0
-      node.needs[i].resource = (need.row.has_resource ~= 0) and need.row.resource or 0
+      node.needs[i].resource = need.row.resource
     end
   end
   if planet.has_development_tier ~= 0 then
@@ -1047,7 +1048,7 @@ local function capture_node_fields(node, planet)
   end
   if bit.band(planet.has_, planet_module.PLANET_HAS_PRODUCTION) ~= 0 then
     node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_PRODUCTION)
-    if planet.production.has_resource ~= 0 then
+    if planet.production.resource ~= nil then
       node.flags = bit.bor(node.flags, M.SAVE_NODE_PRODUCTION_HAS_RESOURCE)
       node.production_resource = planet.production.resource
     end
@@ -1085,9 +1086,8 @@ local function capture_node_links(out, node, planet, ids)
       out.route_count = out.route_count + 1
       saved.first_planet, saved.planet_count = add_route_indices(out, route.planets, ids.nodes, ids.node_count)
       saved.first_slipway, saved.slipway_count = add_route_indices(out, route.slipways, ids.slipways, ids.slipway_count)
-      saved.has_resource = (route.has_resource ~= 0) and 1 or 0
       saved.resource_is_bool = (route.resource_is_bool ~= 0) and 1 or 0
-      saved.resource = (route.has_resource ~= 0) and route.resource or 0
+      saved.resource = route.resource
     end
     node.route_count = count
   end

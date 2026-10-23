@@ -55,7 +55,7 @@ M.PLANET_HAS_ID = bit.lshift(1, 6)
 
 -- production_t p = {0}.
 local function production_zero()
-  return { has_resource = 0, resource = 0, amount = 0 }
+  return { amount = 0 }
 end
 
 -- In place: whoever holds dst sees src's elements.
@@ -76,10 +76,8 @@ local function need_copy_into(copy, input)
     items = row.items,
     color = row.color,
     draw_function = row.draw_function,
-    has_resource = row.has_resource,
     resource = row.resource,
   })
-  copy.has_satisfied = input.has_satisfied
   copy.satisfied = input.satisfied
 end
 
@@ -211,8 +209,7 @@ end
 function M.planet_init()
   M.planet_shutdown()
   g_planet_up = 1
-  g_planet_production_shared.has_resource = 0
-  g_planet_production_shared.resource = 0
+  g_planet_production_shared.resource = nil
   g_planet_production_shared.amount = 0
 end
 
@@ -350,9 +347,7 @@ function M.planet_install_project(self, research_project_instance)
   needs_refill(self.needs, jy)
   self.has_ = bit.bor(self.has_, M.PLANET_HAS_NEEDS)
 
-  self.production.has_resource = (research_project_instance ~= nil and research_project_instance.has_output ~= 0)
-    and 1 or 0
-  self.production.resource = (self.production.has_resource ~= 0) and research_project_instance.output or 0
+  self.production.resource = (research_project_instance ~= nil) and research_project_instance.output or nil
   self.production.amount = fixed.p8_fixed_from_int(0)
   self.has_ = bit.bor(self.has_, M.PLANET_HAS_PRODUCTION)
 end

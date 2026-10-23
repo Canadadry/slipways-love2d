@@ -106,8 +106,6 @@ local function invented_lines(list)
   row.count = 0
   row.items = nil
   row.draw_function = map_tables.DRAW_FUNCTION_NONE
-  row.has_resource = 0
-  row.resource = 0
   for i = 0, n - 1 do
     items[i] = map_tables.map_tables_make_data_item({})
   end

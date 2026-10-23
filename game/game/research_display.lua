@@ -91,7 +91,7 @@ function M.research_project_tooltip(self)
   jb.inner.count = 2
   jb.inner.items = jb.inner_items
 
-  if self.has_output ~= 0 then
+  if self.output ~= nil then
     local o_str = str.p8_tostr_fixed(self.output)
     local resource_names_o = map_tables.resource_names_lookup(o_str)
 
@@ -122,7 +122,7 @@ local tail_row_items = {
 }
 local tail_row = map_tables.map_tables_make_data_row({ count = 2, items = tail_row_items })
 
-local function planet_resource_row_keys(inputs, has_output, output, amount, used, spacing, out_keys)
+local function planet_resource_row_keys(inputs, output, amount, used, spacing, out_keys)
   local planet = require("game.planet")
   local l_cap
   local keys = layout.layout_row_keys_zero()
@@ -132,7 +132,7 @@ local function planet_resource_row_keys(inputs, has_output, output, amount, used
   local outputs_count
   local wide
 
-  if has_output == 0 then
+  if output == nil then
     return 0, out_keys
   end
 
@@ -174,7 +174,7 @@ local function planet_resource_row_keys(inputs, has_output, output, amount, used
         local i = entry
 
         qe = research.need_resource(i)
-        gc_zero = (i.has_satisfied ~= 0 and i.satisfied == 0) and 1 or 0
+        gc_zero = (i.satisfied ~= nil and i.satisfied == 0) and 1 or 0
       end
       if qe.kind == trade.RESOURCE_FIXED then
         tuple.scalars[0] = layout.layout_row_scalar_fixed(qe.number)
@@ -240,8 +240,8 @@ local function planet_resource_row_keys(inputs, has_output, output, amount, used
 end
 
 -- Fills `out_keys` and returns 1; returns 0, keys untouched, when there is no output.
-function M.research_display_planet_resource_row_keys(inputs, has_output, output, amount, used, spacing, out_keys)
-  return planet_resource_row_keys(inputs, has_output, output, amount, used, spacing, out_keys)
+function M.research_display_planet_resource_row_keys(inputs, output, amount, used, spacing, out_keys)
+  return planet_resource_row_keys(inputs, output, amount, used, spacing, out_keys)
 end
 
 -- Fills `out_keys` and returns 1; returns 0, keys untouched, when the project has no output.
@@ -262,7 +262,7 @@ function M.research_project_layout_row_keys(self, out_keys)
     jq = (first_production > fixed.p8_fixed_from_int(1)) and first_production or fixed.p8_fixed_from_int(1)
   end
 
-  found, out_keys = planet_resource_row_keys(self.inputs, self.has_output, self.output, jq, fixed.p8_fixed_from_int(0),
+  found, out_keys = planet_resource_row_keys(self.inputs, self.output, jq, fixed.p8_fixed_from_int(0),
     fixed.p8_fixed_from_int(1), out_keys)
   if found == 0 then
     return 0, out_keys

@@ -6,8 +6,8 @@
 --   resource_names_entry_t: { key, name }.
 --   production_tables_entry_t: { key, count, values (4 entries), upgraded_entry }.
 --   data_item_t: { text, number, row, is_false, is_fixed, fixed, is_nil }.
---   data_row_t: { count, items, color (nil when absent), draw_function, has_resource,
---     resource }.
+--   data_row_t: { count, items, color, draw_function, resource }, color and resource nil
+--     when absent.
 --   project_records_entry_t: { header, npos, name, planet_codes, base_cost,
 --     production_key, inputs, output, upgrade_tech, byproduct,
 --     upgrade_tech_false, has_icon_sprite, icon_sprite, next_type, class_name }.
@@ -65,8 +65,7 @@ function M.map_tables_make_data_row(fields)
     items = fields.items,
     color = fields.color,
     draw_function = fields.draw_function or M.DRAW_FUNCTION_NONE,
-    has_resource = fields.has_resource or 0,
-    resource = fields.resource or 0,
+    resource = fields.resource,
   }, "data_row_t")
 end
 

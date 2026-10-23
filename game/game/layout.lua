@@ -118,7 +118,7 @@ function M.layout_row_cell_row(row)
   if row == nil then
     return M.layout_row_cell_nothing()
   end
-  if row.has_resource ~= 0 then
+  if row.resource ~= nil then
     tuple.count = 2
     tuple.scalars[0] = M.layout_row_scalar_fixed(row.resource)
     tuple.scalars[1] = M.layout_row_scalar_fixed(fixed.p8_fixed_from_int(5))
@@ -476,7 +476,7 @@ end
 function M.layout_row_keys_of_row(row)
   local keys = keys_zero()
 
-  assert(row.draw_function == map_tables.DRAW_FUNCTION_NONE and row.has_resource == 0,
+  assert(row.draw_function == map_tables.DRAW_FUNCTION_NONE and row.resource == nil,
     "layout_row_keys_of_row: a row passes positional items and a color; a draw_function or a resource has no member "
     .. "-- stop, do not add one")
   for i = 0, row.count - 1 do

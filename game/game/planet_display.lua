@@ -54,7 +54,7 @@ end
 local function planet_production_cell(kw)
   local tuple = tuple_zero()
 
-  if kw.has_resource ~= 0 then
+  if kw.resource ~= nil then
     tuple.count = 2
     tuple.scalars[0] = layout.layout_row_scalar_fixed(kw.resource)
     tuple.scalars[1] = layout.layout_row_scalar_fixed(fixed.p8_fixed_from_int(5))
@@ -67,14 +67,15 @@ local ROW_SIGNATURE_HAS_OUTPUT = 2
 local ROW_NEED_HAS_RESOURCE = 1
 local ROW_NEED_SATISFIED_ZERO = 2
 
-local function planet_row_signature(needs_list, has_output, output, amount, route_count)
+local function planet_row_signature(needs_list, output, amount, route_count)
   local planet = require("game.planet")
   local signature
 
   assert(route_count >= 0 and route_count <= 0xFFFF, "planet_row_signature: a wider route count would alias in the signature")
   signature = planet.planet_row_signature_zero()
-  signature.flags = (has_output ~= 0) and ROW_SIGNATURE_HAS_OUTPUT or 0
-  signature.output = output
+  signature.flags = (output ~= nil) and ROW_SIGNATURE_HAS_OUTPUT or 0
+  -- An absent output is keyed as 0; ROW_SIGNATURE_HAS_OUTPUT tells it from a present 0.
+  signature.output = output or 0
   signature.amount = amount
   signature.route_count = route_count
   if needs_list ~= nil and #needs_list > planet.PLANET_ROW_SIGNATURE_NEEDS then
@@ -92,7 +93,7 @@ local function planet_row_signature(needs_list, has_output, output, amount, rout
             bit.bor(signature.need_flags[signature.needs_count], ROW_NEED_HAS_RESOURCE)
           signature.need_resources[signature.needs_count] = resource.number
         end
-        if need.has_satisfied ~= 0 and need.satisfied == 0 then
+        if need.satisfied ~= nil and need.satisfied == 0 then
           signature.need_flags[signature.needs_count] =
             bit.bor(signature.need_flags[signature.needs_count], ROW_NEED_SATISFIED_ZERO)
         end
@@ -122,7 +123,6 @@ function M.planet_refresh(self)
   local research_display = require("game.research_display")
   local needs_list
   local by_list
-  local has_output
   local output
   local mu
   local keys
@@ -138,19 +138,18 @@ function M.planet_refresh(self)
   needs_list = (bit.band(self.has_, planet.PLANET_HAS_NEEDS) ~= 0) and self.needs or nil
   do
     local kw = planet.planet_production_read(self)
-    has_output = kw.has_resource
     output = kw.resource
     mu = kw.amount
   end
   by_list = (bit.band(self.has_, planet.PLANET_HAS_OUTGOING_ROUTES) ~= 0) and self.outgoing_routes or nil
   route_count = (by_list ~= nil) and #by_list or 0
-  signature = planet_row_signature(needs_list, has_output, output, mu, route_count)
+  signature = planet_row_signature(needs_list, output, mu, route_count)
   if bit.band(signature.flags, ROW_SIGNATURE_VALID) ~= 0
     and planet_row_signature_equal(signature, self.layout_row_signature) ~= 0 then
     return
   end
 
-  found, keys = research_display.research_display_planet_resource_row_keys(needs_list, has_output, output, mu,
+  found, keys = research_display.research_display_planet_resource_row_keys(needs_list, output, mu,
     fixed.p8_fixed_from_int(route_count), fixed.p8_fixed_from_int(0), layout.layout_row_keys_zero())
   if found ~= 0 then
     layout_row_result = layout.layout_row_new(keys)
@@ -178,7 +177,7 @@ local function planet_inspection_panel_filter_step(e, ctx_ptr)
 
   if e ~= nil then
     local i = e
-    if i.has_satisfied ~= 0 then
+    if i.satisfied ~= nil then
       gc = i.satisfied
     end
   end
@@ -296,7 +295,7 @@ function M.planet_inspection_panel(self)
     local r_w = 0
     local resource_is_r_w = false
 
-    if kw.has_resource ~= 0 then
+    if kw.resource ~= nil then
       local found
       found, r_w = map_tables.resource_code_lookup("w", r_w)
       resource_is_r_w = found ~= 0 and kw.resource == fixed.p8_fixed_from_int(r_w)
@@ -333,7 +332,7 @@ function M.planet_inspection_panel(self)
     local mu = kw.amount
 
     if mu > fixed.p8_fixed_from_int(0) then
-      local makes = kw.has_resource ~= 0 and game_data.int_seq_has_fixed(planet.planet_made_resources(), kw.resource) ~= 0
+      local makes = kw.resource ~= nil and game_data.int_seq_has_fixed(planet.planet_made_resources(), kw.resource) ~= 0
 
       if makes then
         local amount_str = str.p8_tostr_fixed(mu)

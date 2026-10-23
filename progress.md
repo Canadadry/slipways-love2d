@@ -34,7 +34,7 @@
   - [ ] Step 2.3 — capacity limits that are not a game rule removed
 - [ ] Step 2.1 chunks
   - [x] Chunk 1 — display rows
-  - [ ] Chunk 2 — resources
+  - [x] Chunk 2 — resources
   - [ ] Chunk 3 — research projects
   - [ ] Chunk 4 — the planet's parts
   - [ ] Chunk 5 — particles, probes and targeting
