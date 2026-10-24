@@ -9,6 +9,10 @@ end
 
 table.insert(log, "main " .. size())
 
+-- In its own closure, so luaL_error names this line rather than pcall.
+local ok, message = pcall(function() love.graphics.getDimensions(1) end)
+table.insert(log, string.format("argument %s %s", tostring(ok), tostring(message)))
+
 function love.load()
     canvas = love.graphics.newCanvas(160, 120)
     love.graphics.setCanvas(canvas)

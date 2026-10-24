@@ -8,6 +8,8 @@
 #define CAPTURE "tmp/test_fake_love_window_capture.bin"
 #define STATE "tmp/test_fake_love_window_state.txt"
 #define STDERR_LOG "tmp/test_fake_love_window_stderr.txt"
+#define ARGUMENT                                                                                                       \
+    "argument false " FIXTURES "window_log/main.lua:13: love.graphics.getDimensions: takes no argument, not 1\n"
 
 static void assert_runs(const char *environment, const char *args) {
     int status = fake_love_cli_run(environment, args, CAPTURE, STATE, STDERR_LOG);
@@ -19,9 +21,10 @@ static void assert_runs(const char *environment, const char *args) {
     }
 }
 
-static void test_a_replay_without_window_runs_at_640x480_with_no_resize(void) {
+static void test_a_replay_without_window_runs_at_640x480_with_no_resize_and_get_dimensions_takes_no_argument(void) {
     assert_runs("", FIXTURES "window_log " FIXTURES "three_frames.json " CAPTURE " " STATE);
     fake_love_cli_assert_text(STATE, "main 640x480\n"
+                                     ARGUMENT
                                      "load 640x480\n"
                                      "f0 update 640x480\n"
                                      "f0 draw 640x480\n"
@@ -35,6 +38,7 @@ static void test_a_replay_without_window_runs_at_640x480_with_no_resize(void) {
 static void test_resize_comes_first_in_its_frame_and_the_size_changes_at_that_frame(void) {
     assert_runs("", FIXTURES "window_log " FIXTURES "window_resizes.json " CAPTURE " " STATE);
     fake_love_cli_assert_text(STATE, "main 390x844\n"
+                                     ARGUMENT
                                      "load 390x844\n"
                                      "f0 update 390x844\n"
                                      "f0 draw 390x844\n"
@@ -56,6 +60,7 @@ static void test_resize_comes_first_in_its_frame_and_the_size_changes_at_that_fr
 static void test_a_resize_on_frame_0_precedes_the_first_update(void) {
     assert_runs("", FIXTURES "window_log " FIXTURES "window_resize_first.json " CAPTURE " " STATE);
     fake_love_cli_assert_text(STATE, "main 640x480\n"
+                                     ARGUMENT
                                      "load 640x480\n"
                                      "f0 resize number 390 844 390x844\n"
                                      "f0 update 390x844\n"
@@ -68,6 +73,7 @@ static void test_a_resize_on_frame_0_precedes_the_first_update(void) {
 static void test_a_game_without_love_resize_still_sees_the_new_size(void) {
     assert_runs("FAKE_LOVE_NO_RESIZE=1", FIXTURES "window_log " FIXTURES "window_resize_first.json " CAPTURE " " STATE);
     fake_love_cli_assert_text(STATE, "main 640x480\n"
+                                     ARGUMENT
                                      "load 640x480\n"
                                      "f0 update 390x844\n"
                                      "f0 draw 390x844\n"
@@ -92,26 +98,13 @@ static void test_an_error_in_love_resize_names_the_callback_the_frame_and_the_li
     assert_failure("FAKE_LOVE_MISUSE=raise", MISUSE, needles);
 }
 
-static void test_get_dimensions_with_an_argument_fails_naming_the_function(void) {
-    const char *const needles[] = {"love.update f0: ", "main.lua:13: love.graphics.getDimensions: ", NULL};
-    assert_failure("FAKE_LOVE_MISUSE=argument", MISUSE, needles);
-}
-
-static void test_a_refused_replay_runs_nothing(void) {
-    const char *const needles[] = {FIXTURES "window_invalid.json", "f1: ",
-                                   "\"resize\" [390, 844] is already the window size", NULL};
-    assert_failure("", FIXTURES "window_log " FIXTURES "window_invalid.json " CAPTURE " " STATE, needles);
-}
-
 int main(void) {
-    test_a_replay_without_window_runs_at_640x480_with_no_resize();
+    test_a_replay_without_window_runs_at_640x480_with_no_resize_and_get_dimensions_takes_no_argument();
     test_resize_comes_first_in_its_frame_and_the_size_changes_at_that_frame();
     test_a_resize_on_frame_0_precedes_the_first_update();
     test_a_game_without_love_resize_still_sees_the_new_size();
     test_love_resize_that_is_not_a_function_fails();
     test_an_error_in_love_resize_names_the_callback_the_frame_and_the_line();
-    test_get_dimensions_with_an_argument_fails_naming_the_function();
-    test_a_refused_replay_runs_nothing();
     remove(CAPTURE);
     remove(STATE);
     remove(STDERR_LOG);

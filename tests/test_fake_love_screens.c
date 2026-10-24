@@ -11,8 +11,8 @@
 #define CAPTURE "tmp/test_fake_love_screens_capture.bin"
 #define STATE "tmp/test_fake_love_screens_state.txt"
 #define STDERR_LOG "tmp/test_fake_love_screens_stderr.txt"
-#define BAD_REPLAY "tmp/test_fake_love_screens_bad.json"
 #define RUN FIXTURES "screens " FIXTURES "screens.json " CAPTURE " " STATE
+#define FAILING_RUN FIXTURES "screens " FIXTURES "screens_failing.json " CAPTURE " " STATE
 #define FRAME_COUNT 5
 
 #define SOURCE_WIDTH 160
@@ -96,18 +96,19 @@ static void test_each_listed_frame_writes_its_whole_screen(void) {
     assert_frame(0, &tall);
     expected_screen_free(&tall);
 
-    expected_screen_t resized = expected_screen_black(640, 480);
+    expected_screen_t resized = expected_screen_black(200, 150);
     expect_present(&resized, gradient_texel, -10.5, 7.25, 3.1);
     assert_frame(2, &resized);
     expected_screen_free(&resized);
 
-    expected_screen_t empty = expected_screen_black(640, 480);
+    expected_screen_t empty = expected_screen_black(200, 150);
     assert_frame(3, &empty);
 
     expect_present(&empty, gradient_texel, 0, 0, 1);
-    expect_present(&empty, sparse_texel, 100.5, 50.5, 0.75);
-    expected_screen_assert_pixel(&empty, 100, 50, 0xFF, 0, 0);
-    expected_screen_assert_pixel(&empty, 101, 50, 101, 50, 0x80);
+    expect_present(&empty, sparse_texel, 60.5, 50.5, 0.75);
+    expected_screen_assert_pixel(&empty, 60, 50, 0xFF, 0, 0);
+    expected_screen_assert_pixel(&empty, 61, 50, 61, 50, 0x80);
+    expected_screen_assert_pixel(&empty, 160, 0, 0, 0, 0);
     assert_frame(4, &empty);
     expected_screen_free(&empty);
     remove_screens();
@@ -120,30 +121,18 @@ static void assert_failure(const char *environment, const char *args, const char
 }
 
 static void test_a_run_failing_after_a_written_screen_leaves_no_png(void) {
-    assert_failure("FAKE_LOVE_SCREENS_FAIL=1", RUN, (const char *const[]){"fails at f2", NULL});
+    assert_failure("FAKE_LOVE_SCREENS_FAIL=1", FAILING_RUN, (const char *const[]){"fails at f2", NULL});
 }
 
 static void test_a_translucent_canvas_presented_is_refused_naming_the_pixel(void) {
-    assert_failure("FAKE_LOVE_SCREENS_TRANSLUCENT=1", RUN,
+    assert_failure("FAKE_LOVE_SCREENS_TRANSLUCENT=1", FAILING_RUN,
                    (const char *const[]){"love.graphics.draw: the canvas's pixel (0, 0) is FF000080, translucent", NULL});
-}
-
-/* Each refusal's message is checked by test_fake_love_replay. */
-static void test_a_malformed_screens_is_refused_before_the_game_runs(void) {
-    FILE *file = fopen(BAD_REPLAY, "wb");
-    assert(file != NULL);
-    fputs("{\"input\": \"pad\", \"screens\": [2, 1], \"frames\": [{}, {}, {}]}", file);
-    assert(fclose(file) == 0);
-    assert_failure("", FIXTURES "screens " BAD_REPLAY " " CAPTURE " " STATE,
-                   (const char *const[]){BAD_REPLAY ": offset ", "\"screens\" entry 1 is not after 2", NULL});
-    remove(BAD_REPLAY);
 }
 
 int main(void) {
     test_each_listed_frame_writes_its_whole_screen();
     test_a_run_failing_after_a_written_screen_leaves_no_png();
     test_a_translucent_canvas_presented_is_refused_naming_the_pixel();
-    test_a_malformed_screens_is_refused_before_the_game_runs();
     printf("test_fake_love_screens: ok\n");
     return 0;
 }

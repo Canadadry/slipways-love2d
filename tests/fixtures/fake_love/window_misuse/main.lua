@@ -8,12 +8,6 @@ elseif misuse == "raise" then
     end
 end
 
-function love.update()
-    if misuse == "argument" then
-        love.graphics.getDimensions(1)
-    end
-end
-
 function debug_state()
     return "ran\n"
 end

@@ -38,7 +38,7 @@ local PRESENTS = {
     [1] = {{"gradient", 0, 0, 1}},
     [2] = {{"gradient", -10.5, 7.25, 3.1}},
     [3] = {},
-    [4] = {{"gradient", 0, 0, 1}, {"sparse", 100.5, 50.5, 0.75}},
+    [4] = {{"gradient", 0, 0, 1}, {"sparse", 60.5, 50.5, 0.75}},
 }
 
 function love.draw()
