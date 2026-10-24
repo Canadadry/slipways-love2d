@@ -1,0 +1,23 @@
+- [ ] Phase 1 — The fake LÖVE learns windows, touches and the screen
+  - [ ] Step 1.1 — setColor accepts any colour and alpha
+  - [ ] Step 1.2 — window, resize, getDimensions, love.resize
+  - [ ] Step 1.3 — touches and mouse
+  - [ ] Step 1.4 — screen framebuffer, free present, screens
+  - [ ] Step 1.5 — scaled quads, alpha blending, pad_sheet
+- [ ] Phase 2 — Fractional, centred present and resizable window
+  - [ ] Step 2.6 — layout module
+  - [ ] Step 2.7 — present into the game rectangle, conf.lua
+  - [ ] Step 2.8 — make love-file
+- [ ] Phase 3 — The virtual pad
+  - [ ] Step 3.9 — pad.png, quad table, pad_flat.png, static sheet test
+  - [ ] Step 3.10 — pad element rectangles
+  - [ ] Step 3.11 — stick
+  - [ ] Step 3.12 — touch to mask
+  - [ ] Step 3.13 — show / hide
+  - [ ] Step 3.14 — wire into main.lua, no drawing
+  - [ ] Step 3.15 — touch e2e replays
+  - [ ] Step 3.16 — draw the pad
+  - [ ] Step 3.17 — check-e2e
+- [ ] Phase 4 — Clean-up
+  - [ ] Step 4.18 — design.md contract read
+  - [ ] Step 4.19 — rework-comments
