@@ -57,7 +57,7 @@ A blocking question the inputs can't settle → end with `QUESTION:`; your calle
 
 ## Where tests live
 
-Code of the Lua game in `game/`: one `tests/lua/game/test_<module>.lua` per module, named after the module's file (a name shared by two `game/` directories takes the directory as prefix: `test_engine_<module>.lua`). Plain LuaJIT, `game/` as the module path, the `expect` and runner of `tests/lua/game/check.lua`; a new file is found by wildcard and runs in `make test` as `lua-run-test_<module>`, with no Makefile registration.
+Code of the Lua game in `game/`: one `tests/lua/game/test_<module>.lua` per module, named after the module's file (a name shared by two `game/` directories takes the directory as prefix: `test_engine_<module>.lua`). Plain LuaJIT, `game/` as the module path, the `expect` and runner of `tests/lua/game/check.lua`; a new file ends with `return check.run({...})`, is found by wildcard and runs in `make test` within `lua-test-game` (one process for all files), with no Makefile registration.
 
 C code — the fake LÖVE in `tools/fake_love/`, the C tools — keeps one `tests/test_<module>.c` per module, registered in the Makefile's `UNIT_TESTS`, run by `make test`.
 
@@ -74,7 +74,7 @@ GREEN: Write minimal code to pass → test passes
 
 This is your tracer bullet - proves the path works end-to-end.
 
-**Running tests**: `make test`, never a test file or binary run alone as the final check. While iterating, `make lua-run-test_<module>` runs one Lua file.
+**Running tests**: `make test`, never a test file or binary run alone as the final check. While iterating, `make lua-test-game LUA_GAME_TESTS=tests/lua/game/test_<module>.lua` runs one Lua file.
 
 ### 3. Incremental Loop
 

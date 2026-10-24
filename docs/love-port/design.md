@@ -96,6 +96,10 @@ fake follows these rules, and every step that adds one measures it.
    `-j` starts prerequisites in list order, so a long check goes early in
    `test`'s list: queued behind the others, it would set the wall time
    alone.
+   The game's Lua tests are the exception: every `tests/lua/game/test_*.lua`
+   runs in one LuaJIT process, `lua-test-game`, whose runner
+   (`tests/lua/game/runner.lua`) clears the `package.loaded` entries each
+   file adds; a new test file adds tests, not a process.
 2. **Cheap by construction.** One process per check, no interpreter but the
    embedded LuaJIT, no external tool (no Python, no ImageMagick, no shell
    pipeline over PNGs); comparisons are done in C. A capture check's recipe
@@ -949,7 +953,8 @@ checks the edge values and a sample against it.
   reference, the runtime, module loading, the capture reader and the
   `lua-names` check's fixture self-test.
 - `tests/lua/game/`: the regression tests of `game/` modules
-  (`test_<module>.lua`), each run by `make test`.
+  (`test_<module>.lua`, each ending in `return check.run({...})`), all run
+  by `make test` in one process through `runner.lua`.
 - `tests/e2e/`: the 20 replays, their hashes, end states and notes.
 - `worst-case/`: long games checked one at a time with `make end-state
   EVENTS=`.

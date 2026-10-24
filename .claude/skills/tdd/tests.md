@@ -1,6 +1,6 @@
 # Good and Bad Tests
 
-Tests of the Lua game live in `tests/lua/game/test_<module>.lua`: local test functions using `check.expect`, handed by name to `check.run`, which runs them all and names each failure. Tests of the fake LÖVE and the tools live in `tests/test_<module>.c`: `static void` test functions using `assert`, called from `main`. Real APIs below where they exist; other names are illustrative.
+Tests of the Lua game live in `tests/lua/game/test_<module>.lua`: local test functions using `check.expect`, handed by name to `check.run`, which runs them all, names each failure and returns the failure count; the file ends with `return check.run({...})`. Tests of the fake LÖVE and the tools live in `tests/test_<module>.c`: `static void` test functions using `assert`, called from `main`. Real APIs below where they exist; other names are illustrative.
 
 ## Good Tests
 
@@ -21,7 +21,7 @@ local function test_set_updates_an_existing_resource_in_place()
   check.expect(value, 7, "food value after update")
 end
 
-check.run({
+return check.run({
   { "set updates an existing resource in place", test_set_updates_an_existing_resource_in_place },
 })
 ```
