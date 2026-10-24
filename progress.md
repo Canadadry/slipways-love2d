@@ -10,7 +10,7 @@
     - [x] Chunk 2 — e2e_limits.sh frame counter
     - [x] Chunk 3 — love.touch and love.mouse in the host
     - [x] Chunk 4 — lua-guard, design.md, timing gate
-  - [ ] Step 1.4 — screen framebuffer, free present, screens
+  - [x] Step 1.4 — screen framebuffer, free present, screens
     - [x] Chunk 1 — PNG writer in the fake
     - [x] Chunk 2 — screen module
     - [x] Chunk 3 — present widened and wired

@@ -156,17 +156,31 @@ section is updated with each extension:
   once and committed as a PNG: a check of `make test` never runs an outside
   tool (design.md, "`make test` and the fake's checks", rule 2).
 - **Timing gate per step.** Every step that adds a check to `make test`
-  passes design.md's timing gate (same section, rule 4) before it closes,
-  and records the medians in §6.
+  (a C check, a capture program, or a `tests/lua/game/test_*.lua`, which
+  is its own process: steps 6 and 10–13 included) first adds up its new
+  checks' own times (from step 1.4: one ~80 ms check ≈ 2.5 % of
+  `make test`) and groups them to fit, then passes design.md's timing gate
+  (same section, rule 4) before it closes, and records the medians in §6.
+  From step 5 on, the gate also measures against **the plan's start
+  commit, 8c830c6**, beside the two design.md baselines: the paired median
+  against it must stay ≤ 3 % (§4's "no slower than before the plan");
+  a step over it reworks or merges checks (its own or earlier plan
+  checks) before it closes.
 - **`make e2e` time per step.** Every step that changes the fake's
-  per-frame work or what the game draws each frame (steps 4, 5, 7, 16)
-  measures `make e2e` wall time and records it in §6 (before the plan:
-  ~6–7.4 s on 4 cores, 20 replays): the median of 5 runs, beside the step's
-  "before" commit in the same session. The step fails if the median plus
-  the touch replays' estimated cost (their frame count, twins included,
-  estimated once at step 4 and recorded in §6 as a cap step 15 keeps or
-  re-measures, times the per-frame cost measured at step 4) leaves less than 1 s under 9 s; it then reworks
-  its cost before it closes.
+  per-frame work or what the game does each frame (steps 4, 5, 7, 14,
+  15, 16) measures `make e2e` wall time and records it in §6 (before the
+  plan: ~6–7.4 s on 4 cores, 20 replays): the median of 5 runs, beside the
+  step's "before" commit in the same session. The step fails if the median
+  plus the touch replays' estimated cost (their frame count, twins
+  included, capped at 720 frames by step 4, times the per-frame cost
+  measured at step 4) leaves less than 1 s under 9 s; it then reworks its
+  cost before it closes. From step 15 on, the committed touch replays are
+  measured instead of the cap, and step 15 still leaves the 1 s margin for
+  step 16's drawing. When the "before" commit's own projection already
+  exceeds the limit in the same session (a slow session), the step is
+  judged on its paired difference from "before" (median of the per-run
+  differences ≤ 2 %), and its note records both numbers and flags the
+  budget for the next step that adds e2e cost.
 - **design.md follows each step.** Every step that changes the fake's
   contract updates `docs/love-port/design.md` in the same step; its check
   includes "design.md states the new behaviour". The contract's sentence
@@ -294,7 +308,9 @@ to the fake's contract.
 
 18. A final read of design.md's fake contract against the fake's function
     list and replay fields, fixing any drift. Verified: every function and
-    field the fake accepts is named in design.md, and the reverse.
+    field the fake accepts is named in design.md, and the reverse; and
+    the `make test` timing gate against the plan's start commit 8c830c6
+    passes (§4).
 19. skill: rework-comments — the files this plan created or changed under
     `game/` and `tools/fake_love/`.
 
@@ -365,3 +381,25 @@ New check `test_fake_love_touch`, ~55–80 ms. Timing gate: first 11
 rounds +3.14 % vs 6cd6898, so 22 pooled: +2.78 % vs 6cd6898, −86.67 % vs
 8dff812 (plain medians 0.894 / 0.877 / 6.572 s): pass, with little margin
 left for later checks. `make e2e`: 20/20.
+
+### Step 1.4
+
+The fake has a screen: an RGBA framebuffer of the window size, opaque
+black at each frame start (after the resize), rasterised only on frames
+a replay lists in `"screens"` (at most 16, ascending), written to
+`<capture>.screen-f<N>.png` and removed on a later failure. The rule
+(design.md "The screen"): a pixel belongs to a draw if its centre lies in
+the destination, half-open; texel `floor((centre − x) / s)`, clamped, in
+double; alpha `00` leaves the pixel. The present takes any finite
+position below 2^20 and any equal scale in (0, 1024]; a translucent
+canvas is refused until step 5. The PNG writer moved into the fake
+(`png_file_write`), with table-driven CRC-32 and a faster Adler-32
+(checked against zlib) and `-O2` for `png_file.o`, to keep the new
+checks cheap. New: unit test `test_fake_love_screen` (~22 ms), check
+`test_fake_love_screens` (~70–85 ms, close to the 100 ms budget; its
+malformed-`screens` refusals run once, the reader's test covers each).
+`make test` gate (11 rounds): +2.49 % vs 1a7033b, −86.8 % vs 8dff812:
+pass. `make e2e`: median 6.756 s (1a7033b: 6.630 s); per-frame cost
+1.542 ms (user + sys / 4 072 frames / 4 cores). **Touch-replay cap for
+step 15: 720 frames, twins included.** Projection 6.756 + 720 × 1.542 ms
+= 7.87 s, under 8 s by 0.13 s: little margin. `make e2e`: 20/20.
