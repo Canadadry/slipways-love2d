@@ -7,6 +7,7 @@ local sprite_sheet = require("p8.sprite_sheet")
 local vram = require("p8.vram")
 local backend = require("love.backend")
 local screen = require("love.screen")
+local virtual_pad_module = require("love.virtual_pad")
 local dispatch_context = require("engine.dispatch_context")
 local attract = require("game.attract")
 local bindings = require("game.bindings")
@@ -25,6 +26,7 @@ local ATTRACT_AFTER_MAX = 2147483647
 local gfx = {}
 local mem = {}
 local step = {}
+local virtual_pad = {}
 local cheat_activations = 0
 
 local function read_bindings()
@@ -80,6 +82,20 @@ local function read_pad_buttons()
   return mask
 end
 
+local function read_touches()
+  local touches = {}
+  for index, id in ipairs(love.touch.getTouches()) do
+    local x, y = love.touch.getPosition(id)
+    touches[index] = { id = id, x = x, y = y }
+  end
+  return touches
+end
+
+local function read_mouse()
+  local x, y = love.mouse.getPosition()
+  return { x = x, y = y, down = love.mouse.isDown(1) }
+end
+
 function love.load(args)
   screen.init()
   vram.init(mem)
@@ -95,10 +111,13 @@ function love.load(args)
   cart.init()
   input_step.init(step, read_bindings())
   input_step.set_attract_after(step, read_attract_after(args))
+  virtual_pad_module.init(virtual_pad)
 end
 
 function love.update(dt)
-  local raw = { mouse_x = 0, mouse_y = 0, mouse_buttons = 0, pad_buttons = read_pad_buttons() }
+  local pad_buttons = virtual_pad_module.update(virtual_pad, read_pad_buttons(), read_touches(), read_mouse(),
+    screen.get_dimensions())
+  local raw = { mouse_x = 0, mouse_y = 0, mouse_buttons = 0, pad_buttons = pad_buttons }
   if input_step.run(step, raw) then
     cheat_activations = cheat_activations + 1
   end

@@ -56,7 +56,7 @@
     - [x] Chunk 2 — tests through pad_touch and attract
   - [ ] Step 3.14 — wire into main.lua, no drawing
     - [x] Chunk 1 — love.virtual_pad and its tests
-    - [ ] Chunk 2 — main.lua's readers, replays, timings
+    - [x] Chunk 2 — main.lua's readers, replays, timings
   - [ ] Step 3.15 — touch e2e replays
   - [ ] Step 3.16 — draw the pad
   - [ ] Step 3.17 — check-e2e

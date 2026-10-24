@@ -919,7 +919,8 @@ window, the pad fitted in the game rectangle, so equal to it. Fitting
 rectangle is exactly what `draw(..., scale, scale)` covers. On a 390×844
 iPhone: tall, scale 2.4375, game at y 64.75, pad at y 486.75, both
 390×292.5. `screen.present()` draws canvas 0 at the game rectangle of the
-layout of `getDimensions()` on every frame, with no `love.resize`
+layout of `screen.get_dimensions()` (`love.graphics.getDimensions()`, for
+callers outside `game/love/`) on every frame, with no `love.resize`
 handler, so a resize shows on its own frame. `conf.lua` opens a
 resizable, `highdpi` 640×480 window; the fake ignores `t.window`, so a
 replay without `window` runs at 640×480, where the present is `(0, 0)`
@@ -1070,6 +1071,31 @@ or un-`init`ed state, a gamepad mask outside the integers 0–4095, a
 non-table `touches`, a record that is not a table or has a `nil` or
 repeated id, or a `mouse` neither `nil` nor a table with a boolean `down`
 fails an `assert` naming the field.
+
+**Virtual pad.** `love.virtual_pad` (pure, no `love.*` call, no module
+state) owns the per-frame input pipeline, and is the only input path besides
+the gamepad. `love.update` reads the gamepad mask (`read_pad_buttons()`),
+the touches (`love.touch.getTouches` / `getPosition`, one `{id, x, y}` per
+finger), the mouse (`love.mouse.getPosition` / `isDown(1)`, a `{x, y, down}`
+record every frame, `down` false when up) and the window size
+(`screen.get_dimensions()`, the size `screen.present` lays out), passes
+them to `virtual_pad.update`, and gives its result to `input_step.run` as
+`pad_buttons`; the PICO-8 mouse fields stay 0. `init(virtual_pad)` sets up
+the private `visibility` (`pad_visibility.init`), `touch_state`
+(`pad_touch.init`) and `placed = nil`. `update(virtual_pad, gamepad_mask,
+touches, mouse, width, height)`, once per frame, lays the pad out again
+(`pad_layout.place(window_layout.compute(width, height).pad)`, no cache, so
+a resize moves the buttons on its own frame), then runs the call order
+above — `pad_visibility.filter`, `pad_touch.update`, `pad_touch.combine` —
+stores the layout in `placed` and returns the combined 12-bit mask; the
+inputs are never modified. With no touch and the mouse up the result is the
+gamepad mask, which is why the replays without touches are unchanged.
+`shown(virtual_pad)` is `pad_visibility.shown`. Readable fields, for drawing
+the pad: `touch_state.stick` (`nil` without a stick) and `placed` (this
+frame's screen rectangles, `nil` before the first `update`). The pad is not
+drawn. A non-table or un-`init`ed state fails an `assert` starting with
+`virtual_pad.update:` or `virtual_pad.shown:`; sizes, masks, touches and
+mice are refused by the asserts of the modules it calls.
 
 ### The asset PNGs
 

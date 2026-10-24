@@ -38,6 +38,11 @@ function M.frame_end()
   love.graphics.setCanvas()
 end
 
+-- The window's width and height, the size present lays the game out in.
+function M.get_dimensions()
+  return love.graphics.getDimensions()
+end
+
 -- design.md's present: call it once, last in love.draw, outside any push.
 -- The layout is recomputed from the window size on every call, so a resize
 -- shows on its own frame.
@@ -45,7 +50,7 @@ function M.present()
   assert(canvas ~= nil, "screen.present: screen.init has not run")
   love.graphics.setCanvas()
   love.graphics.setColor(1, 1, 1)
-  local game = window_layout.compute(love.graphics.getDimensions()).game
+  local game = window_layout.compute(M.get_dimensions()).game
   love.graphics.draw(canvas, game.x, game.y, 0, game.scale, game.scale)
 end
 
