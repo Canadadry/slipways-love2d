@@ -155,9 +155,9 @@ section is updated with each extension:
   (TDD). An expected frame made with an outside tool (ImageMagick…) is made
   once and committed as a PNG: a check of `make test` never runs an outside
   tool (design.md, "`make test` and the fake's checks", rule 2).
-- **Timing gate per step.** Every step that adds a check to `make test`
-  (a C check, a capture program, or a `tests/lua/game/test_*.lua`, which
-  is its own process: steps 6 and 10–13 included) first adds up its new
+- **Timing gate per step.** Every step that adds a process or a fake check
+  to `make test` (a C check, a capture program, or new work in an existing
+  fake check: steps 6, 7, 9, 16) first adds up its new
   checks' own times (from step 1.4: one ~80 ms check ≈ 2.5 % of
   `make test`) and groups them to fit, then passes design.md's timing gate
   (same section, rule 4) before it closes, and records the medians in §6.
@@ -165,7 +165,10 @@ section is updated with each extension:
   commit, 8c830c6**, beside the two design.md baselines: the paired median
   against it must stay ≤ 3 % (§4's "no slower than before the plan");
   a step over it reworks or merges checks (its own or earlier plan
-  checks) before it closes.
+  checks) before it closes. A step that only adds `tests/lua/game/` files
+  (one `lua-test-game` process since step 6: steps 10–13) records
+  `lua-test-game`'s own time before and after in its note, and runs the
+  full gate only if it grew by more than ~10 ms.
 - **`make e2e` time per step.** Every step that changes the fake's
   per-frame work or what the game does each frame (steps 4, 5, 7, 14,
   15, 16) measures `make e2e` wall time and records it in §6 (before the
@@ -520,3 +523,30 @@ Risk noted by the PRD, for the phone: with `highdpi`, LÖVE 11's
 `newCanvas` takes the screen's DPI scale, so the 160×120 canvas may be
 3× dense on a Retina screen and 1-pixel points may leave gaps; the fix
 would be `dpiscale = 1`, a function-list extension. Not acted on.
+
+### Step 2.8
+
+`lua-guard` now also refuses a `require` whose argument is not a literal,
+a module resolving neither to `<root>/<name>.lua` nor to
+`<root>/<name>/init.lua` (`bit` built in), and a string literal naming a
+`.png` that is not under the root (comments and longer messages
+ignored): the archive of `game/` is complete by construction, no new
+process. `make love-file` replaces `make love` (outside `make test-all`):
+it zips `game/` into `tmp/slipways.love` (`main.lua` at the root,
+checked), unpacks it into `tmp/love-file/game` and plays
+`tests/e2e/pad_title.json` from there, which must match its `.sha256`;
+missing zip/unzip, no `main.lua`, a failed run or another hash each fail
+with their own message. `tools/love_install.sh` installs `zip` and
+`unzip`. README: import into Love2D Studio, gamepad still needed, the
+`highdpi` risk. Gate (22 pooled; first 11 had +4.56 % vs 30ec5c5): +2.50 %
+vs 30ec5c5, −5.56 % vs 8c830c6, −88.33 % vs 8dff812: pass; headroom vs
+8c830c6 ~8.6 points (this session). `make e2e` and `make end-state` 20/20.
+
+End of phase 2 — warn-review flagged: a new test binary named by hand in
+four Makefile lists; `love-file` re-implementing the hash comparison of
+`tools/love_e2e_report.sh` and repeating the zip check in two recipes;
+`lua_guard.lua` a copy of the function list with nothing checking it
+against the fake (step 18 now compares them); `check.run` depending on the
+global `arg[0]` the runner rewrites; `window_layout` returning a `pad`
+rectangle nothing reads yet (step 10 will); `PAD_WIDTH/HEIGHT` literals
+equal to `vram.SCREEN_WIDTH/HEIGHT`.

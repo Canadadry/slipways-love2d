@@ -22,7 +22,7 @@
     - [x] Chunk 3 — pad_sheet
     - [x] Chunk 4 — screen draw cases in test_fake_love_image_draw
     - [x] Chunk 5 — contract and measurements
-- [ ] Phase 2 — Fractional, centred present and resizable window
+- [x] Phase 2 — Fractional, centred present and resizable window
   - [x] Step 2.6 — layout module
     - [x] Chunk 1 — budget plan
     - [x] Chunk 2 — one LuaJIT runner for tests/lua/game
@@ -34,10 +34,10 @@
     - [x] Chunk 3 — reclaims (b) and (c)
     - [x] Chunk 4 — reclaim (d): e2e_limits.sh greps into awk
     - [x] Chunk 5 — gate and report
-  - [ ] Step 2.8 — make love-file
+  - [x] Step 2.8 — make love-file
     - [x] Chunk 1 — completeness rule in lua-guard
     - [x] Chunk 2 — make love-file and the tools
-    - [ ] Chunk 3 — gate and report
+    - [x] Chunk 3 — gate and report
 - [ ] Phase 3 — The virtual pad
   - [ ] Step 3.9 — pad.png, quad table, pad_flat.png, static sheet test
   - [ ] Step 3.10 — pad element rectangles
