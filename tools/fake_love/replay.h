@@ -1,7 +1,10 @@
 #ifndef FAKE_LOVE_REPLAY_H
 #define FAKE_LOVE_REPLAY_H
 
+#include <stdbool.h>
 #include <stddef.h>
+
+#define REPLAY_SCREENS_MAX 16
 
 typedef struct replay replay_t;
 
@@ -42,6 +45,9 @@ const char *replay_bindings(const replay_t *replay);
 int replay_attract_after(const replay_t *replay);
 /* The "window" size; 640 and 480 when the replay has none. */
 void replay_window(const replay_t *replay, int *width, int *height);
+/* Whether "screens" lists `frame`: false for every frame of a replay
+ * without it. */
+bool replay_frame_screen_listed(const replay_t *replay, size_t frame);
 void replay_free(replay_t *replay);
 
 #endif

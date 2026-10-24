@@ -14,7 +14,7 @@
     - [x] Chunk 1 — PNG writer in the fake
     - [x] Chunk 2 — screen module
     - [x] Chunk 3 — present widened and wired
-    - [ ] Chunk 4 — screens and the PNGs
+    - [x] Chunk 4 — screens and the PNGs
     - [ ] Chunk 5 — contract and measurements
   - [ ] Step 1.5 — scaled quads, alpha blending, pad_sheet
 - [ ] Phase 2 — Fractional, centred present and resizable window

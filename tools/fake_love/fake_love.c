@@ -9,6 +9,7 @@
 #include "disk.h"
 #include "frame_capture.h"
 #include "host.h"
+#include "png_file.h"
 #include "replay.h"
 
 #define EXPECTED_VERSION_PREFIX "LuaJIT 2.1"
@@ -93,6 +94,32 @@ static bool capture_close(capture_writer_t *writer) {
     return closed;
 }
 
+typedef struct {
+    char paths[REPLAY_SCREENS_MAX][4200];
+    size_t count;
+} screen_files_t;
+
+static bool write_screen(screen_files_t *files, host_t *host, const char *capture_path, size_t frame) {
+    int width;
+    int height;
+    const unsigned char *pixels = host_read_screen(host, &width, &height);
+    assert(pixels != NULL && files->count < REPLAY_SCREENS_MAX && "a listed frame records its screen");
+    char *path = files->paths[files->count];
+    snprintf(path, sizeof files->paths[0], "%s.screen-f%zu.png", capture_path, frame);
+    if (!png_file_write(path, pixels, width, height)) {
+        remove(path);
+        fprintf(stderr, "fake_love: %s: cannot write\n", path);
+        return false;
+    }
+    files->count++;
+    return true;
+}
+
+static void remove_screens(const screen_files_t *files) {
+    for (size_t i = 0; i < files->count; i++)
+        remove(files->paths[i]);
+}
+
 static bool write_state(host_t *host, const char *path) {
     const char *text;
     size_t length;
@@ -128,11 +155,12 @@ static host_frame_input_t read_frame_input(const replay_t *replay, size_t frame,
         touches[i] = (host_touch_t){replay_touches[i].id, replay_touches[i].x, replay_touches[i].y};
     replay_mouse_t mouse = replay_frame_mouse(replay, frame);
     input.mouse = (host_mouse_t){mouse.x, mouse.y, mouse.left != 0};
+    input.record_screen = replay_frame_screen_listed(replay, frame);
     return input;
 }
 
 static bool run_game(host_t *host, const arguments_t *arguments, const replay_t *replay, disk_t *disk,
-                     capture_writer_t *capture) {
+                     capture_writer_t *capture, screen_files_t *screens) {
     int width, height;
     replay_window(replay, &width, &height);
     host_set_window(host, width, height);
@@ -144,6 +172,8 @@ static bool run_game(host_t *host, const arguments_t *arguments, const replay_t 
         if (!ok)
             break;
         if (!capture_append(capture, host, frame))
+            return false;
+        if (input.record_screen && !write_screen(screens, host, arguments->capture_path, frame))
             return false;
     }
     if (!ok) {
@@ -217,10 +247,12 @@ static bool run(const arguments_t *arguments) {
     if (host == NULL)
         fprintf(stderr, "fake_love: out of memory\n");
     capture_writer_t capture = {0};
+    static screen_files_t screens;
     bool ok = host != NULL && check_version(host) && capture_open(&capture, arguments->capture_path);
-    if (ok && !run_game(host, arguments, replay, disk, &capture)) {
+    if (ok && !run_game(host, arguments, replay, disk, &capture, &screens)) {
         capture_close(&capture);
         remove(arguments->capture_path);
+        remove_screens(&screens);
         if (arguments->state_path != NULL)
             remove(arguments->state_path);
         ok = false;

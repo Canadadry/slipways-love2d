@@ -548,6 +548,48 @@ static void test_a_bad_mouse_is_refused(void) {
     assert_frame_1_refused("{\"mouse\": [0, -1, 1]}", "mouse at (0, -1) is outside the 640x480 window");
 }
 
+static void test_screens_lists_the_frames_to_record(void) {
+    replay_t *replay = parsed("{\"input\": \"pad\", \"screens\": [0, 2, 3], \"frames\": [{}, {\"pad\": []}, {}, {}]}");
+    static const int LISTED[] = {1, 0, 1, 1};
+    for (size_t frame = 0; frame < 4; frame++) {
+        assert(replay_frame_screen_listed(replay, frame) == LISTED[frame]);
+    }
+    replay_free(replay);
+    replay = parsed("{\"input\": \"pad\", \"screens\": [], \"frames\": [{}]}");
+    assert(!replay_frame_screen_listed(replay, 0));
+    replay_free(replay);
+    replay = parsed("{\"input\": \"pad\", \"frames\": [{}]}");
+    assert(!replay_frame_screen_listed(replay, 0));
+    replay_free(replay);
+    replay = parsed("{\"input\": \"pad\", \"screens\": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], "
+                    "\"frames\": [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]}");
+    assert(replay_frame_screen_listed(replay, 15));
+    replay_free(replay);
+}
+
+static void assert_screens_refused(const char *screens, const char *problem) {
+    char text[512];
+    snprintf(text, sizeof(text), "{\"input\": \"pad\", %s, \"frames\": [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, "
+                                 "{}, {}, {}, {}, {}, {}, {}, {}]}", screens);
+    assert_refused(text, problem);
+}
+
+static void test_a_bad_screens_is_refused(void) {
+    assert_screens_refused("\"screens\": 3", "\"screens\" is an integer, not an array of frame numbers");
+    assert_screens_refused("\"screens\": {}", "\"screens\" is an object, not an array of frame numbers");
+    assert_screens_refused("\"screens\": [1, \"2\"]", "\"screens\" entry \"2\" is not an integer");
+    assert_screens_refused("\"screens\": [null]", "\"screens\" entry null is not an integer");
+    assert_screens_refused("\"screens\": [20]", "\"screens\" entry 20 is not a frame of this replay (0-19)");
+    assert_screens_refused("\"screens\": [-1]", "\"screens\" entry -1 is not a frame of this replay (0-19)");
+    assert_screens_refused("\"screens\": [3, 3]", "\"screens\" entry 3 is not after 3");
+    assert_screens_refused("\"screens\": [4, 2]", "\"screens\" entry 2 is not after 4");
+    assert_screens_refused("\"screens\": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]",
+                           "\"screens\" lists 17 frames, more than 16");
+    assert_screens_refused("\"screens\": [0], \"screens\": [1]", "\"screens\" given twice");
+    assert_refused("{\"input\": \"pad\", \"screens\": [0], \"frames\": []}",
+                   "\"screens\" entry 0 is not a frame of this replay (the replay has no frame)");
+}
+
 static void test_a_missing_file_is_refused_with_its_path(void) {
     char error[256] = "";
     assert(replay_read("tests/e2e/no_such_replay.json", error, sizeof(error)) == NULL);
@@ -589,6 +631,8 @@ int main(void) {
     test_touch_ids_up_to_the_largest_int_are_read();
     test_bad_touches_are_refused();
     test_a_bad_mouse_is_refused();
+    test_screens_lists_the_frames_to_record();
+    test_a_bad_screens_is_refused();
     test_a_missing_file_is_refused_with_its_path();
     printf("test_fake_love_replay: ok\n");
     return 0;

@@ -56,6 +56,8 @@ struct replay {
     int attract_after;
     int window_width;
     int window_height;
+    size_t screens[REPLAY_SCREENS_MAX];
+    size_t screen_count;
     size_t node_count;
     node_t nodes[];
 };
@@ -693,6 +695,45 @@ static int read_window(replay_t *replay, parser_t *parser, const node_t *member)
     return 1;
 }
 
+static int read_screens(replay_t *replay, parser_t *parser, const node_t *member) {
+    if (member->kind != NODE_ARRAY) {
+        fail_at(parser, member->offset, "\"screens\" is %s, not an array of frame numbers", kind_name(member->kind));
+        return 0;
+    }
+    if (member->child_count > REPLAY_SCREENS_MAX) {
+        fail_at(parser, member->offset, "\"screens\" lists %zu frames, more than %d", member->child_count,
+                REPLAY_SCREENS_MAX);
+        return 0;
+    }
+    size_t frame_count = replay->frames->child_count;
+    for (size_t i = member->first_child; i != NO_NODE; i = replay->nodes[i].next) {
+        const node_t *entry = &replay->nodes[i];
+        char value[64];
+        if (entry->kind != NODE_INTEGER) {
+            fail_at(parser, entry->offset, "\"screens\" entry %s is not an integer",
+                    describe_value(entry, value, sizeof(value)));
+            return 0;
+        }
+        if (entry->integer < 0 || (unsigned long long)entry->integer >= frame_count) {
+            char range[48] = "the replay has no frame";
+            if (frame_count > 0) {
+                snprintf(range, sizeof(range), "0-%zu", frame_count - 1);
+            }
+            fail_at(parser, entry->offset, "\"screens\" entry %lld is not a frame of this replay (%s)", entry->integer,
+                    range);
+            return 0;
+        }
+        size_t frame = (size_t)entry->integer;
+        if (replay->screen_count > 0 && frame <= replay->screens[replay->screen_count - 1]) {
+            fail_at(parser, entry->offset, "\"screens\" entry %zu is not after %zu", frame,
+                    replay->screens[replay->screen_count - 1]);
+            return 0;
+        }
+        replay->screens[replay->screen_count++] = frame;
+    }
+    return 1;
+}
+
 typedef int (*member_reader_t)(replay_t *replay, parser_t *parser, const node_t *member);
 
 static int read_start_state(replay_t *replay, parser_t *parser) {
@@ -704,6 +745,7 @@ static int read_start_state(replay_t *replay, parser_t *parser) {
         {"bindings", read_bindings},
         {"attract_after", read_attract_after},
         {"window", read_window},
+        {"screens", read_screens},
     };
     const node_t *root = &replay->nodes[0];
     const node_t *start = object_member(replay, root, "start");
@@ -957,6 +999,7 @@ replay_t *replay_parse(const char *name, const char *text, size_t length, char *
     replay->attract_after = 0;
     replay->window_width = 640;
     replay->window_height = 480;
+    replay->screen_count = 0;
     if (!find_frames(replay, &parser) || !check_input(replay, &parser) || !read_start_state(replay, &parser)
         || !read_frames(replay, &parser)) {
         replay_free(replay);
@@ -1055,6 +1098,16 @@ void replay_window(const replay_t *replay, int *width, int *height) {
     assert(replay != NULL && width != NULL && height != NULL);
     *width = replay->window_width;
     *height = replay->window_height;
+}
+
+bool replay_frame_screen_listed(const replay_t *replay, size_t frame) {
+    assert(replay != NULL && frame < replay_frame_count(replay));
+    for (size_t i = 0; i < replay->screen_count; i++) {
+        if (replay->screens[i] == frame) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void replay_free(replay_t *replay) {

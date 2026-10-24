@@ -32,18 +32,31 @@ static uint32_t big_endian_at(const unsigned char *bytes) {
     return (uint32_t)bytes[0] << 24 | (uint32_t)bytes[1] << 16 | (uint32_t)bytes[2] << 8 | bytes[3];
 }
 
+/* Slicing by 8: table[k][n] is the CRC of byte n followed by k zero bytes. */
 static uint32_t crc32_of(const unsigned char *bytes, size_t length) {
-    static uint32_t table[256];
-    if (table[1] == 0)
+    static uint32_t table[8][256];
+    if (table[0][1] == 0) {
         for (uint32_t n = 0; n < 256; n++) {
             uint32_t crc = n;
             for (int bit = 0; bit < 8; bit++)
                 crc = (crc >> 1) ^ (0xEDB88320u & (0u - (crc & 1)));
-            table[n] = crc;
+            table[0][n] = crc;
         }
+        for (int k = 1; k < 8; k++)
+            for (int n = 0; n < 256; n++)
+                table[k][n] = (table[k - 1][n] >> 8) ^ table[0][table[k - 1][n] & 0xFF];
+    }
     uint32_t crc = 0xFFFFFFFFu;
-    for (size_t i = 0; i < length; i++)
-        crc = (crc >> 8) ^ table[(crc ^ bytes[i]) & 0xFF];
+    size_t i = 0;
+    for (; i + 8 <= length; i += 8) {
+        uint32_t low = crc ^ ((uint32_t)bytes[i] | (uint32_t)bytes[i + 1] << 8 | (uint32_t)bytes[i + 2] << 16 |
+                              (uint32_t)bytes[i + 3] << 24);
+        crc = table[7][low & 0xFF] ^ table[6][(low >> 8) & 0xFF] ^ table[5][(low >> 16) & 0xFF] ^
+              table[4][low >> 24] ^ table[3][bytes[i + 4]] ^ table[2][bytes[i + 5]] ^ table[1][bytes[i + 6]] ^
+              table[0][bytes[i + 7]];
+    }
+    for (; i < length; i++)
+        crc = (crc >> 8) ^ table[0][(crc ^ bytes[i]) & 0xFF];
     return ~crc;
 }
 
@@ -52,7 +65,12 @@ static uint32_t adler32_of(const unsigned char *bytes, size_t length) {
     uint32_t a = 1, b = 0;
     while (length > 0) {
         size_t run = length < 5552 ? length : 5552;
-        for (size_t i = 0; i < run; i++) {
+        size_t i = 0;
+        for (; i + 4 <= run; i += 4) {
+            b += 4 * a + 4 * bytes[i] + 3 * bytes[i + 1] + 2 * bytes[i + 2] + bytes[i + 3];
+            a += bytes[i] + bytes[i + 1] + bytes[i + 2] + bytes[i + 3];
+        }
+        for (; i < run; i++) {
             a += bytes[i];
             b += a;
         }

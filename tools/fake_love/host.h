@@ -24,7 +24,7 @@ typedef struct {
 
 /* What one replay frame gives the host: `width` and `height` are read only
  * when `resized`; `touches` is not owned. A zero struct holds nothing, the
- * mouse at (0, 0), up. */
+ * mouse at (0, 0), up, and does not record the screen. */
 typedef struct host_frame_input {
     unsigned held;
     bool resized;
@@ -33,6 +33,7 @@ typedef struct host_frame_input {
     const host_touch_t *touches;
     size_t touch_count;
     host_mouse_t mouse;
+    bool record_screen;
 } host_frame_input_t;
 
 /* NULL only when memory runs out. The caller releases it with host_close. */
@@ -67,5 +68,10 @@ const char *host_error(const host_t *host);
 /* The RGBA8 pixels of the canvas created `canvas`-th, owned by the host and
  * valid until host_close; NULL, leaving the size unset, when fewer exist. */
 const unsigned char *host_read_canvas(const host_t *host, int canvas, int *width, int *height);
+
+/* The current frame's screen, RGBA8 row-major at the window size, owned by
+ * the host and valid until the next host_frame; NULL, sizes left unset, when
+ * the frame does not record the screen. */
+const unsigned char *host_read_screen(const host_t *host, int *width, int *height);
 
 #endif

@@ -266,7 +266,7 @@ static bool resize(host_t *host, size_t frame, int width, int height) {
 bool host_frame(host_t *host, size_t frame, const host_frame_input_t *input) {
     if (input->resized && !resize(host, frame, input->width, input->height))
         return false;
-    if (!screen_begin_frame(host->screen, host->window.width, host->window.height, false)) {
+    if (!screen_begin_frame(host->screen, host->window.width, host->window.height, input->record_screen)) {
         set_error(host, "screen f%zu: out of memory", frame);
         return false;
     }
@@ -336,4 +336,8 @@ bool host_debug_state(host_t *host, const char **text, size_t *length) {
     *text = host->state_text;
     *length = size;
     return true;
+}
+
+const unsigned char *host_read_screen(const host_t *host, int *width, int *height) {
+    return screen_read_pixels(host->screen, width, height);
 }
