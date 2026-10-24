@@ -1026,6 +1026,51 @@ id, while false it is lifted and its position ignored), and `placed` from
 mouse, `placed`, an un-`init`ed state or a mask outside the integers 0–4095
 fails an `assert` naming the field.
 
+**Pad visibility.** `love.pad_visibility` (pure, no `love.*` call, no module
+state) decides whether the virtual pad is shown, and is a filter in front
+of `pad_touch.update`: a touch it holds back is absent from what it
+returns, so `pad_touch` sees it lifted (its stick dropped, its buttons
+released, no `pad_touch.init`). It never reads coordinates.
+`init(visibility)` makes the pad hidden, nothing held back, previous
+gamepad mask 0; the fields are private. `shown(visibility)` is `true` when
+the pad is shown. `filter(visibility, gamepad_mask, touches, mouse)`, once
+per frame, takes the real 12-bit gamepad mask and `pad_touch`'s `touches`
+and `mouse` shapes, and returns a new array of the caller's records not
+held back (same tables, original order) and the caller's `mouse` or `nil`;
+the inputs are never modified. In order:
+
+- **Forget lifted touches:** a held-back id absent this frame leaves the
+  set; a `nil` mouse or one with `down == false` is no longer held back.
+- **Gamepad press:** a bit set now and not on the previous frame, any of
+  the 12. **Pressed is an edge**, not a level: a button held since before a
+  reveal neither keeps the pad hidden nor hides it again. On a press the pad
+  hides and every touch of this frame, and the mouse if down, is held back.
+- **Reveal:** otherwise, on a hidden pad, a touch not held back (or the
+  mouse down and not held back) shows the pad, and every such touch (and
+  the mouse) is held back: all the touches revealing it on one frame.
+  **The press wins** over a reveal on the same frame: the touch is held
+  back and reveals nothing later.
+- **Shown:** new touches pass; held-back ones stay out until they lift.
+  No fade, no timer: only a press hides the pad.
+- The previous gamepad mask becomes this frame's.
+- **Result:** the touches not held back, and the mouse unless `nil`, held
+  back, or the pad hidden. **A hidden pad passes nothing**, so the
+  revealing touch presses nothing wherever it lands or slides, and a hide
+  releases every button and the stick.
+
+A held-back touch that lifts is forgotten, so an id the OS reuses is new,
+here and in `pad_touch`. The gamepad mask is never filtered. Call order
+(step 14): `gamepad = read_pad_buttons()`; `touches, mouse =
+pad_visibility.filter(visibility, gamepad, raw_touches, raw_mouse)`;
+`virtual = pad_touch.update(touch_state, touches, mouse, placed)`;
+`pad_buttons = pad_touch.combine(gamepad, virtual)`. The attract demo needs
+no special case: the revealing touch gives a combined mask of 0, so the demo
+goes on; the next press on the pad leaves it like any button. A non-table
+or un-`init`ed state, a gamepad mask outside the integers 0–4095, a
+non-table `touches`, a record that is not a table or has a `nil` or
+repeated id, or a `mouse` neither `nil` nor a table with a boolean `down`
+fails an `assert` naming the field.
+
 ### The asset PNGs
 
 `game/sprites.png` and `game/font.png` are committed sources, edited
