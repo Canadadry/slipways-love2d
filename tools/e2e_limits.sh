@@ -1,20 +1,5 @@
 #!/bin/sh
 # usage: e2e_limits.sh <exceptions> [<events>...]
-# Exit 1 when the exception list is missing, or when an e2e is missing,
-# lacks its <name>.txt or its <name>.json.sha256, runs past 180 frames
-# (600 when it is listed in <exceptions>, as `<events> reason`: only the
-# first field counts), does not declare "input": "pad", or carries mouse_x,
-# mouse_y, mouse_buttons or dpad, or when the first paragraph of its .txt,
-# lines joined by single spaces, does not hold exactly one "<N> frames." with
-# N its frame count; or when a line of <exceptions> names no given e2e,
-# does not state "<N> frames:" as its second and third fields with N the
-# e2e's frame count, or names an e2e of 180 frames or fewer; or when a given
-# touch_<s>.json has no given pad_twin_<s>.json in its directory, or the
-# first lines of their .json.sha256 differ, or a given pad_twin_<s>.json has
-# no given touch_<s>.json.
-# Every file is examined before concluding.
-# A frame is an object of the "frames" array: with strings ignored, each "{"
-# at depth 2 (root object, array, object), whatever the frame holds.
 
 set -u
 
@@ -60,9 +45,7 @@ for events in "$@"; do
     fi
 done
 
-# One awk for every replay and .txt,
-# so make e2e pays one process, not one per replay. An empty file never
-# reaches FNR == 1, hence the -s test above. A JSON string never spans lines.
+# One awk for every file: make e2e must pay one process, not one per replay.
 shift "$listed"
 if ! awk -v given="$given" -v hashed="$hashed" -v exceptions="$exceptions" '
     function judge(    rest, count, said) {

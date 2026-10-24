@@ -92,3 +92,4 @@
     - [x] fake image_rules
     - [x] fake png_file
     - [x] fake graphics
+    - [x] e2e_limits.sh
