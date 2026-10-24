@@ -38,7 +38,7 @@
     - [x] Chunk 1 — completeness rule in lua-guard
     - [x] Chunk 2 — make love-file and the tools
     - [x] Chunk 3 — gate and report
-- [ ] Phase 3 — The virtual pad
+- [x] Phase 3 — The virtual pad
   - [x] Step 3.9 — pad.png, quad table, pad_flat.png, static sheet test
     - [x] Chunk 1 — the art generator and the three PNGs
     - [x] Chunk 2 — the static test, then love.pad_sheet
@@ -64,7 +64,7 @@
   - [x] Step 3.16 — draw the pad
     - [x] Chunk 1 — virtual_pad.virtual_mask
     - [x] Chunks 2-3 — the screen test, love.pad_view and its wiring
-  - [ ] Step 3.17 — check-e2e
+  - [x] Step 3.17 — check-e2e
 - [ ] Phase 4 — Clean-up
   - [ ] Step 4.18 — design.md contract read
   - [ ] Step 4.19 — rework-comments

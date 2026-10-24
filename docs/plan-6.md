@@ -323,7 +323,12 @@ to the fake's contract.
     the `make test` timing gate against the plan's start commit 8c830c6
     passes (§4).
 19. skill: rework-comments — the files this plan created or changed under
-    `game/` and `tools/fake_love/`.
+    `game/` and `tools/` (the fake, `e2e_limits.sh`, `lua_guard.lua`,
+    `pad_art.c`, and step 18's `love_function_list.lua`). Its brief names
+    phase 3's warn-review comment items: `pad_stick.lua`'s header citing
+    `main.lua`'s private `PAD_BUTTON_NAMES`, `main.lua`'s stale
+    `P8_PAD_BUTTON_n`, `e2e_limits.sh`'s run-on header; `pad_sheet.lua`'s
+    line naming `tools/pad_art.c` is a keep-in-sync trap and stays.
 
 ## 4. Done when
 
@@ -335,6 +340,8 @@ to the fake's contract.
 - `make love-file` produces `tmp/slipways.love` with `main.lua` at its root.
 - `docs/love-port/design.md` describes the extended fake contract, the
   layout and the pad; the "nothing in these plans targets iOS" line is gone.
+- The PR body lists every warn-review warning left open (phases 1–3), one
+  line each with its file, so a later plan can pick them up.
 
 ## 5. Open questions
 
@@ -690,3 +697,20 @@ every sprite is caught. design.md: the present rule is now "after every
 draw onto canvas 0; only the pad's screen draws follow", plus a Pad
 drawing paragraph. Gate: −3.10 % vs d1036e5, −10.68 % vs 8c830c6; `make
 e2e` 28/28, median 5.84 s vs 6.11 s, about 1.20 ms per frame per core.
+
+### Step 3.17
+
+`check-e2e`: `make e2e` 28/28 on the first run, no `fix:` commit.
+Phase 3 warn-review, left open for the PR body: `pad_stick.lua` redefines
+the dpad bits inline; `pad_touch.lua` and `pad_visibility.lua` hard-code
+the mask 4095; the button-name order is copied in `pad_view.lua`,
+`tests/fixtures/pad_sheet/main.lua` and (with the rectangles)
+`tools/pad_art.c`; `pad_visibility.lua` repeats `pad_touch`'s touch
+validation; `pad_layout.lua` and `pad_stick.lua` each define
+`check_number`; the dead-zone ratio 0.25 sits in `pad_stick.lua`, apart
+from `pad_layout`'s tunables; `pad_view` reaches into
+`virtual_pad.touch_state.stick` and `pad_touch.BUTTON_MASKS`;
+`game/love/pad_*` clashes with `game/game/pad_*`. Not acted on:
+`pad_view` has no Lua unit test (the exact screen frames cover it). The
+comment items go to step 19. plan-review: step 19 widened to `tools/` and
+briefed with those items; §4 now asks the PR body for every open warning.
