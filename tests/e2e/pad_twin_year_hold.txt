@@ -1,0 +1,36 @@
+Pad twin of touch_year_hold: a new game on "reasonable", then Back held
+30 frames in aim mode ends the first year. 54 frames.
+
+Buttons in the default bindings (design.md's pad table): Up 1, Down 2,
+Left 3, Right 4, A 5 (Cross; "X" in older notes), Back 12 (Select).
+
+Readings come from the state at the frame: `tmp/state.txt` after `make
+state EVENTS=<this file cut after fN>`, the file cut as help-me-debug cuts
+it:
+
+    k=47; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_twin_year_hold.json > tmp/debug/pad_twin_year_hold_f$k.json
+    make state EVENTS=tmp/debug/pad_twin_year_hold_f$k.json
+
+Frames, rebuildable by hand: idle x10, Down, idle, A x3, idle x3, Back x30,
+idle x6.
+
+- f0-9: idle while the title rows slide in. f10: Down, f11 idle: the
+  focus on "reasonable".
+- f12-14: A held 3 frames on "reasonable" (pad_probe's f12-14): f12-13
+  the loading screen, f14 the new game, galaxy of pad_probe, clock year
+  3401 month 1, $100, camera (176, 196). Aim mode from f15 (a new game
+  knows no object).
+- f15-17: idle.
+- f18-47: Back held. After f46 (29 frames held): year 3401 month 1,
+  science 0. After f47, its 30th frame: year 3402, science 1, $100,
+  camera (176, 196) unchanged.
+- f48-53: idle. The state at f53: year 3402 month 1, credits 100,
+  science 1, camera (176, 196).
+
+Its `.json.sha256` is the sha256 of its own capture (`make replay
+EVENTS=tests/e2e/pad_twin_year_hold.json`) and its `.json.end-state` was
+written by `make end-state-baseline`. Both are the reference of
+touch_year_hold.json, whose two files are byte copies of these;
+`tools/e2e_limits.sh` fails when the two `.sha256` differ or when either
+replay lacks the other.

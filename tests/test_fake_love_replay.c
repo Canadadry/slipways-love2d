@@ -32,6 +32,10 @@ static const struct {
     {"tests/e2e/pad_swap_aim_menu.json", 177},
     {"tests/e2e/pad_tech_costs.json", 558},
     {"tests/e2e/pad_title.json", 32},
+    {"tests/e2e/pad_twin_aim_diagonal.json", 65},
+    {"tests/e2e/pad_twin_first_slipway.json", 36},
+    {"tests/e2e/pad_twin_show_hide.json", 121},
+    {"tests/e2e/pad_twin_year_hold.json", 54},
     {"tests/e2e/pad_unbound_enter_aim.json", 48},
 };
 

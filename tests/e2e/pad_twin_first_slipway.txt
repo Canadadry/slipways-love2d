@@ -1,0 +1,46 @@
+Pad twin of touch_first_slipway: from a resumed record, the title's
+"resume" row, then the first slipway of the game, s4 to s3, built with the
+D-pad and A. 36 frames.
+
+Starts from pad_bankrupt's `initial_save`, copied byte for byte (a record
+cut from a real game, never typed): four labs s1-s4 colonized, year 3401
+month 9, $40, income -16, no slipway; the title then shows "resume".
+
+Buttons in the default bindings (design.md's pad table): Up 1, Down 2,
+Left 3, Right 4, A 5 (Cross; "X" in older notes), Back 12 (Select).
+
+Readings come from the state at the frame: `tmp/state.txt` after `make
+state EVENTS=<this file cut after fN>`, the file cut as help-me-debug cuts
+it:
+
+    k=35; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_twin_first_slipway.json > tmp/debug/pad_twin_first_slipway_f$k.json
+    make state EVENTS=tmp/debug/pad_twin_first_slipway_f$k.json
+
+Frames, rebuildable by hand: idle x10, Up, idle, A, idle x4, A, idle x3,
+Left, idle x3, A, idle x10.
+
+- f0-9: idle while the rows slide in. f10: Up, f11 idle: the focus on
+  "resume". After f11 the clock is not yet set (no game).
+- f12: A on "resume". After f13: year 3401 month 9, $40, income -16,
+  camera (206, 225), slipways 0.
+- f17: A, a slipway started from the hovered planet; after f17 nothing is
+  built, $40 and month 9 unchanged. A scratch copy without this A ends
+  with no slipway, $40, month 9.
+- f21: Left, the slipway aimed at s3; after f24 still $40, month 9,
+  slipways 0.
+- f25: A, the build: after f25 `slipway s4 s3 normal`, $40 -> $37,
+  month 9 -> 10, slipways 1.
+- f26-35: idle. The state at f35: year 3401 month 10, credits 37, income
+  -16, camera (206, 225), planets 94, colonies 4 (s1-s4), slipways 1
+  (s4 s3 normal), structures 0, techs 0, cheat activations 0.
+
+A new game cannot reach its first slipway within 180 frames (pad_slipway
+needs ~250): the record makes it the first slipway reached from the title.
+
+Its `.json.sha256` is the sha256 of its own capture (`make replay
+EVENTS=tests/e2e/pad_twin_first_slipway.json`) and its `.json.end-state`
+was written by `make end-state-baseline`. Both are the reference of
+touch_first_slipway.json, whose two files are byte copies of these;
+`tools/e2e_limits.sh` fails when the two `.sha256` differ or when either
+replay lacks the other.
