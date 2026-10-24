@@ -13,13 +13,15 @@ local function check_state(virtual_pad, caller)
 end
 
 -- Readable: placed, this frame's pad_layout.place result (nil before the first
--- update), and touch_state.stick. visibility is private: callers read shown.
+-- update), touch_state.stick, and virtual_mask, the touches' mask without the
+-- gamepad's (0 before the first update). visibility is private: callers read shown.
 function M.init(virtual_pad)
   virtual_pad.visibility = {}
   pad_visibility.init(virtual_pad.visibility)
   virtual_pad.touch_state = {}
   pad_touch.init(virtual_pad.touch_state)
   virtual_pad.placed = nil
+  virtual_pad.virtual_mask = 0
 end
 
 function M.update(virtual_pad, gamepad_mask, touches, mouse, width, height)
@@ -28,6 +30,7 @@ function M.update(virtual_pad, gamepad_mask, touches, mouse, width, height)
   local passed, passed_mouse = pad_visibility.filter(virtual_pad.visibility, gamepad_mask, touches, mouse)
   local virtual = pad_touch.update(virtual_pad.touch_state, passed, passed_mouse, placed)
   virtual_pad.placed = placed
+  virtual_pad.virtual_mask = virtual
   return pad_touch.combine(gamepad_mask, virtual)
 end
 

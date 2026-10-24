@@ -140,6 +140,45 @@ local function test_the_inputs_are_not_modified()
   expect(mouse.x .. "," .. mouse.y .. "," .. tostring(mouse.down), "10,20,true", "mouse fields")
 end
 
+local function test_the_virtual_mask_is_0_after_init()
+  expect(new_pad().virtual_mask, 0, "virtual_mask after init")
+end
+
+local function test_the_virtual_mask_holds_the_touches_buttons_after_the_reveal()
+  local pad = new_pad()
+  on_phone(pad, 0, { touch_on(1, PHONE, "a") })
+  expect(pad.virtual_mask, 0, "revealing touch")
+  on_phone(pad, 0, { touch_on(2, PHONE, "a") })
+  expect(pad.virtual_mask, 16, "touch on a")
+  on_phone(pad, 0, {})
+  expect(pad.virtual_mask, 0, "touch lifted")
+end
+
+local function test_the_virtual_mask_never_holds_the_gamepads_buttons()
+  local pad = new_pad()
+  on_phone(pad, 16, {})
+  on_phone(pad, 16, { touch_on(1, PHONE, "b") })
+  expect(on_phone(pad, 16, { touch_on(2, PHONE, "b") }), 48, "result: gamepad a and touch b")
+  expect(pad.virtual_mask, 32, "virtual_mask: touch b alone")
+end
+
+local function test_the_virtual_mask_holds_the_sticks_direction()
+  local pad = revealed_on_phone()
+  local zone = PHONE.stick_zone
+  local x, y = zone.x + zone.width / 2, zone.y + zone.height / 4
+  on_phone(pad, 0, { { id = 1, x = x, y = y } })
+  on_phone(pad, 0, { { id = 1, x = x + 60, y = y } })
+  expect(pad.virtual_mask, 8, "stick right")
+end
+
+local function test_the_virtual_mask_is_0_once_a_gamepad_press_hides_the_pad()
+  local pad = revealed_on_phone()
+  local on_a = touch_on(1, PHONE, "a")
+  on_phone(pad, 0, { on_a })
+  on_phone(pad, 1, { on_a })
+  expect(pad.virtual_mask, 0, "virtual_mask after the gamepad press")
+end
+
 local function expect_refusal(message, what, call, ...)
   local ok, err = pcall(call, ...)
   expect(ok, false, what .. " refused")
@@ -170,5 +209,12 @@ return check.run({
   { "a touch on the game half in tall mode presses nothing", test_a_touch_on_the_game_half_in_tall_mode_presses_nothing },
   { "the layout follows the window size frame by frame", test_the_layout_follows_the_window_size_frame_by_frame },
   { "the inputs are not modified", test_the_inputs_are_not_modified },
+  { "the virtual mask is 0 after init", test_the_virtual_mask_is_0_after_init },
+  { "the virtual mask holds the touches' buttons after the reveal",
+    test_the_virtual_mask_holds_the_touches_buttons_after_the_reveal },
+  { "the virtual mask never holds the gamepad's buttons", test_the_virtual_mask_never_holds_the_gamepads_buttons },
+  { "the virtual mask holds the stick's direction", test_the_virtual_mask_holds_the_sticks_direction },
+  { "the virtual mask is 0 once a gamepad press hides the pad",
+    test_the_virtual_mask_is_0_once_a_gamepad_press_hides_the_pad },
   { "a malformed state or size is refused", test_a_malformed_state_or_size_is_refused },
 })

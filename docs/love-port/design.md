@@ -1102,9 +1102,11 @@ stores the layout in `placed` and returns the combined 12-bit mask; the
 inputs are never modified. With no touch and the mouse up the result is the
 gamepad mask, which is why the replays without touches are unchanged.
 `shown(virtual_pad)` is `pad_visibility.shown`. Readable fields, for drawing
-the pad: `touch_state.stick` (`nil` without a stick) and `placed` (this
-frame's screen rectangles, `nil` before the first `update`). The pad is not
-drawn. A non-table or un-`init`ed state fails an `assert` starting with
+the pad: `touch_state.stick` (`nil` without a stick), `placed` (this
+frame's screen rectangles, `nil` before the first `update`) and
+`virtual_mask` (this frame's `pad_touch.update` result: the touches' and
+mouse's bits after the filter, stick included, never the gamepad's; `0`
+before the first `update`). The pad is not drawn. A non-table or un-`init`ed state fails an `assert` starting with
 `virtual_pad.update:` or `virtual_pad.shown:`; sizes, masks, touches and
 mice are refused by the asserts of the modules it calls.
 
