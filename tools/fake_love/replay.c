@@ -35,7 +35,6 @@ typedef struct {
     size_t next;
 } node_t;
 
-/* A resize_width of 0: the frame carries no resize. */
 typedef struct {
     unsigned held;
     int resize_width;
@@ -63,8 +62,6 @@ struct replay {
     node_t nodes[];
 };
 
-/* With `nodes` NULL the parser only validates and counts, so that the second
- * pass fills a single allocation of the exact size. */
 typedef struct {
     const char *name;
     const char *text;
@@ -150,7 +147,6 @@ static void put_utf8(parser_t *parser, unsigned long code) {
     }
 }
 
-/* Reads the 4 hex digits after `\u`; returns ULONG_MAX on failure. */
 static unsigned long read_hex4(parser_t *parser) {
     unsigned long code = 0;
     for (int i = 0; i < 4; i++) {
@@ -201,8 +197,6 @@ static int parse_unicode_escape(parser_t *parser, size_t escape_offset) {
     return 1;
 }
 
-/* Returns the copy's start in `chars` (NUL-terminated), or NULL on the
- * counting pass and on failure; `failed` tells the two apart. */
 static const char *parse_string(parser_t *parser, size_t *length) {
     size_t start_offset = parser->pos;
     assert(peek(parser) == '"' && "parse_string starts on the opening quote");
@@ -502,8 +496,6 @@ static const char *kind_name(node_kind_t kind) {
     return "?";
 }
 
-/* Returns 0 and fails the parser when a button is not an integer 1-12 or
- * is listed twice. */
 static int read_frame_pad(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *pad, unsigned *held) {
     if (pad->kind != NODE_ARRAY) {
         fail_at(parser, pad->offset, "f%zu: \"pad\" is %s, not an array", frame_index, kind_name(pad->kind));
@@ -547,8 +539,6 @@ static int hex_digit_value(char c) {
     return -1;
 }
 
-/* Writes the value as the replay spells it: quoted for a string (cut at
- * 40 characters), digits for an integer, the kind otherwise. */
 static const char *describe_value(const node_t *value, char *out, size_t size) {
     if (value->kind == NODE_STRING) {
         snprintf(out, size, "\"%.40s\"%s", value->string, value->string_length > 40 ? "..." : "");
@@ -657,8 +647,6 @@ static int read_attract_after(replay_t *replay, parser_t *parser, const node_t *
 
 #define WINDOW_SIZE_MAX 4096
 
-/* Spells an array as its first elements in brackets, any other value as
- * describe_value does. */
 static const char *describe_size(const replay_t *replay, const node_t *value, char *out, size_t size) {
     if (value->kind != NODE_ARRAY) {
         return describe_value(value, out, size);
@@ -679,8 +667,6 @@ static const char *describe_size(const replay_t *replay, const node_t *value, ch
     return out;
 }
 
-/* Returns 0 when `value` is not an array of two integers 1-WINDOW_SIZE_MAX;
- * the caller names the field. */
 static int read_size(const replay_t *replay, const node_t *value, int *width, int *height) {
     if (value->kind != NODE_ARRAY || value->child_count != 2) {
         return 0;
@@ -815,8 +801,6 @@ static int read_frame_resize(const replay_t *replay, parser_t *parser, size_t fr
 #define TOUCH_COUNT_MAX 10
 #define TOUCH_ID_MAX 2147483647
 
-/* Returns 0 when `value` is not an array of three integers; the caller names
- * the field and checks the ranges. */
 static int read_three_integers(const replay_t *replay, const node_t *value, long long out[3]) {
     if (value->kind != NODE_ARRAY || value->child_count != 3) {
         return 0;
@@ -919,8 +903,6 @@ enum { FRAME_PAD, FRAME_RESIZE, FRAME_TOUCHES, FRAME_MOUSE, FRAME_KEY_COUNT };
 
 static const char *const FRAME_KEYS[FRAME_KEY_COUNT] = {"pad", "resize", "touches", "mouse"};
 
-/* Fills `members` with the frame's members by FRAME_KEYS index, NULL for an
- * absent one. */
 static int find_frame_members(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *frame,
                               const node_t *members[FRAME_KEY_COUNT]) {
     for (size_t k = 0; k < FRAME_KEY_COUNT; k++) {
