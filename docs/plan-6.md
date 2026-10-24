@@ -586,3 +586,18 @@ Back and Start are "small" by their drawn pill, not by a smaller touch
 area. 16 tests in `tests/lua/game/test_pad_layout.lua` (390×844, 640×480,
 844×390, 820×1180, 200×420). `lua-test-game` own time: no measurable
 growth, so no full gate (§2). `make e2e` 20/20.
+
+### Step 3.11
+
+`love.pad_stick` (`game/love/`, pure): `start(x, y, base_size)` returns
+`{base_x, base_y, radius = base_size / 2, knob_x, knob_y, mask = 0}`
+with the base where the touch starts, unclamped; `follow(stick, x, y)`
+moves the knob to the touch, its centre capped at the base's edge, and
+sets `mask`. Dead zone: the open disc of 25 % of the radius (a touch on
+its edge already points). Sectors without angles: horizontal when
+`dx² ≥ 3·dy²`, vertical when `dy² ≥ 3·dx²` (exactly 60° each, ties go
+straight), otherwise a 30° diagonal with two bits. `UP`, `DOWN`, `LEFT`,
+`RIGHT` = 1, 2, 4, 8 (dpad bits of `PAD_BUTTON_NAMES`), screen y down.
+15 tests, both sides of every edge in all quadrants, exact double ties,
+the dead-zone edge; six mutations each caught. `lua-test-game` 74 →
+79 ms (noise), no full gate. `make e2e` 20/20.
