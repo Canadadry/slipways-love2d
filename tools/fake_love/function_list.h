@@ -1,7 +1,15 @@
 #ifndef FAKE_LOVE_FUNCTION_LIST_H
 #define FAKE_LOVE_FUNCTION_LIST_H
 
+#include <stddef.h>
+
 #include <lua.h>
+
+/* The callbacks the game may set on `love`, and the modules `love` holds. */
+extern const char *const function_list_callbacks[];
+extern const size_t function_list_callback_count;
+extern const char *const function_list_modules[];
+extern const size_t function_list_module_count;
 
 /* Every guard raises "<name> is not in the function list of
  * docs/love-port/design.md" at the game's line. Each sets a metatable, so

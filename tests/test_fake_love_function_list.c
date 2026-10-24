@@ -1,11 +1,16 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <lauxlib.h>
 #include <lualib.h>
 
+#include "../tools/fake_love/disk.h"
 #include "../tools/fake_love/function_list.h"
+#include "../tools/fake_love/host.h"
 
 static lua_State *new_state(void) {
     lua_State *lua = luaL_newstate();
@@ -161,6 +166,129 @@ static void test_a_method_table_names_the_kind_and_method_with_a_colon(void) {
     lua_close(lua);
 }
 
+#define LIST_FILE "tools/love_function_list.lua"
+#define LIST_FIXTURE "tests/fixtures/fake_love/function_list"
+#define MAX_LINES 256
+
+/* Returns the lines the fake installs, as the fixture's debug_state renders them. */
+static char *fake_installed_lines(void) {
+    disk_t *disk = disk_create(LIST_FIXTURE);
+    host_t *host = host_new();
+    assert(disk != NULL && host != NULL);
+    const char *text;
+    size_t length;
+    bool ok = host_open(host, LIST_FIXTURE, disk) && host_debug_state(host, &text, &length);
+    if (!ok)
+        fprintf(stderr, "%s: %s\n", LIST_FIXTURE, host_error(host));
+    assert(ok);
+    char *lines = strdup(text);
+    assert(lines != NULL);
+    host_close(host);
+    disk_free(disk);
+    return lines;
+}
+
+static char *fake_guard_lines(void) {
+    size_t capacity = 1;
+    for (size_t i = 0; i < function_list_callback_count; i++)
+        capacity += strlen("callback \n") + strlen(function_list_callbacks[i]);
+    for (size_t i = 0; i < function_list_module_count; i++)
+        capacity += strlen("module \n") + strlen(function_list_modules[i]);
+    char *lines = malloc(capacity);
+    assert(lines != NULL);
+    size_t used = 0;
+    for (size_t i = 0; i < function_list_callback_count; i++)
+        used += (size_t)snprintf(lines + used, capacity - used, "callback %s\n", function_list_callbacks[i]);
+    for (size_t i = 0; i < function_list_module_count; i++)
+        used += (size_t)snprintf(lines + used, capacity - used, "module %s\n", function_list_modules[i]);
+    return lines;
+}
+
+static const char RENDER_LIST[] =
+    "local list = ...\n"
+    "local installed, guard = {}, {}\n"
+    "for _, name in ipairs(list.callbacks) do table.insert(guard, 'callback ' .. name) end\n"
+    "for module_name, names in pairs(list.modules) do\n"
+    "    table.insert(guard, 'module ' .. module_name)\n"
+    "    table.insert(installed, 'module ' .. module_name)\n"
+    "    for _, name in ipairs(names) do\n"
+    "        table.insert(installed, 'function love.' .. module_name .. '.' .. name)\n"
+    "    end\n"
+    "end\n"
+    "for kind, names in pairs(list.methods) do\n"
+    "    table.insert(installed, 'kind ' .. kind)\n"
+    "    for _, name in ipairs(names) do table.insert(installed, 'method ' .. kind .. ':' .. name) end\n"
+    "end\n"
+    "return table.concat(installed, '\\n') .. '\\n', table.concat(guard, '\\n') .. '\\n'\n";
+
+/* Sets `*installed` and `*guard` to the file's lines in the forms of
+ * fake_installed_lines and fake_guard_lines; the caller frees both. */
+static void list_file_lines(char **installed, char **guard) {
+    lua_State *lua = new_state();
+    if (luaL_dofile(lua, LIST_FILE) != 0 || luaL_loadbuffer(lua, RENDER_LIST, strlen(RENDER_LIST), "=render") != 0) {
+        fprintf(stderr, "%s\n", lua_tostring(lua, -1));
+        assert(!"tools/love_function_list.lua does not load");
+    }
+    lua_insert(lua, -2);
+    if (lua_pcall(lua, 1, 2, 0) != 0) {
+        fprintf(stderr, "%s: %s\n", LIST_FILE, lua_tostring(lua, -1));
+        assert(!"tools/love_function_list.lua is not a table of callbacks, modules and methods");
+    }
+    *installed = strdup(lua_tostring(lua, -2));
+    *guard = strdup(lua_tostring(lua, -1));
+    assert(*installed != NULL && *guard != NULL);
+    lua_close(lua);
+}
+
+static int compare_text(const void *left, const void *right) {
+    return strcmp(*(const char *const *)left, *(const char *const *)right);
+}
+
+/* Cuts `text` into its lines in place, sorted; returns their count. */
+static size_t split_sorted(char *text, char **lines) {
+    size_t count = 0;
+    for (char *line = strtok(text, "\n"); line != NULL; line = strtok(NULL, "\n")) {
+        assert(count < MAX_LINES);
+        lines[count++] = line;
+    }
+    qsort(lines, count, sizeof lines[0], compare_text);
+    return count;
+}
+
+static size_t report_missing(char **lines, size_t count, char **others, size_t other_count, const char *label) {
+    size_t missing = 0;
+    for (size_t i = 0; i < count; i++)
+        if (bsearch(&lines[i], others, other_count, sizeof others[0], compare_text) == NULL) {
+            fprintf(stderr, "%s: %s\n", label, lines[i]);
+            missing++;
+        }
+    return missing;
+}
+
+/* Takes ownership of both texts. */
+static size_t report_difference(char *fake, char *list) {
+    char *fake_lines[MAX_LINES];
+    char *list_lines[MAX_LINES];
+    size_t fake_count = split_sorted(fake, fake_lines);
+    size_t list_count = split_sorted(list, list_lines);
+    size_t missing = report_missing(fake_lines, fake_count, list_lines, list_count,
+                                    "in the fake, not in " LIST_FILE) +
+                     report_missing(list_lines, list_count, fake_lines, fake_count,
+                                    "in " LIST_FILE ", not in the fake");
+    free(fake);
+    free(list);
+    return missing;
+}
+
+static void test_the_fake_installs_exactly_the_names_of_the_list_file(void) {
+    char *list_installed;
+    char *list_guard;
+    list_file_lines(&list_installed, &list_guard);
+    size_t missing = report_difference(fake_installed_lines(), list_installed) +
+                     report_difference(fake_guard_lines(), list_guard);
+    assert(missing == 0 && "the fake and tools/love_function_list.lua differ");
+}
+
 int main(void) {
     test_a_module_table_refuses_an_absent_key_naming_it_in_full();
     test_a_module_table_reads_its_listed_fields_and_lists_only_them();
@@ -170,6 +298,7 @@ int main(void) {
     test_love_refuses_any_other_absent_key();
     test_love_takes_the_seven_callbacks_and_nothing_else();
     test_a_method_table_names_the_kind_and_method_with_a_colon();
+    test_the_fake_installs_exactly_the_names_of_the_list_file();
     printf("test_fake_love_function_list: all tests passed\n");
     return 0;
 }

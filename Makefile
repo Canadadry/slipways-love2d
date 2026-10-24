@@ -204,8 +204,8 @@ $(TMP_DIR)/test_fake_love_image: $(test_fake_love_image_objs) $(TMP_DIR)/fake_lo
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS) -lm
 
 $(call objs,tests/test_fake_love_function_list.c): override CFLAGS += $(LUAJIT_CFLAGS)
-test_fake_love_function_list_objs := $(call objs,tests/test_fake_love_function_list.c tools/fake_love/function_list.c)
-$(TMP_DIR)/test_fake_love_function_list: $(test_fake_love_function_list_objs) | $(TMP_DIR)
+test_fake_love_function_list_objs := $(call objs,tests/test_fake_love_function_list.c $(FAKE_LOVE_HOST_SRCS))
+$(TMP_DIR)/test_fake_love_function_list: $(test_fake_love_function_list_objs) tools/love_function_list.lua $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS) -lm
 
 # The one translation unit compiling the vendored stb_image.h.
