@@ -10,6 +10,7 @@
 #include "image.h"
 #include "image_rules.h"
 #include "point.h"
+#include "screen.h"
 #include "transform.h"
 
 #define METATABLE "Canvas"
@@ -36,6 +37,10 @@ static transform_t *upvalue_transform(lua_State *lua) {
 
 static const window_size_t *upvalue_window(lua_State *lua) {
     return lua_touserdata(lua, lua_upvalueindex(3));
+}
+
+static screen_t *upvalue_screen(lua_State *lua) {
+    return lua_touserdata(lua, lua_upvalueindex(4));
 }
 
 static int get_dimensions(lua_State *lua) {
@@ -289,18 +294,20 @@ static int new_quad(lua_State *lua) {
     return 1;
 }
 
-/* draw(canvas, x, y, 0, s, s): models nothing, as every draw on the screen,
- * so it is accepted only where it cannot hide a change to a canvas or a
- * tinted, shifted, blurred or distorted window. */
+/* draw(canvas, x, y, 0, s, s), the present: accepted only where the screen
+ * shows exactly what design.md's rule "The screen" says, with no tint,
+ * shift, rotation, distortion or blending. */
 static int draw_canvas(lua_State *lua) {
-    if (luaL_testudata(lua, 1, METATABLE) == NULL)
+    const canvas_object_t *object = luaL_testudata(lua, 1, METATABLE);
+    if (object == NULL)
         return luaL_error(lua, "love.graphics.draw: argument 1 is %s, not a Canvas", describe(lua, 1));
     for (int index = 2; index <= 6; index++)
         if (lua_type(lua, index) != LUA_TNUMBER)
             return luaL_error(lua, "love.graphics.draw: argument %d is a %s, not a number", index,
                               luaL_typename(lua, index));
     for (int index = 2; index <= 3; index++)
-        refuse_verdict(lua, "draw", index, image_rules_check_position(lua_tonumber(lua, index)), "|v| >= 2^20");
+        refuse_verdict(lua, "draw", index, image_rules_check_present_position(lua_tonumber(lua, index)),
+                       "|v| >= 2^20");
     double rotation = lua_tonumber(lua, 4);
     if (!isfinite(rotation))
         return luaL_error(lua, "love.graphics.draw: argument 4 is not finite");
@@ -308,10 +315,12 @@ static int draw_canvas(lua_State *lua) {
         return luaL_error(lua, "love.graphics.draw: argument 4 is %g, only 0 is supported (rotation is not modelled)",
                           rotation);
     for (int index = 5; index <= 6; index++)
-        refuse_verdict(lua, "draw", index, image_rules_check_scale(lua_tonumber(lua, index)), "s from 1 to 16");
-    if (lua_tonumber(lua, 5) != lua_tonumber(lua, 6))
-        return luaL_error(lua, "love.graphics.draw: the scales %d and %d differ (unequal scales distort the window)",
-                          (int)lua_tonumber(lua, 5), (int)lua_tonumber(lua, 6));
+        refuse_verdict(lua, "draw", index, image_rules_check_present_scale(lua_tonumber(lua, index)),
+                       "s greater than 0, at most 1024");
+    double scale = lua_tonumber(lua, 5);
+    if (scale != lua_tonumber(lua, 6))
+        return luaL_error(lua, "love.graphics.draw: the scales %g and %g differ (unequal scales distort the window)",
+                          scale, lua_tonumber(lua, 6));
     canvas_store_t *store = upvalue_store(lua);
     if (canvas_get_target(store) != CANVAS_NONE)
         return luaL_error(lua, "love.graphics.draw: a canvas is selected, a Canvas is drawn only onto the screen "
@@ -326,6 +335,17 @@ static int draw_canvas(lua_State *lua) {
     if (offset.x != 0 || offset.y != 0)
         return luaL_error(lua, "love.graphics.draw: the offset is (%d, %d), not (0, 0) (it would shift the window)",
                           offset.x, offset.y);
+    const unsigned char *pixels = canvas_read_pixels(store, object->handle);
+    int translucent = image_rules_find_translucent_pixel(pixels, CANVAS_WIDTH * CANVAS_HEIGHT);
+    if (translucent != IMAGE_RULES_NONE) {
+        const unsigned char *pixel = pixels + 4 * translucent;
+        return luaL_error(lua, "love.graphics.draw: the canvas's pixel (%d, %d) is %02X%02X%02X%02X, translucent "
+                               "(blending onto the screen is not modelled before plan 6 step 5)",
+                          translucent % CANVAS_WIDTH, translucent / CANVAS_WIDTH, pixel[0], pixel[1], pixel[2],
+                          pixel[3]);
+    }
+    canvas_source_t source = {pixels, CANVAS_WIDTH, CANVAS_HEIGHT};
+    screen_draw_canvas(upvalue_screen(lua), &source, lua_tonumber(lua, 2), lua_tonumber(lua, 3), scale);
     return 0;
 }
 
@@ -441,18 +461,21 @@ typedef struct {
     canvas_store_t *store;
     transform_t *transform;
     const window_size_t *window;
+    screen_t *screen;
 } upvalues_t;
 
 static void set_function(lua_State *lua, const upvalues_t *upvalues, lua_CFunction function, const char *name) {
     lua_pushlightuserdata(lua, upvalues->store);
     lua_pushlightuserdata(lua, upvalues->transform);
     lua_pushlightuserdata(lua, (void *)upvalues->window);
-    lua_pushcclosure(lua, function, 3);
+    lua_pushlightuserdata(lua, upvalues->screen);
+    lua_pushcclosure(lua, function, 4);
     lua_setfield(lua, -2, name);
 }
 
-void graphics_install(lua_State *lua, canvas_store_t *store, transform_t *transform, const window_size_t *window) {
-    const upvalues_t upvalues = {store, transform, window};
+void graphics_install(lua_State *lua, canvas_store_t *store, transform_t *transform, const window_size_t *window,
+                      screen_t *screen) {
+    const upvalues_t upvalues = {store, transform, window, screen};
     new_metatable_without_methods(lua, METATABLE);
     new_metatable_without_methods(lua, IMAGE_METATABLE);
     new_metatable_without_methods(lua, QUAD_METATABLE);

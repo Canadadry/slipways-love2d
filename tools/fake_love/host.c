@@ -17,6 +17,7 @@
 #include "image.h"
 #include "joystick.h"
 #include "pad.h"
+#include "screen.h"
 #include "touch.h"
 #include "transform.h"
 
@@ -28,6 +29,7 @@
 struct host {
     lua_State *lua;
     canvas_store_t *canvases;
+    screen_t *screen;
     transform_t transform;
     window_size_t window;
     unsigned held;
@@ -85,6 +87,13 @@ host_t *host_new(void) {
     }
     luaL_openlibs(host->lua);
     host->canvases = canvas_create_store();
+    host->screen = screen_create();
+    if (host->screen == NULL) {
+        lua_close(host->lua);
+        canvas_free_store(host->canvases);
+        free(host);
+        return NULL;
+    }
     transform_init(&host->transform);
     host->window = (window_size_t){DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT};
     return host;
@@ -95,6 +104,7 @@ void host_close(host_t *host) {
         return;
     lua_close(host->lua);
     canvas_free_store(host->canvases);
+    screen_free(host->screen);
     free(host->game_dir);
     free(host->state_text);
     free(host);
@@ -209,7 +219,7 @@ bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
     joystick_install(host->lua);
     touch_install(host->lua);
     filesystem_install(host->lua, disk);
-    graphics_install(host->lua, host->canvases, &host->transform, &host->window);
+    graphics_install(host->lua, host->canvases, &host->transform, &host->window, host->screen);
     image_install(host->lua, disk);
     return run_file(host, "main.lua");
 }
@@ -256,6 +266,10 @@ static bool resize(host_t *host, size_t frame, int width, int height) {
 bool host_frame(host_t *host, size_t frame, const host_frame_input_t *input) {
     if (input->resized && !resize(host, frame, input->width, input->height))
         return false;
+    if (!screen_begin_frame(host->screen, host->window.width, host->window.height, false)) {
+        set_error(host, "screen f%zu: out of memory", frame);
+        return false;
+    }
     pad_change_t changes[PAD_MAX_CHANGES];
     size_t change_count = pad_list_changes(host->held, input->held, changes);
     host->held = input->held;
