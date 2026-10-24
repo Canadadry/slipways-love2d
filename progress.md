@@ -84,3 +84,4 @@
     - [x] main
     - [x] fake canvas
     - [x] fake host
+    - [x] fake function_list

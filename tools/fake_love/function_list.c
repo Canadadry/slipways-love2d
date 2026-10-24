@@ -21,7 +21,6 @@ static bool is_one_of(lua_State *lua, int key_index, const char *const *names, s
     return false;
 }
 
-/* Upvalue 1 is the prefix, upvalue 2 the separator before a string key. */
 static int refuse(lua_State *lua, int key_index) {
     const char *prefix = lua_tostring(lua, lua_upvalueindex(1));
     if (lua_type(lua, key_index) == LUA_TSTRING)
