@@ -82,3 +82,4 @@
     - [x] window_layout
     - [x] screen
     - [x] main
+    - [x] fake canvas
