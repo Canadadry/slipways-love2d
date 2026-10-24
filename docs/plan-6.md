@@ -482,3 +482,41 @@ step — seven misuses in one pcall-logged run, compared whole; the
 `test_fake_love_replay`); 11 fake runs → 4, ~61 → ~27 ms. Rerun, 11
 rounds: −1.26 % vs c67b0b4, +2.32 % vs 8c830c6, −87.51 % vs 8dff812:
 pass. **Headroom vs 8c830c6: ~0.7 point.** `make e2e`: 20/20.
+
+### Step 2.7
+
+`screen.present` draws canvas 0 into the game rectangle of
+`love.window_layout` for `love.graphics.getDimensions()`, every frame,
+unrounded, with no `love.resize` handler; `screen.SCALE` is gone; at
+640×480 the draw is the old one, so the 20 replays keep their hashes.
+`conf.lua`: `resizable`, `highdpi`, 640×480 (tested by a runner file).
+New check `test_game_screens` (first among the fake checks, ~64–72 ms):
+one boot of `game/` on `tests/fixtures/game_screens.json`, 390×844 then a
+resize to 640×480, both whole screens compared exactly with frames built
+from the run's own capture at the literal rectangles (0, 64.75, 2.4375)
+and (0, 0, 4).
+
+Reclaims, each keeping its assertions (dropped CLI refusals are asserted
+in `test_fake_love_replay`, the CLI refusal path by `pad_invalid`):
+(b) `test_fake_love_screens` frames 2–4 at 200×150, a 40×30 failing
+replay, ~71 → ~36 ms; (c) `test_fake_love_window` `getDimensions(1)` as a
+pcall-logged line, `window_invalid` dropped, ~40 → ~29 ms; (d)
+`tools/e2e_limits.sh`'s five greps per replay folded into its one awk,
+102 → 2 processes, `test_e2e_limits` (unchanged, on `make test`'s
+critical path) ~800 → ~415 ms. Reserves (e)–(g) not needed.
+
+Gate, 11 rounds: −10.36 % vs ee5e66a, −12.31 % vs 8c830c6, −88.53 % vs
+8dff812: pass; **headroom vs 8c830c6: ~15 points** (was ~0.7).
+**Step 16's grouping**, projected on a scratch replay: one replay
+(`game_screens.json`), one boot, nine frames, six `screens` — 390×844,
+640×480, then 200×420 (tall, (0, 30), scale 1.25) with the touches, then
+320×240 (overlay, scale 2) — ~90 ms, under 100 ms with ~10 ms to spare,
+pad drawing not included: step 16 adds no frames beyond these nine.
+`make e2e`: median 4.836 s (ee5e66a: 5.058 s); **per-frame cost at
+`-O2`: 1.124 ms** (replaces 1.542 ms); projection 4.836 + 720 × 1.124 ms
+= 5.65 s ≤ 8 s. `make e2e` 20/20.
+
+Risk noted by the PRD, for the phone: with `highdpi`, LÖVE 11's
+`newCanvas` takes the screen's DPI scale, so the 160×120 canvas may be
+3× dense on a Retina screen and 1-pixel points may leave gaps; the fix
+would be `dpiscale = 1`, a function-list extension. Not acted on.
