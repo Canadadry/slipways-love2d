@@ -161,21 +161,21 @@ test_fake_love_unlisted_objs := $(call objs,tests/test_fake_love_unlisted.c test
 $(TMP_DIR)/test_fake_love_unlisted: $(test_fake_love_unlisted_objs) $(TMP_DIR)/fake_love $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-test_fake_love_points_objs := $(call objs,tests/test_fake_love_points.c tests/fake_love_cli.c tests/fake_love_png.c)
+test_fake_love_points_objs := $(call objs,tests/test_fake_love_points.c tests/fake_love_cli.c tools/fake_love/png_file.c)
 $(TMP_DIR)/test_fake_love_points: $(test_fake_love_points_objs) $(TMP_DIR)/fake_love $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS) $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
-	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
 
-test_fake_love_rectangle_objs := $(call objs,tests/test_fake_love_rectangle.c tests/fake_love_cli.c tests/fake_love_png.c)
+test_fake_love_rectangle_objs := $(call objs,tests/test_fake_love_rectangle.c tests/fake_love_cli.c tools/fake_love/png_file.c)
 $(TMP_DIR)/test_fake_love_rectangle: $(test_fake_love_rectangle_objs) $(TMP_DIR)/fake_love $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS) $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
-	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
 
-test_fake_love_set_color_objs := $(call objs,tests/test_fake_love_set_color.c tests/fake_love_cli.c tests/fake_love_png.c)
+test_fake_love_set_color_objs := $(call objs,tests/test_fake_love_set_color.c tests/fake_love_cli.c tools/fake_love/png_file.c)
 $(TMP_DIR)/test_fake_love_set_color: $(test_fake_love_set_color_objs) $(TMP_DIR)/fake_love $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS) $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
-	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
 
-test_fake_love_image_draw_objs := $(call objs,tests/test_fake_love_image_draw.c tests/fake_love_cli.c tests/fake_love_png.c)
+test_fake_love_image_draw_objs := $(call objs,tests/test_fake_love_image_draw.c tests/fake_love_cli.c tools/fake_love/png_file.c)
 $(TMP_DIR)/test_fake_love_image_draw: $(test_fake_love_image_draw_objs) $(TMP_DIR)/fake_love $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS) $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
-	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
 
 $(call objs,tests/test_fake_love_image.c): override CFLAGS += $(LUAJIT_CFLAGS)
 test_fake_love_image_objs := $(call objs,tests/test_fake_love_image.c tests/fake_love_cli.c tools/fake_love/image.c tools/fake_love/function_list.c tools/fake_love/image_data.c tools/fake_love/filesystem.c tools/fake_love/disk.c tools/fake_love/png_file.c)
@@ -190,7 +190,7 @@ $(TMP_DIR)/test_fake_love_function_list: $(test_fake_love_function_list_objs) | 
 # The one translation unit compiling the vendored stb_image.h.
 $(call objs,tools/fake_love/png_file.c): override CFLAGS += -Wno-unused-function
 
-test_fake_love_capture_objs := $(call objs,tests/test_fake_love_capture.c tests/fake_love_cli.c tests/fake_love_png.c tools/fake_love/png_file.c)
+test_fake_love_capture_objs := $(call objs,tests/test_fake_love_capture.c tests/fake_love_cli.c tools/fake_love/png_file.c)
 $(TMP_DIR)/test_fake_love_capture: $(test_fake_love_capture_objs) $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS) $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
 

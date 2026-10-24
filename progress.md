@@ -11,6 +11,11 @@
     - [x] Chunk 3 — love.touch and love.mouse in the host
     - [x] Chunk 4 — lua-guard, design.md, timing gate
   - [ ] Step 1.4 — screen framebuffer, free present, screens
+    - [x] Chunk 1 — PNG writer in the fake
+    - [ ] Chunk 2 — screen module
+    - [ ] Chunk 3 — present widened and wired
+    - [ ] Chunk 4 — screens and the PNGs
+    - [ ] Chunk 5 — contract and measurements
   - [ ] Step 1.5 — scaled quads, alpha blending, pad_sheet
 - [ ] Phase 2 — Fractional, centred present and resizable window
   - [ ] Step 2.6 — layout module

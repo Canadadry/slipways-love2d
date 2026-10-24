@@ -4,8 +4,8 @@
 #include <stdlib.h>
 
 #include "../tools/fake_love/canvas.h"
+#include "../tools/fake_love/png_file.h"
 #include "fake_love_cli.h"
-#include "fake_love_png.h"
 
 #define FIXTURES FAKE_LOVE_CLI_FIXTURES
 #define CAPTURE "tmp/test_fake_love_image_draw_capture.bin"
@@ -124,7 +124,8 @@ static void test_an_uncaught_fractional_position_is_fatal_and_names_draw_and_the
 }
 
 static void assert_program_draws(const char *program, const unsigned char *expected) {
-    fake_love_png_write(PNG, expected, CANVAS_WIDTH, CANVAS_HEIGHT);
+    bool written = png_file_write(PNG, expected, CANVAS_WIDTH, CANVAS_HEIGHT);
+    assert(written);
     char command[512];
     int length = snprintf(command, sizeof command,
                           "./tmp/love_capture_check tools/fake_love/harness " PROGRAMS "%s " PNG " 2> " STDERR_LOG,

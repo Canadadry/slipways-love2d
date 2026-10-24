@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -508,6 +509,39 @@ static void test_a_bad_chunk_order_is_refused(void) {
     assert_refused(&png, "IHDR", "IHDR must come first");
 }
 
+static void assert_round_trip(const char *path, int width, int height) {
+    size_t length = (size_t)width * height * 4;
+    unsigned char *pixels = malloc(length);
+    assert(pixels != NULL);
+    for (size_t i = 0; i < length; i++)
+        pixels[i] = (unsigned char)(i * 7 + (i >> 12));
+    remove(path);
+    bool written = png_file_write(path, pixels, width, height);
+    assert(written);
+    unsigned char *loaded;
+    int loaded_width, loaded_height;
+    const char *reason = png_file_load(path, &loaded, &loaded_width, &loaded_height);
+    if (reason != NULL)
+        fprintf(stderr, "%s refused: %s\n", path, reason);
+    assert(reason == NULL);
+    assert(loaded_width == width && loaded_height == height);
+    assert(memcmp(loaded, pixels, length) == 0);
+    free(loaded);
+    free(pixels);
+    remove(path);
+}
+
+static void test_a_written_png_loads_to_the_same_bytes(void) {
+    assert_round_trip("tmp/test_fake_love_png_file_1x1.png", 1, 1);
+    assert_round_trip("tmp/test_fake_love_png_file_390x844.png", 390, 844);
+}
+
+static void test_a_png_that_cannot_be_created_is_reported(void) {
+    static const unsigned char pixel[4] = {1, 2, 3, 4};
+    bool written = png_file_write("tmp/no_such_directory/test_fake_love_png_file.png", pixel, 1, 1);
+    assert(!written);
+}
+
 static void test_stb_image_reasons_pass_through(void) {
     static buffer_t png;
     static unsigned char raw[BUFFER_SIZE];
@@ -534,6 +568,8 @@ int main(void) {
     test_sides_outside_1_to_the_maximum_are_refused();
     test_a_bad_chunk_order_is_refused();
     test_stb_image_reasons_pass_through();
+    test_a_written_png_loads_to_the_same_bytes();
+    test_a_png_that_cannot_be_created_is_reported();
     puts("test_fake_love_png_file: ok");
     return 0;
 }

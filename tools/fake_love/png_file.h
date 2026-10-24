@@ -1,6 +1,7 @@
 #ifndef FAKE_LOVE_PNG_FILE_H
 #define FAKE_LOVE_PNG_FILE_H
 
+#include <stdbool.h>
 #include <stddef.h>
 
 /* NULL on success, with `*pixels` row-major RGBA8 the caller frees with
@@ -14,5 +15,9 @@ const char *png_file_load(const char *path, unsigned char **pixels, int *width, 
  * grey and palette are refused on purpose, and so is every file whose CRC,
  * Adler-32 or image data length LÖVE checks and stb_image does not. */
 const char *png_file_decode(const unsigned char *bytes, size_t length, int max_side, unsigned char **pixels, int *width, int *height);
+
+/* Writes `rgba`, row-major RGBA8, as an 8-bit RGBA PNG with stored deflate
+ * blocks; false when the file cannot be created or written. */
+bool png_file_write(const char *path, const unsigned char *rgba, int width, int height);
 
 #endif

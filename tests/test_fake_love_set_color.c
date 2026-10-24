@@ -1,10 +1,11 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "../tools/fake_love/canvas.h"
+#include "../tools/fake_love/png_file.h"
 #include "fake_love_cli.h"
-#include "fake_love_png.h"
 
 #define FIXTURES FAKE_LOVE_CLI_FIXTURES
 #define CAPTURE "tmp/test_fake_love_set_color_capture.bin"
@@ -136,7 +137,8 @@ static void test_refused_calls_keep_the_colour_set_at_load_time_without_a_canvas
         for (int column = 0; column < 10; column++)
             for (int channel = 0; channel < 4; channel++)
                 pixels[4 * (row * CANVAS_WIDTH + column) + channel] = red[channel];
-    fake_love_png_write(PNG, pixels, CANVAS_WIDTH, CANVAS_HEIGHT);
+    bool written = png_file_write(PNG, pixels, CANVAS_WIDTH, CANVAS_HEIGHT);
+    assert(written);
     free(pixels);
     if (system("./tmp/love_capture_check tools/fake_love/harness " PROGRAMS "set_color_refused.lua " PNG
                " 2> " STDERR_LOG) != 0) {

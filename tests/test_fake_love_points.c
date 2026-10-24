@@ -1,11 +1,12 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "../tools/fake_love/canvas.h"
+#include "../tools/fake_love/png_file.h"
 #include "fake_love_cli.h"
-#include "fake_love_png.h"
 
 #define FIXTURES FAKE_LOVE_CLI_FIXTURES
 #define CAPTURE "tmp/test_fake_love_points_capture.bin"
@@ -55,7 +56,8 @@ static void write_expected(const int (*lit)[2], int lit_count) {
     assert(pixels != NULL);
     for (int point = 0; point < lit_count; point++)
         memset(pixels + 4 * (lit[point][1] * CANVAS_WIDTH + lit[point][0]), 0xFF, 4);
-    fake_love_png_write(PNG, pixels, CANVAS_WIDTH, CANVAS_HEIGHT);
+    bool written = png_file_write(PNG, pixels, CANVAS_WIDTH, CANVAS_HEIGHT);
+    assert(written);
     free(pixels);
 }
 

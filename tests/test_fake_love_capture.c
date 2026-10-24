@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,7 +7,6 @@
 
 #include "../tools/fake_love/png_file.h"
 #include "fake_love_cli.h"
-#include "fake_love_png.h"
 
 #define WIDTH 160
 #define HEIGHT 120
@@ -47,7 +47,8 @@ static int check_program(const char *program, char **err) {
 
 static void write_uniform(unsigned long rgba) {
     unsigned char *pixels = fill(WIDTH, HEIGHT, rgba);
-    fake_love_png_write(PNG, pixels, WIDTH, HEIGHT);
+    bool written = png_file_write(PNG, pixels, WIDTH, HEIGHT);
+    assert(written);
     free(pixels);
 }
 
@@ -85,7 +86,8 @@ static void write_uniform_except(unsigned long rgba, int x, int y, unsigned long
     unsigned char *pixels = fill(WIDTH, HEIGHT, rgba);
     for (int channel = 0; channel < 4; channel++)
         pixels[(y * WIDTH + x) * 4 + channel] = (unsigned char)(other >> (24 - 8 * channel));
-    fake_love_png_write(PNG, pixels, WIDTH, HEIGHT);
+    bool written = png_file_write(PNG, pixels, WIDTH, HEIGHT);
+    assert(written);
     free(pixels);
 }
 
@@ -104,7 +106,8 @@ static void test_alpha_is_compared(void) {
 
 static void test_png_of_another_size_is_refused(void) {
     unsigned char *pixels = fill(16, 12, NAVY);
-    fake_love_png_write(PNG, pixels, 16, 12);
+    bool written = png_file_write(PNG, pixels, 16, 12);
+    assert(written);
     free(pixels);
     const char *const needles[] = {"clear_navy.lua: ", PNG " is 16x12, the canvas is 160x120", NULL};
     assert_fails("clear_navy.lua", needles);
@@ -143,7 +146,8 @@ static void test_wrong_argument_count_is_a_usage_error(void) {
 static void test_encoder_output_reads_back(void) {
     unsigned char *expected = fill(WIDTH, HEIGHT, 0x1D2B53FFUL);
     expected[(81 * WIDTH + 37) * 4 + 3] = 0x10;
-    fake_love_png_write(PNG, expected, WIDTH, HEIGHT);
+    bool written = png_file_write(PNG, expected, WIDTH, HEIGHT);
+    assert(written);
     unsigned char *pixels;
     int width, height;
     const char *reason = png_file_load(PNG, &pixels, &width, &height);
