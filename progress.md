@@ -47,7 +47,7 @@
     - [x] PRD phase3-step10-pad-element-layout
   - [ ] Step 3.11 — stick
     - [x] Chunk 1 — start, refusals, knob cap
-    - [ ] Chunk 2 — direction mask: dead zone and 8 sectors
+    - [x] Chunk 2 — direction mask: dead zone and 8 sectors
   - [ ] Step 3.12 — touch to mask
   - [ ] Step 3.13 — show / hide
   - [ ] Step 3.14 — wire into main.lua, no drawing

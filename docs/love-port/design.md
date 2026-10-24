@@ -959,6 +959,35 @@ LÖVE units: each rectangle `pad.x + x × scale`, `pad.y + y × scale`,
 sprite drawn there covers. At 390×844 every button is 58.5 points square
 (≥ 44 required).
 
+**Pad stick.** `love.pad_stick` (pure, no `love.*` call, no state outside
+the stick table) turns one stick touch into a knob and a direction, in LÖVE
+screen units with y growing downward, so `dy < 0` is up.
+`start(x, y, base_size)` returns `{base_x, base_y, radius, knob_x, knob_y,
+mask}`: the base centred where the touch starts (never clamped to the zone
+or the window), `radius = base_size / 2` (`base_size` is `place`'s
+`stick_base_size`, a diameter), the knob at the centre, `mask` 0.
+`follow(stick, x, y)` sets `knob_x`, `knob_y` and `mask` from the touch's
+current point, anywhere on the screen; non-numeric coordinates, a
+non-table stick or a `base_size` not `> 0` fail an `assert` naming the
+argument. With `dx, dy` the offset to the base centre and
+`d² = dx² + dy²`:
+
+- **Knob:** the touch when `d² <= radius²`, else
+  `base + (dx, dy) × radius / √d²`: the knob's centre stops on the base's
+  edge, in the touch's direction.
+- **Dead zone:** the open disc of radius `radius × 0.25 = base_size / 8`
+  (14.625 points at 390×844): `mask` 0 when `d² < dead²`; a touch exactly
+  on its edge already points.
+- **Sectors**, from the raw offset, with no angle function:
+  `dx² >= 3·dy²` gives `RIGHT` (`dx > 0`) or `LEFT` alone; else
+  `dy² >= 3·dx²` gives `UP` (`dy < 0`) or `DOWN` alone; else the diagonal,
+  both bits. Up, down, left and right are 60° wide, the four diagonals 30°.
+  **A tie goes to the straight sector** (the two `>=`); only double
+  rounding makes ties, since the edges' slopes are irrational.
+- **Masks:** `UP`, `DOWN`, `LEFT`, `RIGHT` = 1, 2, 4, 8, bits 0–3 of
+  `pad_buttons`, i.e. buttons 1–4 (`dpup`, `dpdown`, `dpleft`, `dpright`)
+  of `main.lua`'s `PAD_BUTTON_NAMES`.
+
 ### The asset PNGs
 
 `game/sprites.png` and `game/font.png` are committed sources, edited
