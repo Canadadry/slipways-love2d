@@ -1,7 +1,8 @@
 /* tools/e2e_limits.sh, the guard of new e2e files (companion files, 180
- * frames, 600 for a listed exception, the pad header, no mouse field, the
- * .txt's "N frames.", each exception's "N frames:" and its length over 180),
- * on built events files. */
+ * frames counted as the objects of "frames", 600 for a listed exception, the
+ * pad header, no old mouse field, the .txt's "N frames.", each exception's
+ * "N frames:" and its length over 180), on built events files and the shared
+ * fixture tests/fixtures/touch_frames.json. */
 
 #include <assert.h>
 #include <stdio.h>
@@ -58,6 +59,12 @@ static void write_e2e_with(const char *name, const char *header, int frames, con
     write_file(path, "0000\n");
 }
 
+static void write_txt(const char *name, const char *text) {
+    char path[256];
+    snprintf(path, sizeof path, DIR "/%s.txt", name);
+    write_file(path, text);
+}
+
 #define PAD_HEADER "{\n  \"input\": \"pad\",\n  \"frames\": [\n"
 
 static void write_e2e(const char *name, int frames, const char *odd) {
@@ -96,11 +103,48 @@ static void test_e2e_over_180_frames_fails_and_is_named(void) {
     assert(strstr(read_log(), DIR "/short.json:") == NULL);
 }
 
-static void test_frames_are_counted_by_their_pad_key(void) {
+static void test_frames_are_counted_whatever_they_hold(void) {
     reset();
     write_e2e_with("pressed", PAD_HEADER, 181, "{ \"pad\": [5, 1] }", NULL);
     assert(run(DIR "/pressed.json") != 0);
     assert(strstr(read_log(), "181 frames") != NULL);
+}
+
+static void test_touch_only_frames_over_180_fail(void) {
+    reset();
+    write_e2e_with("touched", PAD_HEADER, 180, "{ \"touches\": [[7, 100, 700]] }", NULL);
+    assert(run(DIR "/touched.json") == 0);
+    write_e2e_with("touched", PAD_HEADER, 181, "{ \"touches\": [[7, 100, 700]] }", NULL);
+    assert(run(DIR "/touched.json") != 0);
+    assert(strstr(read_log(), "e2e: " DIR "/touched.json: 181 frames, more than 180\n") != NULL);
+}
+
+static void test_mouse_field_passes_while_the_old_ones_fail(void) {
+    reset();
+    write_e2e("mouse", 10, "{ \"mouse\": [200, 400, 1] }");
+    assert(run(DIR "/mouse.json") == 0);
+    write_e2e("mouse_x", 10, "{ \"mouse\": [200, 400, 1], \"mouse_x\": 64 }");
+    assert(run(DIR "/mouse_x.json") != 0);
+    assert(strstr(read_log(), "e2e: " DIR "/mouse_x.json: carries the mouse field \"mouse_x\"\n") != NULL);
+}
+
+#define FIXTURE "tests/fixtures/touch_frames.json"
+
+/* The fixture copied as <name>.json, with <name>.txt holding `txt`. */
+static void write_fixture_e2e(const char *name, const char *txt) {
+    char cmd[512];
+    snprintf(cmd, sizeof cmd, "cp " FIXTURE " " DIR "/%s.json && echo 0000 > " DIR "/%s.json.sha256", name, name);
+    assert(system(cmd) == 0);
+    write_txt(name, txt);
+}
+
+static void test_fixture_is_checked_with_its_true_frame_count(void) {
+    reset();
+    write_fixture_e2e("touch", "Touches, the mouse and the pad. 12 frames.\n");
+    assert(run(DIR "/touch.json") == 0);
+    write_fixture_e2e("touch", "Touches, the mouse and the pad. 11 frames.\n");
+    assert(run(DIR "/touch.json") != 0);
+    assert(strstr(read_log(), "e2e: " DIR "/touch.json: .txt says 11 frames, the file has 12\n") != NULL);
 }
 
 static void test_listed_exception_is_allowed_up_to_600_frames(void) {
@@ -162,12 +206,6 @@ static void test_e2e_without_the_pad_header_fails_and_is_named(void) {
     write_e2e_with("mouse_header", "{\n  \"input\": \"mouse\",\n  \"frames\": [\n", 10, "{ \"pad\": [] }", NULL);
     assert(run(DIR "/mouse_header.json") != 0);
     assert(strstr(read_log(), DIR "/mouse_header.json") != NULL);
-}
-
-static void write_txt(const char *name, const char *text) {
-    char path[256];
-    snprintf(path, sizeof path, DIR "/%s.txt", name);
-    write_file(path, text);
 }
 
 static void test_txt_stating_the_right_count_passes_even_split_across_lines(void) {
@@ -258,7 +296,10 @@ int main(void) {
     test_no_e2e_passes();
     test_e2e_of_180_frames_passes();
     test_e2e_over_180_frames_fails_and_is_named();
-    test_frames_are_counted_by_their_pad_key();
+    test_frames_are_counted_whatever_they_hold();
+    test_fixture_is_checked_with_its_true_frame_count();
+    test_touch_only_frames_over_180_fail();
+    test_mouse_field_passes_while_the_old_ones_fail();
     test_listed_exception_is_allowed_up_to_600_frames();
     test_initial_save_header_line_passes();
     test_missing_companion_file_fails();
