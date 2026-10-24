@@ -11,8 +11,8 @@ Each plan holds its own steps.
   LÖVE's gamepad API, or the on-screen virtual pad's touches, and draws
   through `love.graphics`. It runs on a PC and, as a `.love` file, on an
   iPhone in the love2d studio app.
-- The 20 replays of `tests/e2e/` must produce **the same sha256** as the C
-  game did, unchanged: those hashes, set by the C game (now deleted), are the
+- The 20 replays of the C set in `tests/e2e/` must produce **the same
+  sha256** as the C game did, unchanged: those hashes, set by the C game (now deleted), are the
   reference.
 - Audio stays out of scope.
 
@@ -119,7 +119,11 @@ fake follows these rules, and every step that adds one measures it.
    - Protocol: each commit under comparison in its own git worktree under
      `tmp/`; one `make test` in each to warm the build; then 11 rounds, each
      timing one `make test` (wall time) per worktree back to back, rotating
-     which goes first.
+     which goes first. With three or more trees, each round's order follows
+     a balanced (Williams) Latin square, so every tree follows every other
+     equally often, and the rounds are a multiple of the tree count (12,
+     then 12 more, for four trees). A cyclic rotation is not balanced: it
+     always runs the same tree after the slow `8dff812`.
    - Gate: for each round, r = current / baseline − 1, against "before" and
      against the reference; the statistic is the median of the r values per
      baseline. Both ≤ 3 % → pass. Either > 3 % → 11 more rounds, decide on
@@ -267,29 +271,40 @@ argument to `mouse.getPosition`) raises an error naming the function;
 `isDown` with anything but the single integer 1 fails with
 `love.mouse.isDown: only isDown(1), the left button, is in the function list`.
 
-**Fake disk and arguments.** The replay members the fake reads are
-`input`, `frames`, `initial_save`, `bindings`, `pad_sheet`, `attract_after`,
-`window` and `screens`, each at most once: `initial_save` a non-empty string
-of an even number of hex digits, `bindings` the name of a `.cfg` file next to
-the replay, `pad_sheet` the name of a `.png` file next to the replay, served
-as `pad.png` (5 to 64 characters `A-Za-z0-9_.-`, not starting with `.`;
-otherwise `"pad_sheet" <value> is not a .png file name of 5-64 characters
-A-Za-z0-9_.- next to the replay`; a bad PNG fails where the game loads it),
+**Fake disk and arguments.** A replay is a JSON object whose numbers are
+integers (no fraction, no exponent). Each refusal of the replay's text
+names the replay, the byte offset and the problem (`fake_love: <replay>:
+offset 0: the document is not an object`); a fixture file that cannot be
+read is named without an offset. Two members are required: `input`, exactly `"pad"`
+(`"input" missing: a replay holds "input": "pad"`, `"input" is "<v>", not
+"pad"`), and `frames`, an array of objects, possibly empty (`"frames"
+missing`, `"frames" is not an array`, `frame <n> is not an object`); a
+repeated `input` or `frames` is not refused, the first one is read. The
+other members the fake reads are `initial_save`, `bindings`, `pad_sheet`,
+`attract_after`, `window` and `screens`, each at most once (`"<member>"
+given twice`): `initial_save` a non-empty string of an even number of hex
+digits, `bindings` the name of a `.cfg` file next to the replay, neither
+`bindings.cfg` nor `"personal"`, `pad_sheet` the name of a `.png` file next
+to the replay, served as `pad.png` (both names 5 to 64 characters
+`A-Za-z0-9_.-`, not starting with `.`; otherwise `"pad_sheet" <value> is
+not a .png file name of 5-64 characters A-Za-z0-9_.- next to the replay`,
+and likewise for `bindings`; a bad PNG fails where the game loads it),
 `attract_after` a positive integer, `window` the window size
 `[w, h]` for the run until a resize (640×480 when absent), `screens` the
 frames whose screen is written as a PNG (see The screen): an array,
 possibly empty, of at most 16 integers, each a frame of the replay
 (0 to frame count − 1, frames counted as the objects of `frames`, touch-only
-and `{}` frames included), strictly ascending, refused otherwise with the
-file, the byte offset and the problem (`"screens" is <kind>, not an array
-of frame numbers`, `"screens" entry <v> is not an integer`, `"screens"
+and `{}` frames included), strictly ascending, refused otherwise
+(`"screens" is <kind>, not an array of frame numbers`, `"screens" entry <v> is not an integer`, `"screens"
 entry <n> is not a frame of this replay (0-<last>)`, `"screens" entry <n>
 is not after <previous>`, `"screens" lists <n> frames, more than 16`,
 `"screens" given twice`); no replay of `tests/e2e/` carries `screens` or
 `pad_sheet`; `start` is
 refused, other members are ignored. A frame holds `pad`, `resize`,
 `touches` and `mouse`, each optional and at most once; any other frame key
-is refused. `pad` lists the held buttons; a frame without it holds none.
+is refused. `pad` lists the held buttons, each an integer from 1 to 12
+given once in the frame (`f<N>: button 13 is not 1-12`, `f<N>: button 1
+listed twice`); a frame without it holds none.
 `resize: [w, h]` is the window size from the start of that frame on, which
 must differ from the size in force (LÖVE calls `love.resize` only on a
 change). `touches: [[id, x, y], …]` lists at most 10 held touches, each id
@@ -548,10 +563,9 @@ RGB or RGBA; an asset drawn onto a canvas (`sprites.png`, `font.png`, both
 RGB) has alpha exactly 0 or 1; an asset drawn only onto the screen (the pad
 sheets) may be RGBA with any alpha.** Capture: `imagedata_files`.
 
-**Images.** `love.graphics` holds exactly `clear`, `draw`, `newCanvas`,
-`newImage`, `newQuad`, `points`, `pop`, `push`, `rectangle`, `setCanvas`,
-`setColor`, `setDefaultFilter` and `translate` from `main.lua` on. `newImage(imagedata)` takes exactly one ImageData and
-copies its size and bytes at the call: a later `setPixel` on the ImageData
+**Images.** `love.graphics` holds exactly the Drawing functions of the
+function list (see The LÖVE functions the game may use), from `main.lua`
+on. `newImage(imagedata)` takes exactly one ImageData and copies its size and bytes at the call: a later `setPixel` on the ImageData
 leaves the Image as it was, as in LÖVE. `newQuad(x, y, w, h, sw, sh)` takes
 six integers: reference sides 1 to 1024, origin from 0, size from 1, the
 quad inside the reference size. `draw(image, quad, x, y)` is the only draw
@@ -580,8 +594,8 @@ present); arguments are checked in this order, then the state: a canvas
 selected (`a canvas is selected, a scaled Image is drawn only onto the
 screen (scaled draws onto a canvas are not modelled)`), a non-zero offset
 (`the offset is (<dx>, <dy>), not (0, 0) (a scaled draw onto the screen is
-not translated)`). Any colour is accepted. Images and
-Quads have no methods and are freed by the garbage collector. Every
+not translated)`). Any colour is accepted. Canvases, Images and Quads
+have no methods; Images and Quads are freed by the garbage collector. Every
 refusal is an error starting `love.graphics.newImage: `,
 `love.graphics.newQuad: ` or `love.graphics.draw: ` and changes nothing:
 another argument count (a trailing nil and the quad-less
@@ -805,6 +819,12 @@ here, verified by its real-LÖVE capture, or, for plan 6's extensions
   `love.mouse.isDown(1)` (see Touch and mouse semantics).
 - Files: `love.filesystem.read`, `write`, `getInfo`.
 
+`tools/love_function_list.lua` is this list as data: the callbacks, each
+module's functions and each object kind's methods. `lua-guard` reads it,
+and `test_fake_love_function_list` checks it both ways against what the
+fake installs. Extending the fake means its install function, that file
+and this section.
+
 Reading anything else from `love`, a module table or an object, or creating
 a field in `love` or a module table, fails at that line with
 `love.timer is not in the function list of docs/love-port/design.md`
@@ -815,12 +835,8 @@ It is an ordinary Lua error, like every refusal of the fake. Both binaries,
 `tmp/fake_love` and `tmp/love_capture_check`, run under this guard.
 
 The game shows its canvas in the window with `draw(canvas, x, y, 0, s,
-s)`: **present canvas 0 once per frame, after every draw onto canvas 0,
-with the screen selected, after `setColor(1, 1, 1)`, outside any `push`,
-at the game rectangle's position and scale**, followed only by the pad's
-sprites onto the screen (see The present). The
-fake reads the canvas, and the present draws it onto the screen framebuffer
-(see The screen), which only frames listed in `screens` rasterise.
+s)`, under the rule of The present. The fake reads the canvas, and the
+present draws it onto the screen framebuffer (see The screen), which only frames listed in `screens` rasterise.
 
 The exact pixel conventions (where `points(x, y)` lands, how `rectangle`
 rounds) are those of real LÖVE 11.5, settled by the captures of
@@ -1238,7 +1254,8 @@ checks the edge values and a sample against it.
 - `tools/love_capture/`: the capture programs, their PNGs and the fixtures
   they read (`files/`).
 - `tools/`: the scripts behind the targets (`love_e2e_run.sh`,
-  `end_state.sh`, `e2e_limits.sh`, `lua_guard.lua`, `love_install.sh`, …)
+  `end_state.sh`, `e2e_limits.sh`, `lua_guard.lua`, `love_install.sh`, …),
+  `love_function_list.lua`, the function list `lua-guard` reads,
   and `pad_art.c`, the pad sheets' generator (`make pad-art`).
 - `tests/`: the C tests of the fake and the tools (`test_<name>.c`, listed
   in the Makefile's `UNIT_TESTS`), with their fixtures in `tests/fixtures/`.
@@ -1414,9 +1431,9 @@ modules are edited by hand (`p8.quarter_wave`, `p8.sprite_sheet_packed`,
 `game.bindings_default` open with a line naming the file each is kept in
 step with (`game/sprites.png`, `bindings.default.cfg`), and nothing checks
 either pair agrees. `make test` runs two checks over the whole tree:
-`lua-guard` (every file compiles, no undeclared global, only this file's
-`love.` names, every `require` takes a literal name resolving under `game/`
-as `<name>.lua` or `<name>/init.lua`, or `bit`, and every PNG named in code
+`lua-guard` (every file compiles, no undeclared global, only the `love.`
+names of `tools/love_function_list.lua`, every `require` takes a literal
+name resolving under `game/` as `<name>.lua` or `<name>/init.lua`, or `bit`, and every PNG named in code
 is a file under `game/`) and `lua-test-modules`, which requires every module except
 `main` and `conf` under plain LuaJIT and reports each one that fails to
 load; it clears the sentinels a failed `require` leaves in `package.loaded`,

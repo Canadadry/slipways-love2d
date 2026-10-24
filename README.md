@@ -1,6 +1,6 @@
 # slipways-love
 
-*Slipways* (PICO-8 edition) ported to Lua for LÖVE 11.5. The game is in `game/`. It is checked headless: a fake LÖVE written in C (`tools/fake_love/`) plays it on 20 recorded replays and compares each capture with a hash the original C port set. The design is in `docs/love-port/design.md`.
+*Slipways* (PICO-8 edition) ported to Lua for LÖVE 11.5. The game is in `game/`. It is checked headless: a fake LÖVE written in C (`tools/fake_love/`) plays it on 28 recorded replays and compares each capture with its hash: 20 keep the hashes the original C port set, and four touch replays share theirs with their four pad twins. The design is in `docs/love-port/design.md`.
 
 ![The title screen with a game to resume](docs/img/title-resume.png) ![A planet's build menu](docs/img/build-menu.png) ![A slipway network mid-game](docs/img/network.png)
 
