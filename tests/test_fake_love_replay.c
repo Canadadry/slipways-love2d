@@ -35,7 +35,7 @@ static const struct {
     {"tests/e2e/pad_unbound_enter_aim.json", 48},
 };
 
-static void test_reads_the_frame_count_of_every_e2e_replay(void) {
+static void test_reads_every_e2e_replay_with_its_frame_count_and_no_window_change(void) {
     for (size_t i = 0; i < sizeof(E2E_REPLAYS) / sizeof(E2E_REPLAYS[0]); i++) {
         char error[256] = "";
         replay_t *replay = replay_read(E2E_REPLAYS[i].path, error, sizeof(error));
@@ -44,6 +44,13 @@ static void test_reads_the_frame_count_of_every_e2e_replay(void) {
         }
         assert(replay != NULL);
         assert(replay_frame_count(replay) == E2E_REPLAYS[i].frames);
+        int width = 0;
+        int height = 0;
+        replay_window(replay, &width, &height);
+        assert(width == 640 && height == 480);
+        for (size_t frame = 0; frame < E2E_REPLAYS[i].frames; frame++) {
+            assert(!replay_frame_resize(replay, frame, &width, &height));
+        }
         replay_free(replay);
     }
 }
@@ -198,6 +205,7 @@ static void test_a_frame_with_wrong_buttons_is_refused(void) {
 static void test_a_frame_with_another_key_is_refused(void) {
     assert_frame_1_refused("{\"pad\": [], \"mouse_x\": 3}", "\"mouse_x\"");
     assert_frame_1_refused("{\"dpad\": 1, \"pad\": []}", "\"dpad\"");
+    assert_frame_1_refused("{\"pad\": [], \"touches\": []}", "a frame holds only \"pad\" and \"resize\"");
 }
 
 static void assert_member_refused(const char *member, const char *problem) {
@@ -301,6 +309,127 @@ static void test_the_error_gives_the_byte_offset_of_the_problem(void) {
     assert_refused("{\"frames\": [{}, 3]}", "offset 16:");
 }
 
+static void window_of(const char *text, int *width, int *height) {
+    char error[256] = "";
+    replay_t *replay = replay_parse("memory.json", text, strlen(text), error, sizeof(error));
+    if (replay == NULL) {
+        fprintf(stderr, "%s\n", error);
+    }
+    assert(replay != NULL);
+    replay_window(replay, width, height);
+    replay_free(replay);
+}
+
+static void test_a_replay_without_window_runs_at_640_by_480(void) {
+    int width = 0;
+    int height = 0;
+    window_of("{\"input\": \"pad\", \"frames\": []}", &width, &height);
+    assert(width == 640 && height == 480);
+}
+
+static void test_window_is_read(void) {
+    int width = 0;
+    int height = 0;
+    window_of("{\"input\": \"pad\", \"window\": [390, 844], \"frames\": []}", &width, &height);
+    assert(width == 390 && height == 844);
+    window_of("{\"input\": \"pad\", \"window\": [4096, 1], \"frames\": []}", &width, &height);
+    assert(width == 4096 && height == 1);
+}
+
+static void test_a_bad_window_is_refused(void) {
+    static const char *const BAD[] = {
+        "3", "\"390x844\"", "{}", "[]", "[390]", "[390, 844, 1]", "[390, \"844\"]", "[390, null]", "[[390], 844]",
+        "[0, 844]", "[390, 0]", "[4097, 844]", "[390, 4097]", "[-1, 844]",
+    };
+    for (size_t i = 0; i < sizeof(BAD) / sizeof(BAD[0]); i++) {
+        char member[128];
+        snprintf(member, sizeof(member), "\"window\": %s", BAD[i]);
+        assert_member_refused(member, "\"window\" ");
+        assert_member_refused(member, " is not [width, height] with integers 1-4096");
+    }
+    assert_member_refused("\"window\": [390, 844], \"window\": [640, 480]", "\"window\" given twice");
+}
+
+static replay_t *parsed(const char *text) {
+    char error[256] = "";
+    replay_t *replay = replay_parse("memory.json", text, strlen(text), error, sizeof(error));
+    if (replay == NULL) {
+        fprintf(stderr, "%s\n", error);
+    }
+    assert(replay != NULL);
+    return replay;
+}
+
+static void assert_no_resize(const replay_t *replay, size_t frame) {
+    int width = -1;
+    int height = -1;
+    assert(!replay_frame_resize(replay, frame, &width, &height));
+}
+
+static void assert_resize(const replay_t *replay, size_t frame, int expected_width, int expected_height) {
+    int width = -1;
+    int height = -1;
+    assert(replay_frame_resize(replay, frame, &width, &height));
+    assert(width == expected_width && height == expected_height);
+}
+
+static void test_the_resizes_of_a_replay_are_read(void) {
+    replay_t *replay = parsed("{\"input\": \"pad\", \"window\": [390, 844], \"frames\": [\n"
+                              "  {\"resize\": [844, 390], \"pad\": [1]},\n"
+                              "  {\"pad\": []},\n"
+                              "  {\"pad\": [], \"resize\": [390, 844]},\n"
+                              "  {\"pad\": [2], \"resize\": [640, 480]},\n"
+                              "  {\"pad\": []}]}");
+    assert(replay_frame_count(replay) == 5);
+    assert_resize(replay, 0, 844, 390);
+    assert_no_resize(replay, 1);
+    assert_resize(replay, 2, 390, 844);
+    assert_resize(replay, 3, 640, 480);
+    assert_no_resize(replay, 4);
+    assert(replay_frame_held(replay, 0) == 0x1 && replay_frame_held(replay, 3) == 0x2);
+    int width = 0;
+    int height = 0;
+    replay_window(replay, &width, &height);
+    assert(width == 390 && height == 844);
+    replay_free(replay);
+}
+
+static void test_a_replay_without_resize_has_none_on_any_frame(void) {
+    replay_t *replay = parsed("{\"input\": \"pad\", \"frames\": [{\"pad\": []}, {\"pad\": [3]}]}");
+    assert_no_resize(replay, 0);
+    assert_no_resize(replay, 1);
+    replay_free(replay);
+}
+
+static void test_a_bad_resize_is_refused(void) {
+    static const char *const BAD[] = {
+        "3", "{}", "[]", "[390]", "[390, 844, 1]", "[390, \"844\"]", "[390, null]", "[0, 844]", "[4097, 844]", "[390, -2]",
+    };
+    for (size_t i = 0; i < sizeof(BAD) / sizeof(BAD[0]); i++) {
+        char frame[128];
+        snprintf(frame, sizeof(frame), "{\"pad\": [], \"resize\": %s}", BAD[i]);
+        assert_frame_1_refused(frame, "\"resize\" ");
+        assert_frame_1_refused(frame, " is not [width, height] with integers 1-4096");
+    }
+    assert_frame_1_refused("{\"pad\": [], \"resize\": [390, 844, 1]}", "[390, 844, 1]");
+}
+
+static void test_a_resize_to_the_size_in_force_is_refused(void) {
+    static const char *const ALREADY = "is already the window size: LÖVE calls love.resize only on a change";
+    assert_refused("{\"input\": \"pad\", \"frames\": [{\"pad\": [], \"resize\": [640, 480]}]}", "f0: \"resize\" [640, 480] ");
+    assert_refused("{\"input\": \"pad\", \"frames\": [{\"pad\": [], \"resize\": [640, 480]}]}", ALREADY);
+    assert_refused("{\"input\": \"pad\", \"window\": [390, 844], \"frames\": [{\"pad\": []}, {\"pad\": [], \"resize\": [390, 844]}]}",
+                   "f1: \"resize\" [390, 844] ");
+    const char *twice = "{\"input\": \"pad\", \"window\": [390, 844], \"frames\": [{\"pad\": [], \"resize\": [844, 390]},\n"
+                        "  {\"pad\": []}, {\"pad\": [], \"resize\": [844, 390]}]}";
+    assert_refused(twice, "f2: \"resize\" [844, 390] ");
+    assert_refused(twice, ALREADY);
+}
+
+static void test_a_frame_with_only_resize_is_refused(void) {
+    assert_frame_1_refused("{\"resize\": [390, 844]}", "no \"pad\"");
+}
+
 static void test_a_missing_file_is_refused_with_its_path(void) {
     char error[256] = "";
     assert(replay_read("tests/e2e/no_such_replay.json", error, sizeof(error)) == NULL);
@@ -308,7 +437,7 @@ static void test_a_missing_file_is_refused_with_its_path(void) {
 }
 
 int main(void) {
-    test_reads_the_frame_count_of_every_e2e_replay();
+    test_reads_every_e2e_replay_with_its_frame_count_and_no_window_change();
     test_every_e2e_replay_is_listed();
     test_reads_the_held_buttons_of_pad_title();
     test_reads_the_start_state_members_of_e2e_replays();
@@ -327,6 +456,14 @@ int main(void) {
     test_a_replay_with_start_is_refused();
     test_a_malformed_replay_is_refused_with_its_problem_named();
     test_the_error_gives_the_byte_offset_of_the_problem();
+    test_a_replay_without_window_runs_at_640_by_480();
+    test_window_is_read();
+    test_a_bad_window_is_refused();
+    test_the_resizes_of_a_replay_are_read();
+    test_a_replay_without_resize_has_none_on_any_frame();
+    test_a_bad_resize_is_refused();
+    test_a_resize_to_the_size_in_force_is_refused();
+    test_a_frame_with_only_resize_is_refused();
     test_a_missing_file_is_refused_with_its_path();
     printf("test_fake_love_replay: ok\n");
     return 0;

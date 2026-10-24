@@ -35,13 +35,22 @@ typedef struct {
     size_t next;
 } node_t;
 
+/* A resize_width of 0: the frame carries no resize. */
+typedef struct {
+    unsigned held;
+    int resize_width;
+    int resize_height;
+} frame_input_t;
+
 struct replay {
     const node_t *frames;
-    unsigned *held;
+    frame_input_t *inputs;
     unsigned char *initial_save;
     size_t initial_save_count;
     const char *bindings;
     int attract_after;
+    int window_width;
+    int window_height;
     size_t node_count;
     node_t nodes[];
 };
@@ -487,20 +496,7 @@ static const char *kind_name(node_kind_t kind) {
 
 /* Returns 0 and fails the parser when a button is not an integer 1-12 or
  * is listed twice. */
-static int read_frame_pad(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *frame, unsigned *held) {
-    const node_t *pad = NULL;
-    for (size_t i = frame->first_child; i != NO_NODE; i = replay->nodes[i].next) {
-        if (strcmp(replay->nodes[i].key, "pad") != 0) {
-            fail_at(parser, replay->nodes[i].offset, "f%zu: unexpected key \"%s\": a frame holds only \"pad\"", frame_index,
-                    replay->nodes[i].key);
-            return 0;
-        }
-        pad = &replay->nodes[i];
-    }
-    if (pad == NULL) {
-        fail_at(parser, frame->offset, "f%zu: no \"pad\"", frame_index);
-        return 0;
-    }
+static int read_frame_pad(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *pad, unsigned *held) {
     if (pad->kind != NODE_ARRAY) {
         fail_at(parser, pad->offset, "f%zu: \"pad\" is %s, not an array", frame_index, kind_name(pad->kind));
         return 0;
@@ -526,22 +522,6 @@ static int read_frame_pad(const replay_t *replay, parser_t *parser, size_t frame
             return 0;
         }
         *held |= bit;
-    }
-    return 1;
-}
-
-static int read_held(replay_t *replay, parser_t *parser) {
-    replay->held = calloc(replay->frames->child_count + 1, sizeof(*replay->held));
-    if (replay->held == NULL) {
-        fail_at(parser, 0, "out of memory");
-        return 0;
-    }
-    size_t frame_index = 0;
-    for (size_t i = replay->frames->first_child; i != NO_NODE; i = replay->nodes[i].next) {
-        if (!read_frame_pad(replay, parser, frame_index, &replay->nodes[i], &replay->held[frame_index])) {
-            return 0;
-        }
-        frame_index++;
     }
     return 1;
 }
@@ -655,6 +635,59 @@ static int read_attract_after(replay_t *replay, parser_t *parser, const node_t *
     return 1;
 }
 
+#define WINDOW_SIZE_MAX 4096
+
+/* Spells an array as its first elements in brackets, any other value as
+ * describe_value does. */
+static const char *describe_size(const replay_t *replay, const node_t *value, char *out, size_t size) {
+    if (value->kind != NODE_ARRAY) {
+        return describe_value(value, out, size);
+    }
+    size_t used = (size_t)snprintf(out, size, "[");
+    size_t shown = 0;
+    for (size_t i = value->first_child; i != NO_NODE && used < size; i = replay->nodes[i].next) {
+        char element[64];
+        const char *text = shown == 3 ? "..." : describe_value(&replay->nodes[i], element, sizeof(element));
+        used += (size_t)snprintf(out + used, size - used, "%s%s", shown == 0 ? "" : ", ", text);
+        if (++shown > 3) {
+            break;
+        }
+    }
+    if (used < size) {
+        snprintf(out + used, size - used, "]");
+    }
+    return out;
+}
+
+/* Returns 0 when `value` is not an array of two integers 1-WINDOW_SIZE_MAX;
+ * the caller names the field. */
+static int read_size(const replay_t *replay, const node_t *value, int *width, int *height) {
+    if (value->kind != NODE_ARRAY || value->child_count != 2) {
+        return 0;
+    }
+    const node_t *first = &replay->nodes[value->first_child];
+    const node_t *second = &replay->nodes[first->next];
+    const node_t *const sides[] = {first, second};
+    for (size_t i = 0; i < 2; i++) {
+        if (sides[i]->kind != NODE_INTEGER || sides[i]->integer < 1 || sides[i]->integer > WINDOW_SIZE_MAX) {
+            return 0;
+        }
+    }
+    *width = (int)first->integer;
+    *height = (int)second->integer;
+    return 1;
+}
+
+static int read_window(replay_t *replay, parser_t *parser, const node_t *member) {
+    if (!read_size(replay, member, &replay->window_width, &replay->window_height)) {
+        char value[96];
+        fail_at(parser, member->offset, "\"window\" %s is not [width, height] with integers 1-%d",
+                describe_size(replay, member, value, sizeof(value)), WINDOW_SIZE_MAX);
+        return 0;
+    }
+    return 1;
+}
+
 typedef int (*member_reader_t)(replay_t *replay, parser_t *parser, const node_t *member);
 
 static int read_start_state(replay_t *replay, parser_t *parser) {
@@ -665,6 +698,7 @@ static int read_start_state(replay_t *replay, parser_t *parser) {
         {"initial_save", read_initial_save},
         {"bindings", read_bindings},
         {"attract_after", read_attract_after},
+        {"window", read_window},
     };
     const node_t *root = &replay->nodes[0];
     const node_t *start = object_member(replay, root, "start");
@@ -686,6 +720,71 @@ static int read_start_state(replay_t *replay, parser_t *parser) {
         if (!MEMBERS[k].read(replay, parser, member)) {
             return 0;
         }
+    }
+    return 1;
+}
+
+static int read_frame_resize(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *resize,
+                             int *current_width, int *current_height, frame_input_t *input) {
+    if (resize == NULL) {
+        return 1;
+    }
+    char value[96];
+    describe_size(replay, resize, value, sizeof(value));
+    int width = 0;
+    int height = 0;
+    if (!read_size(replay, resize, &width, &height)) {
+        fail_at(parser, resize->offset, "f%zu: \"resize\" %s is not [width, height] with integers 1-%d", frame_index,
+                value, WINDOW_SIZE_MAX);
+        return 0;
+    }
+    if (width == *current_width && height == *current_height) {
+        fail_at(parser, resize->offset,
+                "f%zu: \"resize\" %s is already the window size: LÖVE calls love.resize only on a change", frame_index,
+                value);
+        return 0;
+    }
+    input->resize_width = width;
+    input->resize_height = height;
+    *current_width = width;
+    *current_height = height;
+    return 1;
+}
+
+static int read_frames(replay_t *replay, parser_t *parser) {
+    replay->inputs = calloc(replay->frames->child_count + 1, sizeof(*replay->inputs));
+    if (replay->inputs == NULL) {
+        fail_at(parser, 0, "out of memory");
+        return 0;
+    }
+    int width = replay->window_width;
+    int height = replay->window_height;
+    size_t frame_index = 0;
+    for (size_t f = replay->frames->first_child; f != NO_NODE; f = replay->nodes[f].next) {
+        const node_t *pad = NULL;
+        const node_t *resize = NULL;
+        for (size_t i = replay->nodes[f].first_child; i != NO_NODE; i = replay->nodes[i].next) {
+            const node_t *member = &replay->nodes[i];
+            if (strcmp(member->key, "pad") == 0) {
+                pad = member;
+            } else if (strcmp(member->key, "resize") == 0) {
+                resize = member;
+            } else {
+                fail_at(parser, member->offset, "f%zu: unexpected key \"%s\": a frame holds only \"pad\" and \"resize\"",
+                        frame_index, member->key);
+                return 0;
+            }
+        }
+        frame_input_t *input = &replay->inputs[frame_index];
+        if (pad == NULL) {
+            fail_at(parser, replay->nodes[f].offset, "f%zu: no \"pad\"", frame_index);
+            return 0;
+        }
+        if (!read_frame_pad(replay, parser, frame_index, pad, &input->held)
+            || !read_frame_resize(replay, parser, frame_index, resize, &width, &height, input)) {
+            return 0;
+        }
+        frame_index++;
     }
     return 1;
 }
@@ -720,13 +819,15 @@ replay_t *replay_parse(const char *name, const char *text, size_t length, char *
     parse_document(&parser);
     assert(!parser.failed && parser.node_count == node_count && parser.char_count == char_count
            && "the filling pass reads the text the counting pass accepted");
-    replay->held = NULL;
+    replay->inputs = NULL;
     replay->initial_save = NULL;
     replay->initial_save_count = 0;
     replay->bindings = NULL;
     replay->attract_after = 0;
-    if (!find_frames(replay, &parser) || !check_input(replay, &parser) || !read_held(replay, &parser)
-        || !read_start_state(replay, &parser)) {
+    replay->window_width = 640;
+    replay->window_height = 480;
+    if (!find_frames(replay, &parser) || !check_input(replay, &parser) || !read_start_state(replay, &parser)
+        || !read_frames(replay, &parser)) {
         replay_free(replay);
         return NULL;
     }
@@ -778,7 +879,18 @@ size_t replay_frame_count(const replay_t *replay) {
 
 unsigned replay_frame_held(const replay_t *replay, size_t frame) {
     assert(replay != NULL && frame < replay_frame_count(replay));
-    return replay->held[frame];
+    return replay->inputs[frame].held;
+}
+
+int replay_frame_resize(const replay_t *replay, size_t frame, int *width, int *height) {
+    assert(replay != NULL && frame < replay_frame_count(replay) && width != NULL && height != NULL);
+    const frame_input_t *input = &replay->inputs[frame];
+    if (input->resize_width == 0) {
+        return 0;
+    }
+    *width = input->resize_width;
+    *height = input->resize_height;
+    return 1;
 }
 
 const unsigned char *replay_initial_save(const replay_t *replay, size_t *count) {
@@ -797,9 +909,15 @@ int replay_attract_after(const replay_t *replay) {
     return replay->attract_after;
 }
 
+void replay_window(const replay_t *replay, int *width, int *height) {
+    assert(replay != NULL && width != NULL && height != NULL);
+    *width = replay->window_width;
+    *height = replay->window_height;
+}
+
 void replay_free(replay_t *replay) {
     if (replay != NULL) {
-        free(replay->held);
+        free(replay->inputs);
         free(replay->initial_save);
     }
     free(replay);
