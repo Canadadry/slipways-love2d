@@ -51,10 +51,8 @@ local function blank(text)
     return (text:gsub("[^\n]", " "))
 end
 
--- Returns text with every comment and string literal turned into spaces,
--- newlines kept, so positions and line numbers still match; then the opening
--- quote of each short string literal, in order, and a table mapping each to
--- its closing quote. Only called on text that compiles.
+-- Returns text with comments and strings blanked, the position of each short
+-- string's opening quote in order, and a table mapping each to its closing quote.
 local function strip(text)
     local pieces = {}
     local opens, closes = {}, {}
@@ -86,6 +84,7 @@ local function strip(text)
         else
             local j = i + 1
             while text:sub(j, j) ~= c do
+                assert(j <= #text, "lua_guard.strip: unterminated string, the text does not compile")
                 j = j + (text:sub(j, j) == "\\" and 2 or 1)
             end
             stop = j
@@ -103,8 +102,7 @@ local function strip(text)
     return table.concat(pieces), opens, closes
 end
 
--- Returns the name after a dot at pos (spaces allowed around the dot) and the
--- position after it, or the next non-space character and its position.
+-- With no dot and name at pos, returns nil, the next non-space position and its character.
 local function next_field(code, pos)
     local name, after = code:match("^%s*%.%s*([%a_][%w_]*)()", pos)
     if name ~= nil then
@@ -123,7 +121,6 @@ local function previous_non_space(code, pos)
     return prev
 end
 
--- True when the name after prev is a field: a "." (not "..") or ":" at prev.
 local function is_field(code, prev)
     local prev_char = code:sub(prev, prev)
     return prev_char == ":" or (prev_char == "." and code:sub(prev - 1, prev - 1) ~= ".")
@@ -174,8 +171,6 @@ local function scan(path, code, in_glue, report)
     end
 end
 
--- Walks the compiled chunk and its nested prototypes: the bytecode resolves
--- scoping, so a local shadowing a global name never shows up as GGET.
 local function check_globals(path, chunk, writable, report)
     local info = jit_util.funcinfo(chunk)
     for pc = 1, info.bytecodes - 1 do
@@ -237,9 +232,6 @@ local function line_at(text, pos)
     return newlines + 1
 end
 
--- A require must name a literal module that resolves as LÖVE and the fake
--- resolve it, and a literal that is exactly a PNG name must name a file:
--- the .love archive ships only what is under root.
 local function check_completeness(path, text, code, opens, closes, report)
     local function offence(pos, reason)
         report(path .. ":" .. line_at(text, pos) .. ": " .. reason)

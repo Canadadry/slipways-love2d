@@ -95,3 +95,4 @@
     - [x] e2e_limits.sh
     - [x] love_install.sh
     - [x] pad_art.c
+    - [x] lua_guard
