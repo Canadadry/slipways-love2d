@@ -1,13 +1,13 @@
 #!/bin/sh
 # usage: love_install.sh
-# Installs LÖVE 11.5, Xvfb, Mesa and the LuaJIT development package on
+# Installs LÖVE 11.5, Xvfb, Mesa, the LuaJIT development package, zip and unzip on
 # Ubuntu 24.04, skipping apt when every package is already installed, then
 # prints one `<package> <version>` line per package. Exit 1 on any other
 # system or when the installed LÖVE is not 11.5.
 
 set -eu
 
-packages="love xvfb xauth libgl1-mesa-dri luajit libluajit-5.1-dev pkg-config"
+packages="love xvfb xauth libgl1-mesa-dri luajit libluajit-5.1-dev pkg-config zip unzip"
 
 . /etc/os-release
 if [ "${ID:-}" != ubuntu ] || [ "${VERSION_ID:-}" != 24.04 ]; then

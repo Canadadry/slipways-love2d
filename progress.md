@@ -36,7 +36,7 @@
     - [x] Chunk 5 — gate and report
   - [ ] Step 2.8 — make love-file
     - [x] Chunk 1 — completeness rule in lua-guard
-    - [ ] Chunk 2 — make love-file and the tools
+    - [x] Chunk 2 — make love-file and the tools
     - [ ] Chunk 3 — gate and report
 - [ ] Phase 3 — The virtual pad
   - [ ] Step 3.9 — pad.png, quad table, pad_flat.png, static sheet test

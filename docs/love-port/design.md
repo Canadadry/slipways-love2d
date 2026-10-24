@@ -960,7 +960,9 @@ checks the edge values and a sample against it.
 
 - `game/`: the Lua game (`conf.lua`, `main.lua`, `sprites.png`, `font.png`,
   and the modules of `p8/`, `engine/`, `game/`, `devtools/` and `love/`);
-  `make love` zips it into `tmp/slipways.love`.
+  `make love-file` zips it into `tmp/slipways.love`, `main.lua` at the
+  archive's root, then plays `tests/e2e/pad_title.json` in the fake from
+  the unpacked archive and checks the capture against its `.sha256`.
 - `tools/fake_love/`: the fake LÖVE's C source; built as `tmp/fake_love`
   and `tmp/love_capture_check`.
 - `tools/love_capture/`: the capture programs, their PNGs and the fixtures
@@ -1141,7 +1143,9 @@ modules are edited by hand (`p8.quarter_wave`, `p8.sprite_sheet_packed`,
 step with (`game/sprites.png`, `bindings.default.cfg`), and nothing checks
 either pair agrees. `make test` runs two checks over the whole tree:
 `lua-guard` (every file compiles, no undeclared global, only this file's
-`love.` names) and `lua-test-modules`, which requires every module except
+`love.` names, every `require` takes a literal name resolving under `game/`
+as `<name>.lua` or `<name>/init.lua`, or `bit`, and every PNG named in code
+is a file under `game/`) and `lua-test-modules`, which requires every module except
 `main` and `conf` under plain LuaJIT and reports each one that fails to
 load; it clears the sentinels a failed `require` leaves in `package.loaded`,
 so each failing module reports its own missing module; `make lua-names`

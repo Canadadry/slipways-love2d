@@ -375,14 +375,32 @@ FORCE:
 
 LOVE_ARCHIVE := $(TMP_DIR)/slipways.love
 
+LOVE_FILE_DIR := $(TMP_DIR)/love-file
+LOVE_FILE_REPLAY := tests/e2e/pad_title.json
+
 $(LOVE_ARCHIVE): $(shell find game -type f) | $(TMP_DIR)
+	@command -v zip >/dev/null || { echo "love-file: zip missing, run tools/love_install.sh" >&2; exit 1; }
 	@rm -f $@
 	@cd game && zip -q -9 -X -r $(CURDIR)/$@ .
-	@echo "love: $@"
 
-love: $(LOVE_ARCHIVE) ## zips game/ into tmp/slipways.love, playable with LÖVE 11.5 and a gamepad
+love-file: $(LOVE_ARCHIVE) $(TMP_DIR)/fake_love tools/love_e2e_run.sh ## zips game/ into tmp/slipways.love, then plays one e2e replay from the unpacked archive in tmp/fake_love
+	@command -v zip >/dev/null && command -v unzip >/dev/null || \
+		{ echo "love-file: zip or unzip missing, run tools/love_install.sh" >&2; exit 1; }
+	@unzip -Z1 $(LOVE_ARCHIVE) main.lua >/dev/null 2>&1 || \
+		{ echo "love-file: $(LOVE_ARCHIVE) has no main.lua at its root" >&2; exit 1; }
+	@rm -rf $(LOVE_FILE_DIR)/game && mkdir -p $(LOVE_FILE_DIR)/game
+	@unzip -q $(LOVE_ARCHIVE) -d $(LOVE_FILE_DIR)/game
+	@sh tools/love_e2e_run.sh "$(SHA256_CMD)" ./$(TMP_DIR)/fake_love $(LOVE_FILE_DIR)/game $(LOVE_FILE_REPLAY) $(LOVE_FILE_DIR)/capture.bin $(LOVE_FILE_DIR)/capture.sha256 $(LOVE_FILE_DIR)/capture.error $(LOVE_FILE_DIR)/capture.state
+	@if [ -f $(LOVE_FILE_DIR)/capture.error ]; then \
+		echo "love-file: FAILED $(LOVE_FILE_REPLAY)" >&2; cat $(LOVE_FILE_DIR)/capture.error >&2; exit 1; \
+	fi; \
+	capture=$$(cat $(LOVE_FILE_DIR)/capture.sha256); committed=$$(cat $(LOVE_FILE_REPLAY).sha256); \
+	if [ "$$capture" != "$$committed" ]; then \
+		echo "love-file: FAILED $(LOVE_FILE_REPLAY), capture $$capture instead of $$committed" >&2; exit 1; \
+	fi; \
+	echo "love-file: $(LOVE_ARCHIVE) ($(notdir $(LOVE_FILE_REPLAY)) matches its .sha256)"
 
-.PHONY: love FORCE
+.PHONY: love-file FORCE
 
 # Fails before any compilation rather than replay a default file.
 ifneq ($(filter replay state,$(MAKECMDGOALS)),)
@@ -467,7 +485,7 @@ lua-test-capture-read: tests/lua/test_capture_read.lua tools/capture_read.lua ##
 # wildcard, not find: the guard stays a single process.
 LUA_GUARD_FILES := $(wildcard game/*.lua game/*/*.lua game/*/*/*.lua)
 
-lua-guard: tools/lua_guard.lua ## fails when a game/ Lua file does not compile, uses an undeclared global or an unlisted LÖVE name
+lua-guard: tools/lua_guard.lua ## game/ Lua files: fails on a compile error, undeclared global, unlisted LÖVE name, missing required module or missing PNG
 	@luajit tools/lua_guard.lua game $(LUA_GUARD_FILES)
 
 .PHONY: lua-guard
