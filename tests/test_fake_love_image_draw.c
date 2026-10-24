@@ -20,6 +20,10 @@
 #define SCREENS_GAME FIXTURES "image_draw_screens "
 #define WINDOW_WIDTH 390
 #define WINDOW_HEIGHT 844
+#define PAD_SHEET_GAME "tests/fixtures/pad_sheet"
+#define PAD_SHEET_EXPECTED "tests/fixtures/pad_sheet_expected.png"
+#define PAD_FLAT "tests/fixtures/pad_flat.png"
+#define PAD_SPRITES 18
 
 static void test_image_misuse_is_refused_with_a_message_and_valid_calls_succeed(void) {
     int status = fake_love_cli_run("", FIXTURES "image_draw_log " FIXTURES "three_frames.json " CAPTURE " " STATE,
@@ -329,6 +333,110 @@ static void test_a_missing_pad_sheet_is_refused_before_the_game_runs(void) {
            "a refused replay writes no screen PNG");
 }
 
+static unsigned char *load_png(const char *path, int *width, int *height) {
+    unsigned char *pixels = NULL;
+    const char *reason = png_file_load(path, &pixels, width, height);
+    if (reason != NULL)
+        fprintf(stderr, "%s: %s\n", path, reason);
+    assert(reason == NULL && "the PNG must load");
+    return pixels;
+}
+
+typedef struct {
+    int x, y, width, height;
+} pad_rectangle_t;
+
+/* Parses the fixture's state: the sheet size, then one line per sprite in
+ * the flat order of design.md. */
+static void read_pad_state(int *sheet_width, int *sheet_height, pad_rectangle_t rectangles[PAD_SPRITES]) {
+    static const char *const names[PAD_SPRITES] = {
+        "stick_base",             "stick_knob",
+        "a released",             "a pressed",
+        "b released",             "b pressed",
+        "x released",             "x pressed",
+        "y released",             "y pressed",
+        "leftshoulder released",  "leftshoulder pressed",
+        "rightshoulder released", "rightshoulder pressed",
+        "start released",         "start pressed",
+        "back released",          "back pressed",
+    };
+    char *text = fake_love_cli_read_file(STATE, NULL);
+    assert(text != NULL && "the pad sheet game must write its state");
+    char *line = strtok(text, "\n");
+    int consumed = 0;
+    assert(line != NULL && sscanf(line, "%d %d%n", sheet_width, sheet_height, &consumed) == 2 &&
+           line[consumed] == '\0' && "the state's first line must be the sheet size");
+    for (int n = 0; n < PAD_SPRITES; n++) {
+        line = strtok(NULL, "\n");
+        size_t length = strlen(names[n]);
+        pad_rectangle_t *r = &rectangles[n];
+        if (line == NULL || strncmp(line, names[n], length) != 0 ||
+            sscanf(line + length, " %d %d %d %d%n", &r->x, &r->y, &r->width, &r->height, &consumed) != 4 ||
+            line[length + (size_t)consumed] != '\0') {
+            fprintf(stderr, "state line %d is \"%s\", not \"%s <x> <y> <width> <height>\"\n", n + 2,
+                    line != NULL ? line : "(none)", names[n]);
+            assert(!"every sprite line must name its sprite, in the flat order");
+        }
+    }
+    assert(strtok(NULL, "\n") == NULL && "the state must hold exactly 18 sprite lines");
+    free(text);
+}
+
+static void assert_flat_sprites_are_solid_and_distinct(int width, int height,
+                                                        const pad_rectangle_t rectangles[PAD_SPRITES]) {
+    int flat_width = 0, flat_height = 0;
+    unsigned char *flat = load_png(PAD_FLAT, &flat_width, &flat_height);
+    assert(flat_width == width && flat_height == height && "the flat sheet must have the real sheet's size");
+    unsigned char colors[PAD_SPRITES][4];
+    for (int n = 0; n < PAD_SPRITES; n++) {
+        const pad_rectangle_t *r = &rectangles[n];
+        assert(r->x >= 0 && r->y >= 0 && r->width > 0 && r->height > 0 && r->x + r->width <= width &&
+               r->y + r->height <= height && "every sprite must lie inside the sheet");
+        memcpy(colors[n], flat + 4 * ((size_t)r->y * (size_t)width + (size_t)r->x), 4);
+        for (int j = r->y; j < r->y + r->height; j++)
+            for (int i = r->x; i < r->x + r->width; i++)
+                if (memcmp(flat + 4 * ((size_t)j * (size_t)width + (size_t)i), colors[n], 4) != 0) {
+                    fprintf(stderr, PAD_FLAT ": sprite %d's texel (%d, %d) differs from its first\n", n, i, j);
+                    assert(!"every flat sprite must be one solid colour");
+                }
+        assert(colors[n][3] == 0xFF && "every flat sprite must be opaque");
+        assert((colors[n][0] | colors[n][1] | colors[n][2]) != 0 && "no flat sprite may be black");
+        for (int m = 0; m < n; m++)
+            if (memcmp(colors[m], colors[n], 3) == 0) {
+                fprintf(stderr, PAD_FLAT ": sprites %d and %d share a colour\n", m, n);
+                assert(!"the flat colours must be pairwise distinct");
+            }
+    }
+    free(flat);
+}
+
+static void test_the_quad_table_cuts_the_real_sheet_as_the_generator_drew_it_and_the_flat_sheet_is_solid(void) {
+    int status = fake_love_cli_run("", PAD_SHEET_GAME " tests/fixtures/pad_sheet.json " CAPTURE " " STATE, CAPTURE,
+                                   STATE, STDERR_LOG);
+    if (status != 0) {
+        char *err = fake_love_cli_read_file(STDERR_LOG, NULL);
+        fprintf(stderr, "%s", err != NULL ? err : "");
+        free(err);
+    }
+    assert(status == 0 && "the pad sheet game must run");
+
+    expected_screen_t frame = {NULL, 0, 0};
+    frame.pixels = load_png(PAD_SHEET_EXPECTED, &frame.width, &frame.height);
+    int width = 0, height = 0;
+    unsigned char *screen = load_png(screen_path(0), &width, &height);
+    if (width != frame.width || height != frame.height ||
+        memcmp(screen, frame.pixels, (size_t)width * (size_t)height * 4) != 0)
+        fprintf(stderr, "the pad sheet's static frame differs: if the art changed on purpose, run make pad-art\n");
+    free(screen);
+    expected_screen_assert_file(screen_path(0), &frame);
+    expected_screen_free(&frame);
+
+    pad_rectangle_t rectangles[PAD_SPRITES];
+    read_pad_state(&width, &height, rectangles);
+    assert_flat_sprites_are_solid_and_distinct(width, height, rectangles);
+    remove(screen_path(0));
+}
+
 int main(void) {
     test_image_misuse_is_refused_with_a_message_and_valid_calls_succeed();
     test_an_uncaught_fractional_position_is_fatal_and_names_draw_and_the_frame();
@@ -336,6 +444,7 @@ int main(void) {
     test_refused_draws_a_draw_on_the_screen_and_a_later_image_data_change_leave_the_canvas();
     test_scaled_tinted_and_blended_draws_reach_the_screen_with_the_replay_s_pad_sheet();
     test_a_missing_pad_sheet_is_refused_before_the_game_runs();
+    test_the_quad_table_cuts_the_real_sheet_as_the_generator_drew_it_and_the_flat_sheet_is_solid();
     remove(PNG);
     remove(CAPTURE);
     remove(STATE);
