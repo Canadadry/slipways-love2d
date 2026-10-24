@@ -32,7 +32,7 @@
   - [ ] Step 2.7 — present into the game rectangle, conf.lua
     - [x] Chunks 1-2 — test_game_screens, present through the layout, conf.lua
     - [ ] Chunk 3 — reclaims (b) and (c)
-    - [ ] Chunk 4 — reclaim (d): e2e_limits.sh greps into awk
+    - [x] Chunk 4 — reclaim (d): e2e_limits.sh greps into awk
     - [ ] Chunk 5 — gate and report
   - [ ] Step 2.8 — make love-file
 - [ ] Phase 3 — The virtual pad

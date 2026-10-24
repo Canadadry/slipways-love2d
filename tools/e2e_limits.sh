@@ -38,16 +38,6 @@ for events in "$@"; do
         fi
     done
 
-    if ! grep -q '"input": *"pad"' "$events"; then
-        echo "e2e: $events: does not declare \"input\": \"pad\"" >&2
-        failed=1
-    fi
-    for key in mouse_x mouse_y mouse_buttons dpad; do
-        if grep -q "\"$key\"" "$events"; then
-            echo "e2e: $events: carries the mouse field \"$key\"" >&2
-            failed=1
-        fi
-    done
     given="$given $events"
     set -- "$@" "reading=json" "$events"
     if [ -f "${events%.json}.txt" ] && [ ! -s "${events%.json}.txt" ]; then
@@ -58,9 +48,9 @@ for events in "$@"; do
     fi
 done
 
-# One awk for every replay and .txt, so make e2e pays one process, not one
-# per replay. An empty file never reaches FNR == 1, hence the -s test
-# above. A JSON string never spans lines.
+# One awk for every replay and .txt,
+# so make e2e pays one process, not one per replay. An empty file never
+# reaches FNR == 1, hence the -s test above. A JSON string never spans lines.
 shift "$listed"
 if ! awk -v given="$given" -v exceptions="$exceptions" '
     function judge(    rest, count, said) {
@@ -79,6 +69,7 @@ if ! awk -v given="$given" -v exceptions="$exceptions" '
     BEGIN {
         replays = split(given, replay, " ")
         for (i = 1; i <= replays; i++) frames_of[replay[i]] = 0
+        keys = split("mouse_x mouse_y mouse_buttons dpad", key, " ")
     }
     FILENAME == exceptions {
         if ($0 !~ /^[ \t]*$/) { lines++; first[lines] = $1; second[lines] = $2; third[lines] = $3; exception[$1] = 1 }
@@ -86,6 +77,8 @@ if ! awk -v given="$given" -v exceptions="$exceptions" '
     }
     reading == "json" {
         if (FNR == 1) depth = 0
+        if ($0 ~ /"input": *"pad"/) padded[FILENAME] = 1
+        for (k = 1; k <= keys; k++) if (index($0, "\"" key[k] "\"")) carries[FILENAME, key[k]] = 1
         line = $0
         gsub(/"([^"\\]|\\.)*"/, "", line)
         gsub(/[^][{}]/, "", line)
@@ -105,6 +98,14 @@ if ! awk -v given="$given" -v exceptions="$exceptions" '
     END {
         if (judged) judge()
         for (i = 1; i <= replays; i++) {
+            if (!(replay[i] in padded)) {
+                printf "e2e: %s: does not declare \"input\": \"pad\"\n", replay[i]
+                bad = 1
+            }
+            for (k = 1; k <= keys; k++) if ((replay[i], key[k]) in carries) {
+                printf "e2e: %s: carries the mouse field \"%s\"\n", replay[i], key[k]
+                bad = 1
+            }
             limit = replay[i] in exception ? 600 : 180
             if (frames_of[replay[i]] > limit) {
                 printf "e2e: %s: %s frames, more than %s\n", replay[i], frames_of[replay[i]], limit
