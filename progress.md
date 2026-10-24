@@ -91,3 +91,4 @@
     - [x] fake screen
     - [x] fake image_rules
     - [x] fake png_file
+    - [x] fake graphics

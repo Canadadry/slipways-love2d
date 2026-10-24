@@ -28,8 +28,8 @@ typedef struct {
 } canvas_object_t;
 
 typedef struct {
-    int first_translucent; /* row-major index, or IMAGE_RULES_NONE */
-    image_data_t *data;    /* the bytes copied by newImage, right after this header */
+    int first_translucent;
+    image_data_t *data;
 } image_object_t;
 
 static canvas_store_t *upvalue_store(lua_State *lua) {
@@ -133,7 +133,6 @@ static int set_color(lua_State *lua) {
     return 0;
 }
 
-/* luaL_error does not return: it raises, or the draw may proceed. */
 static void refuse_translucent_on_canvas(lua_State *lua, const char *function) {
     canvas_store_t *store = upvalue_store(lua);
     if (canvas_get_target(store) == CANVAS_NONE)
@@ -225,9 +224,7 @@ static int rectangle(lua_State *lua) {
     return 0;
 }
 
-/* "a number", "an ImageData", "a Canvas"...: the value at `index` as the
- * refusals name it. The string may live on the Lua stack: only for an
- * error raised at once. */
+/* The result may live on the Lua stack: pass it only to an error raised at once. */
 static const char *describe(lua_State *lua, int index) {
     if (image_find_data(lua, index) != NULL)
         return "an ImageData";
@@ -257,7 +254,6 @@ static int new_image(lua_State *lua) {
     return 1;
 }
 
-/* luaL_error does not return: it raises, or the verdict was accepted. */
 static void refuse_verdict(lua_State *lua, const char *function, int argument, image_rules_verdict_t verdict,
                            const char *range) {
     if (verdict == IMAGE_RULES_NOT_FINITE)
@@ -296,7 +292,6 @@ static int new_quad(lua_State *lua) {
     return 1;
 }
 
-/* luaL_error does not return: it raises, or the rotation is 0. */
 static void refuse_rotation(lua_State *lua, int argument) {
     double rotation = lua_tonumber(lua, argument);
     if (!isfinite(rotation))
@@ -331,9 +326,6 @@ static const quad_object_t *check_quad(lua_State *lua) {
     return quad;
 }
 
-/* draw(canvas, x, y, 0, s, s), the present: accepted only where the screen
- * shows exactly what design.md's rule "The screen" says, with no tint,
- * shift, rotation, distortion or blending. */
 static int draw_canvas(lua_State *lua) {
     const canvas_object_t *object = luaL_testudata(lua, 1, METATABLE);
     if (object == NULL)
@@ -381,7 +373,6 @@ static int draw_canvas(lua_State *lua) {
     return 0;
 }
 
-/* draw(image, quad, x, y, 0, sx, sy): onto the screen only, any colour. */
 static int draw_scaled_image(lua_State *lua) {
     const image_data_t *image = check_image(lua)->data;
     const quad_object_t *quad = check_quad(lua);
