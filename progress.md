@@ -94,3 +94,4 @@
     - [x] fake graphics
     - [x] e2e_limits.sh
     - [x] love_install.sh
+    - [x] pad_art.c

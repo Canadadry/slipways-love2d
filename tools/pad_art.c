@@ -43,7 +43,7 @@ typedef struct {
     int label_x, label_y;
 } button_t;
 
-/* Order a, b, x, y, leftshoulder, rightshoulder, start, back: love.pad_sheet's BUTTONS. */
+/* The order of BUTTON_NAMES in game/love/pad_sheet.lua, and sprite_rectangle its rectangles: change both. */
 static const button_t BUTTONS[BUTTON_COUNT] = {
     {SHAPE_DISC, 11, "A", 2, 9, 7},
     {SHAPE_DISC, 8, "B", 2, 9, 7},
@@ -60,7 +60,6 @@ typedef struct {
     int width;
 } image_t;
 
-/* Sprite n of the flat order: stick base, stick knob, then each button released then pressed. */
 static rectangle_t sprite_rectangle(int n) {
     if (n == 0)
         return (rectangle_t){0, 0, 48};
@@ -79,7 +78,6 @@ static void put(image_t *image, int x, int y, int colour, int alpha) {
     pixel[3] = (unsigned char)alpha;
 }
 
-/* On doubled coordinates, so a texel is tested at its centre without fractions. */
 static bool in_rounded_rectangle(int x, int y, int left, int top, int right, int bottom, int radius) {
     int cx = 2 * x + 1, cy = 2 * y + 1;
     if (cx < 2 * left || cx > 2 * right || cy < 2 * top || cy > 2 * bottom)
@@ -156,12 +154,10 @@ static void draw_flat(image_t *flat) {
     }
 }
 
-/* design.md's screen rule, the same multiply as tools/fake_love/screen.c. */
 static int multiply(int p, int q) {
     return (p * q + ((p * q) >> 8) + 128) >> 8;
 }
 
-/* The base at (4, 4); the 17 others, flat order without the base, in slots of 7 per row. */
 static void draw_frame(image_t *frame, const image_t *sheet) {
     for (int i = 0; i < FRAME_WIDTH * FRAME_HEIGHT; i++)
         memcpy(frame->pixels + 4 * i, (const unsigned char[]){0x00, 0x00, 0x00, 0xFF}, 4);
