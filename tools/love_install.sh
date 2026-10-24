@@ -1,13 +1,9 @@
 #!/bin/sh
 # usage: love_install.sh
-# Installs LÖVE 11.5, Xvfb, Mesa and the LuaJIT development package on
-# Ubuntu 24.04, skipping apt when every package is already installed, then
-# prints one `<package> <version>` line per package. Exit 1 on any other
-# system or when the installed LÖVE is not 11.5.
 
 set -eu
 
-packages="love xvfb xauth libgl1-mesa-dri luajit libluajit-5.1-dev pkg-config"
+packages="love xvfb xauth libgl1-mesa-dri luajit libluajit-5.1-dev pkg-config zip unzip"
 
 . /etc/os-release
 if [ "${ID:-}" != ubuntu ] || [ "${VERSION_ID:-}" != 24.04 ]; then
@@ -28,8 +24,7 @@ if [ -n "$missing" ]; then
     sudo=
     [ "$(id -u)" -eq 0 ] || sudo=sudo
     echo "love_install: installing$missing"
-    # Minimized images exclude /usr/share/man, and love's postinst fails
-    # without its man page.
+    # Minimized images exclude /usr/share/man, and love's postinst fails without its man page.
     echo 'path-include=/usr/share/man/man6/love*' | $sudo tee /etc/dpkg/dpkg.cfg.d/love-man > /dev/null
     $sudo mkdir -p /usr/share/man/man6
     $sudo env DEBIAN_FRONTEND=noninteractive apt-get update -q

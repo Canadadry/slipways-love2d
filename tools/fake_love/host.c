@@ -17,17 +17,22 @@
 #include "image.h"
 #include "joystick.h"
 #include "pad.h"
+#include "screen.h"
+#include "touch.h"
 #include "transform.h"
 
 #define NO_FRAME ((size_t)-1)
 #define FRAME_DT (1.0 / 60.0)
+#define DEFAULT_WINDOW_WIDTH 640
+#define DEFAULT_WINDOW_HEIGHT 480
 
 struct host {
     lua_State *lua;
     canvas_store_t *canvases;
+    screen_t *screen;
     transform_t transform;
+    window_size_t window;
     unsigned held;
-    graphics_colors_t colors;
     char *game_dir;
     char *state_text;
     char error[8192];
@@ -40,7 +45,6 @@ static void set_error(host_t *host, const char *format, ...) {
     va_end(args);
 }
 
-/* `where` names the file or callback; `frame` is NO_FRAME outside the loop. */
 static void set_lua_error(host_t *host, const char *where, size_t frame) {
     const char *message = lua_tostring(host->lua, -1);
     if (message == NULL)
@@ -52,9 +56,6 @@ static void set_lua_error(host_t *host, const char *where, size_t frame) {
     lua_pop(host->lua, 1);
 }
 
-/* Calls the function lying under its `nargs` arguments, with debug.traceback
- * as the message handler. Leaves `nresults` results on success, nothing on
- * failure. */
 static bool call(host_t *host, int nargs, int nresults, const char *where, size_t frame) {
     lua_State *lua = host->lua;
     int function_index = lua_gettop(lua) - nargs;
@@ -82,8 +83,15 @@ host_t *host_new(void) {
     }
     luaL_openlibs(host->lua);
     host->canvases = canvas_create_store();
+    host->screen = screen_create();
+    if (host->screen == NULL) {
+        lua_close(host->lua);
+        canvas_free_store(host->canvases);
+        free(host);
+        return NULL;
+    }
     transform_init(&host->transform);
-    host->colors = GRAPHICS_PALETTE_OR_WHITE;
+    host->window = (window_size_t){DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT};
     return host;
 }
 
@@ -92,9 +100,16 @@ void host_close(host_t *host) {
         return;
     lua_close(host->lua);
     canvas_free_store(host->canvases);
+    screen_free(host->screen);
     free(host->game_dir);
     free(host->state_text);
     free(host);
+}
+
+void host_set_window(host_t *host, int width, int height) {
+    assert(host->game_dir == NULL && "host_set_window runs before host_open");
+    assert(width > 0 && height > 0);
+    host->window = (window_size_t){width, height};
 }
 
 const char *host_runtime_version(host_t *host) {
@@ -127,8 +142,6 @@ static bool run_file(host_t *host, const char *name) {
     return call(host, 0, 0, name, NO_FRAME);
 }
 
-/* False when love.<name> is set but is not a function. Otherwise pushes it
- * when it is set, and `*defined` tells the caller whether to call it. */
 static bool push_callback(host_t *host, const char *name, size_t frame, bool *defined) {
     lua_State *lua = host->lua;
     lua_getglobal(lua, "love");
@@ -182,11 +195,6 @@ static bool run_conf(host_t *host) {
     return call(host, 1, 0, "love.conf", NO_FRAME);
 }
 
-void host_allow_any_color(host_t *host) {
-    assert(host->game_dir == NULL && "host_allow_any_color: graphics_install reads the switch in host_open");
-    host->colors = GRAPHICS_ANY_COLOR;
-}
-
 bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
     assert(host->game_dir == NULL && "host_open runs once per host");
     assert(disk != NULL);
@@ -203,8 +211,9 @@ bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
     if (!run_conf(host))
         return false;
     joystick_install(host->lua);
+    touch_install(host->lua);
     filesystem_install(host->lua, disk);
-    graphics_install(host->lua, host->canvases, &host->transform, host->colors);
+    graphics_install(host->lua, host->canvases, &host->transform, &host->window, host->screen);
     image_install(host->lua, disk);
     return run_file(host, "main.lua");
 }
@@ -235,11 +244,31 @@ static bool call_pad_callback(host_t *host, const pad_change_t *change, size_t f
     return call(host, 2, 0, callback, frame);
 }
 
-bool host_frame(host_t *host, size_t frame, unsigned held) {
+static bool resize(host_t *host, size_t frame, int width, int height) {
+    assert(width > 0 && height > 0);
+    host->window = (window_size_t){width, height};
+    bool defined;
+    if (!push_callback(host, "resize", frame, &defined))
+        return false;
+    if (!defined)
+        return true;
+    lua_pushnumber(host->lua, width);
+    lua_pushnumber(host->lua, height);
+    return call(host, 2, 0, "love.resize", frame);
+}
+
+bool host_frame(host_t *host, size_t frame, const host_frame_input_t *input) {
+    if (input->resized && !resize(host, frame, input->width, input->height))
+        return false;
+    if (!screen_begin_frame(host->screen, host->window.width, host->window.height, input->record_screen)) {
+        set_error(host, "screen f%zu: out of memory", frame);
+        return false;
+    }
     pad_change_t changes[PAD_MAX_CHANGES];
-    size_t change_count = pad_list_changes(host->held, held, changes);
-    host->held = held;
-    joystick_set_held(host->lua, held);
+    size_t change_count = pad_list_changes(host->held, input->held, changes);
+    host->held = input->held;
+    joystick_set_held(host->lua, input->held);
+    touch_set_frame(host->lua, input);
     for (size_t i = 0; i < change_count; i++)
         if (!call_pad_callback(host, &changes[i], frame))
             return false;
@@ -301,4 +330,8 @@ bool host_debug_state(host_t *host, const char **text, size_t *length) {
     *text = host->state_text;
     *length = size;
     return true;
+}
+
+const unsigned char *host_read_screen(const host_t *host, int *width, int *height) {
+    return screen_read_pixels(host->screen, width, height);
 }

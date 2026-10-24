@@ -1,11 +1,12 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "../tools/fake_love/canvas.h"
+#include "../tools/fake_love/png_file.h"
 #include "fake_love_cli.h"
-#include "fake_love_png.h"
 
 #define FIXTURES FAKE_LOVE_CLI_FIXTURES
 #define CAPTURE "tmp/test_fake_love_rectangle_capture.bin"
@@ -19,8 +20,8 @@ static void test_rectangle_misuse_is_refused_with_a_message_and_valid_calls_succ
                                    CAPTURE, STATE, STDERR_LOG);
     assert(status == 0 && "the rectangle log game must run");
     fake_love_cli_assert_text(
-        STATE, "graphics clear draw newCanvas newImage newQuad points pop push rectangle setCanvas setColor "
-               "setDefaultFilter translate\n"
+        STATE, "graphics clear draw getDimensions newCanvas newImage newQuad points pop push rectangle "
+               "setCanvas setColor setDefaultFilter translate\n"
                "line: love.graphics.rectangle: mode 'line' is not supported, only 'fill'\n"
                "full: love.graphics.rectangle: mode 'full' is not supported, only 'fill'\n"
                "number mode: love.graphics.rectangle: argument 1 is a number, not a string\n"
@@ -56,7 +57,8 @@ static void write_expected(const int (*filled)[4], int filled_count) {
         for (int row = filled[range][1]; row <= filled[range][3]; row++)
             for (int column = filled[range][0]; column <= filled[range][2]; column++)
                 memset(pixels + 4 * (row * CANVAS_WIDTH + column), 0xFF, 4);
-    fake_love_png_write(PNG, pixels, CANVAS_WIDTH, CANVAS_HEIGHT);
+    bool written = png_file_write(PNG, pixels, CANVAS_WIDTH, CANVAS_HEIGHT);
+    assert(written);
     free(pixels);
 }
 

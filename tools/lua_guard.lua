@@ -1,17 +1,3 @@
-local CALLBACKS = {
-    conf = true, load = true, update = true, draw = true, gamepadpressed = true, gamepadreleased = true,
-}
-
-local FUNCTIONS = {
-    graphics = {
-        clear = true, draw = true, newCanvas = true, newImage = true, newQuad = true, points = true, pop = true,
-        push = true, rectangle = true, setCanvas = true, setColor = true, setDefaultFilter = true, translate = true,
-    },
-    image = { newImageData = true },
-    joystick = { getJoysticks = true },
-    filesystem = { read = true, write = true, getInfo = true },
-}
-
 local GLUE_ONLY = { graphics = true, image = true }
 
 local READABLE_GLOBALS = {
@@ -36,15 +22,40 @@ local function usage_failure(message)
     os.exit(2)
 end
 
+local function set_of(names)
+    local set = {}
+    for _, name in ipairs(names) do
+        set[name] = true
+    end
+    return set
+end
+
+local LIST_PATH = (arg[0]:match("^(.*)/[^/]*$") or ".") .. "/love_function_list.lua"
+local list_chunk, list_error = loadfile(LIST_PATH)
+local list
+if list_chunk ~= nil then
+    local loaded, result = pcall(setfenv(list_chunk, {}))
+    list, list_error = loaded and result, not loaded and result or nil
+end
+if type(list) ~= "table" or type(list.callbacks) ~= "table" or type(list.modules) ~= "table" then
+    io.stderr:write("lua-guard: ", list_error or LIST_PATH .. " does not return callbacks and modules", "\n")
+    os.exit(2)
+end
+local CALLBACKS = set_of(list.callbacks)
+local FUNCTIONS = {}
+for module, names in pairs(list.modules) do
+    FUNCTIONS[module] = set_of(names)
+end
+
 local function blank(text)
     return (text:gsub("[^\n]", " "))
 end
 
--- Returns text with every comment and string literal turned into spaces,
--- newlines kept, so positions and line numbers still match. Only called on
--- text that compiles.
+-- Returns text with comments and strings blanked, the position of each short
+-- string's opening quote in order, and a table mapping each to its closing quote.
 local function strip(text)
     local pieces = {}
+    local opens, closes = {}, {}
     local pos = 1
     while true do
         local i = text:find("[%-'\"%[]", pos)
@@ -73,9 +84,11 @@ local function strip(text)
         else
             local j = i + 1
             while text:sub(j, j) ~= c do
+                assert(j <= #text, "lua_guard.strip: unterminated string, the text does not compile")
                 j = j + (text:sub(j, j) == "\\" and 2 or 1)
             end
             stop = j
+            opens[#opens + 1], closes[i] = i, j
         end
         if stop == nil then
             pieces[#pieces + 1] = text:sub(pos, i)
@@ -86,11 +99,10 @@ local function strip(text)
         end
         pos = i + 1
     end
-    return table.concat(pieces)
+    return table.concat(pieces), opens, closes
 end
 
--- Returns the name after a dot at pos (spaces allowed around the dot) and the
--- position after it, or the next non-space character and its position.
+-- With no dot and name at pos, returns nil, the next non-space position and its character.
 local function next_field(code, pos)
     local name, after = code:match("^%s*%.%s*([%a_][%w_]*)()", pos)
     if name ~= nil then
@@ -98,6 +110,20 @@ local function next_field(code, pos)
     end
     local at, char = code:match("^%s*()(.?)", pos)
     return nil, at, char
+end
+
+-- Returns 0 when only spaces precede pos.
+local function previous_non_space(code, pos)
+    local prev = pos - 1
+    while prev > 0 and code:find("^%s", prev) do
+        prev = prev - 1
+    end
+    return prev
+end
+
+local function is_field(code, prev)
+    local prev_char = code:sub(prev, prev)
+    return prev_char == ":" or (prev_char == "." and code:sub(prev - 1, prev - 1) ~= ".")
 end
 
 local function scan(path, code, in_glue, report)
@@ -114,13 +140,8 @@ local function scan(path, code, in_glue, report)
         local function offence(reason)
             report(path .. ":" .. line .. ": " .. reason)
         end
-        local prev = start - 1
-        while prev > 0 and code:find("^%s", prev) do
-            prev = prev - 1
-        end
-        local prev_char = code:sub(prev, prev)
-        local is_field = prev_char == ":" or (prev_char == "." and code:sub(prev - 1, prev - 1) ~= ".")
-        if not is_field then
+        local prev = previous_non_space(code, start)
+        if not is_field(code, prev) then
             local module, after, char = next_field(code, pos)
             if module == nil then
                 offence(char == "[" and "love is indexed with brackets" or "love is aliased")
@@ -150,8 +171,6 @@ local function scan(path, code, in_glue, report)
     end
 end
 
--- Walks the compiled chunk and its nested prototypes: the bytecode resolves
--- scoping, so a local shadowing a global name never shows up as GGET.
 local function check_globals(path, chunk, writable, report)
     local info = jit_util.funcinfo(chunk)
     for pc = 1, info.bytecodes - 1 do
@@ -194,6 +213,69 @@ local glue_prefix = root .. "/love/"
 local WRITABLE_GLOBALS = { [root .. "/main.lua"] = { debug_state = true } }
 local NO_GLOBALS = {}
 
+local existence = {}
+local function exists(name)
+    if existence[name] == nil then
+        local file = io.open(root .. "/" .. name, "rb")
+        existence[name] = file ~= nil
+        if file then
+            file:close()
+        end
+    end
+    return existence[name]
+end
+
+local BUILT_IN_MODULES = { bit = true }
+
+local function line_at(text, pos)
+    local _, newlines = text:sub(1, pos):gsub("\n", "")
+    return newlines + 1
+end
+
+local function check_completeness(path, text, code, opens, closes, report)
+    local function offence(pos, reason)
+        report(path .. ":" .. line_at(text, pos) .. ": " .. reason)
+    end
+    local function skip_spaces(at)
+        while closes[at] == nil and code:find("^%s", at) do
+            at = at + 1
+        end
+        return at
+    end
+    local pos = 1
+    while true do
+        local start, stop = code:find("require", pos, true)
+        if start == nil then
+            break
+        end
+        pos = stop + 1
+        local whole_word = not (start > 1 and code:find("^[%w_]", start - 1)) and not code:find("^[%w_]", pos)
+        if whole_word and not is_field(code, previous_non_space(code, start)) then
+            local quote = skip_spaces(pos)
+            local paren = code:sub(quote, quote) == "("
+            if paren then
+                quote = skip_spaces(quote + 1)
+            end
+            local close = closes[quote]
+            if close == nil or (paren and not code:find("^%s*%)", close + 1)) then
+                offence(start, "require takes a literal module name")
+            else
+                local name = text:sub(quote + 1, close - 1)
+                local file = name:gsub("%.", "/")
+                if not (BUILT_IN_MODULES[name] or exists(file .. ".lua") or exists(file .. "/init.lua")) then
+                    offence(start, "module " .. name .. " is not under " .. root .. "/")
+                end
+            end
+        end
+    end
+    for _, open in ipairs(opens) do
+        local name = text:sub(open + 1, closes[open] - 1)
+        if name:find("^[%w_%-%./]+%.png$") and not exists(name) then
+            offence(open, "image " .. name .. " is not under " .. root .. "/")
+        end
+    end
+end
+
 local offences = {}
 local function report(message)
     offences[#offences + 1] = message
@@ -208,7 +290,9 @@ for i = 2, #arg do
         local file = assert(io.open(path, "rb"))
         local text = file:read("*a")
         file:close()
-        scan(path, strip(text), path:sub(1, #glue_prefix) == glue_prefix, report)
+        local code, opens, closes = strip(text)
+        scan(path, code, path:sub(1, #glue_prefix) == glue_prefix, report)
+        check_completeness(path, text, code, opens, closes, report)
         check_globals(path, chunk, WRITABLE_GLOBALS[path] or NO_GLOBALS, report)
     end
 end

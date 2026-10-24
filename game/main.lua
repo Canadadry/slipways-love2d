@@ -1,4 +1,3 @@
--- One love.update is one game frame.
 local bit = require("bit")
 local draw_meter = require("p8.draw_meter")
 local fatal = require("p8.fatal")
@@ -6,7 +5,9 @@ local gfx_module = require("p8.gfx")
 local sprite_sheet = require("p8.sprite_sheet")
 local vram = require("p8.vram")
 local backend = require("love.backend")
+local pad_view = require("love.pad_view")
 local screen = require("love.screen")
+local virtual_pad_module = require("love.virtual_pad")
 local dispatch_context = require("engine.dispatch_context")
 local attract = require("game.attract")
 local bindings = require("game.bindings")
@@ -15,7 +16,7 @@ local cart = require("game.cart")
 local input_step = require("game.input_step")
 local state_format = require("devtools.state_format")
 
--- Button n is bit n - 1 of pad_buttons, as p8.input's P8_PAD_BUTTON_n.
+-- Button n is bit n - 1 of pad_buttons, as p8.input's PAD_BUTTON_n.
 local PAD_BUTTON_NAMES = {
   "dpup", "dpdown", "dpleft", "dpright", "a", "b", "x", "y", "leftshoulder", "rightshoulder", "start", "back",
 }
@@ -25,6 +26,8 @@ local ATTRACT_AFTER_MAX = 2147483647
 local gfx = {}
 local mem = {}
 local step = {}
+local virtual_pad = {}
+local view = {}
 local cheat_activations = 0
 
 local function read_bindings()
@@ -40,7 +43,6 @@ local function read_bindings()
   return parsed
 end
 
--- Returns attract.AFTER_DEFAULT when args hold no --attract-after; ignores every other argument.
 local function read_attract_after(args)
   local frames = nil
   local i = 1
@@ -80,6 +82,20 @@ local function read_pad_buttons()
   return mask
 end
 
+local function read_touches()
+  local touches = {}
+  for index, id in ipairs(love.touch.getTouches()) do
+    local x, y = love.touch.getPosition(id)
+    touches[index] = { id = id, x = x, y = y }
+  end
+  return touches
+end
+
+local function read_mouse()
+  local x, y = love.mouse.getPosition()
+  return { x = x, y = y, down = love.mouse.isDown(1) }
+end
+
 function love.load(args)
   screen.init()
   vram.init(mem)
@@ -95,10 +111,14 @@ function love.load(args)
   cart.init()
   input_step.init(step, read_bindings())
   input_step.set_attract_after(step, read_attract_after(args))
+  virtual_pad_module.init(virtual_pad)
+  pad_view.init(view)
 end
 
 function love.update(dt)
-  local raw = { mouse_x = 0, mouse_y = 0, mouse_buttons = 0, pad_buttons = read_pad_buttons() }
+  local pad_buttons = virtual_pad_module.update(virtual_pad, read_pad_buttons(), read_touches(), read_mouse(),
+    screen.get_dimensions())
+  local raw = { mouse_x = 0, mouse_y = 0, mouse_buttons = 0, pad_buttons = pad_buttons }
   if input_step.run(step, raw) then
     cheat_activations = cheat_activations + 1
   end
@@ -111,9 +131,9 @@ function love.draw()
   screen.frame_end()
   draw_meter.frame_end()
   screen.present()
+  pad_view.draw(view, virtual_pad)
 end
 
--- Called by tmp/fake_love after the last frame, never by real LÖVE.
 function debug_state()
   local lines = {}
   local sink = {

@@ -4,6 +4,7 @@
 
 #include "image_data.h"
 #include "point.h"
+#include "screen.h"
 
 enum { QUAD_X, QUAD_Y, QUAD_WIDTH, QUAD_HEIGHT, QUAD_REFERENCE_WIDTH, QUAD_REFERENCE_HEIGHT };
 
@@ -22,12 +23,18 @@ image_rules_verdict_t image_rules_check_position(double position) {
     return point_accepts_coordinate(position) ? IMAGE_RULES_ACCEPTED : IMAGE_RULES_OUT_OF_RANGE;
 }
 
-image_rules_verdict_t image_rules_check_scale(double scale) {
-    image_rules_verdict_t verdict = check_integer(scale);
-    if (verdict != IMAGE_RULES_ACCEPTED) {
-        return verdict;
+image_rules_verdict_t image_rules_check_screen_position(double position) {
+    if (!isfinite(position)) {
+        return IMAGE_RULES_NOT_FINITE;
     }
-    return scale >= 1 && scale <= IMAGE_RULES_SCALE_LIMIT ? IMAGE_RULES_ACCEPTED : IMAGE_RULES_OUT_OF_RANGE;
+    return point_accepts_coordinate(position) ? IMAGE_RULES_ACCEPTED : IMAGE_RULES_OUT_OF_RANGE;
+}
+
+image_rules_verdict_t image_rules_check_screen_scale(double scale) {
+    if (!isfinite(scale)) {
+        return IMAGE_RULES_NOT_FINITE;
+    }
+    return scale > 0 && scale <= SCREEN_MAX_SCALE ? IMAGE_RULES_ACCEPTED : IMAGE_RULES_OUT_OF_RANGE;
 }
 
 image_rules_verdict_t image_rules_check_quad(const double values[IMAGE_RULES_QUAD_VALUES], int *refused) {
@@ -42,8 +49,6 @@ image_rules_verdict_t image_rules_check_quad(const double values[IMAGE_RULES_QUA
     double y = values[QUAD_Y];
     double reference_width = values[QUAD_REFERENCE_WIDTH];
     double reference_height = values[QUAD_REFERENCE_HEIGHT];
-    /* Reference sides first: the ranges of x and y use them, and those of
-     * the width and height use x and y. */
     const struct {
         int index;
         double low;

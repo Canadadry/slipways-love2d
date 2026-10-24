@@ -5,8 +5,11 @@
 
 #include <lauxlib.h>
 
-static const char *const CALLBACKS[] = {"conf", "load", "update", "draw", "gamepadpressed", "gamepadreleased"};
-static const char *const MODULES[] = {"graphics", "image", "joystick", "filesystem"};
+const char *const function_list_callbacks[] = {"conf",           "load",           "update", "draw",
+                                               "gamepadpressed", "gamepadreleased", "resize"};
+const size_t function_list_callback_count = sizeof function_list_callbacks / sizeof function_list_callbacks[0];
+const char *const function_list_modules[] = {"graphics", "image", "joystick", "filesystem", "touch", "mouse"};
+const size_t function_list_module_count = sizeof function_list_modules / sizeof function_list_modules[0];
 
 static bool is_one_of(lua_State *lua, int key_index, const char *const *names, size_t count) {
     if (lua_type(lua, key_index) != LUA_TSTRING)
@@ -18,9 +21,6 @@ static bool is_one_of(lua_State *lua, int key_index, const char *const *names, s
     return false;
 }
 
-#define IS_ONE_OF(lua, key_index, names) is_one_of(lua, key_index, names, sizeof names / sizeof names[0])
-
-/* Upvalue 1 is the prefix, upvalue 2 the separator before a string key. */
 static int refuse(lua_State *lua, int key_index) {
     const char *prefix = lua_tostring(lua, lua_upvalueindex(1));
     if (lua_type(lua, key_index) == LUA_TSTRING)
@@ -38,7 +38,8 @@ static int refuse_access(lua_State *lua) {
 }
 
 static int read_love(lua_State *lua) {
-    if (IS_ONE_OF(lua, 2, CALLBACKS) || IS_ONE_OF(lua, 2, MODULES)) {
+    if (is_one_of(lua, 2, function_list_callbacks, function_list_callback_count) ||
+        is_one_of(lua, 2, function_list_modules, function_list_module_count)) {
         lua_pushnil(lua);
         return 1;
     }
@@ -46,7 +47,7 @@ static int read_love(lua_State *lua) {
 }
 
 static int create_in_love(lua_State *lua) {
-    if (!IS_ONE_OF(lua, 2, CALLBACKS))
+    if (!is_one_of(lua, 2, function_list_callbacks, function_list_callback_count))
         return refuse(lua, 2);
     lua_rawset(lua, 1);
     return 0;

@@ -9,10 +9,12 @@
 #include "disk.h"
 #include "frame_capture.h"
 #include "host.h"
+#include "png_file.h"
 #include "replay.h"
 
 #define EXPECTED_VERSION_PREFIX "LuaJIT 2.1"
 #define BINDINGS_MAX_BYTES 65536
+#define PAD_SHEET_MAX_BYTES 1048576
 
 typedef struct {
     const char *game_dir;
@@ -93,6 +95,32 @@ static bool capture_close(capture_writer_t *writer) {
     return closed;
 }
 
+typedef struct {
+    char paths[REPLAY_SCREENS_MAX][4200];
+    size_t count;
+} screen_files_t;
+
+static bool write_screen(screen_files_t *files, host_t *host, const char *capture_path, size_t frame) {
+    int width;
+    int height;
+    const unsigned char *pixels = host_read_screen(host, &width, &height);
+    assert(pixels != NULL && files->count < REPLAY_SCREENS_MAX && "a listed frame records its screen");
+    char *path = files->paths[files->count];
+    snprintf(path, sizeof files->paths[0], "%s.screen-f%zu.png", capture_path, frame);
+    if (!png_file_write(path, pixels, width, height)) {
+        remove(path);
+        fprintf(stderr, "fake_love: %s: cannot write\n", path);
+        return false;
+    }
+    files->count++;
+    return true;
+}
+
+static void remove_screens(const screen_files_t *files) {
+    for (size_t i = 0; i < files->count; i++)
+        remove(files->paths[i]);
+}
+
 static bool write_state(host_t *host, const char *path) {
     const char *text;
     size_t length;
@@ -119,14 +147,34 @@ static bool load_game(host_t *host, const replay_t *replay) {
     return host_load(host, load_arguments, 2);
 }
 
+static host_frame_input_t read_frame_input(const replay_t *replay, size_t frame, host_touch_t *touches) {
+    host_frame_input_t input = {.held = replay_frame_held(replay, frame), .touches = touches};
+    input.resized = replay_frame_resize(replay, frame, &input.width, &input.height) != 0;
+    const replay_touch_t *replay_touches = replay_frame_touches(replay, frame, &input.touch_count);
+    assert(input.touch_count <= HOST_TOUCH_MAX && "the replay reader caps a frame at 10 touches");
+    for (size_t i = 0; i < input.touch_count; i++)
+        touches[i] = (host_touch_t){replay_touches[i].id, replay_touches[i].x, replay_touches[i].y};
+    replay_mouse_t mouse = replay_frame_mouse(replay, frame);
+    input.mouse = (host_mouse_t){mouse.x, mouse.y, mouse.left != 0};
+    input.record_screen = replay_frame_screen_listed(replay, frame);
+    return input;
+}
+
 static bool run_game(host_t *host, const arguments_t *arguments, const replay_t *replay, disk_t *disk,
-                     capture_writer_t *capture) {
+                     capture_writer_t *capture, screen_files_t *screens) {
+    int width, height;
+    replay_window(replay, &width, &height);
+    host_set_window(host, width, height);
     bool ok = host_open(host, arguments->game_dir, disk) && load_game(host, replay);
     for (size_t frame = 0; ok && frame < replay_frame_count(replay); frame++) {
-        ok = host_frame(host, frame, replay_frame_held(replay, frame));
+        host_touch_t touches[HOST_TOUCH_MAX];
+        const host_frame_input_t input = read_frame_input(replay, frame, touches);
+        ok = host_frame(host, frame, &input);
         if (!ok)
             break;
         if (!capture_append(capture, host, frame))
+            return false;
+        if (input.record_screen && !write_screen(screens, host, arguments->capture_path, frame))
             return false;
     }
     if (!ok) {
@@ -138,49 +186,56 @@ static bool run_game(host_t *host, const arguments_t *arguments, const replay_t 
     return arguments->state_path == NULL || write_state(host, arguments->state_path);
 }
 
-/* The fixture's bytes in a buffer the caller frees; NULL after printing the
- * refusal. */
-static unsigned char *read_bindings(const char *replay_path, const char *name, size_t *length) {
+static unsigned char *read_fixture(const char *replay_path, const char *member, const char *name, size_t max_bytes,
+                                   size_t *length) {
     const char *slash = strrchr(replay_path, '/');
     int directory_length = slash != NULL ? (int)(slash - replay_path) : 1;
     const char *directory = slash != NULL ? replay_path : ".";
     char path[4096];
     snprintf(path, sizeof path, "%.*s/%s", directory_length, directory, name);
     FILE *file = fopen(path, "rb");
-    unsigned char *bytes = malloc(BINDINGS_MAX_BYTES + 1);
-    *length = file != NULL && bytes != NULL ? fread(bytes, 1, BINDINGS_MAX_BYTES + 1, file) : 0;
+    unsigned char *bytes = malloc(max_bytes + 1);
+    *length = file != NULL && bytes != NULL ? fread(bytes, 1, max_bytes + 1, file) : 0;
     bool readable = file != NULL && bytes != NULL && !ferror(file);
     if (file != NULL)
         fclose(file);
-    if (!readable || *length > BINDINGS_MAX_BYTES) {
+    if (!readable || *length > max_bytes) {
         if (readable)
-            fprintf(stderr, "fake_love: %s: \"bindings\": %s is over %d bytes\n", replay_path, path, BINDINGS_MAX_BYTES);
+            fprintf(stderr, "fake_love: %s: \"%s\": %s is over %zu bytes\n", replay_path, member, path, max_bytes);
         else
-            fprintf(stderr, "fake_love: %s: \"bindings\": %s cannot be read\n", replay_path, path);
+            fprintf(stderr, "fake_love: %s: \"%s\": %s cannot be read\n", replay_path, member, path);
         free(bytes);
         return NULL;
     }
     return bytes;
 }
 
-/* NULL after printing the refusal; else a disk the caller frees. */
+static bool put_fixture(disk_t *disk, const char *replay_path, const char *member, const char *name,
+                        size_t max_bytes, const char *disk_name) {
+    if (name == NULL)
+        return true;
+    size_t length;
+    unsigned char *bytes = read_fixture(replay_path, member, name, max_bytes, &length);
+    if (bytes == NULL)
+        return false;
+    disk_put(disk, disk_name, bytes, length);
+    free(bytes);
+    return true;
+}
+
 static disk_t *build_disk(const arguments_t *arguments, const replay_t *replay) {
     disk_t *disk = disk_create(arguments->game_dir);
     size_t count;
     const unsigned char *save = replay_initial_save(replay, &count);
     if (save != NULL)
         disk_put(disk, "save.bin", save, count);
-    const char *bindings = replay_bindings(replay);
-    if (bindings == NULL)
-        return disk;
-    size_t length;
-    unsigned char *bytes = read_bindings(arguments->replay_path, bindings, &length);
-    if (bytes == NULL) {
+    if (!put_fixture(disk, arguments->replay_path, "bindings", replay_bindings(replay), BINDINGS_MAX_BYTES,
+                     "bindings.cfg")
+        || !put_fixture(disk, arguments->replay_path, "pad_sheet", replay_pad_sheet(replay), PAD_SHEET_MAX_BYTES,
+                        "pad.png")) {
         disk_free(disk);
         return NULL;
     }
-    disk_put(disk, "bindings.cfg", bytes, length);
-    free(bytes);
     return disk;
 }
 
@@ -200,10 +255,12 @@ static bool run(const arguments_t *arguments) {
     if (host == NULL)
         fprintf(stderr, "fake_love: out of memory\n");
     capture_writer_t capture = {0};
+    static screen_files_t screens;
     bool ok = host != NULL && check_version(host) && capture_open(&capture, arguments->capture_path);
-    if (ok && !run_game(host, arguments, replay, disk, &capture)) {
+    if (ok && !run_game(host, arguments, replay, disk, &capture, &screens)) {
         capture_close(&capture);
         remove(arguments->capture_path);
+        remove_screens(&screens);
         if (arguments->state_path != NULL)
             remove(arguments->state_path);
         ok = false;

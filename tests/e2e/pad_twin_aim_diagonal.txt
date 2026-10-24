@@ -1,0 +1,39 @@
+Pad twin of touch_aim_diagonal: a new game on "reasonable", then in aim
+mode Up+Right held 30 frames, then Up alone 10 frames, with no release
+between. 65 frames.
+
+Buttons in the default bindings (design.md's pad table): Up 1, Down 2,
+Left 3, Right 4, A 5 (Cross; "X" in older notes), Back 12 (Select).
+
+Readings come from the state at the frame: `tmp/state.txt` after `make
+state EVENTS=<this file cut after fN>`, the file cut as help-me-debug cuts
+it:
+
+    k=64; mkdir -p tmp/debug
+    awk -v last=$((k + 1)) '/^ *\{ *"pad"/ { n++; if (n > last) next; if (n == last) sub(/, *$/, "") } { print }' tests/e2e/pad_twin_aim_diagonal.json > tmp/debug/pad_twin_aim_diagonal_f$k.json
+    make state EVENTS=tmp/debug/pad_twin_aim_diagonal_f$k.json
+
+Frames, rebuildable by hand: idle x10, Down, idle, A x3, idle x4,
+Up+Right ([1, 4]) x30, Up x10, idle x6.
+
+- f0-9: idle while the title rows slide in. f10: Down, f11 idle: the
+  focus on "reasonable".
+- f12-14: A held 3 frames on "reasonable" (pad_probe's f12-14): f12-13
+  the loading screen, f14 the new game, galaxy of pad_probe, clock year
+  3401 month 1, $100, camera (176, 196). Aim mode from f15 (a new game
+  knows no object).
+- f15-18: idle; camera (176, 196) after f18 (f18 is the touch replay's
+  stick first frame, the knob on the base, mask 0).
+- f19-48: Up+Right held. After f19: camera (177, 195); after f28 (186,
+  186); after f48 (226, 146): 50 px on each axis.
+- f49-58: Up alone, the hold not broken. After f49: (226, 144), the 2 px
+  pace kept; after f58: (226, 126).
+- f59-64: idle. The state at f64: year 3401 month 1, credits 100,
+  camera (226, 126), slipways 0.
+
+Its `.json.sha256` is the sha256 of its own capture (`make replay
+EVENTS=tests/e2e/pad_twin_aim_diagonal.json`) and its `.json.end-state`
+was written by `make end-state-baseline`. Both are the reference of
+touch_aim_diagonal.json, whose two files are byte copies of these;
+`tools/e2e_limits.sh` fails when the two `.sha256` differ or when either
+replay lacks the other.

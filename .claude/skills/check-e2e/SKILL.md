@@ -60,8 +60,8 @@ Invoke the `fix-bug` skill in place. Its argument is a bug report you write, con
 When `fix-bug` proposes its commit, check each point yourself, with commands you run:
 
 1. The diff adds (or extends) a `tests/lua/game/test_<module>.lua`. For a cause proven in the fake: a `tests/test_<name>.c` whose binary is in `UNIT_TESTS`.
-2. That test does not replay any file of `tests/e2e/` nor run `tmp/fake_love`, and runs under 50 ms: `time (LUA_PATH='game/?.lua;tests/lua/game/?.lua' LUA_CPATH= luajit tests/lua/game/test_<module>.lua)`, or `time ./tmp/<test>` for a fake test.
-3. It **fails on the pre-fix code**. Extract `HEAD` into a throwaway copy and lay the working tree's `tests/` over it — `rm -rf tmp/gate && mkdir -p tmp/gate && git archive HEAD | tar -x -C tmp/gate && cp -R tests tmp/gate/` (for a fake test, also `cp Makefile tmp/gate/`) — then `make -C tmp/gate lua-run-test_<module>` (fake test: `make -C tmp/gate unit-run-test_<name>`) must fail. Then `make lua-run-test_<module>` (or `make unit-run-test_<name>`) passes on the working tree.
+2. That test does not replay any file of `tests/e2e/` nor run `tmp/fake_love`, and runs under 50 ms: `time (LUA_PATH='game/?.lua;tests/lua/game/?.lua' LUA_CPATH= luajit tests/lua/game/runner.lua tests/lua/game/test_<module>.lua)`, or `time ./tmp/<test>` for a fake test.
+3. It **fails on the pre-fix code**. Extract `HEAD` into a throwaway copy and lay the working tree's `tests/` over it — `rm -rf tmp/gate && mkdir -p tmp/gate && git archive HEAD | tar -x -C tmp/gate && cp -R tests tmp/gate/` (for a fake test, also `cp Makefile tmp/gate/`) — then `make -C tmp/gate lua-test-game LUA_GAME_TESTS=tests/lua/game/test_<module>.lua` (fake test: `make -C tmp/gate unit-run-test_<name>`) must fail. Then `make lua-test-game LUA_GAME_TESTS=tests/lua/game/test_<module>.lua` (or `make unit-run-test_<name>`) passes on the working tree.
 4. `make test` and `make e2e` are green, and the failure you handed over no longer appears.
 
 All four hold → accept: `fix-bug` commits (folded into `HEAD` when `progress.md` exists, see `git-commit`). Remove `tmp/gate`.

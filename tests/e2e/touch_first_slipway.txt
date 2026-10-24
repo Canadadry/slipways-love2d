@@ -1,0 +1,49 @@
+Touch version of pad_twin_first_slipway, in a 390x844 window: from a
+resumed record, "resume" chosen and the first slipway, s4 to s3, built
+with touches on the virtual pad's stick and A. 36 frames.
+
+Twin: pad_twin_first_slipway. It carries pad_bankrupt's `initial_save`
+byte for byte, as the twin does.
+
+Layout at 390x844 (`love.window_layout` tall mode: pad rectangle at
+(0, 486.75), scale 2.4375; `love.pad_layout.place`, half-open screen
+rectangles), re-derived with LuaJIT over the two modules:
+
+- A (292, 720): A is x 263.25-321.75, y 691.5-750.
+- Back (160, 745): Back is x 131.625-190.125, y 715.875-774.375, inside
+  the stick zone (x 0-195, y 486.75-779.25).
+- Stick base (90, 640): in the stick zone, on no button; base 117
+  (radius 58.5, dead zone 14.625). Pushed from it: (90, 580) Up (1),
+  (90, 700) Down (2), (30, 640) Left (4), (130, 600) Up+Right (9), mask
+  bits as `love.pad_stick` gives them.
+
+Each finger has its own id, never reused here. Every frame starts with
+`"pad"`, so the help-me-debug cut works as for the pad replays.
+
+- f0-3: touch 1 on A, the revealing touch: it presses nothing (twin
+  idle); f4 lifted. On the title A would choose the focused row: a leaked
+  press there would start a new game instead of resuming.
+- f9: touch 2 on the stick base, mask 0 (twin idle); f10: touch 2 at
+  (90, 580), Up (twin Up), the focus on "resume"; f11 lifted.
+- f12: touch 3 on A (twin A): resume. f13 lifted.
+- f17: touch 4 on A (twin A): a slipway from the hovered s4. f18 lifted.
+- f20: touch 5 on the stick base, mask 0 (twin idle); f21: touch 5 at
+  (30, 640), Left (twin Left), aimed at s3; f22 lifted.
+- f25: touch 6 on A (twin A): the slipway is built. f26 lifted, idle to
+  f35.
+
+Rules exercised: the reveal presses nothing; a stick touch's first frame
+is mask 0; touches on A press A on a shown pad.
+
+Negative scratch run: the twin with A on f0-3 (a leaked reveal) starts a
+forgiving new game (difficulty forgiving, year 3401 month 1, $100, no
+slipway) instead of resuming to year 3401 month 10, $37, slipway s4 s3.
+
+Its `.json.sha256` and `.json.end-state` are byte copies of
+pad_twin_first_slipway's, never a baseline of this run: `make e2e` and `make
+end-state` thus prove this touch run equal to the gamepad run, frame by
+frame and in the end state, and `tools/e2e_limits.sh` fails if the two
+`.sha256` drift apart (after a `make e2e-baseline`, for example).
+
+Not proven here: the drawing of the pad (step 16); a resize; overlay
+mode; the 5 + 6 chord (covered by the Lua tests).

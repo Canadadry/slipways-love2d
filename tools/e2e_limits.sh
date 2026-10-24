@@ -1,16 +1,5 @@
 #!/bin/sh
 # usage: e2e_limits.sh <exceptions> [<events>...]
-# Exit 1 when the exception list is missing, or when an e2e is missing,
-# lacks its <name>.txt or its <name>.json.sha256, runs past 180 frames
-# (600 when it is listed in <exceptions>, as `<events> reason`: only the
-# first field counts), does not declare "input": "pad", or carries mouse_x,
-# mouse_y, mouse_buttons or dpad, or when the first paragraph of its .txt,
-# lines joined by single spaces, does not hold exactly one "<N> frames." with
-# N its frame count; or when a line of <exceptions> names no given e2e,
-# does not state "<N> frames:" as its second and third fields with N the
-# e2e's frame count, or names an e2e of 180 frames or fewer.
-# Every file is examined before concluding.
-# A frame of the file is a game frame: the "pad" keys are counted.
 
 set -u
 
@@ -22,8 +11,9 @@ if [ ! -f "$exceptions" ]; then
 fi
 
 failed=0
-txts=0
-counts=""
+listed=$#
+given=""
+hashed=""
 for events in "$@"; do
     if [ ! -f "$events" ]; then
         echo "e2e: $events missing" >&2
@@ -37,40 +27,27 @@ for events in "$@"; do
         fi
     done
 
-    if ! grep -q '"input": *"pad"' "$events"; then
-        echo "e2e: $events: does not declare \"input\": \"pad\"" >&2
-        failed=1
-    fi
-    for key in mouse_x mouse_y mouse_buttons dpad; do
-        if grep -q "\"$key\"" "$events"; then
-            echo "e2e: $events: carries the mouse field \"$key\"" >&2
-            failed=1
+    given="$given $events"
+    set -- "$@" "reading=json" "$events"
+    case ${events##*/} in
+    touch_* | pad_twin_*)
+        if [ -f "$events.sha256" ]; then
+            hashed="$hashed $events"
+            set -- "$@" "reading=sha256" "$events.sha256"
         fi
-    done
-    frames=$(grep -o '"pad":' "$events" | wc -l | tr -d ' ')
-    counts="$counts $events=$frames"
-    limit=180
-    if awk -v e="$events" '$1 == e { found = 1 } END { exit !found }' "$exceptions"; then
-        limit=600
-    fi
-    if [ "$frames" -gt "$limit" ]; then
-        echo "e2e: $events: $frames frames, more than $limit" >&2
-        failed=1
-    fi
+        ;;
+    esac
     if [ -f "${events%.json}.txt" ] && [ ! -s "${events%.json}.txt" ]; then
         echo "e2e: $events: .txt states no \"N frames.\"" >&2
         failed=1
     elif [ -f "${events%.json}.txt" ]; then
-        txts=$((txts + 1))
-        set -- "$@" "events=$events" "frames=$frames" "${events%.json}.txt"
+        set -- "$@" "reading=txt" "events=$events" "${events%.json}.txt"
     fi
 done
 
-# One awk over the exceptions list, then every .txt, each preceded by its
-# events=/frames= assignments, so make e2e pays one process, not one per
-# replay. An empty file never reaches FNR == 1, hence the -s test above.
-shift $(($# - 3 * txts))
-if ! awk -v counts="$counts" -v exceptions="$exceptions" '
+# One awk for every file: make e2e must pay one process, not one per replay.
+shift "$listed"
+if ! awk -v given="$given" -v hashed="$hashed" -v exceptions="$exceptions" '
     function judge(    rest, count, said) {
         rest = " " text
         while (match(rest, /[^0-9A-Za-z_][0-9]+ frames\./)) {
@@ -80,42 +57,98 @@ if ! awk -v counts="$counts" -v exceptions="$exceptions" '
         }
         if (count == 0) printf "e2e: %s: .txt states no \"N frames.\"\n", name
         else if (count > 1) printf "e2e: %s: .txt states \"N frames.\" %d times\n", name, count
-        else if (said != count_of) printf "e2e: %s: .txt says %s frames, the file has %s\n", name, said, count_of
+        else if (said != frames_of[name]) printf "e2e: %s: .txt says %s frames, the file has %s\n", name, said, frames_of[name]
         else return
         bad = 1
     }
     BEGIN {
-        pairs = split(counts, pair, " ")
-        for (i = 1; i <= pairs; i++) {
-            match(pair[i], /=[0-9]+$/)
-            frames_of[substr(pair[i], 1, RSTART - 1)] = substr(pair[i], RSTART + 1) + 0
-        }
+        replays = split(given, replay, " ")
+        for (i = 1; i <= replays; i++) frames_of[replay[i]] = 0
+        split(hashed, list, " ")
+        for (i in list) hash_of[list[i]] = ""
+        keys = split("mouse_x mouse_y mouse_buttons dpad", key, " ")
     }
     FILENAME == exceptions {
-        if ($0 ~ /^[ \t]*$/) next
-        if (!($1 in frames_of)) {
-            printf "e2e: %s: listed in %s but not given\n", $1, exceptions
-            bad = 1
-            next
-        }
-        if ($2 !~ /^[0-9]+$/ || $3 !~ /^frames:/) {
-            printf "e2e: %s: %s states no \"N frames:\"\n", $1, exceptions
-            bad = 1
-        } else if ($2 + 0 != frames_of[$1]) {
-            printf "e2e: %s: %s says %s frames, the file has %s\n", $1, exceptions, $2, frames_of[$1]
-            bad = 1
-        }
-        if (frames_of[$1] <= 180) {
-            printf "e2e: %s: listed in %s but runs %s frames, not over 180\n", $1, exceptions, frames_of[$1]
-            bad = 1
+        if ($0 !~ /^[ \t]*$/) { lines++; first[lines] = $1; second[lines] = $2; third[lines] = $3; exception[$1] = 1 }
+        next
+    }
+    reading == "sha256" {
+        if (FNR == 1) hash_of[substr(FILENAME, 1, length(FILENAME) - 7)] = $0
+        next
+    }
+    reading == "json" {
+        if (FNR == 1) depth = 0
+        if ($0 ~ /"input": *"pad"/) padded[FILENAME] = 1
+        for (k = 1; k <= keys; k++) if (index($0, "\"" key[k] "\"")) carries[FILENAME, key[k]] = 1
+        line = $0
+        gsub(/"([^"\\]|\\.)*"/, "", line)
+        gsub(/[^][{}]/, "", line)
+        for (i = 1; i <= length(line); i++) {
+            c = substr(line, i, 1)
+            if (c == "{" || c == "[") {
+                if (c == "{" && depth == 2) frames_of[FILENAME]++
+                depth++
+            } else depth--
         }
         next
     }
-    FNR == 1 { if (judged) judge(); judged = 1; name = events; count_of = frames; text = ""; done = 0 }
+    FNR == 1 { if (judged) judge(); judged = 1; name = events; text = ""; done = 0 }
     done { next }
     /^[ \t]*$/ { if (text != "") done = 1; next }
     { sub(/^[ \t]+/, ""); sub(/[ \t]+$/, ""); text = text (text == "" ? "" : " ") $0 }
-    END { if (judged) judge(); exit bad }' "$exceptions" "$@" >&2; then
+    END {
+        if (judged) judge()
+        for (i = 1; i <= replays; i++) {
+            if (!(replay[i] in padded)) {
+                printf "e2e: %s: does not declare \"input\": \"pad\"\n", replay[i]
+                bad = 1
+            }
+            for (k = 1; k <= keys; k++) if ((replay[i], key[k]) in carries) {
+                printf "e2e: %s: carries the mouse field \"%s\"\n", replay[i], key[k]
+                bad = 1
+            }
+            match(replay[i], /[^\/]*$/)
+            dir = substr(replay[i], 1, RSTART - 1)
+            base = substr(replay[i], RSTART)
+            if (base ~ /^touch_/) {
+                twin = dir "pad_twin_" substr(base, 7)
+                if (!(twin in frames_of)) {
+                    printf "e2e: %s: no pad twin %s\n", replay[i], twin
+                    bad = 1
+                } else if ((replay[i] in hash_of) && (twin in hash_of) && hash_of[replay[i]] != hash_of[twin]) {
+                    printf "e2e: %s: .sha256 differs from its twin\047s\n", replay[i]
+                    bad = 1
+                }
+            } else if (base ~ /^pad_twin_/ && !((dir "touch_" substr(base, 10)) in frames_of)) {
+                printf "e2e: %s: twin of no touch replay %s\n", replay[i], dir "touch_" substr(base, 10)
+                bad = 1
+            }
+            limit = replay[i] in exception ? 600 : 180
+            if (frames_of[replay[i]] > limit) {
+                printf "e2e: %s: %s frames, more than %s\n", replay[i], frames_of[replay[i]], limit
+                bad = 1
+            }
+        }
+        for (i = 1; i <= lines; i++) {
+            if (!(first[i] in frames_of)) {
+                printf "e2e: %s: listed in %s but not given\n", first[i], exceptions
+                bad = 1
+                continue
+            }
+            if (second[i] !~ /^[0-9]+$/ || third[i] !~ /^frames:/) {
+                printf "e2e: %s: %s states no \"N frames:\"\n", first[i], exceptions
+                bad = 1
+            } else if (second[i] + 0 != frames_of[first[i]]) {
+                printf "e2e: %s: %s says %s frames, the file has %s\n", first[i], exceptions, second[i], frames_of[first[i]]
+                bad = 1
+            }
+            if (frames_of[first[i]] <= 180) {
+                printf "e2e: %s: listed in %s but runs %s frames, not over 180\n", first[i], exceptions, frames_of[first[i]]
+                bad = 1
+            }
+        }
+        exit bad
+    }' "$exceptions" "$@" >&2; then
     failed=1
 fi
 

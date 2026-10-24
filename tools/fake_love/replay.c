@@ -35,19 +35,33 @@ typedef struct {
     size_t next;
 } node_t;
 
+typedef struct {
+    unsigned held;
+    int resize_width;
+    int resize_height;
+    const replay_touch_t *touches;
+    size_t touch_count;
+    replay_mouse_t mouse;
+} frame_input_t;
+
 struct replay {
     const node_t *frames;
-    unsigned *held;
+    frame_input_t *inputs;
+    replay_touch_t *touches;
+    size_t touch_count;
     unsigned char *initial_save;
     size_t initial_save_count;
     const char *bindings;
+    const char *pad_sheet;
     int attract_after;
+    int window_width;
+    int window_height;
+    size_t screens[REPLAY_SCREENS_MAX];
+    size_t screen_count;
     size_t node_count;
     node_t nodes[];
 };
 
-/* With `nodes` NULL the parser only validates and counts, so that the second
- * pass fills a single allocation of the exact size. */
 typedef struct {
     const char *name;
     const char *text;
@@ -133,7 +147,6 @@ static void put_utf8(parser_t *parser, unsigned long code) {
     }
 }
 
-/* Reads the 4 hex digits after `\u`; returns ULONG_MAX on failure. */
 static unsigned long read_hex4(parser_t *parser) {
     unsigned long code = 0;
     for (int i = 0; i < 4; i++) {
@@ -184,8 +197,6 @@ static int parse_unicode_escape(parser_t *parser, size_t escape_offset) {
     return 1;
 }
 
-/* Returns the copy's start in `chars` (NUL-terminated), or NULL on the
- * counting pass and on failure; `failed` tells the two apart. */
 static const char *parse_string(parser_t *parser, size_t *length) {
     size_t start_offset = parser->pos;
     assert(peek(parser) == '"' && "parse_string starts on the opening quote");
@@ -485,22 +496,7 @@ static const char *kind_name(node_kind_t kind) {
     return "?";
 }
 
-/* Returns 0 and fails the parser when a button is not an integer 1-12 or
- * is listed twice. */
-static int read_frame_pad(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *frame, unsigned *held) {
-    const node_t *pad = NULL;
-    for (size_t i = frame->first_child; i != NO_NODE; i = replay->nodes[i].next) {
-        if (strcmp(replay->nodes[i].key, "pad") != 0) {
-            fail_at(parser, replay->nodes[i].offset, "f%zu: unexpected key \"%s\": a frame holds only \"pad\"", frame_index,
-                    replay->nodes[i].key);
-            return 0;
-        }
-        pad = &replay->nodes[i];
-    }
-    if (pad == NULL) {
-        fail_at(parser, frame->offset, "f%zu: no \"pad\"", frame_index);
-        return 0;
-    }
+static int read_frame_pad(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *pad, unsigned *held) {
     if (pad->kind != NODE_ARRAY) {
         fail_at(parser, pad->offset, "f%zu: \"pad\" is %s, not an array", frame_index, kind_name(pad->kind));
         return 0;
@@ -530,22 +526,6 @@ static int read_frame_pad(const replay_t *replay, parser_t *parser, size_t frame
     return 1;
 }
 
-static int read_held(replay_t *replay, parser_t *parser) {
-    replay->held = calloc(replay->frames->child_count + 1, sizeof(*replay->held));
-    if (replay->held == NULL) {
-        fail_at(parser, 0, "out of memory");
-        return 0;
-    }
-    size_t frame_index = 0;
-    for (size_t i = replay->frames->first_child; i != NO_NODE; i = replay->nodes[i].next) {
-        if (!read_frame_pad(replay, parser, frame_index, &replay->nodes[i], &replay->held[frame_index])) {
-            return 0;
-        }
-        frame_index++;
-    }
-    return 1;
-}
-
 static int hex_digit_value(char c) {
     if (c >= '0' && c <= '9') {
         return c - '0';
@@ -559,8 +539,6 @@ static int hex_digit_value(char c) {
     return -1;
 }
 
-/* Writes the value as the replay spells it: quoted for a string (cut at
- * 40 characters), digits for an integer, the kind otherwise. */
 static const char *describe_value(const node_t *value, char *out, size_t size) {
     if (value->kind == NODE_STRING) {
         snprintf(out, size, "\"%.40s\"%s", value->string, value->string_length > 40 ? "..." : "");
@@ -610,8 +588,8 @@ static int read_initial_save(replay_t *replay, parser_t *parser, const node_t *m
 
 #define FIXTURE_NAME_MAX_LENGTH 64
 
-static int is_fixture_name(const char *name, size_t length) {
-    if (length < 5 || length > FIXTURE_NAME_MAX_LENGTH || name[0] == '.' || strcmp(name + length - 4, ".cfg") != 0
+static int is_fixture_name(const char *name, size_t length, const char *extension) {
+    if (length < 5 || length > FIXTURE_NAME_MAX_LENGTH || name[0] == '.' || strcmp(name + length - 4, extension) != 0
         || strcmp(name, "bindings.cfg") == 0) {
         return 0;
     }
@@ -634,13 +612,25 @@ static int read_bindings(replay_t *replay, parser_t *parser, const node_t *membe
                 "\"bindings\" %s: recorded with a personal bindings.cfg; only a fixture next to the replay runs", value);
         return 0;
     }
-    if (member->kind != NODE_STRING || !is_fixture_name(member->string, member->string_length)) {
+    if (member->kind != NODE_STRING || !is_fixture_name(member->string, member->string_length, ".cfg")) {
         fail_at(parser, member->offset,
                 "\"bindings\" %s is not a .cfg file name of 5-%d characters A-Za-z0-9_.- next to the replay", value,
                 FIXTURE_NAME_MAX_LENGTH);
         return 0;
     }
     replay->bindings = member->string;
+    return 1;
+}
+
+static int read_pad_sheet(replay_t *replay, parser_t *parser, const node_t *member) {
+    if (member->kind != NODE_STRING || !is_fixture_name(member->string, member->string_length, ".png")) {
+        char value[64];
+        fail_at(parser, member->offset,
+                "\"pad_sheet\" %s is not a .png file name of 5-%d characters A-Za-z0-9_.- next to the replay",
+                describe_value(member, value, sizeof(value)), FIXTURE_NAME_MAX_LENGTH);
+        return 0;
+    }
+    replay->pad_sheet = member->string;
     return 1;
 }
 
@@ -655,6 +645,94 @@ static int read_attract_after(replay_t *replay, parser_t *parser, const node_t *
     return 1;
 }
 
+#define WINDOW_SIZE_MAX 4096
+
+static const char *describe_size(const replay_t *replay, const node_t *value, char *out, size_t size) {
+    if (value->kind != NODE_ARRAY) {
+        return describe_value(value, out, size);
+    }
+    size_t used = (size_t)snprintf(out, size, "[");
+    size_t shown = 0;
+    for (size_t i = value->first_child; i != NO_NODE && used < size; i = replay->nodes[i].next) {
+        char element[64];
+        const char *text = shown == 3 ? "..." : describe_value(&replay->nodes[i], element, sizeof(element));
+        used += (size_t)snprintf(out + used, size - used, "%s%s", shown == 0 ? "" : ", ", text);
+        if (++shown > 3) {
+            break;
+        }
+    }
+    if (used < size) {
+        snprintf(out + used, size - used, "]");
+    }
+    return out;
+}
+
+static int read_size(const replay_t *replay, const node_t *value, int *width, int *height) {
+    if (value->kind != NODE_ARRAY || value->child_count != 2) {
+        return 0;
+    }
+    const node_t *first = &replay->nodes[value->first_child];
+    const node_t *second = &replay->nodes[first->next];
+    const node_t *const sides[] = {first, second};
+    for (size_t i = 0; i < 2; i++) {
+        if (sides[i]->kind != NODE_INTEGER || sides[i]->integer < 1 || sides[i]->integer > WINDOW_SIZE_MAX) {
+            return 0;
+        }
+    }
+    *width = (int)first->integer;
+    *height = (int)second->integer;
+    return 1;
+}
+
+static int read_window(replay_t *replay, parser_t *parser, const node_t *member) {
+    if (!read_size(replay, member, &replay->window_width, &replay->window_height)) {
+        char value[96];
+        fail_at(parser, member->offset, "\"window\" %s is not [width, height] with integers 1-%d",
+                describe_size(replay, member, value, sizeof(value)), WINDOW_SIZE_MAX);
+        return 0;
+    }
+    return 1;
+}
+
+static int read_screens(replay_t *replay, parser_t *parser, const node_t *member) {
+    if (member->kind != NODE_ARRAY) {
+        fail_at(parser, member->offset, "\"screens\" is %s, not an array of frame numbers", kind_name(member->kind));
+        return 0;
+    }
+    if (member->child_count > REPLAY_SCREENS_MAX) {
+        fail_at(parser, member->offset, "\"screens\" lists %zu frames, more than %d", member->child_count,
+                REPLAY_SCREENS_MAX);
+        return 0;
+    }
+    size_t frame_count = replay->frames->child_count;
+    for (size_t i = member->first_child; i != NO_NODE; i = replay->nodes[i].next) {
+        const node_t *entry = &replay->nodes[i];
+        char value[64];
+        if (entry->kind != NODE_INTEGER) {
+            fail_at(parser, entry->offset, "\"screens\" entry %s is not an integer",
+                    describe_value(entry, value, sizeof(value)));
+            return 0;
+        }
+        if (entry->integer < 0 || (unsigned long long)entry->integer >= frame_count) {
+            char range[48] = "the replay has no frame";
+            if (frame_count > 0) {
+                snprintf(range, sizeof(range), "0-%zu", frame_count - 1);
+            }
+            fail_at(parser, entry->offset, "\"screens\" entry %lld is not a frame of this replay (%s)", entry->integer,
+                    range);
+            return 0;
+        }
+        size_t frame = (size_t)entry->integer;
+        if (replay->screen_count > 0 && frame <= replay->screens[replay->screen_count - 1]) {
+            fail_at(parser, entry->offset, "\"screens\" entry %zu is not after %zu", frame,
+                    replay->screens[replay->screen_count - 1]);
+            return 0;
+        }
+        replay->screens[replay->screen_count++] = frame;
+    }
+    return 1;
+}
+
 typedef int (*member_reader_t)(replay_t *replay, parser_t *parser, const node_t *member);
 
 static int read_start_state(replay_t *replay, parser_t *parser) {
@@ -664,7 +742,10 @@ static int read_start_state(replay_t *replay, parser_t *parser) {
     } MEMBERS[] = {
         {"initial_save", read_initial_save},
         {"bindings", read_bindings},
+        {"pad_sheet", read_pad_sheet},
         {"attract_after", read_attract_after},
+        {"window", read_window},
+        {"screens", read_screens},
     };
     const node_t *root = &replay->nodes[0];
     const node_t *start = object_member(replay, root, "start");
@@ -686,6 +767,191 @@ static int read_start_state(replay_t *replay, parser_t *parser) {
         if (!MEMBERS[k].read(replay, parser, member)) {
             return 0;
         }
+    }
+    return 1;
+}
+
+static int read_frame_resize(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *resize,
+                             int *current_width, int *current_height, frame_input_t *input) {
+    if (resize == NULL) {
+        return 1;
+    }
+    char value[96];
+    describe_size(replay, resize, value, sizeof(value));
+    int width = 0;
+    int height = 0;
+    if (!read_size(replay, resize, &width, &height)) {
+        fail_at(parser, resize->offset, "f%zu: \"resize\" %s is not [width, height] with integers 1-%d", frame_index,
+                value, WINDOW_SIZE_MAX);
+        return 0;
+    }
+    if (width == *current_width && height == *current_height) {
+        fail_at(parser, resize->offset,
+                "f%zu: \"resize\" %s is already the window size: LÖVE calls love.resize only on a change", frame_index,
+                value);
+        return 0;
+    }
+    input->resize_width = width;
+    input->resize_height = height;
+    *current_width = width;
+    *current_height = height;
+    return 1;
+}
+
+#define TOUCH_COUNT_MAX 10
+#define TOUCH_ID_MAX 2147483647
+
+static int read_three_integers(const replay_t *replay, const node_t *value, long long out[3]) {
+    if (value->kind != NODE_ARRAY || value->child_count != 3) {
+        return 0;
+    }
+    size_t i = value->first_child;
+    for (size_t k = 0; k < 3; k++, i = replay->nodes[i].next) {
+        if (replay->nodes[i].kind != NODE_INTEGER) {
+            return 0;
+        }
+        out[k] = replay->nodes[i].integer;
+    }
+    return 1;
+}
+
+static int is_inside(long long x, long long y, int width, int height) {
+    return x >= 0 && x < width && y >= 0 && y < height;
+}
+
+static int read_frame_touches(replay_t *replay, parser_t *parser, size_t frame_index, const node_t *touches, int width,
+                              int height, frame_input_t *input) {
+    input->touches = replay->touches + replay->touch_count;
+    input->touch_count = 0;
+    if (touches == NULL) {
+        return 1;
+    }
+    if (touches->kind != NODE_ARRAY) {
+        fail_at(parser, touches->offset, "f%zu: \"touches\" is %s, not an array of [id, x, y]", frame_index,
+                kind_name(touches->kind));
+        return 0;
+    }
+    if (touches->child_count > TOUCH_COUNT_MAX) {
+        fail_at(parser, touches->offset, "f%zu: %zu touches, more than %d", frame_index, touches->child_count,
+                TOUCH_COUNT_MAX);
+        return 0;
+    }
+    for (size_t i = touches->first_child; i != NO_NODE; i = replay->nodes[i].next) {
+        const node_t *touch = &replay->nodes[i];
+        long long values[3];
+        if (!read_three_integers(replay, touch, values)) {
+            char value[96];
+            fail_at(parser, touch->offset, "f%zu: touch %s is not [id, x, y] with integers", frame_index,
+                    describe_size(replay, touch, value, sizeof(value)));
+            return 0;
+        }
+        if (values[0] < 1 || values[0] > TOUCH_ID_MAX) {
+            fail_at(parser, touch->offset, "f%zu: touch id %lld is not 1-%d", frame_index, values[0], TOUCH_ID_MAX);
+            return 0;
+        }
+        for (size_t k = 0; k < input->touch_count; k++) {
+            if (input->touches[k].id == values[0]) {
+                fail_at(parser, touch->offset, "f%zu: touch id %lld listed twice", frame_index, values[0]);
+                return 0;
+            }
+        }
+        if (!is_inside(values[1], values[2], width, height)) {
+            fail_at(parser, touch->offset, "f%zu: touch %lld at (%lld, %lld) is outside the %dx%d window", frame_index,
+                    values[0], values[1], values[2], width, height);
+            return 0;
+        }
+        replay->touches[replay->touch_count++] = (replay_touch_t){(int)values[0], (int)values[1], (int)values[2]};
+        input->touch_count++;
+    }
+    return 1;
+}
+
+static int read_frame_mouse(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *mouse, int width,
+                            int height, replay_mouse_t *current) {
+    if (mouse == NULL) {
+        return 1;
+    }
+    long long values[3];
+    if (!read_three_integers(replay, mouse, values) || (values[2] != 0 && values[2] != 1)) {
+        char value[96];
+        fail_at(parser, mouse->offset, "f%zu: \"mouse\" %s is not [x, y, left] with integers, left 0 or 1", frame_index,
+                describe_size(replay, mouse, value, sizeof(value)));
+        return 0;
+    }
+    if (!is_inside(values[0], values[1], width, height)) {
+        fail_at(parser, mouse->offset, "f%zu: mouse at (%lld, %lld) is outside the %dx%d window", frame_index, values[0],
+                values[1], width, height);
+        return 0;
+    }
+    *current = (replay_mouse_t){(int)values[0], (int)values[1], (int)values[2]};
+    return 1;
+}
+
+static size_t touch_capacity(const replay_t *replay) {
+    size_t capacity = 0;
+    for (size_t f = replay->frames->first_child; f != NO_NODE; f = replay->nodes[f].next) {
+        for (size_t i = replay->nodes[f].first_child; i != NO_NODE; i = replay->nodes[i].next) {
+            if (strcmp(replay->nodes[i].key, "touches") == 0 && replay->nodes[i].kind == NODE_ARRAY) {
+                capacity += replay->nodes[i].child_count;
+            }
+        }
+    }
+    return capacity;
+}
+
+enum { FRAME_PAD, FRAME_RESIZE, FRAME_TOUCHES, FRAME_MOUSE, FRAME_KEY_COUNT };
+
+static const char *const FRAME_KEYS[FRAME_KEY_COUNT] = {"pad", "resize", "touches", "mouse"};
+
+static int find_frame_members(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *frame,
+                              const node_t *members[FRAME_KEY_COUNT]) {
+    for (size_t k = 0; k < FRAME_KEY_COUNT; k++) {
+        members[k] = NULL;
+    }
+    for (size_t i = frame->first_child; i != NO_NODE; i = replay->nodes[i].next) {
+        const node_t *member = &replay->nodes[i];
+        size_t k = 0;
+        while (k < FRAME_KEY_COUNT && strcmp(member->key, FRAME_KEYS[k]) != 0) {
+            k++;
+        }
+        if (k == FRAME_KEY_COUNT) {
+            fail_at(parser, member->offset,
+                    "f%zu: unexpected key \"%s\": a frame holds only \"pad\", \"resize\", \"touches\" and \"mouse\"",
+                    frame_index, member->key);
+            return 0;
+        }
+        if (members[k] != NULL) {
+            fail_at(parser, member->offset, "f%zu: \"%s\" given twice", frame_index, member->key);
+            return 0;
+        }
+        members[k] = member;
+    }
+    return 1;
+}
+
+static int read_frames(replay_t *replay, parser_t *parser) {
+    replay->inputs = calloc(replay->frames->child_count + 1, sizeof(*replay->inputs));
+    replay->touches = calloc(touch_capacity(replay) + 1, sizeof(*replay->touches));
+    if (replay->inputs == NULL || replay->touches == NULL) {
+        fail_at(parser, 0, "out of memory");
+        return 0;
+    }
+    int width = replay->window_width;
+    int height = replay->window_height;
+    replay_mouse_t mouse = {0, 0, 0};
+    size_t frame_index = 0;
+    for (size_t f = replay->frames->first_child; f != NO_NODE; f = replay->nodes[f].next) {
+        const node_t *members[FRAME_KEY_COUNT];
+        frame_input_t *input = &replay->inputs[frame_index];
+        if (!find_frame_members(replay, parser, frame_index, &replay->nodes[f], members)
+            || (members[FRAME_PAD] != NULL && !read_frame_pad(replay, parser, frame_index, members[FRAME_PAD], &input->held))
+            || !read_frame_resize(replay, parser, frame_index, members[FRAME_RESIZE], &width, &height, input)
+            || !read_frame_touches(replay, parser, frame_index, members[FRAME_TOUCHES], width, height, input)
+            || !read_frame_mouse(replay, parser, frame_index, members[FRAME_MOUSE], width, height, &mouse)) {
+            return 0;
+        }
+        input->mouse = mouse;
+        frame_index++;
     }
     return 1;
 }
@@ -720,13 +986,19 @@ replay_t *replay_parse(const char *name, const char *text, size_t length, char *
     parse_document(&parser);
     assert(!parser.failed && parser.node_count == node_count && parser.char_count == char_count
            && "the filling pass reads the text the counting pass accepted");
-    replay->held = NULL;
+    replay->inputs = NULL;
+    replay->touches = NULL;
+    replay->touch_count = 0;
     replay->initial_save = NULL;
     replay->initial_save_count = 0;
     replay->bindings = NULL;
+    replay->pad_sheet = NULL;
     replay->attract_after = 0;
-    if (!find_frames(replay, &parser) || !check_input(replay, &parser) || !read_held(replay, &parser)
-        || !read_start_state(replay, &parser)) {
+    replay->window_width = 640;
+    replay->window_height = 480;
+    replay->screen_count = 0;
+    if (!find_frames(replay, &parser) || !check_input(replay, &parser) || !read_start_state(replay, &parser)
+        || !read_frames(replay, &parser)) {
         replay_free(replay);
         return NULL;
     }
@@ -778,7 +1050,29 @@ size_t replay_frame_count(const replay_t *replay) {
 
 unsigned replay_frame_held(const replay_t *replay, size_t frame) {
     assert(replay != NULL && frame < replay_frame_count(replay));
-    return replay->held[frame];
+    return replay->inputs[frame].held;
+}
+
+int replay_frame_resize(const replay_t *replay, size_t frame, int *width, int *height) {
+    assert(replay != NULL && frame < replay_frame_count(replay) && width != NULL && height != NULL);
+    const frame_input_t *input = &replay->inputs[frame];
+    if (input->resize_width == 0) {
+        return 0;
+    }
+    *width = input->resize_width;
+    *height = input->resize_height;
+    return 1;
+}
+
+const replay_touch_t *replay_frame_touches(const replay_t *replay, size_t frame, size_t *count) {
+    assert(replay != NULL && frame < replay_frame_count(replay) && count != NULL);
+    *count = replay->inputs[frame].touch_count;
+    return replay->inputs[frame].touches;
+}
+
+replay_mouse_t replay_frame_mouse(const replay_t *replay, size_t frame) {
+    assert(replay != NULL && frame < replay_frame_count(replay));
+    return replay->inputs[frame].mouse;
 }
 
 const unsigned char *replay_initial_save(const replay_t *replay, size_t *count) {
@@ -792,14 +1086,36 @@ const char *replay_bindings(const replay_t *replay) {
     return replay->bindings;
 }
 
+const char *replay_pad_sheet(const replay_t *replay) {
+    assert(replay != NULL);
+    return replay->pad_sheet;
+}
+
 int replay_attract_after(const replay_t *replay) {
     assert(replay != NULL);
     return replay->attract_after;
 }
 
+void replay_window(const replay_t *replay, int *width, int *height) {
+    assert(replay != NULL && width != NULL && height != NULL);
+    *width = replay->window_width;
+    *height = replay->window_height;
+}
+
+bool replay_frame_screen_listed(const replay_t *replay, size_t frame) {
+    assert(replay != NULL && frame < replay_frame_count(replay));
+    for (size_t i = 0; i < replay->screen_count; i++) {
+        if (replay->screens[i] == frame) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void replay_free(replay_t *replay) {
     if (replay != NULL) {
-        free(replay->held);
+        free(replay->inputs);
+        free(replay->touches);
         free(replay->initial_save);
     }
     free(replay);

@@ -6,8 +6,8 @@ function M.expect(actual, expected, what)
   end
 end
 
--- tests: an ordered list of { name, function }. Runs all of them, then exits 1
--- when any failed.
+-- tests: an ordered list of { name, function }. Runs all of them, prints each
+-- failure as `<arg[0]>: <test>: <error>`, and returns the failure count.
 function M.run(tests)
   local failures = 0
   for _, test in ipairs(tests) do
@@ -17,9 +17,7 @@ function M.run(tests)
       io.stderr:write(string.format("%s: %s: %s\n", arg[0], test[1], tostring(err)))
     end
   end
-  if failures > 0 then
-    os.exit(1)
-  end
+  return failures
 end
 
 return M
