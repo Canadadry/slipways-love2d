@@ -40,11 +40,16 @@ typedef struct {
     unsigned held;
     int resize_width;
     int resize_height;
+    const replay_touch_t *touches;
+    size_t touch_count;
+    replay_mouse_t mouse;
 } frame_input_t;
 
 struct replay {
     const node_t *frames;
     frame_input_t *inputs;
+    replay_touch_t *touches;
+    size_t touch_count;
     unsigned char *initial_save;
     size_t initial_save_count;
     const char *bindings;
@@ -751,39 +756,163 @@ static int read_frame_resize(const replay_t *replay, parser_t *parser, size_t fr
     return 1;
 }
 
+#define TOUCH_COUNT_MAX 10
+#define TOUCH_ID_MAX 2147483647
+
+/* Returns 0 when `value` is not an array of three integers; the caller names
+ * the field and checks the ranges. */
+static int read_three_integers(const replay_t *replay, const node_t *value, long long out[3]) {
+    if (value->kind != NODE_ARRAY || value->child_count != 3) {
+        return 0;
+    }
+    size_t i = value->first_child;
+    for (size_t k = 0; k < 3; k++, i = replay->nodes[i].next) {
+        if (replay->nodes[i].kind != NODE_INTEGER) {
+            return 0;
+        }
+        out[k] = replay->nodes[i].integer;
+    }
+    return 1;
+}
+
+static int is_inside(long long x, long long y, int width, int height) {
+    return x >= 0 && x < width && y >= 0 && y < height;
+}
+
+static int read_frame_touches(replay_t *replay, parser_t *parser, size_t frame_index, const node_t *touches, int width,
+                              int height, frame_input_t *input) {
+    input->touches = replay->touches + replay->touch_count;
+    input->touch_count = 0;
+    if (touches == NULL) {
+        return 1;
+    }
+    if (touches->kind != NODE_ARRAY) {
+        fail_at(parser, touches->offset, "f%zu: \"touches\" is %s, not an array of [id, x, y]", frame_index,
+                kind_name(touches->kind));
+        return 0;
+    }
+    if (touches->child_count > TOUCH_COUNT_MAX) {
+        fail_at(parser, touches->offset, "f%zu: %zu touches, more than %d", frame_index, touches->child_count,
+                TOUCH_COUNT_MAX);
+        return 0;
+    }
+    for (size_t i = touches->first_child; i != NO_NODE; i = replay->nodes[i].next) {
+        const node_t *touch = &replay->nodes[i];
+        long long values[3];
+        if (!read_three_integers(replay, touch, values)) {
+            char value[96];
+            fail_at(parser, touch->offset, "f%zu: touch %s is not [id, x, y] with integers", frame_index,
+                    describe_size(replay, touch, value, sizeof(value)));
+            return 0;
+        }
+        if (values[0] < 1 || values[0] > TOUCH_ID_MAX) {
+            fail_at(parser, touch->offset, "f%zu: touch id %lld is not 1-%d", frame_index, values[0], TOUCH_ID_MAX);
+            return 0;
+        }
+        for (size_t k = 0; k < input->touch_count; k++) {
+            if (input->touches[k].id == values[0]) {
+                fail_at(parser, touch->offset, "f%zu: touch id %lld listed twice", frame_index, values[0]);
+                return 0;
+            }
+        }
+        if (!is_inside(values[1], values[2], width, height)) {
+            fail_at(parser, touch->offset, "f%zu: touch %lld at (%lld, %lld) is outside the %dx%d window", frame_index,
+                    values[0], values[1], values[2], width, height);
+            return 0;
+        }
+        replay->touches[replay->touch_count++] = (replay_touch_t){(int)values[0], (int)values[1], (int)values[2]};
+        input->touch_count++;
+    }
+    return 1;
+}
+
+static int read_frame_mouse(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *mouse, int width,
+                            int height, replay_mouse_t *current) {
+    if (mouse == NULL) {
+        return 1;
+    }
+    long long values[3];
+    if (!read_three_integers(replay, mouse, values) || (values[2] != 0 && values[2] != 1)) {
+        char value[96];
+        fail_at(parser, mouse->offset, "f%zu: \"mouse\" %s is not [x, y, left] with integers, left 0 or 1", frame_index,
+                describe_size(replay, mouse, value, sizeof(value)));
+        return 0;
+    }
+    if (!is_inside(values[0], values[1], width, height)) {
+        fail_at(parser, mouse->offset, "f%zu: mouse at (%lld, %lld) is outside the %dx%d window", frame_index, values[0],
+                values[1], width, height);
+        return 0;
+    }
+    *current = (replay_mouse_t){(int)values[0], (int)values[1], (int)values[2]};
+    return 1;
+}
+
+static size_t touch_capacity(const replay_t *replay) {
+    size_t capacity = 0;
+    for (size_t f = replay->frames->first_child; f != NO_NODE; f = replay->nodes[f].next) {
+        for (size_t i = replay->nodes[f].first_child; i != NO_NODE; i = replay->nodes[i].next) {
+            if (strcmp(replay->nodes[i].key, "touches") == 0 && replay->nodes[i].kind == NODE_ARRAY) {
+                capacity += replay->nodes[i].child_count;
+            }
+        }
+    }
+    return capacity;
+}
+
+enum { FRAME_PAD, FRAME_RESIZE, FRAME_TOUCHES, FRAME_MOUSE, FRAME_KEY_COUNT };
+
+static const char *const FRAME_KEYS[FRAME_KEY_COUNT] = {"pad", "resize", "touches", "mouse"};
+
+/* Fills `members` with the frame's members by FRAME_KEYS index, NULL for an
+ * absent one. */
+static int find_frame_members(const replay_t *replay, parser_t *parser, size_t frame_index, const node_t *frame,
+                              const node_t *members[FRAME_KEY_COUNT]) {
+    for (size_t k = 0; k < FRAME_KEY_COUNT; k++) {
+        members[k] = NULL;
+    }
+    for (size_t i = frame->first_child; i != NO_NODE; i = replay->nodes[i].next) {
+        const node_t *member = &replay->nodes[i];
+        size_t k = 0;
+        while (k < FRAME_KEY_COUNT && strcmp(member->key, FRAME_KEYS[k]) != 0) {
+            k++;
+        }
+        if (k == FRAME_KEY_COUNT) {
+            fail_at(parser, member->offset,
+                    "f%zu: unexpected key \"%s\": a frame holds only \"pad\", \"resize\", \"touches\" and \"mouse\"",
+                    frame_index, member->key);
+            return 0;
+        }
+        if (members[k] != NULL) {
+            fail_at(parser, member->offset, "f%zu: \"%s\" given twice", frame_index, member->key);
+            return 0;
+        }
+        members[k] = member;
+    }
+    return 1;
+}
+
 static int read_frames(replay_t *replay, parser_t *parser) {
     replay->inputs = calloc(replay->frames->child_count + 1, sizeof(*replay->inputs));
-    if (replay->inputs == NULL) {
+    replay->touches = calloc(touch_capacity(replay) + 1, sizeof(*replay->touches));
+    if (replay->inputs == NULL || replay->touches == NULL) {
         fail_at(parser, 0, "out of memory");
         return 0;
     }
     int width = replay->window_width;
     int height = replay->window_height;
+    replay_mouse_t mouse = {0, 0, 0};
     size_t frame_index = 0;
     for (size_t f = replay->frames->first_child; f != NO_NODE; f = replay->nodes[f].next) {
-        const node_t *pad = NULL;
-        const node_t *resize = NULL;
-        for (size_t i = replay->nodes[f].first_child; i != NO_NODE; i = replay->nodes[i].next) {
-            const node_t *member = &replay->nodes[i];
-            if (strcmp(member->key, "pad") == 0) {
-                pad = member;
-            } else if (strcmp(member->key, "resize") == 0) {
-                resize = member;
-            } else {
-                fail_at(parser, member->offset, "f%zu: unexpected key \"%s\": a frame holds only \"pad\" and \"resize\"",
-                        frame_index, member->key);
-                return 0;
-            }
-        }
+        const node_t *members[FRAME_KEY_COUNT];
         frame_input_t *input = &replay->inputs[frame_index];
-        if (pad == NULL) {
-            fail_at(parser, replay->nodes[f].offset, "f%zu: no \"pad\"", frame_index);
+        if (!find_frame_members(replay, parser, frame_index, &replay->nodes[f], members)
+            || (members[FRAME_PAD] != NULL && !read_frame_pad(replay, parser, frame_index, members[FRAME_PAD], &input->held))
+            || !read_frame_resize(replay, parser, frame_index, members[FRAME_RESIZE], &width, &height, input)
+            || !read_frame_touches(replay, parser, frame_index, members[FRAME_TOUCHES], width, height, input)
+            || !read_frame_mouse(replay, parser, frame_index, members[FRAME_MOUSE], width, height, &mouse)) {
             return 0;
         }
-        if (!read_frame_pad(replay, parser, frame_index, pad, &input->held)
-            || !read_frame_resize(replay, parser, frame_index, resize, &width, &height, input)) {
-            return 0;
-        }
+        input->mouse = mouse;
         frame_index++;
     }
     return 1;
@@ -820,6 +949,8 @@ replay_t *replay_parse(const char *name, const char *text, size_t length, char *
     assert(!parser.failed && parser.node_count == node_count && parser.char_count == char_count
            && "the filling pass reads the text the counting pass accepted");
     replay->inputs = NULL;
+    replay->touches = NULL;
+    replay->touch_count = 0;
     replay->initial_save = NULL;
     replay->initial_save_count = 0;
     replay->bindings = NULL;
@@ -893,6 +1024,17 @@ int replay_frame_resize(const replay_t *replay, size_t frame, int *width, int *h
     return 1;
 }
 
+const replay_touch_t *replay_frame_touches(const replay_t *replay, size_t frame, size_t *count) {
+    assert(replay != NULL && frame < replay_frame_count(replay) && count != NULL);
+    *count = replay->inputs[frame].touch_count;
+    return replay->inputs[frame].touches;
+}
+
+replay_mouse_t replay_frame_mouse(const replay_t *replay, size_t frame) {
+    assert(replay != NULL && frame < replay_frame_count(replay));
+    return replay->inputs[frame].mouse;
+}
+
 const unsigned char *replay_initial_save(const replay_t *replay, size_t *count) {
     assert(replay != NULL && count != NULL);
     *count = replay->initial_save_count;
@@ -918,6 +1060,7 @@ void replay_window(const replay_t *replay, int *width, int *height) {
 void replay_free(replay_t *replay) {
     if (replay != NULL) {
         free(replay->inputs);
+        free(replay->touches);
         free(replay->initial_save);
     }
     free(replay);

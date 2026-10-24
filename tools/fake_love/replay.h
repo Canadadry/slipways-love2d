@@ -16,6 +16,23 @@ unsigned replay_frame_held(const replay_t *replay, size_t frame);
 /* 1 and the new window size when `frame` carries a "resize"; 0, `width` and
  * `height` untouched, otherwise. */
 int replay_frame_resize(const replay_t *replay, size_t frame, int *width, int *height);
+typedef struct {
+    int id;
+    int x;
+    int y;
+} replay_touch_t;
+
+typedef struct {
+    int x;
+    int y;
+    int left;
+} replay_mouse_t;
+
+/* The touches held on `frame`, in the frame's order, owned by the replay;
+ * a count of 0 when the frame has none. */
+const replay_touch_t *replay_frame_touches(const replay_t *replay, size_t frame, size_t *count);
+/* The mouse in force on `frame`: the last "mouse" given, or (0, 0) up. */
+replay_mouse_t replay_frame_mouse(const replay_t *replay, size_t frame);
 /* The decoded "initial_save" bytes, owned by the replay; NULL and a count of
  * 0 when the replay has none. */
 const unsigned char *replay_initial_save(const replay_t *replay, size_t *count);

@@ -190,7 +190,6 @@ static void test_a_replay_without_pad_input_is_refused(void) {
 }
 
 static void test_a_frame_with_wrong_buttons_is_refused(void) {
-    assert_frame_1_refused("{}", "\"pad\"");
     assert_frame_1_refused("{\"pad\": 5}", "\"pad\"");
     assert_frame_1_refused("{\"pad\": {}}", "\"pad\"");
     assert_frame_1_refused("{\"pad\": [0]}", " 0 ");
@@ -205,7 +204,15 @@ static void test_a_frame_with_wrong_buttons_is_refused(void) {
 static void test_a_frame_with_another_key_is_refused(void) {
     assert_frame_1_refused("{\"pad\": [], \"mouse_x\": 3}", "\"mouse_x\"");
     assert_frame_1_refused("{\"dpad\": 1, \"pad\": []}", "\"dpad\"");
-    assert_frame_1_refused("{\"pad\": [], \"touches\": []}", "a frame holds only \"pad\" and \"resize\"");
+    assert_frame_1_refused("{\"pad\": [], \"touch\": []}",
+                           "unexpected key \"touch\": a frame holds only \"pad\", \"resize\", \"touches\" and \"mouse\"");
+}
+
+static void test_a_frame_key_given_twice_is_refused(void) {
+    assert_frame_1_refused("{\"pad\": [1], \"pad\": [2]}", "\"pad\" given twice");
+    assert_frame_1_refused("{\"resize\": [390, 844], \"pad\": [], \"resize\": [844, 390]}", "\"resize\" given twice");
+    assert_frame_1_refused("{\"touches\": [], \"touches\": [[1, 2, 3]]}", "\"touches\" given twice");
+    assert_frame_1_refused("{\"mouse\": [1, 2, 0], \"mouse\": [1, 2, 1]}", "\"mouse\" given twice");
 }
 
 static void assert_member_refused(const char *member, const char *problem) {
@@ -426,8 +433,119 @@ static void test_a_resize_to_the_size_in_force_is_refused(void) {
     assert_refused(twice, ALREADY);
 }
 
-static void test_a_frame_with_only_resize_is_refused(void) {
-    assert_frame_1_refused("{\"resize\": [390, 844]}", "no \"pad\"");
+static void test_a_frame_without_pad_holds_no_button(void) {
+    replay_t *replay = parsed("{\"input\": \"pad\", \"frames\": [{\"pad\": [3]}, {}, {\"resize\": [390, 844]}]}");
+    assert(replay_frame_held(replay, 0) == 0x4);
+    assert(replay_frame_held(replay, 1) == 0);
+    assert(replay_frame_held(replay, 2) == 0);
+    assert_resize(replay, 2, 390, 844);
+    replay_free(replay);
+}
+
+static void assert_touches(const replay_t *replay, size_t frame, size_t expected_count, const replay_touch_t *expected) {
+    size_t count = 99;
+    const replay_touch_t *touches = replay_frame_touches(replay, frame, &count);
+    assert(count == expected_count);
+    for (size_t i = 0; i < count; i++) {
+        assert(touches[i].id == expected[i].id && touches[i].x == expected[i].x && touches[i].y == expected[i].y);
+    }
+}
+
+static void assert_mouse(const replay_t *replay, size_t frame, int x, int y, int left) {
+    replay_mouse_t mouse = replay_frame_mouse(replay, frame);
+    assert(mouse.x == x && mouse.y == y && mouse.left == left);
+}
+
+/* Transcribed from the file by hand, not by the reader under test. */
+static void test_reads_the_touches_of_the_touch_fixture(void) {
+    char error[256] = "";
+    replay_t *replay = replay_read("tests/fixtures/touch_frames.json", error, sizeof(error));
+    if (replay == NULL) {
+        fprintf(stderr, "%s\n", error);
+    }
+    assert(replay != NULL);
+    assert(replay_frame_count(replay) == 12);
+    assert_touches(replay, 0, 0, NULL);
+    assert_touches(replay, 1, 1, (const replay_touch_t[]){{7, 100, 700}});
+    assert_touches(replay, 2, 1, (const replay_touch_t[]){{7, 120, 690}});
+    assert_touches(replay, 3, 2, (const replay_touch_t[]){{7, 120, 690}, {3, 300, 750}});
+    assert_touches(replay, 4, 1, (const replay_touch_t[]){{3, 300, 750}});
+    assert_touches(replay, 5, 0, NULL);
+    assert_touches(replay, 6, 0, NULL);
+    assert_touches(replay, 7, 0, NULL);
+    assert_touches(replay, 8, 1, (const replay_touch_t[]){{7, 10, 20}});
+    assert_touches(replay, 9, 1, (const replay_touch_t[]){{1, 843, 389}});
+    assert_touches(replay, 10, 0, NULL);
+    assert_touches(replay, 11, 0, NULL);
+    replay_free(replay);
+}
+
+/* Transcribed from the file by hand; the kept mouse of f9 is outside the
+ * window of its resize, which LÖVE allows. */
+static void test_reads_the_mouse_and_the_buttons_of_the_touch_fixture(void) {
+    char error[256] = "";
+    replay_t *replay = replay_read("tests/fixtures/touch_frames.json", error, sizeof(error));
+    assert(replay != NULL);
+    for (size_t frame = 0; frame < 6; frame++) {
+        assert_mouse(replay, frame, 0, 0, 0);
+    }
+    assert_mouse(replay, 6, 200, 400, 1);
+    assert_mouse(replay, 7, 200, 400, 1);
+    for (size_t frame = 8; frame < 12; frame++) {
+        assert_mouse(replay, frame, 200, 400, 0);
+    }
+    for (size_t frame = 0; frame < 12; frame++) {
+        unsigned expected = frame == 3 ? 1u << 4 : frame == 7 ? 1u << 0 : frame == 11 ? 1u << 1 : 0;
+        assert(replay_frame_held(replay, frame) == expected);
+    }
+    assert_resize(replay, 9, 844, 390);
+    replay_free(replay);
+}
+
+static void test_touches_are_checked_against_the_window_after_the_frames_resize(void) {
+    replay_t *replay = parsed("{\"input\": \"pad\", \"frames\": [{\"resize\": [800, 600], \"touches\": [[1, 799, 599]]},\n"
+                              "  {\"touches\": [[2, 0, 0]], \"resize\": [100, 50], \"mouse\": [99, 49, 1]}]}");
+    assert_touches(replay, 0, 1, (const replay_touch_t[]){{1, 799, 599}});
+    assert_mouse(replay, 1, 99, 49, 1);
+    replay_free(replay);
+    assert_refused("{\"input\": \"pad\", \"frames\": [{\"touches\": [[1, 700, 10]], \"resize\": [700, 480]}]}",
+                   "f0: touch 1 at (700, 10) is outside the 700x480 window");
+    assert_refused("{\"input\": \"pad\", \"frames\": [{\"resize\": [100, 50], \"mouse\": [10, 50, 0]}]}",
+                   "f0: mouse at (10, 50) is outside the 100x50 window");
+}
+
+static void test_touch_ids_up_to_the_largest_int_are_read(void) {
+    replay_t *replay = parsed("{\"input\": \"pad\", \"frames\": [{\"touches\": [[2147483647, 0, 0], [1, 639, 479]]}]}");
+    assert_touches(replay, 0, 2, (const replay_touch_t[]){{2147483647, 0, 0}, {1, 639, 479}});
+    replay_free(replay);
+}
+
+static void test_bad_touches_are_refused(void) {
+    assert_frame_1_refused("{\"touches\": 3}", "\"touches\" is an integer, not an array of [id, x, y]");
+    assert_frame_1_refused("{\"touches\": {}}", "\"touches\" is an object, not an array of [id, x, y]");
+    assert_frame_1_refused("{\"touches\": [[1, 2]]}", "touch [1, 2] is not [id, x, y] with integers");
+    assert_frame_1_refused("{\"touches\": [[1, 2, 3, 4]]}", "touch [1, 2, 3, ...] is not [id, x, y] with integers");
+    assert_frame_1_refused("{\"touches\": [[1, \"2\", 3]]}", "touch [1, \"2\", 3] is not [id, x, y] with integers");
+    assert_frame_1_refused("{\"touches\": [5]}", "touch 5 is not [id, x, y] with integers");
+    assert_frame_1_refused("{\"touches\": [[0, 2, 3]]}", "touch id 0 is not 1-2147483647");
+    assert_frame_1_refused("{\"touches\": [[2147483648, 2, 3]]}", "touch id 2147483648 is not 1-2147483647");
+    assert_frame_1_refused("{\"touches\": [[4, 2, 3], [5, 6, 7], [4, 8, 9]]}", "touch id 4 listed twice");
+    assert_frame_1_refused("{\"touches\": [[1,0,0],[2,0,0],[3,0,0],[4,0,0],[5,0,0],[6,0,0],[7,0,0],[8,0,0],[9,0,0],"
+                           "[10,0,0],[11,0,0]]}",
+                           "11 touches, more than 10");
+    assert_frame_1_refused("{\"touches\": [[1, 640, 0]]}", "touch 1 at (640, 0) is outside the 640x480 window");
+    assert_frame_1_refused("{\"touches\": [[1, 0, 480]]}", "touch 1 at (0, 480) is outside the 640x480 window");
+    assert_frame_1_refused("{\"touches\": [[1, -1, 0]]}", "touch 1 at (-1, 0) is outside the 640x480 window");
+    assert_frame_1_refused("{\"touches\": [[1, 0, -1]]}", "touch 1 at (0, -1) is outside the 640x480 window");
+}
+
+static void test_a_bad_mouse_is_refused(void) {
+    assert_frame_1_refused("{\"mouse\": [1, 2]}", "\"mouse\" [1, 2] is not [x, y, left] with integers, left 0 or 1");
+    assert_frame_1_refused("{\"mouse\": [1, 2, 2]}", "\"mouse\" [1, 2, 2] is not [x, y, left] with integers, left 0 or 1");
+    assert_frame_1_refused("{\"mouse\": [1, 2, true]}", "\"mouse\" [1, 2, true] is not [x, y, left]");
+    assert_frame_1_refused("{\"mouse\": 3}", "\"mouse\" 3 is not [x, y, left]");
+    assert_frame_1_refused("{\"mouse\": [640, 2, 0]}", "mouse at (640, 2) is outside the 640x480 window");
+    assert_frame_1_refused("{\"mouse\": [0, -1, 1]}", "mouse at (0, -1) is outside the 640x480 window");
 }
 
 static void test_a_missing_file_is_refused_with_its_path(void) {
@@ -463,7 +581,14 @@ int main(void) {
     test_a_replay_without_resize_has_none_on_any_frame();
     test_a_bad_resize_is_refused();
     test_a_resize_to_the_size_in_force_is_refused();
-    test_a_frame_with_only_resize_is_refused();
+    test_a_frame_without_pad_holds_no_button();
+    test_a_frame_key_given_twice_is_refused();
+    test_reads_the_touches_of_the_touch_fixture();
+    test_reads_the_mouse_and_the_buttons_of_the_touch_fixture();
+    test_touches_are_checked_against_the_window_after_the_frames_resize();
+    test_touch_ids_up_to_the_largest_int_are_read();
+    test_bad_touches_are_refused();
+    test_a_bad_mouse_is_refused();
     test_a_missing_file_is_refused_with_its_path();
     printf("test_fake_love_replay: ok\n");
     return 0;

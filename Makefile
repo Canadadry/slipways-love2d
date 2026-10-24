@@ -59,7 +59,7 @@ $(TMP_DIR):
 # The .json prerequisites are the fixtures that the test reads at run time;
 # `$(filter %.o,$^)` keeps them off the link line.
 test_fake_love_replay_objs := $(call objs,tests/test_fake_love_replay.c tools/fake_love/replay.c)
-$(TMP_DIR)/test_fake_love_replay: $(test_fake_love_replay_objs) $(wildcard tests/e2e/*.json) | $(TMP_DIR)
+$(TMP_DIR)/test_fake_love_replay: $(test_fake_love_replay_objs) $(wildcard tests/e2e/*.json) tests/fixtures/touch_frames.json | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 test_fake_love_pad_objs := $(call objs,tests/test_fake_love_pad.c tools/fake_love/pad.c)
