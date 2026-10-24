@@ -27,6 +27,11 @@ typedef struct {
     int handle;
 } canvas_object_t;
 
+typedef struct {
+    int first_translucent; /* row-major index, or IMAGE_RULES_NONE */
+    image_data_t *data;    /* the bytes copied by newImage, right after this header */
+} image_object_t;
+
 static canvas_store_t *upvalue_store(lua_State *lua) {
     return lua_touserdata(lua, lua_upvalueindex(1));
 }
@@ -242,14 +247,11 @@ static int new_image(lua_State *lua) {
     const image_data_t *data = image_find_data(lua, 1);
     if (data == NULL)
         return luaL_error(lua, "love.graphics.newImage: argument 1 is %s, not an ImageData", describe(lua, 1));
-    int translucent = image_rules_find_translucent_pixel(data->pixels, data->width * data->height);
-    if (translucent != IMAGE_RULES_NONE)
-        return luaL_error(lua, "love.graphics.newImage: pixel (%d, %d) has alpha %d, not 0 or 255 (translucent "
-                               "texels are not modelled)",
-                          translucent % data->width, translucent / data->width, data->pixels[4 * translucent + 3]);
     size_t size = image_data_byte_count(data->width, data->height);
-    image_data_t *image = lua_newuserdata(lua, size);
-    memcpy(image, data, size);
+    image_object_t *image = lua_newuserdata(lua, sizeof *image + size);
+    image->data = (image_data_t *)(image + 1);
+    memcpy(image->data, data, size);
+    image->first_translucent = image_rules_find_translucent_pixel(data->pixels, data->width * data->height);
     luaL_getmetatable(lua, IMAGE_METATABLE);
     lua_setmetatable(lua, -2);
     return 1;
@@ -294,6 +296,41 @@ static int new_quad(lua_State *lua) {
     return 1;
 }
 
+/* luaL_error does not return: it raises, or the rotation is 0. */
+static void refuse_rotation(lua_State *lua, int argument) {
+    double rotation = lua_tonumber(lua, argument);
+    if (!isfinite(rotation))
+        luaL_error(lua, "love.graphics.draw: argument %d is not finite", argument);
+    if (rotation != 0)
+        luaL_error(lua, "love.graphics.draw: argument %d is %g, only 0 is supported (rotation is not modelled)",
+                   argument, rotation);
+}
+
+static void refuse_scale(lua_State *lua, int argument) {
+    refuse_verdict(lua, "draw", argument, image_rules_check_screen_scale(lua_tonumber(lua, argument)),
+                   "s greater than 0, at most 1024");
+}
+
+static void refuse_other_reference(lua_State *lua, const quad_object_t *quad, const image_data_t *image) {
+    if (quad->reference_width != image->width || quad->reference_height != image->height)
+        luaL_error(lua, "love.graphics.draw: the quad's reference size %dx%d differs from the image's %dx%d",
+                   quad->reference_width, quad->reference_height, image->width, image->height);
+}
+
+static const image_object_t *check_image(lua_State *lua) {
+    const image_object_t *object = luaL_testudata(lua, 1, IMAGE_METATABLE);
+    if (object == NULL)
+        luaL_error(lua, "love.graphics.draw: argument 1 is %s, not an Image", describe(lua, 1));
+    return object;
+}
+
+static const quad_object_t *check_quad(lua_State *lua) {
+    const quad_object_t *quad = luaL_testudata(lua, 2, QUAD_METATABLE);
+    if (quad == NULL)
+        luaL_error(lua, "love.graphics.draw: argument 2 is %s, not a Quad", describe(lua, 2));
+    return quad;
+}
+
 /* draw(canvas, x, y, 0, s, s), the present: accepted only where the screen
  * shows exactly what design.md's rule "The screen" says, with no tint,
  * shift, rotation, distortion or blending. */
@@ -306,17 +343,11 @@ static int draw_canvas(lua_State *lua) {
             return luaL_error(lua, "love.graphics.draw: argument %d is a %s, not a number", index,
                               luaL_typename(lua, index));
     for (int index = 2; index <= 3; index++)
-        refuse_verdict(lua, "draw", index, image_rules_check_present_position(lua_tonumber(lua, index)),
+        refuse_verdict(lua, "draw", index, image_rules_check_screen_position(lua_tonumber(lua, index)),
                        "|v| >= 2^20");
-    double rotation = lua_tonumber(lua, 4);
-    if (!isfinite(rotation))
-        return luaL_error(lua, "love.graphics.draw: argument 4 is not finite");
-    if (rotation != 0)
-        return luaL_error(lua, "love.graphics.draw: argument 4 is %g, only 0 is supported (rotation is not modelled)",
-                          rotation);
+    refuse_rotation(lua, 4);
     for (int index = 5; index <= 6; index++)
-        refuse_verdict(lua, "draw", index, image_rules_check_present_scale(lua_tonumber(lua, index)),
-                       "s greater than 0, at most 1024");
+        refuse_scale(lua, index);
     double scale = lua_tonumber(lua, 5);
     if (scale != lua_tonumber(lua, 6))
         return luaL_error(lua, "love.graphics.draw: the scales %g and %g differ (unequal scales distort the window)",
@@ -340,7 +371,7 @@ static int draw_canvas(lua_State *lua) {
     if (translucent != IMAGE_RULES_NONE) {
         const unsigned char *pixel = pixels + 4 * translucent;
         return luaL_error(lua, "love.graphics.draw: the canvas's pixel (%d, %d) is %02X%02X%02X%02X, translucent "
-                               "(blending onto the screen is not modelled before plan 6 step 5)",
+                               "(a translucent canvas is not modelled on the screen)",
                           translucent % CANVAS_WIDTH, translucent / CANVAS_WIDTH, pixel[0], pixel[1], pixel[2],
                           pixel[3]);
     }
@@ -350,20 +381,51 @@ static int draw_canvas(lua_State *lua) {
     return 0;
 }
 
+/* draw(image, quad, x, y, 0, sx, sy): onto the screen only, any colour. */
+static int draw_scaled_image(lua_State *lua) {
+    const image_data_t *image = check_image(lua)->data;
+    const quad_object_t *quad = check_quad(lua);
+    for (int index = 3; index <= 7; index++)
+        if (lua_type(lua, index) != LUA_TNUMBER)
+            return luaL_error(lua, "love.graphics.draw: argument %d is a %s, not a number", index,
+                              luaL_typename(lua, index));
+    for (int index = 3; index <= 4; index++)
+        refuse_verdict(lua, "draw", index, image_rules_check_screen_position(lua_tonumber(lua, index)),
+                       "|v| >= 2^20");
+    refuse_rotation(lua, 5);
+    for (int index = 6; index <= 7; index++)
+        refuse_scale(lua, index);
+    refuse_other_reference(lua, quad, image);
+    canvas_store_t *store = upvalue_store(lua);
+    if (canvas_get_target(store) != CANVAS_NONE)
+        return luaL_error(lua, "love.graphics.draw: a canvas is selected, a scaled Image is drawn only onto the "
+                               "screen (scaled draws onto a canvas are not modelled)");
+    transform_offset_t offset = transform_get_offset(upvalue_transform(lua));
+    if (offset.x != 0 || offset.y != 0)
+        return luaL_error(lua, "love.graphics.draw: the offset is (%d, %d), not (0, 0) (a scaled draw onto the "
+                               "screen is not translated)",
+                          offset.x, offset.y);
+    unsigned char rgba[4];
+    canvas_get_color(store, rgba);
+    canvas_source_t source = {image->pixels, image->width, image->height};
+    screen_draw(upvalue_screen(lua), &source, &quad->area, lua_tonumber(lua, 3), lua_tonumber(lua, 4),
+                lua_tonumber(lua, 6), lua_tonumber(lua, 7), rgba);
+    return 0;
+}
+
 static int draw(lua_State *lua) {
     int top = lua_gettop(lua);
     if (top == 6)
         return draw_canvas(lua);
+    if (top == 7)
+        return draw_scaled_image(lua);
     if (top != 4)
-        return luaL_error(lua, "love.graphics.draw: takes 4 arguments, an Image, a Quad, x and y, or 6, a Canvas, x, "
-                               "y, 0, s and s, not %d",
+        return luaL_error(lua, "love.graphics.draw: takes 4 arguments, an Image, a Quad, x and y, 6, a Canvas, x, y, "
+                               "0, s and s, or 7, an Image, a Quad, x, y, 0, sx and sy, not %d",
                           top);
-    const image_data_t *image = luaL_testudata(lua, 1, IMAGE_METATABLE);
-    if (image == NULL)
-        return luaL_error(lua, "love.graphics.draw: argument 1 is %s, not an Image", describe(lua, 1));
-    const quad_object_t *quad = luaL_testudata(lua, 2, QUAD_METATABLE);
-    if (quad == NULL)
-        return luaL_error(lua, "love.graphics.draw: argument 2 is %s, not a Quad", describe(lua, 2));
+    const image_object_t *object = check_image(lua);
+    const image_data_t *image = object->data;
+    const quad_object_t *quad = check_quad(lua);
     for (int index = 3; index <= 4; index++) {
         if (lua_type(lua, index) != LUA_TNUMBER)
             return luaL_error(lua, "love.graphics.draw: argument %d is a %s, not a number", index,
@@ -377,12 +439,25 @@ static int draw(lua_State *lua) {
         if (image_rules_check_position(index == 3 ? x : y) != IMAGE_RULES_ACCEPTED)
             return luaL_error(lua, "love.graphics.draw: argument %d is out of range after translate (|v| >= 2^20)",
                               index);
-    if (quad->reference_width != image->width || quad->reference_height != image->height)
-        return luaL_error(lua, "love.graphics.draw: the quad's reference size %dx%d differs from the image's %dx%d",
-                          quad->reference_width, quad->reference_height, image->width, image->height);
+    refuse_other_reference(lua, quad, image);
     refuse_translucent_on_canvas(lua, "draw");
+    canvas_store_t *store = upvalue_store(lua);
     canvas_source_t source = {image->pixels, image->width, image->height};
-    canvas_draw_texels(upvalue_store(lua), &source, &quad->area, x, y);
+    if (canvas_get_target(store) == CANVAS_NONE) {
+        unsigned char rgba[4];
+        canvas_get_color(store, rgba);
+        screen_draw(upvalue_screen(lua), &source, &quad->area, x, y, 1, 1, rgba);
+        return 0;
+    }
+    if (object->first_translucent != IMAGE_RULES_NONE) {
+        const unsigned char *texel = image->pixels + 4 * object->first_translucent;
+        return luaL_error(lua, "love.graphics.draw: the image's texel (%d, %d) is %02X%02X%02X%02X, translucent (an "
+                               "Image with translucent texels is drawn only onto the screen: blending on a canvas is "
+                               "not modelled)",
+                          object->first_translucent % image->width, object->first_translucent / image->width,
+                          texel[0], texel[1], texel[2], texel[3]);
+    }
+    canvas_draw_texels(store, &source, &quad->area, x, y);
     return 0;
 }
 

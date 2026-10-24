@@ -18,7 +18,7 @@
     - [x] Chunk 5 — contract and measurements
   - [ ] Step 1.5 — scaled quads, alpha blending, pad_sheet
     - [x] Chunk 1 — screen module generalised
-    - [ ] Chunk 2 — images on the screen
+    - [x] Chunk 2 — images on the screen
     - [ ] Chunk 3 — pad_sheet
     - [ ] Chunk 4 — screen draw cases in test_fake_love_image_draw
     - [ ] Chunk 5 — contract and measurements

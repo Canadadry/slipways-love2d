@@ -31,56 +31,56 @@ static void test_a_position_is_an_integer_of_magnitude_below_two_to_the_twenty(v
     assert_position(-INFINITY, IMAGE_RULES_NOT_FINITE);
 }
 
-static void assert_present_position(double position, image_rules_verdict_t expected) {
-    image_rules_verdict_t got = image_rules_check_present_position(position);
+static void assert_screen_position(double position, image_rules_verdict_t expected) {
+    image_rules_verdict_t got = image_rules_check_screen_position(position);
     if (got != expected) {
-        fprintf(stderr, "present position %.17g: expected %s, got %s\n", position, VERDICT_NAMES[expected],
+        fprintf(stderr, "screen position %.17g: expected %s, got %s\n", position, VERDICT_NAMES[expected],
                 VERDICT_NAMES[got]);
     }
     assert(got == expected);
 }
 
-static void test_a_present_position_is_finite_of_magnitude_below_two_to_the_twenty_fractions_included(void) {
-    assert_present_position(0, IMAGE_RULES_ACCEPTED);
-    assert_present_position(-0.0, IMAGE_RULES_ACCEPTED);
-    assert_present_position(64.75, IMAGE_RULES_ACCEPTED);
-    assert_present_position(-10.5, IMAGE_RULES_ACCEPTED);
-    assert_present_position(1.0 / 1024, IMAGE_RULES_ACCEPTED);
-    assert_present_position(0x1p20 - 0.5, IMAGE_RULES_ACCEPTED);
-    assert_present_position(-(0x1p20 - 0.5), IMAGE_RULES_ACCEPTED);
-    assert_present_position(0x1p20, IMAGE_RULES_OUT_OF_RANGE);
-    assert_present_position(-0x1p20, IMAGE_RULES_OUT_OF_RANGE);
-    assert_present_position(1e300, IMAGE_RULES_OUT_OF_RANGE);
-    assert_present_position(NAN, IMAGE_RULES_NOT_FINITE);
-    assert_present_position(INFINITY, IMAGE_RULES_NOT_FINITE);
-    assert_present_position(-INFINITY, IMAGE_RULES_NOT_FINITE);
+static void test_a_screen_position_is_finite_of_magnitude_below_two_to_the_twenty_fractions_included(void) {
+    assert_screen_position(0, IMAGE_RULES_ACCEPTED);
+    assert_screen_position(-0.0, IMAGE_RULES_ACCEPTED);
+    assert_screen_position(64.75, IMAGE_RULES_ACCEPTED);
+    assert_screen_position(-10.5, IMAGE_RULES_ACCEPTED);
+    assert_screen_position(1.0 / 1024, IMAGE_RULES_ACCEPTED);
+    assert_screen_position(0x1p20 - 0.5, IMAGE_RULES_ACCEPTED);
+    assert_screen_position(-(0x1p20 - 0.5), IMAGE_RULES_ACCEPTED);
+    assert_screen_position(0x1p20, IMAGE_RULES_OUT_OF_RANGE);
+    assert_screen_position(-0x1p20, IMAGE_RULES_OUT_OF_RANGE);
+    assert_screen_position(1e300, IMAGE_RULES_OUT_OF_RANGE);
+    assert_screen_position(NAN, IMAGE_RULES_NOT_FINITE);
+    assert_screen_position(INFINITY, IMAGE_RULES_NOT_FINITE);
+    assert_screen_position(-INFINITY, IMAGE_RULES_NOT_FINITE);
 }
 
-static void assert_present_scale(double scale, image_rules_verdict_t expected) {
-    image_rules_verdict_t got = image_rules_check_present_scale(scale);
+static void assert_screen_scale(double scale, image_rules_verdict_t expected) {
+    image_rules_verdict_t got = image_rules_check_screen_scale(scale);
     if (got != expected) {
-        fprintf(stderr, "present scale %.17g: expected %s, got %s\n", scale, VERDICT_NAMES[expected],
+        fprintf(stderr, "screen scale %.17g: expected %s, got %s\n", scale, VERDICT_NAMES[expected],
                 VERDICT_NAMES[got]);
     }
     assert(got == expected);
 }
 
-static void test_a_present_scale_is_finite_above_zero_and_at_most_1024(void) {
-    assert_present_scale(1, IMAGE_RULES_ACCEPTED);
-    assert_present_scale(4, IMAGE_RULES_ACCEPTED);
-    assert_present_scale(2.4375, IMAGE_RULES_ACCEPTED);
-    assert_present_scale(17, IMAGE_RULES_ACCEPTED);
-    assert_present_scale(0.75, IMAGE_RULES_ACCEPTED);
-    assert_present_scale(0x1p-1074, IMAGE_RULES_ACCEPTED);
-    assert_present_scale(1024, IMAGE_RULES_ACCEPTED);
-    assert_present_scale(1024 + 1.0 / 1024, IMAGE_RULES_OUT_OF_RANGE);
-    assert_present_scale(1e300, IMAGE_RULES_OUT_OF_RANGE);
-    assert_present_scale(0, IMAGE_RULES_OUT_OF_RANGE);
-    assert_present_scale(-0.0, IMAGE_RULES_OUT_OF_RANGE);
-    assert_present_scale(-4, IMAGE_RULES_OUT_OF_RANGE);
-    assert_present_scale(NAN, IMAGE_RULES_NOT_FINITE);
-    assert_present_scale(INFINITY, IMAGE_RULES_NOT_FINITE);
-    assert_present_scale(-INFINITY, IMAGE_RULES_NOT_FINITE);
+static void test_a_screen_scale_is_finite_above_zero_and_at_most_1024(void) {
+    assert_screen_scale(1, IMAGE_RULES_ACCEPTED);
+    assert_screen_scale(4, IMAGE_RULES_ACCEPTED);
+    assert_screen_scale(2.4375, IMAGE_RULES_ACCEPTED);
+    assert_screen_scale(17, IMAGE_RULES_ACCEPTED);
+    assert_screen_scale(0.75, IMAGE_RULES_ACCEPTED);
+    assert_screen_scale(0x1p-1074, IMAGE_RULES_ACCEPTED);
+    assert_screen_scale(1024, IMAGE_RULES_ACCEPTED);
+    assert_screen_scale(1024 + 1.0 / 1024, IMAGE_RULES_OUT_OF_RANGE);
+    assert_screen_scale(1e300, IMAGE_RULES_OUT_OF_RANGE);
+    assert_screen_scale(0, IMAGE_RULES_OUT_OF_RANGE);
+    assert_screen_scale(-0.0, IMAGE_RULES_OUT_OF_RANGE);
+    assert_screen_scale(-4, IMAGE_RULES_OUT_OF_RANGE);
+    assert_screen_scale(NAN, IMAGE_RULES_NOT_FINITE);
+    assert_screen_scale(INFINITY, IMAGE_RULES_NOT_FINITE);
+    assert_screen_scale(-INFINITY, IMAGE_RULES_NOT_FINITE);
 }
 
 static void assert_quad(double x, double y, double width, double height, double reference_width,
@@ -152,8 +152,8 @@ static void test_the_first_translucent_pixel_is_found_or_none(void) {
 
 int main(void) {
     test_a_position_is_an_integer_of_magnitude_below_two_to_the_twenty();
-    test_a_present_position_is_finite_of_magnitude_below_two_to_the_twenty_fractions_included();
-    test_a_present_scale_is_finite_above_zero_and_at_most_1024();
+    test_a_screen_position_is_finite_of_magnitude_below_two_to_the_twenty_fractions_included();
+    test_a_screen_scale_is_finite_above_zero_and_at_most_1024();
     test_a_quad_is_a_whole_number_of_texels_inside_its_reference_size();
     test_a_quad_refuses_empty_negative_and_outsized_values();
     test_a_quad_refuses_fractions_and_non_finite_values_first();

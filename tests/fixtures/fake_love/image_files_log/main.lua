@@ -38,8 +38,8 @@ function love.load()
 
     local opaque_ok = pcall(love.graphics.newImage, new("rgb.png"))
     table.insert(log, "image of rgb " .. tostring(opaque_ok))
-    local _, translucent = pcall(love.graphics.newImage, new("rgba.png"))
-    table.insert(log, "image of rgba: " .. translucent)
+    local translucent_ok, translucent = pcall(love.graphics.newImage, new("rgba.png"))
+    table.insert(log, "image of rgba: " .. (translucent_ok and type(translucent) or translucent))
 
     try("none")
     try("missing", "missing.png")

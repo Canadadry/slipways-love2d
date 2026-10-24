@@ -16,13 +16,13 @@ typedef enum image_rules_verdict {
  * texels from 1/512 of a pixel on. */
 image_rules_verdict_t image_rules_check_position(double position);
 
-/* A position of the present, draw(canvas, x, y, 0, s, s): finite, of
- * magnitude below POINT_COORDINATE_LIMIT (2^20), fractions accepted. */
-image_rules_verdict_t image_rules_check_present_position(double position);
+/* A position of a scaled draw onto the screen (the present, the 7-argument
+ * Image draw): finite, of magnitude below POINT_COORDINATE_LIMIT (2^20), fractions accepted. */
+image_rules_verdict_t image_rules_check_screen_position(double position);
 
-/* A scale of the present: finite, greater than 0, at most
+/* A scale of a scaled draw onto the screen: finite, greater than 0, at most
  * SCREEN_MAX_SCALE (1024). */
-image_rules_verdict_t image_rules_check_present_scale(double scale);
+image_rules_verdict_t image_rules_check_screen_scale(double scale);
 
 /* newQuad's values in argument order: x, y, width, height, reference width,
  * reference height. All integers; reference sides 1 ... IMAGE_DATA_MAX_SIDE;

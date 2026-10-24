@@ -114,7 +114,7 @@ void canvas_draw_texels(canvas_store_t *store, const canvas_source_t *source, co
         const unsigned char *texel = source->pixels + 4 * ((area->row + j) * source->width + area->column + first_i);
         unsigned char *pixel = store->pixels[store->target] + 4 * ((y + j) * CANVAS_WIDTH + x + first_i);
         for (int i = first_i; i < end_i; i++, texel += 4, pixel += 4) {
-            assert((texel[3] == 0x00 || texel[3] == 0xFF) && "canvas_draw_texels: newImage refuses translucent texels, blending is not modelled");
+            assert((texel[3] == 0x00 || texel[3] == 0xFF) && "canvas_draw_texels: draw refuses an Image with translucent texels on a canvas, blending is not modelled");
             if (texel[3] == 0x00) {
                 continue;
             }

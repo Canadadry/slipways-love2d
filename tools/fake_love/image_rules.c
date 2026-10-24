@@ -23,14 +23,14 @@ image_rules_verdict_t image_rules_check_position(double position) {
     return point_accepts_coordinate(position) ? IMAGE_RULES_ACCEPTED : IMAGE_RULES_OUT_OF_RANGE;
 }
 
-image_rules_verdict_t image_rules_check_present_position(double position) {
+image_rules_verdict_t image_rules_check_screen_position(double position) {
     if (!isfinite(position)) {
         return IMAGE_RULES_NOT_FINITE;
     }
     return point_accepts_coordinate(position) ? IMAGE_RULES_ACCEPTED : IMAGE_RULES_OUT_OF_RANGE;
 }
 
-image_rules_verdict_t image_rules_check_present_scale(double scale) {
+image_rules_verdict_t image_rules_check_screen_scale(double scale) {
     if (!isfinite(scale)) {
         return IMAGE_RULES_NOT_FINITE;
     }
