@@ -45,7 +45,6 @@ static void set_error(host_t *host, const char *format, ...) {
     va_end(args);
 }
 
-/* `where` names the file or callback; `frame` is NO_FRAME outside the loop. */
 static void set_lua_error(host_t *host, const char *where, size_t frame) {
     const char *message = lua_tostring(host->lua, -1);
     if (message == NULL)
@@ -57,9 +56,6 @@ static void set_lua_error(host_t *host, const char *where, size_t frame) {
     lua_pop(host->lua, 1);
 }
 
-/* Calls the function lying under its `nargs` arguments, with debug.traceback
- * as the message handler. Leaves `nresults` results on success, nothing on
- * failure. */
 static bool call(host_t *host, int nargs, int nresults, const char *where, size_t frame) {
     lua_State *lua = host->lua;
     int function_index = lua_gettop(lua) - nargs;
@@ -146,8 +142,6 @@ static bool run_file(host_t *host, const char *name) {
     return call(host, 0, 0, name, NO_FRAME);
 }
 
-/* False when love.<name> is set but is not a function. Otherwise pushes it
- * when it is set, and `*defined` tells the caller whether to call it. */
 static bool push_callback(host_t *host, const char *name, size_t frame, bool *defined) {
     lua_State *lua = host->lua;
     lua_getglobal(lua, "love");

@@ -83,3 +83,4 @@
     - [x] screen
     - [x] main
     - [x] fake canvas
+    - [x] fake host
