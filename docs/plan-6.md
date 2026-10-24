@@ -316,3 +316,18 @@ to the fake's contract.
   on the phone, check that first.
 
 ## 6. Step notes
+
+### Step 1.1
+
+`setColor` takes 3 or 4 finite numbers in both binaries; alpha becomes a
+byte like r, g and b (alpha 2 stores `FF`). The palette-or-white and
+alpha-must-be-1 refusals and the "any colour" switch
+(`host_allow_any_color`) are gone. Scope decision of the PRD: a
+translucent colour drawn by `points`, `rectangle` or `draw(image, quad)`
+onto a canvas is refused at the call (blending on a canvas is not
+modelled); screen draws take anything. The present still requires opaque
+white; the canvas 0 frame check is unchanged. No `make test` check added:
+the two set_color failure fixtures became `set_color_screen` (passes) and
+`set_color_canvas_zero` (frame error), so the timing gate did not apply;
+the set_color check runs in 32–41 ms. design.md updated, including the
+"with its real-LÖVE capture" sentence. `make e2e`: 20/20.

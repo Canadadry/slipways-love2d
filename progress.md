@@ -1,5 +1,5 @@
 - [ ] Phase 1 — The fake LÖVE learns windows, touches and the screen
-  - [ ] Step 1.1 — setColor accepts any colour and alpha
+  - [x] Step 1.1 — setColor accepts any colour and alpha
     - [x] PRD phase1-step1-set-color-any-colour
   - [ ] Step 1.2 — window, resize, getDimensions, love.resize
   - [ ] Step 1.3 — touches and mouse
