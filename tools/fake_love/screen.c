@@ -71,22 +71,53 @@ static void fill_texel_table(int *texels, int pixel_count, double start, int tex
     }
 }
 
-void screen_draw_canvas(screen_t *screen, const canvas_source_t *source, double x, double y, double scale) {
-    assert(screen != NULL && source != NULL && source->pixels != NULL);
-    assert(source->width >= 1 && source->height >= 1);
+/* llvmpipe's 8-bit multiply; mul(p, 255) = p and mul(p, 0) = 0. */
+static int blend_multiply(int p, int q) {
+    return (p * q + ((p * q) >> 8) + 128) >> 8;
+}
+
+/* LÖVE's "alpha" blend mode; the pixel's alpha, FF, stays FF. */
+static void blend_texel(unsigned char *pixel, const unsigned char *texel, const unsigned char tint[4]) {
+    int alpha = canvas_tint_component(tint[3], texel[3]);
+    if (alpha == 0x00) {
+        return;
+    }
+    for (int channel = 0; channel < 3; channel++) {
+        int source = canvas_tint_component(tint[channel], texel[channel]);
+        if (alpha == 0xFF) {
+            pixel[channel] = (unsigned char)source;
+            continue;
+        }
+        int sum = blend_multiply(source, alpha) + blend_multiply(pixel[channel], 0xFF - alpha);
+        pixel[channel] = (unsigned char)(sum > 0xFF ? 0xFF : sum);
+    }
+}
+
+static bool scale_is_valid(double scale) {
+    return isfinite(scale) && scale > 0 && scale <= SCREEN_MAX_SCALE;
+}
+
+void screen_draw(screen_t *screen, const canvas_source_t *source, const canvas_area_t *quad, double x, double y,
+                 double scale_x, double scale_y, const unsigned char tint[4]) {
+    assert(screen != NULL && source != NULL && source->pixels != NULL && quad != NULL && tint != NULL);
+    assert(quad->column >= 0 && quad->width > 0 && quad->column + quad->width <= source->width &&
+           "screen_draw: columns outside the source or empty");
+    assert(quad->row >= 0 && quad->height > 0 && quad->row + quad->height <= source->height &&
+           "screen_draw: rows outside the source or empty");
     assert(isfinite(x) && fabs(x) < POINT_COORDINATE_LIMIT && isfinite(y) && fabs(y) < POINT_COORDINATE_LIMIT);
-    assert(isfinite(scale) && scale > 0 && scale <= SCREEN_MAX_SCALE);
+    assert(scale_is_valid(scale_x) && scale_is_valid(scale_y));
     if (!screen->recorded) {
         return;
     }
-    fill_texel_table(screen->texel_columns, screen->width, x, source->width, scale);
-    fill_texel_table(screen->texel_rows, screen->height, y, source->height, scale);
+    bool white = tint[0] == 0xFF && tint[1] == 0xFF && tint[2] == 0xFF && tint[3] == 0xFF;
+    fill_texel_table(screen->texel_columns, screen->width, x, quad->width, scale_x);
+    fill_texel_table(screen->texel_rows, screen->height, y, quad->height, scale_y);
     for (int j = 0; j < screen->height; j++) {
         int v = screen->texel_rows[j];
         if (v == NO_TEXEL) {
             continue;
         }
-        const unsigned char *texel_row = source->pixels + 4 * (size_t)v * (size_t)source->width;
+        const unsigned char *texel_row = source->pixels + 4 * ((size_t)(quad->row + v) * source->width + quad->column);
         unsigned char *pixel_row = screen->pixels + 4 * (size_t)j * (size_t)screen->width;
         for (int i = 0; i < screen->width; i++) {
             int u = screen->texel_columns[i];
@@ -94,9 +125,10 @@ void screen_draw_canvas(screen_t *screen, const canvas_source_t *source, double 
                 continue;
             }
             const unsigned char *texel = texel_row + 4 * u;
-            assert((texel[3] == 0x00 || texel[3] == 0xFF) && "the present refuses a translucent canvas first");
-            if (texel[3] == 0xFF) {
+            if (texel[3] == 0xFF && white) {
                 memcpy(pixel_row + 4 * i, texel, 4);
+            } else if (texel[3] != 0x00) {
+                blend_texel(pixel_row + 4 * i, texel, tint);
             }
         }
     }

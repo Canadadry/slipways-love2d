@@ -82,7 +82,7 @@ test_fake_love_point_objs := $(call objs,tests/test_fake_love_point.c tools/fake
 $(TMP_DIR)/test_fake_love_point: $(test_fake_love_point_objs) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
 
-test_fake_love_screen_objs := $(call objs,tests/test_fake_love_screen.c tools/fake_love/screen.c)
+test_fake_love_screen_objs := $(call objs,tests/test_fake_love_screen.c tools/fake_love/screen.c tools/fake_love/canvas.c)
 $(TMP_DIR)/test_fake_love_screen: $(test_fake_love_screen_objs) | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
 

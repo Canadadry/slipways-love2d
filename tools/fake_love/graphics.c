@@ -345,7 +345,8 @@ static int draw_canvas(lua_State *lua) {
                           pixel[3]);
     }
     canvas_source_t source = {pixels, CANVAS_WIDTH, CANVAS_HEIGHT};
-    screen_draw_canvas(upvalue_screen(lua), &source, lua_tonumber(lua, 2), lua_tonumber(lua, 3), scale);
+    canvas_area_t whole = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
+    screen_draw(upvalue_screen(lua), &source, &whole, lua_tonumber(lua, 2), lua_tonumber(lua, 3), scale, scale, rgba);
     return 0;
 }
 

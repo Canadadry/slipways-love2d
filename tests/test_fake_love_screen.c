@@ -52,11 +52,20 @@ static unsigned char *make_black_frame(int width, int height) {
     return frame;
 }
 
-/* design.md's rule pixel by pixel, independent of the module's tables. */
-static void draw_expected(unsigned char *frame, int width, int height, const canvas_source_t *source, double x,
-                          double y, double scale) {
-    double x1 = x + source->width * scale;
-    double y1 = y + source->height * scale;
+static const unsigned char white[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+
+/* design.md's 8-bit blender multiply, written out from the formula. */
+static int blend_multiply(int p, int q) {
+    return (p * q + ((p * q) >> 8) + 128) >> 8;
+}
+
+/* Independent of the module's tables. Alpha 00 leaves and an untinted FF
+ * writes, as the formula gives, without its cost. */
+static void draw_expected_quad(unsigned char *frame, int width, int height, const canvas_source_t *source,
+                               const canvas_area_t *quad, double x, double y, double scale_x, double scale_y,
+                               const unsigned char tint[4]) {
+    double x1 = x + quad->width * scale_x;
+    double y1 = y + quad->height * scale_y;
     for (int j = 0; j < height; j++) {
         double cy = j + 0.5;
         if (!(y <= cy && cy < y1)) {
@@ -67,16 +76,36 @@ static void draw_expected(unsigned char *frame, int width, int height, const can
             if (!(x <= cx && cx < x1)) {
                 continue;
             }
-            double column = floor((cx - x) / scale);
-            double row = floor((cy - y) / scale);
-            int u = column < 0 ? 0 : column > source->width - 1 ? source->width - 1 : (int)column;
-            int v = row < 0 ? 0 : row > source->height - 1 ? source->height - 1 : (int)row;
-            const unsigned char *texel = source->pixels + 4 * ((size_t)v * source->width + u);
-            if (texel[3] == 0xFF) {
-                memcpy(frame + 4 * ((size_t)j * width + i), texel, 4);
+            double column = floor((cx - x) / scale_x);
+            double row = floor((cy - y) / scale_y);
+            int u = column < 0 ? 0 : column > quad->width - 1 ? quad->width - 1 : (int)column;
+            int v = row < 0 ? 0 : row > quad->height - 1 ? quad->height - 1 : (int)row;
+            const unsigned char *texel =
+                source->pixels + 4 * ((size_t)(quad->row + v) * source->width + quad->column + u);
+            unsigned char *pixel = frame + 4 * ((size_t)j * width + i);
+            if (texel[3] == 0x00 || (texel[3] == 0xFF && memcmp(tint, white, 4) == 0)) {
+                if (texel[3] == 0xFF) {
+                    memcpy(pixel, texel, 4);
+                }
+                continue;
             }
+            int tinted[4];
+            for (int k = 0; k < 4; k++) {
+                tinted[k] = (int)floor(tint[k] * texel[k] / 255.0 + 0.5);
+            }
+            for (int k = 0; k < 3; k++) {
+                int sum = blend_multiply(tinted[k], tinted[3]) + blend_multiply(pixel[k], 255 - tinted[3]);
+                pixel[k] = (unsigned char)(sum > 255 ? 255 : sum);
+            }
+            pixel[3] = 0xFF;
         }
     }
+}
+
+static void draw_expected(unsigned char *frame, int width, int height, const canvas_source_t *source, double x,
+                          double y, double scale) {
+    canvas_area_t whole = {0, 0, source->width, source->height};
+    draw_expected_quad(frame, width, height, source, &whole, x, y, scale, scale, white);
 }
 
 static void assert_frame(const screen_t *screen, const unsigned char *expected, int width, int height) {
@@ -122,6 +151,12 @@ static void assert_landmark(const screen_t *screen, int i, int j, int u, int v) 
 
 #define BLACK (-1)
 
+/* The present: the whole source, one scale, no tint. */
+static void draw_whole(screen_t *screen, const canvas_source_t *source, double x, double y, double scale) {
+    canvas_area_t whole = {0, 0, source->width, source->height};
+    screen_draw(screen, source, &whole, x, y, scale, scale, white);
+}
+
 static source_t named;
 
 /* Draws `named` on a new recorded frame and checks the whole frame; the
@@ -129,7 +164,7 @@ static source_t named;
 static screen_t *draw_named_and_check(int width, int height, double x, double y, double scale) {
     screen_t *screen = screen_create();
     assert(screen_begin_frame(screen, width, height, true));
-    screen_draw_canvas(screen, &named.view, x, y, scale);
+    draw_whole(screen, &named.view, x, y, scale);
     unsigned char *expected = make_black_frame(width, height);
     draw_expected(expected, width, height, &named.view, x, y, scale);
     assert_frame(screen, expected, width, height);
@@ -205,6 +240,120 @@ static void test_a_scale_below_one_skips_texels(void) {
     check_one_draw(7, 5, 0.25, 0.25, 0.0390625);
 }
 
+/* Draws `quad` of `named` on a new recorded frame and checks the whole
+ * frame; the caller frees the returned screen. */
+static screen_t *draw_quad_and_check(int width, int height, const canvas_area_t *quad, double x, double y,
+                                     double scale_x, double scale_y) {
+    screen_t *screen = screen_create();
+    assert(screen_begin_frame(screen, width, height, true));
+    screen_draw(screen, &named.view, quad, x, y, scale_x, scale_y, white);
+    unsigned char *expected = make_black_frame(width, height);
+    draw_expected_quad(expected, width, height, &named.view, quad, x, y, scale_x, scale_y, white);
+    assert_frame(screen, expected, width, height);
+    free(expected);
+    return screen;
+}
+
+static void test_a_quad_stretched_by_unequal_fractional_scales_shows_only_its_texels(void) {
+    make_named_source(&named, 20, 16);
+    canvas_area_t quad = {3, 2, 5, 4};
+    screen_t *screen = draw_quad_and_check(60, 40, &quad, 10.0625, 7.6, 2.4375, 1.7);
+    assert_landmark(screen, 9, 8, BLACK, 0);
+    assert_landmark(screen, 10, 8, 3, 2);
+    assert_landmark(screen, 11, 8, 3, 2);
+    assert_landmark(screen, 12, 8, 4, 2);
+    assert_landmark(screen, 21, 8, 7, 2);
+    assert_landmark(screen, 22, 8, BLACK, 0);
+    assert_landmark(screen, 10, 7, BLACK, 0);
+    assert_landmark(screen, 10, 9, 3, 3);
+    assert_landmark(screen, 10, 13, 3, 5);
+    assert_landmark(screen, 10, 14, BLACK, 0);
+    screen_free(screen);
+}
+
+static void test_a_quad_shrunk_on_one_axis_is_clipped_on_the_left_and_the_bottom(void) {
+    make_named_source(&named, 20, 16);
+    canvas_area_t whole = {0, 0, 20, 16};
+    screen_t *screen = draw_quad_and_check(60, 40, &whole, -3.5, 20.5, 0.75, 3.0);
+    assert_landmark(screen, 0, 19, BLACK, 0);
+    assert_landmark(screen, 0, 20, 5, 0);
+    assert_landmark(screen, 1, 20, 6, 0);
+    assert_landmark(screen, 10, 20, 18, 0);
+    assert_landmark(screen, 11, 20, BLACK, 0);
+    assert_landmark(screen, 0, 23, 5, 1);
+    assert_landmark(screen, 0, 39, 5, 6);
+    screen_free(screen);
+}
+
+static void assert_pixel(const screen_t *screen, int i, int j, unsigned int rgba) {
+    int width = 0;
+    int height = 0;
+    const unsigned char *pixels = screen_read_pixels(screen, &width, &height);
+    const unsigned char *pixel = pixels + 4 * ((size_t)j * width + i);
+    unsigned int got = (unsigned int)pixel[0] << 24 | (unsigned int)pixel[1] << 16 | (unsigned int)pixel[2] << 8 | pixel[3];
+    if (got != rgba) {
+        fprintf(stderr, "screen pixel (%d, %d) is %08X, expected %08X\n", i, j, got, rgba);
+    }
+    assert(got == rgba);
+}
+
+static void assert_opaque(const screen_t *screen) {
+    int width = 0;
+    int height = 0;
+    const unsigned char *pixels = screen_read_pixels(screen, &width, &height);
+    for (size_t p = 0; p < (size_t)width * (size_t)height; p++) {
+        assert(pixels[4 * p + 3] == 0xFF);
+    }
+}
+
+static source_t translucent;
+
+static void test_translucent_texels_blend_over_the_earlier_draw(void) {
+    static const unsigned char alphas[8] = {0x01, 0x40, 0x7F, 0x80, 0xC0, 0xFE, 0x00, 0xFF};
+    for (int k = 0; k < 8; k++) {
+        unsigned char *texel = translucent.pixels + 4 * k;
+        texel[0] = 0xC8;
+        texel[1] = 0x37;
+        texel[2] = 0x9A;
+        texel[3] = alphas[k];
+    }
+    translucent.view = (canvas_source_t){translucent.pixels, 8, 1};
+    make_named_source(&named, 40, 8);
+    screen_t *screen = screen_create();
+    assert(screen_begin_frame(screen, 40, 8, true));
+    draw_whole(screen, &named.view, 0.0, 0.0, 1.0);
+    draw_whole(screen, &translucent.view, 4.0, 2.0, 3.0);
+    unsigned char *expected = make_black_frame(40, 8);
+    draw_expected(expected, 40, 8, &named.view, 0.0, 0.0, 1.0);
+    draw_expected(expected, 40, 8, &translucent.view, 4.0, 2.0, 3.0);
+    assert_frame(screen, expected, 40, 8);
+    free(expected);
+    assert_pixel(screen, 5, 3, 0x060380FF);
+    assert_pixel(screen, 14, 3, 0x6B1D8DFF);
+    assert_pixel(screen, 20, 3, 0xC7379AFF);
+    assert_landmark(screen, 23, 3, 23, 3);
+    assert_pixel(screen, 26, 3, 0xC8379AFF);
+    assert_opaque(screen);
+    screen_free(screen);
+}
+
+static void test_a_translucent_tint_blends_an_opaque_texel(void) {
+    make_named_source(&named, 40, 8);
+    canvas_area_t quad = {30, 5, 1, 1};
+    static const unsigned char tint[4] = {0x7F, 0xFF, 0x3F, 0x80};
+    screen_t *screen = screen_create();
+    assert(screen_begin_frame(screen, 10, 10, true));
+    screen_draw(screen, &named.view, &quad, 2.0, 2.0, 3.0, 3.0, tint);
+    unsigned char *expected = make_black_frame(10, 10);
+    draw_expected_quad(expected, 10, 10, &named.view, &quad, 2.0, 2.0, 3.0, 3.0, tint);
+    assert_frame(screen, expected, 10, 10);
+    free(expected);
+    assert_pixel(screen, 3, 3, 0x080310FF);
+    assert_pixel(screen, 5, 3, 0x000000FF);
+    assert_opaque(screen);
+    screen_free(screen);
+}
+
 /* Transparent but for texel (i, j) with (i + j) % 7 == 0, which is
  * (i, j, 0x40, FF). */
 static void make_sparse_source(source_t *source, int width, int height) {
@@ -229,8 +378,8 @@ static void test_alpha_00_leaves_the_earlier_draw_and_a_later_draw_lies_over_it(
     make_sparse_source(&sparse, CANVAS_WIDTH, CANVAS_HEIGHT);
     screen_t *screen = screen_create();
     assert(screen_begin_frame(screen, 390, 844, true));
-    screen_draw_canvas(screen, &named.view, 0.0, 0.0, 1.0);
-    screen_draw_canvas(screen, &sparse.view, 100.5, 50.5, 0.75);
+    draw_whole(screen, &named.view, 0.0, 0.0, 1.0);
+    draw_whole(screen, &sparse.view, 100.5, 50.5, 0.75);
     unsigned char *expected = make_black_frame(390, 844);
     draw_expected(expected, 390, 844, &named.view, 0.0, 0.0, 1.0);
     draw_expected(expected, 390, 844, &sparse.view, 100.5, 50.5, 0.75);
@@ -257,15 +406,15 @@ static void test_each_recorded_frame_starts_black_at_its_own_size(void) {
     int width = 0;
     int height = 0;
     assert(screen_begin_frame(screen, 390, 844, true));
-    screen_draw_canvas(screen, &named.view, 0.0, 64.75, 2.4375);
+    draw_whole(screen, &named.view, 0.0, 64.75, 2.4375);
     assert(screen_begin_frame(screen, 640, 480, false));
-    screen_draw_canvas(screen, &named.view, 0.0, 0.0, 4.0);
+    draw_whole(screen, &named.view, 0.0, 0.0, 4.0);
     assert(screen_read_pixels(screen, &width, &height) == NULL);
     assert(screen_begin_frame(screen, 640, 480, true));
     const unsigned char *pixels = screen_read_pixels(screen, &width, &height);
     assert(pixels != NULL && width == 640 && height == 480);
     assert_all_black(pixels, width, height);
-    screen_draw_canvas(screen, &named.view, -10.5, 7.25, 3.1);
+    draw_whole(screen, &named.view, -10.5, 7.25, 3.1);
     assert(screen_begin_frame(screen, 640, 480, true));
     pixels = screen_read_pixels(screen, &width, &height);
     assert(pixels != NULL && width == 640 && height == 480);
@@ -297,6 +446,10 @@ int main(void) {
     test_a_present_off_the_window_is_clipped();
     test_a_scale_below_one_skips_texels();
     test_alpha_00_leaves_the_earlier_draw_and_a_later_draw_lies_over_it();
+    test_a_quad_stretched_by_unequal_fractional_scales_shows_only_its_texels();
+    test_a_quad_shrunk_on_one_axis_is_clipped_on_the_left_and_the_bottom();
+    test_translucent_texels_blend_over_the_earlier_draw();
+    test_a_translucent_tint_blends_an_opaque_texel();
     test_each_recorded_frame_starts_black_at_its_own_size();
     printf("test_fake_love_screen: all tests passed\n");
     return 0;

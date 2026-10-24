@@ -21,11 +21,14 @@ void screen_free(screen_t *screen);
  * unrecorded. Asserts sides of 1 to SCREEN_MAX_SIDE. */
 bool screen_begin_frame(screen_t *screen, int width, int height, bool recorded);
 
-/* Draws all of `source` with its top-left corner at (x, y), scaled by
- * `scale`, under design.md's rule "The screen": nothing on an unrecorded
- * frame. Asserts a finite position of magnitude below 2^20, a finite scale
- * in (0, SCREEN_MAX_SCALE] and every texel read 00 or FF in alpha. */
-void screen_draw_canvas(screen_t *screen, const canvas_source_t *source, double x, double y, double scale);
+/* Draws the `quad` texels of `source` with the quad's top-left corner at
+ * (x, y), stretched by `scale_x` and `scale_y`, tinted by `tint` and
+ * blended under design.md's rule "The screen": nothing on an unrecorded
+ * frame. Asserts the quad inside the source and not empty, a finite
+ * position of magnitude below 2^20 and finite scales in
+ * (0, SCREEN_MAX_SCALE]. */
+void screen_draw(screen_t *screen, const canvas_source_t *source, const canvas_area_t *quad, double x, double y,
+                 double scale_x, double scale_y, const unsigned char tint[4]);
 
 /* The current frame's row-major RGBA8 pixels and size, valid until the
  * next screen_begin_frame or screen_free; NULL, sizes left untouched, when
