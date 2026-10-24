@@ -21,11 +21,14 @@
 
 #define NO_FRAME ((size_t)-1)
 #define FRAME_DT (1.0 / 60.0)
+#define DEFAULT_WINDOW_WIDTH 640
+#define DEFAULT_WINDOW_HEIGHT 480
 
 struct host {
     lua_State *lua;
     canvas_store_t *canvases;
     transform_t transform;
+    window_size_t window;
     unsigned held;
     char *game_dir;
     char *state_text;
@@ -82,6 +85,7 @@ host_t *host_new(void) {
     luaL_openlibs(host->lua);
     host->canvases = canvas_create_store();
     transform_init(&host->transform);
+    host->window = (window_size_t){DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT};
     return host;
 }
 
@@ -93,6 +97,12 @@ void host_close(host_t *host) {
     free(host->game_dir);
     free(host->state_text);
     free(host);
+}
+
+void host_set_window(host_t *host, int width, int height) {
+    assert(host->game_dir == NULL && "host_set_window runs before host_open");
+    assert(width > 0 && height > 0);
+    host->window = (window_size_t){width, height};
 }
 
 const char *host_runtime_version(host_t *host) {
@@ -197,7 +207,7 @@ bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
         return false;
     joystick_install(host->lua);
     filesystem_install(host->lua, disk);
-    graphics_install(host->lua, host->canvases, &host->transform);
+    graphics_install(host->lua, host->canvases, &host->transform, &host->window);
     image_install(host->lua, disk);
     return run_file(host, "main.lua");
 }
@@ -228,11 +238,26 @@ static bool call_pad_callback(host_t *host, const pad_change_t *change, size_t f
     return call(host, 2, 0, callback, frame);
 }
 
-bool host_frame(host_t *host, size_t frame, unsigned held) {
+static bool resize(host_t *host, size_t frame, int width, int height) {
+    assert(width > 0 && height > 0);
+    host->window = (window_size_t){width, height};
+    bool defined;
+    if (!push_callback(host, "resize", frame, &defined))
+        return false;
+    if (!defined)
+        return true;
+    lua_pushnumber(host->lua, width);
+    lua_pushnumber(host->lua, height);
+    return call(host, 2, 0, "love.resize", frame);
+}
+
+bool host_frame(host_t *host, size_t frame, const host_frame_input_t *input) {
+    if (input->resized && !resize(host, frame, input->width, input->height))
+        return false;
     pad_change_t changes[PAD_MAX_CHANGES];
-    size_t change_count = pad_list_changes(host->held, held, changes);
-    host->held = held;
-    joystick_set_held(host->lua, held);
+    size_t change_count = pad_list_changes(host->held, input->held, changes);
+    host->held = input->held;
+    joystick_set_held(host->lua, input->held);
     for (size_t i = 0; i < change_count; i++)
         if (!call_pad_callback(host, &changes[i], frame))
             return false;

@@ -90,8 +90,9 @@ static lua_State *new_state_with_love(void) {
 
 static void test_love_reads_nil_for_an_absent_callback_or_module(void) {
     lua_State *lua = new_state_with_love();
-    static const char *const names[] = {"conf",     "load",  "update",  "draw",       "gamepadpressed",
-                                        "gamepadreleased", "graphics", "image", "joystick", "filesystem"};
+    static const char *const names[] = {"conf",           "load",     "update", "draw",
+                                        "gamepadpressed", "gamepadreleased", "resize",
+                                        "graphics",       "image",    "joystick", "filesystem"};
     for (size_t i = 0; i < sizeof names / sizeof names[0]; i++) {
         char chunk[64];
         snprintf(chunk, sizeof chunk, "return love.%s", names[i]);
@@ -112,7 +113,7 @@ static void test_love_refuses_any_other_absent_key(void) {
     lua_close(lua);
 }
 
-static void test_love_takes_the_six_callbacks_and_nothing_else(void) {
+static void test_love_takes_the_seven_callbacks_and_nothing_else(void) {
     lua_State *lua = new_state_with_love();
     assert_runs_to(lua,
                    "function love.conf() end\n"
@@ -121,6 +122,7 @@ static void test_love_takes_the_six_callbacks_and_nothing_else(void) {
                    "function love.draw() end\n"
                    "function love.gamepadpressed() end\n"
                    "love.gamepadreleased = function() return 'released' end\n"
+                   "function love.resize() end\n"
                    "return love.gamepadreleased()",
                    "released");
     assert_runs_to(lua, "love.load = nil; love.load = function() return 'again' end; return love.load()", "again");
@@ -161,7 +163,7 @@ int main(void) {
     test_a_non_string_key_is_shown_in_brackets();
     test_love_reads_nil_for_an_absent_callback_or_module();
     test_love_refuses_any_other_absent_key();
-    test_love_takes_the_six_callbacks_and_nothing_else();
+    test_love_takes_the_seven_callbacks_and_nothing_else();
     test_a_method_table_names_the_kind_and_method_with_a_colon();
     printf("test_fake_love_function_list: all tests passed\n");
     return 0;

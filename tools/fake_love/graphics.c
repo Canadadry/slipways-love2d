@@ -34,6 +34,20 @@ static transform_t *upvalue_transform(lua_State *lua) {
     return lua_touserdata(lua, lua_upvalueindex(2));
 }
 
+static const window_size_t *upvalue_window(lua_State *lua) {
+    return lua_touserdata(lua, lua_upvalueindex(3));
+}
+
+static int get_dimensions(lua_State *lua) {
+    int top = lua_gettop(lua);
+    if (top != 0)
+        return luaL_error(lua, "love.graphics.getDimensions: takes no argument, not %d", top);
+    const window_size_t *window = upvalue_window(lua);
+    lua_pushnumber(lua, window->width);
+    lua_pushnumber(lua, window->height);
+    return 2;
+}
+
 static int new_canvas(lua_State *lua) {
     int top = lua_gettop(lua);
     if (top != 2)
@@ -423,34 +437,42 @@ static void new_metatable_without_methods(lua_State *lua, const char *name) {
     lua_pop(lua, 1);
 }
 
-static void set_function(lua_State *lua, canvas_store_t *store, transform_t *transform, lua_CFunction function,
-                         const char *name) {
-    lua_pushlightuserdata(lua, store);
-    lua_pushlightuserdata(lua, transform);
-    lua_pushcclosure(lua, function, 2);
+typedef struct {
+    canvas_store_t *store;
+    transform_t *transform;
+    const window_size_t *window;
+} upvalues_t;
+
+static void set_function(lua_State *lua, const upvalues_t *upvalues, lua_CFunction function, const char *name) {
+    lua_pushlightuserdata(lua, upvalues->store);
+    lua_pushlightuserdata(lua, upvalues->transform);
+    lua_pushlightuserdata(lua, (void *)upvalues->window);
+    lua_pushcclosure(lua, function, 3);
     lua_setfield(lua, -2, name);
 }
 
-void graphics_install(lua_State *lua, canvas_store_t *store, transform_t *transform) {
+void graphics_install(lua_State *lua, canvas_store_t *store, transform_t *transform, const window_size_t *window) {
+    const upvalues_t upvalues = {store, transform, window};
     new_metatable_without_methods(lua, METATABLE);
     new_metatable_without_methods(lua, IMAGE_METATABLE);
     new_metatable_without_methods(lua, QUAD_METATABLE);
     lua_getglobal(lua, "love");
     lua_pushliteral(lua, "graphics");
-    lua_createtable(lua, 0, 13);
-    set_function(lua, store, transform, new_canvas, "newCanvas");
-    set_function(lua, store, transform, set_canvas, "setCanvas");
-    set_function(lua, store, transform, clear, "clear");
-    set_function(lua, store, transform, points, "points");
-    set_function(lua, store, transform, rectangle, "rectangle");
-    set_function(lua, store, transform, set_color, "setColor");
-    set_function(lua, store, transform, set_default_filter, "setDefaultFilter");
-    set_function(lua, store, transform, new_image, "newImage");
-    set_function(lua, store, transform, new_quad, "newQuad");
-    set_function(lua, store, transform, draw, "draw");
-    set_function(lua, store, transform, push, "push");
-    set_function(lua, store, transform, pop, "pop");
-    set_function(lua, store, transform, translate, "translate");
+    lua_createtable(lua, 0, 14);
+    set_function(lua, &upvalues, new_canvas, "newCanvas");
+    set_function(lua, &upvalues, set_canvas, "setCanvas");
+    set_function(lua, &upvalues, clear, "clear");
+    set_function(lua, &upvalues, points, "points");
+    set_function(lua, &upvalues, rectangle, "rectangle");
+    set_function(lua, &upvalues, set_color, "setColor");
+    set_function(lua, &upvalues, set_default_filter, "setDefaultFilter");
+    set_function(lua, &upvalues, new_image, "newImage");
+    set_function(lua, &upvalues, new_quad, "newQuad");
+    set_function(lua, &upvalues, draw, "draw");
+    set_function(lua, &upvalues, get_dimensions, "getDimensions");
+    set_function(lua, &upvalues, push, "push");
+    set_function(lua, &upvalues, pop, "pop");
+    set_function(lua, &upvalues, translate, "translate");
     function_list_protect_module(lua, -1, "love.graphics");
     lua_rawset(lua, -3);
     lua_pop(lua, 1);

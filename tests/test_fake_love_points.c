@@ -19,8 +19,8 @@ static void test_points_misuse_is_refused_with_a_message_and_empty_calls_succeed
                                    STATE, STDERR_LOG);
     assert(status == 0 && "the points log game must run");
     fake_love_cli_assert_text(
-        STATE, "graphics clear draw newCanvas newImage newQuad points pop push rectangle setCanvas setColor "
-               "setDefaultFilter translate\n"
+        STATE, "graphics clear draw getDimensions newCanvas newImage newQuad points pop push rectangle "
+               "setCanvas setColor setDefaultFilter translate\n"
                "odd arguments: love.graphics.points: odd number of coordinates (3)\n"
                "odd table: love.graphics.points: odd number of coordinates (3)\n"
                "table then numbers: love.graphics.points: a table must be the only argument, not one of 3\n"

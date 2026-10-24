@@ -62,7 +62,8 @@ static bool check(const char *harness, const pair_t *pair) {
     }
     disk_t *disk = disk_create(harness);
     const char *const arguments[] = {pair->program};
-    bool ok = host_open(host, harness, disk) && host_load(host, arguments, 1) && host_frame(host, 0, 0);
+    const host_frame_input_t no_input = {0};
+    bool ok = host_open(host, harness, disk) && host_load(host, arguments, 1) && host_frame(host, 0, &no_input);
     if (!ok)
         report(pair, "%s", host_error(host));
     int width = 0, height = 0;

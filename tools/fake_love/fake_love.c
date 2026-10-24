@@ -119,11 +119,21 @@ static bool load_game(host_t *host, const replay_t *replay) {
     return host_load(host, load_arguments, 2);
 }
 
+static host_frame_input_t read_frame_input(const replay_t *replay, size_t frame) {
+    host_frame_input_t input = {.held = replay_frame_held(replay, frame)};
+    input.resized = replay_frame_resize(replay, frame, &input.width, &input.height) != 0;
+    return input;
+}
+
 static bool run_game(host_t *host, const arguments_t *arguments, const replay_t *replay, disk_t *disk,
                      capture_writer_t *capture) {
+    int width, height;
+    replay_window(replay, &width, &height);
+    host_set_window(host, width, height);
     bool ok = host_open(host, arguments->game_dir, disk) && load_game(host, replay);
     for (size_t frame = 0; ok && frame < replay_frame_count(replay); frame++) {
-        ok = host_frame(host, frame, replay_frame_held(replay, frame));
+        const host_frame_input_t input = read_frame_input(replay, frame);
+        ok = host_frame(host, frame, &input);
         if (!ok)
             break;
         if (!capture_append(capture, host, frame))

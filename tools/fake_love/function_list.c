@@ -5,7 +5,8 @@
 
 #include <lauxlib.h>
 
-static const char *const CALLBACKS[] = {"conf", "load", "update", "draw", "gamepadpressed", "gamepadreleased"};
+static const char *const CALLBACKS[] = {"conf",           "load",           "update", "draw",
+                                        "gamepadpressed", "gamepadreleased", "resize"};
 static const char *const MODULES[] = {"graphics", "image", "joystick", "filesystem"};
 
 static bool is_one_of(lua_State *lua, int key_index, const char *const *names, size_t count) {

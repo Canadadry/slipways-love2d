@@ -21,8 +21,8 @@ static void test_graphics_appears_after_conf_and_takes_every_listed_form(void) {
                                    STATE, STDERR_LOG);
     assert(status == 0 && "the graphics game must run");
     fake_love_cli_assert_text(STATE, "conf graphics nil\n"
-                                     "main graphics clear draw newCanvas newImage newQuad points pop push rectangle "
-                                     "setCanvas setColor setDefaultFilter translate\n"
+                                     "main graphics clear draw getDimensions newCanvas newImage newQuad points pop "
+                                     "push rectangle setCanvas setColor setDefaultFilter translate\n"
                                      "load canvas userdata\n"
                                      "draw\n"
                                      "draw\n"

@@ -21,8 +21,8 @@ static void test_image_misuse_is_refused_with_a_message_and_valid_calls_succeed(
                                    CAPTURE, STATE, STDERR_LOG);
     assert(status == 0 && "the image draw log game must run");
     fake_love_cli_assert_text(STATE, "conf graphics nil\n"
-                                     "graphics clear draw newCanvas newImage newQuad points pop push rectangle "
-                                     "setCanvas setColor setDefaultFilter translate\n"
+                                     "graphics clear draw getDimensions newCanvas newImage newQuad points pop push "
+                                     "rectangle setCanvas setColor setDefaultFilter translate\n"
                                      "filter before images: ok\n"
                                      "image userdata getWidth Image:getWidth is not in the function list of "
                                      "docs/love-port/design.md\n"

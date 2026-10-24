@@ -3,7 +3,7 @@
     - [x] PRD phase1-step1-set-color-any-colour
   - [ ] Step 1.2 — window, resize, getDimensions, love.resize
     - [x] Chunk 1 — replay reader: window and resize
-    - [ ] Chunk 2 — host and graphics: getDimensions, love.resize
+    - [x] Chunk 2 — host and graphics: getDimensions, love.resize
     - [ ] Chunk 3 — lua-guard, design.md, timing gate
   - [ ] Step 1.3 — touches and mouse
   - [ ] Step 1.4 — screen framebuffer, free present, screens
