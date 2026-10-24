@@ -16,6 +16,7 @@ make end-state                     # checks each replay's end state against its 
 make replay EVENTS=<events.json>   # replays one file, dump in tmp/replay_dump.txt, capture in tmp/love-replay/
 make state EVENTS=<events.json>    # replays one file, last-frame state in tmp/state.txt
 make love-capture                  # reruns tools/love_capture/ in real LÖVE 11.5 under Xvfb, rewrites its PNGs
+make pad-art                       # regenerates game/pad.png, its flat test sheet and the static test's expected PNG
 make help                          # every target
 ```
 
