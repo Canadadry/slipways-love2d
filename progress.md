@@ -71,3 +71,4 @@
     - [x] Chunk 2 — the fake ↔ list check
     - [x] Chunk 3 — the by-hand read, design.md and the closing gate
   - [ ] Step 4.19 — rework-comments
+    - [x] pad_stick

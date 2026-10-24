@@ -1,8 +1,6 @@
--- LÖVE screen units, y growing downward. The stick table is the only state.
 local M = {}
 
--- Bits 0-3 of pad_buttons: buttons 1-4 (dpup, dpdown, dpleft, dpright) of
--- main.lua's PAD_BUTTON_NAMES.
+-- p8.input's PAD_BUTTON_1 to PAD_BUTTON_4 (dpup, dpdown, dpleft, dpright): pad_touch ORs the mask into pad_buttons.
 M.UP = 1
 M.DOWN = 2
 M.LEFT = 4
@@ -16,8 +14,6 @@ local function vertical(dy)
   return dy < 0 and M.UP or M.DOWN
 end
 
--- Within 30° of an axis (tan² 30° = 1/3) is that axis alone; the two >=
--- give a rounding tie to the straight sector.
 local function direction(dx, dy)
   local ax_squared = dx * dx
   local ay_squared = dy * dy
@@ -35,7 +31,6 @@ local function check_number(value, caller, argument)
     string.format("pad_stick.%s: %s must be a number, got %s", caller, argument, tostring(value)))
 end
 
--- base_size: the placed stick_base_size of pad_layout.place, a diameter.
 function M.start(x, y, base_size)
   check_number(x, "start", "x")
   check_number(y, "start", "y")
@@ -44,8 +39,6 @@ function M.start(x, y, base_size)
   return { base_x = x, base_y = y, radius = base_size / 2, knob_x = x, knob_y = y, mask = 0 }
 end
 
--- The touch may be anywhere on the screen; the knob's centre stops on the
--- base's edge.
 function M.follow(stick, x, y)
   assert(type(stick) == "table",
     string.format("pad_stick.follow: stick must be a table, got %s", tostring(stick)))
@@ -56,7 +49,6 @@ function M.follow(stick, x, y)
   local distance_squared = dx * dx + dy * dy
   local radius = stick.radius
   local dead_radius = radius * 0.25
-  -- Open disc: a touch exactly on the dead-zone edge already points.
   if distance_squared < dead_radius * dead_radius then
     stick.mask = 0
   else
