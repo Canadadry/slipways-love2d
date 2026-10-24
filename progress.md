@@ -39,7 +39,7 @@
     - [x] Chunk 2 — make love-file and the tools
     - [x] Chunk 3 — gate and report
 - [ ] Phase 3 — The virtual pad
-  - [ ] Step 3.9 — pad.png, quad table, pad_flat.png, static sheet test
+  - [x] Step 3.9 — pad.png, quad table, pad_flat.png, static sheet test
     - [x] Chunk 1 — the art generator and the three PNGs
     - [x] Chunk 2 — the static test, then love.pad_sheet
     - [x] Chunk 3 — docs, gate and report

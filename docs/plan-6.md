@@ -550,3 +550,24 @@ against the fake (step 18 now compares them); `check.run` depending on the
 global `arg[0]` the runner rewrites; `window_layout` returning a `pad`
 rectangle nothing reads yet (step 10 will); `PAD_WIDTH/HEIGHT` literals
 equal to `vram.SCREEN_WIDTH/HEIGHT`.
+
+### Step 3.9
+
+The art is generated: `tools/pad_art.c`, run by `make pad-art` (outside
+`make test`), writes byte for byte reproducibly `game/pad.png` (240×72
+RGBA, PICO-8 palette: stick base 48 and knob 24; A, B, X, Y, L, R,
+Start, Back as 24×24 sprites, released and pressed, labels from
+`font.png`, translucent bodies), `tests/fixtures/pad_flat.png` (same
+rectangles, each one distinct opaque colour) and the static test's
+expected frame, composed with the screen's multiply from the generator's
+own table. `love.pad_sheet` (`game/love/`) holds the rectangles as data —
+buttons keyed by LÖVE gamepad name (`a`, `b`, `x`, `y`, `leftshoulder`,
+`rightshoulder`, `start`, `back`), `STICK_BASE`, `STICK_KNOB` — and
+`load()` returns the Image and one Quad per sprite; nothing requires it
+yet. The static sheet test is one more fake run inside
+`test_fake_love_image_draw` (~58 → ~66 ms): all 18 sprites drawn through
+the module, compared exactly with the generator's frame, plus
+`pad_flat.png`'s solid distinct colours. Step 1.5 had lifted the
+translucent-image refusal, so no opacity test. Gate, 11 rounds: −1.27 %
+vs 102b0ab, −11.38 % vs 8c830c6, −88.64 % vs 8dff812. `make love-file`
+ships `pad.png`. `make e2e` and `make end-state` 20/20.
