@@ -8,9 +8,9 @@ Each plan holds its own steps.
 ## Goal and scope
 
 - The game becomes a real LÖVE 11.5 game in Lua: it reads the pad through
-  LÖVE's gamepad API and draws through `love.graphics`. PC first. iOS comes
-  later through the love2d studio app, which runs `.love` files: nothing in
-  these plans targets iOS.
+  LÖVE's gamepad API, or the on-screen virtual pad's touches, and draws
+  through `love.graphics`. It runs on a PC and, as a `.love` file, on an
+  iPhone in the love2d studio app.
 - The 20 replays of `tests/e2e/` must produce **the same sha256** as the C
   game did, unchanged: those hashes, set by the C game (now deleted), are the
   reference.
@@ -640,11 +640,13 @@ coercion), a rotation other than 0, and a canvas holding a pixel whose
 alpha is neither `00` nor `FF`, the first in row order:
 `love.graphics.draw: the canvas's pixel (<x>, <y>) is <RRGGBBAA>, translucent (a translucent canvas is not modelled on the screen)`.
 The canvas's 19 200 alpha bytes are scanned at every present. **The rule
-for the game: present canvas 0 once per frame, last in `love.draw`, with
-the screen selected, after `setColor(1, 1, 1)`, outside any `push`, at
-the position and scale of the game rectangle that `love.window_layout`
-computes from `getDimensions()`** (`screen.present()`). Capture:
-`game_frame`.
+for the game: present canvas 0 once per frame, after every draw onto
+canvas 0, with the screen selected, after `setColor(1, 1, 1)`, outside
+any `push`, at the position and scale of the game rectangle that
+`love.window_layout` computes from `getDimensions()`** (`screen.present()`);
+the only draws after it are the pad's sprites onto the screen
+(`love.pad_view.draw`, see Pad drawing), which never select a canvas.
+Capture: `game_frame`.
 
 **The screen.** The fake keeps an RGBA8 screen framebuffer of the window
 size, opaque black `000000FF` at the start of every frame, after that
@@ -692,7 +694,8 @@ screen is written after its capture as an 8-bit RGBA PNG of the window
 size, row 0 at the top, named `<capture>.screen-f<N>.png`. Checks:
 `test_fake_love_screen`, `test_fake_love_screens`,
 `test_fake_love_image_draw`, and `test_game_screens` for the game itself
-(390×844, then a `resize` to 640×480).
+(390×844, a `resize` to 640×480, then 160×322 and 160×120 with the pad
+shown).
 
 **Transforms.** `push()`, `pop()` and `translate(dx, dy)` are the only
 forms. The fake keeps a current offset, integer on each axis, and a stack
@@ -812,9 +815,10 @@ It is an ordinary Lua error, like every refusal of the fake. Both binaries,
 `tmp/fake_love` and `tmp/love_capture_check`, run under this guard.
 
 The game shows its canvas in the window with `draw(canvas, x, y, 0, s,
-s)`: **present canvas 0 once per frame, last in `love.draw`, with the
-screen selected, after `setColor(1, 1, 1)`, outside any `push`, at the
-game rectangle's position and scale** (see The present). The
+s)`: **present canvas 0 once per frame, after every draw onto canvas 0,
+with the screen selected, after `setColor(1, 1, 1)`, outside any `push`,
+at the game rectangle's position and scale**, followed only by the pad's
+sprites onto the screen (see The present). The
 fake reads the canvas, and the present draws it onto the screen framebuffer
 (see The screen), which only frames listed in `screens` rasterise.
 
@@ -1106,9 +1110,35 @@ the pad: `touch_state.stick` (`nil` without a stick), `placed` (this
 frame's screen rectangles, `nil` before the first `update`) and
 `virtual_mask` (this frame's `pad_touch.update` result: the touches' and
 mouse's bits after the filter, stick included, never the gamepad's; `0`
-before the first `update`). The pad is not drawn. A non-table or un-`init`ed state fails an `assert` starting with
-`virtual_pad.update:` or `virtual_pad.shown:`; sizes, masks, touches and
-mice are refused by the asserts of the modules it calls.
+before the first `update`). A non-table or un-`init`ed state fails an
+`assert` starting with `virtual_pad.update:` or `virtual_pad.shown:`;
+sizes, masks, touches and mice are refused by the asserts of the modules
+it calls.
+
+**Pad drawing.** `love.pad_view` (`game/love/`, no module state) draws the
+pad. `init(view)`, once in `love.load` after `screen.init` (so the sheet is
+built under the nearest filter), loads the sheet (`pad_sheet.load()`) into
+`view`. `draw(view, virtual_pad)` runs last in `love.draw`, after
+`screen.present()`, and draws nothing while
+`virtual_pad.shown(virtual_pad)` is false or `placed` is `nil`. Otherwise
+it selects the screen (`setCanvas()`), sets white (`setColor(1, 1, 1)`: the
+sprites' own colours), then draws, in this order: the eight buttons in the
+sheet's order (a, b, x, y, leftshoulder, rightshoulder, start, back), each
+with its pressed sprite when its `pad_touch.BUTTON_MASKS` bit is in
+`virtual_mask` (so neither a gamepad button nor the revealing touch draws a
+button pressed, and the stick's d-pad bits press nothing drawn) and its
+released sprite otherwise; then, only while `touch_state.stick` is not
+`nil`, the stick base and the knob over it. Each sprite is stretched into
+its `placed` rectangle, never rounded: a button into
+`placed.buttons[name]`, the base into the square of side `stick_base_size`
+centred on (`base_x`, `base_y`), the knob into the square of side
+`stick_knob_size` centred on (`knob_x`, `knob_y`), with scales of rectangle
+size over sprite size from `love.pad_sheet`'s tables. The rectangles drawn
+are the ones the touches were tested against this frame. An un-`init`ed
+view or a non-table `virtual_pad` fails an `assert` starting
+`pad_view.draw:`. `test_game_screens` checks it pixel for pixel with
+`pad_flat.png`: hidden in both modes, shown in tall mode, a button pressed,
+the stick pushed on a diagonal, shown in overlay mode on a resize's frame.
 
 ### The asset PNGs
 
@@ -1144,6 +1174,7 @@ static test's expected frame. Output is byte for byte the same on every
 run. Both sheets are 240×72, 8-bit RGBA, stored deflate blocks; every
 texel outside a sprite is `00000000`. `love.pad_sheet` (`game/love/`)
 holds the same layout as data and is the only file naming `pad.png`; the
+game loads the sheet once at boot (`love.pad_view.init`). The
 generator keeps its own copy, so the static test compares two sources.
 Changing a size or position means changing both, then `make pad-art`.
 

@@ -1,1 +1,10 @@
-{"input": "pad", "window": [390, 844], "screens": [0, 1], "frames": [{}, {"resize": [640, 480]}]}
+{"input": "pad", "window": [390, 844], "pad_sheet": "pad_flat.png", "screens": [0, 1, 2, 4, 6, 7], "frames": [
+  {},
+  {"resize": [640, 480]},
+  {"resize": [160, 322], "touches": [[1, 120, 277]]},
+  {},
+  {"touches": [[2, 120, 230]]},
+  {"touches": [[3, 40, 240]]},
+  {"touches": [[3, 70, 200]]},
+  {"resize": [160, 120]}
+]}

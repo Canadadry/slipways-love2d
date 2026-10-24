@@ -22,7 +22,7 @@ make help                          # every target
 
 ## Playing the Lua game
 
-`make love-file` writes `tmp/slipways.love` and proves it: it plays one e2e replay from the unpacked archive and checks its hash. The archive runs in LÖVE 11.5 (`love tmp/slipways.love`); on an iPhone, import it into Love2D Studio by AirDrop or Files. Until the on-screen pad exists, the game needs a gamepad: it reads no keyboard. Known risk on a Retina screen: with `highdpi`, LÖVE may create the 160×120 canvas at the screen's DPI scale, and 1-pixel points could leave gaps.
+`make love-file` writes `tmp/slipways.love` and proves it: it plays one e2e replay from the unpacked archive and checks its hash. The archive runs in LÖVE 11.5 (`love tmp/slipways.love`); on an iPhone, import it into Love2D Studio by AirDrop or Files. With no controller, touch (or click) the screen to show the virtual pad; a gamepad press hides it. The game reads no keyboard. Known risk on a Retina screen: with `highdpi`, LÖVE may create the 160×120 canvas at the screen's DPI scale, and 1-pixel points could leave gaps.
 
 ## Controls
 

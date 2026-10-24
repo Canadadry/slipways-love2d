@@ -163,7 +163,7 @@ $(TMP_DIR)/test_fake_love_screens: $(test_fake_love_screens_objs) $(TMP_DIR)/fak
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
 
 test_game_screens_objs := $(call objs,tests/test_game_screens.c tests/fake_love_cli.c tests/expected_screen.c tools/fake_love/png_file.c)
-$(TMP_DIR)/test_game_screens: $(test_game_screens_objs) $(TMP_DIR)/fake_love tests/fixtures/game_screens.json | $(TMP_DIR)
+$(TMP_DIR)/test_game_screens: $(test_game_screens_objs) $(TMP_DIR)/fake_love tests/fixtures/game_screens.json tests/fixtures/pad_flat.png | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
 
 test_fake_love_touch_objs := $(call objs,tests/test_fake_love_touch.c tests/fake_love_cli.c)

@@ -43,7 +43,8 @@ function M.get_dimensions()
   return love.graphics.getDimensions()
 end
 
--- design.md's present: call it once, last in love.draw, outside any push.
+-- design.md's present: call it once, after every draw onto canvas 0, outside
+-- any push; only pad_view's screen draws may follow it.
 -- The layout is recomputed from the window size on every call, so a resize
 -- shows on its own frame.
 function M.present()

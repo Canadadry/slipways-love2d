@@ -6,6 +6,7 @@ local gfx_module = require("p8.gfx")
 local sprite_sheet = require("p8.sprite_sheet")
 local vram = require("p8.vram")
 local backend = require("love.backend")
+local pad_view = require("love.pad_view")
 local screen = require("love.screen")
 local virtual_pad_module = require("love.virtual_pad")
 local dispatch_context = require("engine.dispatch_context")
@@ -27,6 +28,7 @@ local gfx = {}
 local mem = {}
 local step = {}
 local virtual_pad = {}
+local view = {}
 local cheat_activations = 0
 
 local function read_bindings()
@@ -112,6 +114,7 @@ function love.load(args)
   input_step.init(step, read_bindings())
   input_step.set_attract_after(step, read_attract_after(args))
   virtual_pad_module.init(virtual_pad)
+  pad_view.init(view)
 end
 
 function love.update(dt)
@@ -130,6 +133,7 @@ function love.draw()
   screen.frame_end()
   draw_meter.frame_end()
   screen.present()
+  pad_view.draw(view, virtual_pad)
 end
 
 -- Called by tmp/fake_love after the last frame, never by real LÖVE.
