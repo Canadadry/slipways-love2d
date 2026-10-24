@@ -35,7 +35,8 @@ For one replay it:
 3. calls `love.load(arg)`, `arg` being `{"--attract-after", "N"}` when the
    replay has `"attract_after": N` (plain decimal), `{}` otherwise;
 4. for each frame of `frames`: on a frame carrying `resize`, makes the new
-   window size current and calls `love.resize(w, h)`; then compares the held
+   window size current and calls `love.resize(w, h)`; then makes the
+   frame's touches and mouse current, compares the held
    buttons with the previous frame's, calls `love.gamepadreleased` then `love.gamepadpressed` for those
    that changed, each in ascending button number, answers
    `Joystick:isGamepadDown` from the current list, calls `love.update(1/60)`
@@ -139,8 +140,9 @@ capture), `<name>.json.sha256` and `<name>.json.state` (the game's
 stderr); all four are removed before each run. These runs are shared:
 `make e2e end-state` runs each replay once.
 
-`tools/e2e_limits.sh` checks the replay limits, then each replay is
-reported on one line:
+`tools/e2e_limits.sh` checks the replay limits, counting a replay's frames
+as the objects of its `frames` array, whatever they hold; then each replay
+is reported on one line:
 
 - **matches**: the capture's sha256 equals the replay's `.json.sha256`;
 - **DIVERGENT**: it does not, with the expected and actual hash and, if the
@@ -196,7 +198,7 @@ every button its list holds. Each frame, the fake first handles the frame's
 `love.graphics.getDimensions()` answers, then calls `love.resize(w, h)`
 (two numbers) when the game defines it; `love.resize` is never called for
 the start size. It then makes the frame's
-list current, then calls `love.gamepadreleased` for each button that went
+list current, with its touches and mouse (see Touch and mouse semantics), then calls `love.gamepadreleased` for each button that went
 up, then `love.gamepadpressed` for each that went down, each group in
 ascending button number, then `love.update(1/60)` and `love.draw()`. A
 button held over several frames is pressed once: no auto-repeat; only set
@@ -214,16 +216,45 @@ resize before the pad callbacks are the fake's convention, not LÖVE's (which
 delivers events as they arrive): the game must not depend on the order of
 the resize and pad callbacks within a frame.
 
+**Touch and mouse semantics.** Polling only: no touch or mouse callback
+exists. `love.touch.getTouches()` returns a new sequence of the frame's
+touches, one light userdata per touch, equal to its replay id, so a finger
+gives the same value on every frame it is held; the sequence follows the
+frame's `touches` order, which the game must not depend on. An id absent
+from a frame is a lifted touch: `love.touch.getPosition(id)` then fails
+with `Invalid active touch ID`; for a held id it returns its x and y. A
+frame without `touches` holds none. The mouse, `love.mouse.getPosition()`
+and `love.mouse.isDown(1)`, is kept from the last frame carrying `mouse`;
+before it, the mouse is at (0, 0), up, as is every touch state before the
+first frame. Touches and mouse become current with the frame's pad list,
+after `love.resize` (which still sees the previous frame's, like
+`isGamepadDown`), and stay current until the next frame starts,
+`debug_state()` included; during `love.load` there is no touch. Positions
+are numbers in the units of `getDimensions()`, one unit one fake pixel
+(`highdpi` is not modelled). `love.touch` and `love.mouse` are nil while
+`conf.lua` runs. Any other form (`getTouches(1)`, `getPosition(1)`, an
+argument to `mouse.getPosition`) raises an error naming the function;
+`isDown` with anything but the single integer 1 fails with
+`love.mouse.isDown: only isDown(1), the left button, is in the function list`.
+
 **Fake disk and arguments.** The replay members the fake reads are
 `input`, `frames`, `initial_save`, `bindings`, `attract_after` and
 `window`, each at most once: `initial_save` a non-empty string of an even
 number of hex digits, `bindings` the name of a `.cfg` file next to the
 replay, `attract_after` a positive integer, `window` the window size
 `[w, h]` for the run until a resize (640×480 when absent); `start` is
-refused, other members are ignored. A frame holds `pad` (required) and
-optionally `resize: [w, h]`, the window size from the start of that frame
-on, which must differ from the size in force (LÖVE calls `love.resize` only
-on a change); any other frame key is refused. `window` and `resize` are
+refused, other members are ignored. A frame holds `pad`, `resize`,
+`touches` and `mouse`, each optional and at most once; any other frame key
+is refused. `pad` lists the held buttons; a frame without it holds none.
+`resize: [w, h]` is the window size from the start of that frame on, which
+must differ from the size in force (LÖVE calls `love.resize` only on a
+change). `touches: [[id, x, y], …]` lists at most 10 held touches, each id
+an integer from 1 to 2147483647 given once in the frame, the same id on
+consecutive frames being the same finger. `mouse: [x, y, left]` sets the
+mouse from that frame on, `left` 0 (up) or 1 (down). Touch and mouse
+coordinates are integers with 0 ≤ x < w and 0 ≤ y < h for the window in
+force on that frame, after its own `resize`; a kept mouse is not checked
+again after a resize. `window` and `resize` are
 each two integers from 1 to 4096, in LÖVE units, one unit one fake pixel
 (`highdpi` is not modelled; `t.window` set by `love.conf` is ignored). A refusal exits 1 before `love.load` and leaves no output.
 `love.filesystem` is nil in `conf.lua` and holds exactly `read`, `write`
@@ -636,6 +667,9 @@ here, verified by its real-LÖVE capture, or, for plan 6's extensions
   `ImageData:setPixel(x, y, r, g, b[, a])`, `ImageData:getPixel(x, y)`.
 - Pad: `love.joystick.getJoysticks`, `Joystick:isGamepadDown`, the callbacks
   `love.gamepadpressed` and `love.gamepadreleased`.
+- Touch and mouse, polled only, no callback: `love.touch.getTouches()`,
+  `love.touch.getPosition(id)`, `love.mouse.getPosition()`,
+  `love.mouse.isDown(1)` (see Touch and mouse semantics).
 - Files: `love.filesystem.read`, `write`, `getInfo`.
 
 Reading anything else from `love`, a module table or an object, or creating
@@ -643,7 +677,7 @@ a field in `love` or a module table, fails at that line with
 `love.timer is not in the function list of docs/love-port/design.md`
 (`love.graphics.getWidth`, `ImageData:mapPixel`, `love[1]` for other keys).
 The seven callbacks are the only fields the game may set on `love`; before it
-sets them, and for the four modules while `conf.lua` runs, they read `nil`.
+sets them, and for the six modules while `conf.lua` runs, they read `nil`.
 It is an ordinary Lua error, like every refusal of the fake. Both binaries,
 `tmp/fake_love` and `tmp/love_capture_check`, run under this guard.
 

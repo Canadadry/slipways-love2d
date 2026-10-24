@@ -11,6 +11,8 @@ local FUNCTIONS = {
     },
     image = { newImageData = true },
     joystick = { getJoysticks = true },
+    touch = { getTouches = true, getPosition = true },
+    mouse = { getPosition = true, isDown = true },
     filesystem = { read = true, write = true, getInfo = true },
 }
 

@@ -240,6 +240,40 @@ static void test_every_listed_global_read_passes(void) {
     assert(out_has("lua-guard: 1 files clean\n"));
 }
 
+static void test_touch_and_mouse_polling_passes_outside_the_glue_directory(void) {
+    reset();
+    write_file(ROOT "/main.lua", "function love.update(dt)\n"
+                                 "  for _, id in ipairs(love.touch.getTouches()) do\n"
+                                 "    local x, y = love.touch.getPosition(id)\n"
+                                 "  end\n"
+                                 "  local mx, my = love.mouse.getPosition()\n"
+                                 "  local down = love.mouse.isDown(1)\n"
+                                 "end\n");
+    write_file(ROOT "/game/lovers/pad.lua", "local M = {}\n"
+                                            "function M.f()\n"
+                                            "  return love.touch.getTouches(), love.mouse.isDown(1)\n"
+                                            "end\n"
+                                            "return M\n");
+    assert(run_guard("main.lua game/lovers/pad.lua") == 0);
+    assert(out_has("lua-guard: 2 files clean\n"));
+}
+
+static void test_another_touch_or_mouse_name_fails(void) {
+    reset();
+    write_file(ROOT "/main.lua", "local p = love.touch.getPressure(nil)\n"
+                                 "love.mouse.setVisible(false)\n"
+                                 "function love.touchpressed(id, x, y)\nend\n"
+                                 "function love.mousepressed(x, y, b)\nend\n"
+                                 "local get = love.touch.getTouches\n");
+    assert(run_guard("main.lua") == 1);
+    assert(out_has(ROOT "/main.lua:1: love.touch.getPressure is not on the design's list\n"));
+    assert(out_has(ROOT "/main.lua:2: love.mouse.setVisible is not on the design's list\n"));
+    assert(out_has(ROOT "/main.lua:3: love.touchpressed is not on the design's list\n"));
+    assert(out_has(ROOT "/main.lua:5: love.mousepressed is not on the design's list\n"));
+    assert(out_has(ROOT "/main.lua:7: love.touch.getTouches is not called directly\n"));
+    assert(out_lines() == 5);
+}
+
 int main(void) {
     assert(system("mkdir -p " DIR) == 0);
     test_a_file_that_does_not_compile_fails_with_its_line();
@@ -252,6 +286,8 @@ int main(void) {
     test_a_global_write_fails_except_debug_state_in_main();
     test_reads_are_found_in_nested_functions_and_locals_shadow_globals();
     test_every_listed_global_read_passes();
+    test_touch_and_mouse_polling_passes_outside_the_glue_directory();
+    test_another_touch_or_mouse_name_fails();
     puts("test_lua_guard: ok");
     return 0;
 }
