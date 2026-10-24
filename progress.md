@@ -50,7 +50,7 @@
     - [x] Chunk 2 — direction mask: dead zone and 8 sectors
   - [ ] Step 3.12 — touch to mask
     - [x] Chunk 1 — buttons, mouse, combine
-    - [ ] Chunk 2 — the stick in update
+    - [x] Chunk 2 — the stick in update
   - [ ] Step 3.13 — show / hide
   - [ ] Step 3.14 — wire into main.lua, no drawing
   - [ ] Step 3.15 — touch e2e replays

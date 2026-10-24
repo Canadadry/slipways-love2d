@@ -988,6 +988,44 @@ argument. With `dx, dy` the offset to the base centre and
   `pad_buttons`, i.e. buttons 1–4 (`dpup`, `dpdown`, `dpleft`, `dpright`)
   of `main.lua`'s `PAD_BUTTON_NAMES`.
 
+**Pad touch.** `love.pad_touch` (pure, no `love.*` call, no module state:
+everything lives in the caller's state table) turns the touches held this
+frame into the virtual pad's 12-bit mask, in LÖVE window units.
+`init(touch_state)` sets `stick` and `stick_id` to `nil` and forgets every
+touch seen; calling it again drops the stick and makes every touch still
+down new on the next `update`. `update(touch_state, touches, mouse,
+placed)`, once per frame, takes `touches` as an array of `{id, x, y}`
+records (any non-nil id, unique), `mouse` as `nil` or `{x, y, down}`
+(`down` a boolean: while true the mouse is one more touch with a private
+id, while false it is lifted and its position ignored), and `placed` from
+`pad_layout.place` for this frame's window; it returns the mask. In order:
+
+- **Lift:** the stick's touch absent this frame drops the stick.
+- **Follow:** otherwise `pad_stick.follow` at its current position,
+  anywhere (out of the zone, over a button, out of the window). The base
+  and radius stay those of the start, through a resize.
+- **Claim:** without a stick, the first touch in list order that is new
+  (not seen by the previous `update`) and lies in `stick_zone` and in no
+  button becomes the stick (`pad_stick.start` with `stick_base_size`). **A
+  touch that starts on a button is never the stick's** (L and Back lie
+  in the zone), and ownership is decided when a touch lands: a finger
+  slid off Back, or one that landed while another held the stick, never
+  claims later. A stick lifted and a touch landing on the same frame: the
+  new touch claims.
+- **Buttons answer the current position:** every touch but the stick's is
+  tested against every button, half-open, and ORs its bit; sliding from A
+  to B releases A and presses B, a touch landing anywhere and sliding onto
+  a button presses it, the stick's touch never presses one.
+- **Result:** the stick's `mask` (0 without one) OR the button bits.
+
+`touch_state.stick` (the `pad_stick` table) and `stick_id` are readable.
+`BUTTON_MASKS` holds the button bits by gamepad name, from `p8.input`'s
+`PAD_BUTTON_5` … `PAD_BUTTON_12` (`a` 16, `b` 32, `x` 64, `y` 128,
+`leftshoulder` 256, `rightshoulder` 512, `start` 1024, `back` 2048).
+`combine(gamepad_mask, virtual_mask)` is their OR. A malformed record,
+mouse, `placed`, an un-`init`ed state or a mask outside the integers 0–4095
+fails an `assert` naming the field.
+
 ### The asset PNGs
 
 `game/sprites.png` and `game/font.png` are committed sources, edited

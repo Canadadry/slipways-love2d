@@ -2,6 +2,7 @@
 -- touch_state.
 local bit = require("bit")
 local input = require("p8.input")
+local pad_stick = require("love.pad_stick")
 
 local M = {}
 
@@ -91,14 +92,50 @@ local function frame_touches(touches, mouse)
   return frame
 end
 
+local function follow_or_lift(touch_state, frame)
+  for _, record in ipairs(frame) do
+    if record.id == touch_state.stick_id then
+      pad_stick.follow(touch_state.stick, record.x, record.y)
+      return
+    end
+  end
+  touch_state.stick = nil
+  touch_state.stick_id = nil
+end
+
+-- Only a touch first seen this frame claims: one that landed on a button, or
+-- while another finger held the stick, never becomes the stick later.
+local function claim(touch_state, frame, placed)
+  for _, record in ipairs(frame) do
+    if not touch_state.held[record.id] and inside(placed.stick_zone, record.x, record.y)
+      and buttons_under(placed.buttons, record.x, record.y) == 0 then
+      touch_state.stick = pad_stick.start(record.x, record.y, placed.stick_base_size)
+      touch_state.stick_id = record.id
+      pad_stick.follow(touch_state.stick, record.x, record.y)
+      return
+    end
+  end
+end
+
+-- Returns the virtual mask; the stick's touch never presses a button.
 function M.update(touch_state, touches, mouse, placed)
   refuse_unless(type(touch_state) == "table" and type(touch_state.held) == "table",
     "touch_state", "a table passed to init", touch_state)
   check_placed(placed)
-  local mask = 0
-  for _, record in ipairs(frame_touches(touches, mouse)) do
-    mask = bit.bor(mask, buttons_under(placed.buttons, record.x, record.y))
+  local frame = frame_touches(touches, mouse)
+  follow_or_lift(touch_state, frame)
+  if touch_state.stick == nil then
+    claim(touch_state, frame, placed)
   end
+  local mask = touch_state.stick ~= nil and touch_state.stick.mask or 0
+  local held = {}
+  for _, record in ipairs(frame) do
+    if record.id ~= touch_state.stick_id then
+      mask = bit.bor(mask, buttons_under(placed.buttons, record.x, record.y))
+    end
+    held[record.id] = true
+  end
+  touch_state.held = held
   return mask
 end
 

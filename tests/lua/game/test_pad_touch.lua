@@ -98,6 +98,124 @@ local function test_the_mouse_and_a_finger_add_up()
   expect(pad_touch.update(touch_state, { touch_on(1, PHONE, "b") }, mouse_on(PHONE, "a", true), PHONE), 48, "mouse on a, finger on b")
 end
 
+local FREE_X, FREE_Y = 100, 650
+
+local function expect_stick_base(touch_state, x, y, what)
+  expect(touch_state.stick ~= nil, true, what .. " has a stick")
+  expect(touch_state.stick.base_x, x, what .. " base x")
+  expect(touch_state.stick.base_y, y, what .. " base y")
+end
+
+local function test_a_finger_landing_on_the_free_stick_zone_claims_the_stick_and_steers()
+  local touch_state = new_state()
+  expect(pad_touch.update(touch_state, { touch(1, FREE_X, FREE_Y) }, nil, PHONE), 0, "landed")
+  expect_stick_base(touch_state, FREE_X, FREE_Y, "landed")
+  expect(pad_touch.update(touch_state, { touch(1, FREE_X + 60, FREE_Y) }, nil, PHONE), 8, "60 right")
+end
+
+local function test_the_stick_touch_keeps_steering_out_of_its_zone_and_over_a_and_lifting_drops_it()
+  local touch_state = new_state()
+  pad_touch.update(touch_state, { touch(1, FREE_X, FREE_Y) }, nil, PHONE)
+  expect(PHONE.stick_zone.x + PHONE.stick_zone.width, 195, "stick zone right edge")
+  expect(pad_touch.update(touch_state, { touch(1, 380, FREE_Y) }, nil, PHONE), 8, "out of the zone")
+  expect(pad_touch.update(touch_state, { touch_on(1, PHONE, "a") }, nil, PHONE), 8, "over a")
+  expect_stick_base(touch_state, FREE_X, FREE_Y, "over a")
+  expect(pad_touch.update(touch_state, {}, nil, PHONE), 0, "lifted")
+  expect(touch_state.stick, nil, "stick after lifting")
+end
+
+local function test_one_thumb_steers_while_the_other_presses_a()
+  local touch_state = new_state()
+  pad_touch.update(touch_state, { touch(1, FREE_X, FREE_Y) }, nil, PHONE)
+  expect(pad_touch.update(touch_state, { touch(1, FREE_X + 60, FREE_Y), touch_on(2, PHONE, "a") }, nil, PHONE), 8 + 16, "right and a")
+end
+
+local function test_a_finger_landing_on_l_or_back_presses_that_button_and_never_claims_the_stick()
+  local on_l = new_state()
+  expect(pad_touch.update(on_l, { touch_on(1, PHONE, "leftshoulder") }, nil, PHONE), 256, "on l")
+  expect(on_l.stick, nil, "stick after landing on l")
+  local on_back = new_state()
+  expect(pad_touch.update(on_back, { touch_on(1, PHONE, "back") }, nil, PHONE), 2048, "on back")
+  expect(on_back.stick, nil, "stick after landing on back")
+end
+
+local function test_a_finger_slid_off_back_never_steers()
+  local touch_state = new_state()
+  pad_touch.update(touch_state, { touch_on(1, PHONE, "back") }, nil, PHONE)
+  expect(pad_touch.update(touch_state, { touch(1, FREE_X, FREE_Y) }, nil, PHONE), 0, "slid to the free zone")
+  expect(touch_state.stick, nil, "stick after sliding off back")
+  expect(pad_touch.update(touch_state, { touch(1, FREE_X + 60, FREE_Y) }, nil, PHONE), 0, "slid 60 right")
+  pad_touch.update(touch_state, { touch(1, FREE_X + 60, FREE_Y), touch(2, FREE_X, FREE_Y) }, nil, PHONE)
+  expect_stick_base(touch_state, FREE_X, FREE_Y, "a new finger")
+end
+
+local function test_a_second_finger_in_the_zone_while_the_stick_is_held_never_becomes_the_stick()
+  local touch_state = new_state()
+  pad_touch.update(touch_state, { touch(1, FREE_X, FREE_Y) }, nil, PHONE)
+  expect(pad_touch.update(touch_state, { touch(1, FREE_X, FREE_Y), touch(2, 60, 600) }, nil, PHONE), 0, "second finger in the zone")
+  expect_stick_base(touch_state, FREE_X, FREE_Y, "second finger in the zone")
+  expect(pad_touch.update(touch_state, { touch(1, FREE_X, FREE_Y), touch_on(2, PHONE, "back") }, nil, PHONE), 2048, "second finger on back")
+  expect(pad_touch.update(touch_state, { touch(2, 60, 600) }, nil, PHONE), 0, "stick lifted, second finger back in the zone")
+  expect(touch_state.stick, nil, "stick after the first finger lifts")
+  expect(pad_touch.update(touch_state, { touch_on(2, PHONE, "back") }, nil, PHONE), 2048, "second finger on back again")
+  expect(touch_state.stick, nil, "stick with the second finger on back")
+end
+
+local function test_lifting_and_touching_again_re_centres_the_stick()
+  local touch_state = new_state()
+  pad_touch.update(touch_state, { touch(1, FREE_X, FREE_Y) }, nil, PHONE)
+  pad_touch.update(touch_state, {}, nil, PHONE)
+  pad_touch.update(touch_state, { touch(2, 50, 700) }, nil, PHONE)
+  expect_stick_base(touch_state, 50, 700, "new touch")
+end
+
+local function test_a_stick_lifted_and_a_finger_landing_on_the_same_frame_hand_the_stick_over()
+  local touch_state = new_state()
+  pad_touch.update(touch_state, { touch(1, FREE_X, FREE_Y) }, nil, PHONE)
+  pad_touch.update(touch_state, { touch(2, 50, 700) }, nil, PHONE)
+  expect(touch_state.stick_id, 2, "stick owner")
+  expect_stick_base(touch_state, 50, 700, "the landing finger")
+end
+
+local function test_the_mouse_held_in_the_zone_drives_the_stick_until_released()
+  local touch_state = new_state()
+  expect(pad_touch.update(touch_state, {}, { x = FREE_X, y = FREE_Y, down = true }, PHONE), 0, "down in the zone")
+  expect_stick_base(touch_state, FREE_X, FREE_Y, "down in the zone")
+  expect(pad_touch.update(touch_state, {}, { x = FREE_X + 60, y = FREE_Y, down = true }, PHONE), 8, "60 right")
+  expect(pad_touch.update(touch_state, {}, { x = FREE_X + 60, y = FREE_Y, down = false }, PHONE), 0, "released")
+  expect(touch_state.stick, nil, "stick after release")
+end
+
+local function test_a_resize_keeps_the_stick_where_it_started_and_moves_the_buttons()
+  local desktop = place_for_window(640, 480)
+  local touch_state = new_state()
+  pad_touch.update(touch_state, { touch(1, FREE_X, FREE_Y) }, nil, PHONE)
+  local a_x, a_y = centre(desktop, "a")
+  expect(a_x, 480, "desktop a x")
+  expect(a_y, 384, "desktop a y")
+  local touches = { touch(1, FREE_X + 60, FREE_Y), touch_on(2, desktop, "a") }
+  expect(pad_touch.update(touch_state, touches, nil, desktop), 8 + 16, "right and desktop a")
+  expect_stick_base(touch_state, FREE_X, FREE_Y, "after the resize")
+end
+
+local function test_init_drops_the_stick_and_forgets_every_touch()
+  local touch_state = new_state()
+  pad_touch.update(touch_state, { touch(1, FREE_X, FREE_Y) }, nil, PHONE)
+  local touches = { touch(1, 50, 700), touch_on(2, PHONE, "a") }
+  pad_touch.update(touch_state, touches, nil, PHONE)
+  pad_touch.init(touch_state)
+  expect(touch_state.stick, nil, "stick after init")
+  expect(pad_touch.update(touch_state, touches, nil, PHONE), 16, "the same touches after init")
+  expect_stick_base(touch_state, 50, 700, "the stick finger, new again")
+end
+
+local function test_of_two_fingers_landing_in_the_zone_together_the_first_listed_claims_the_stick()
+  local touch_state = new_state()
+  pad_touch.update(touch_state, { touch(1, FREE_X, FREE_Y), touch(2, 50, 700) }, nil, PHONE)
+  expect(touch_state.stick_id, 1, "stick owner")
+  expect_stick_base(touch_state, FREE_X, FREE_Y, "the first finger")
+end
+
 local function expect_refused(call, argument, what)
   local ok, err = pcall(call)
   expect(ok, false, what .. " succeeded")
@@ -149,6 +267,18 @@ return check.run({
   { "the mouse presses a button only while its button is down", test_the_mouse_presses_a_button_only_while_its_button_is_down },
   { "the mouse and a finger add up", test_the_mouse_and_a_finger_add_up },
   { "update refuses malformed input naming the field", test_update_refuses_malformed_input_naming_the_field },
+  { "a finger landing on the free stick zone claims the stick and steers", test_a_finger_landing_on_the_free_stick_zone_claims_the_stick_and_steers },
+  { "the stick touch keeps steering out of its zone and over a and lifting drops it", test_the_stick_touch_keeps_steering_out_of_its_zone_and_over_a_and_lifting_drops_it },
+  { "one thumb steers while the other presses a", test_one_thumb_steers_while_the_other_presses_a },
+  { "a finger landing on l or back presses that button and never claims the stick", test_a_finger_landing_on_l_or_back_presses_that_button_and_never_claims_the_stick },
+  { "a finger slid off back never steers", test_a_finger_slid_off_back_never_steers },
+  { "a second finger in the zone while the stick is held never becomes the stick", test_a_second_finger_in_the_zone_while_the_stick_is_held_never_becomes_the_stick },
+  { "lifting and touching again re centres the stick", test_lifting_and_touching_again_re_centres_the_stick },
+  { "a stick lifted and a finger landing on the same frame hand the stick over", test_a_stick_lifted_and_a_finger_landing_on_the_same_frame_hand_the_stick_over },
+  { "the mouse held in the zone drives the stick until released", test_the_mouse_held_in_the_zone_drives_the_stick_until_released },
+  { "a resize keeps the stick where it started and moves the buttons", test_a_resize_keeps_the_stick_where_it_started_and_moves_the_buttons },
+  { "init drops the stick and forgets every touch", test_init_drops_the_stick_and_forgets_every_touch },
+  { "of two fingers landing in the zone together the first listed claims the stick", test_of_two_fingers_landing_in_the_zone_together_the_first_listed_claims_the_stick },
   { "combine ors the gamepad mask with the virtual mask", test_combine_ors_the_gamepad_mask_with_the_virtual_mask },
   { "combine refuses a mask outside 0 to 4095 naming the argument", test_combine_refuses_a_mask_outside_0_to_4095_naming_the_argument },
 })
