@@ -87,3 +87,4 @@
     - [x] fake function_list
     - [x] fake_love.c
     - [x] fake replay
+    - [x] fake touch
