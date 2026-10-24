@@ -17,6 +17,7 @@
 #include "image.h"
 #include "joystick.h"
 #include "pad.h"
+#include "touch.h"
 #include "transform.h"
 
 #define NO_FRAME ((size_t)-1)
@@ -206,6 +207,7 @@ bool host_open(host_t *host, const char *game_dir, disk_t *disk) {
     if (!run_conf(host))
         return false;
     joystick_install(host->lua);
+    touch_install(host->lua);
     filesystem_install(host->lua, disk);
     graphics_install(host->lua, host->canvases, &host->transform, &host->window);
     image_install(host->lua, disk);
@@ -258,6 +260,7 @@ bool host_frame(host_t *host, size_t frame, const host_frame_input_t *input) {
     size_t change_count = pad_list_changes(host->held, input->held, changes);
     host->held = input->held;
     joystick_set_held(host->lua, input->held);
+    touch_set_frame(host->lua, input);
     for (size_t i = 0; i < change_count; i++)
         if (!call_pad_callback(host, &changes[i], frame))
             return false;

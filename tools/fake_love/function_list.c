@@ -7,7 +7,7 @@
 
 static const char *const CALLBACKS[] = {"conf",           "load",           "update", "draw",
                                         "gamepadpressed", "gamepadreleased", "resize"};
-static const char *const MODULES[] = {"graphics", "image", "joystick", "filesystem"};
+static const char *const MODULES[] = {"graphics", "image", "joystick", "filesystem", "touch", "mouse"};
 
 static bool is_one_of(lua_State *lua, int key_index, const char *const *names, size_t count) {
     if (lua_type(lua, key_index) != LUA_TSTRING)

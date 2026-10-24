@@ -119,9 +119,15 @@ static bool load_game(host_t *host, const replay_t *replay) {
     return host_load(host, load_arguments, 2);
 }
 
-static host_frame_input_t read_frame_input(const replay_t *replay, size_t frame) {
-    host_frame_input_t input = {.held = replay_frame_held(replay, frame)};
+static host_frame_input_t read_frame_input(const replay_t *replay, size_t frame, host_touch_t *touches) {
+    host_frame_input_t input = {.held = replay_frame_held(replay, frame), .touches = touches};
     input.resized = replay_frame_resize(replay, frame, &input.width, &input.height) != 0;
+    const replay_touch_t *replay_touches = replay_frame_touches(replay, frame, &input.touch_count);
+    assert(input.touch_count <= HOST_TOUCH_MAX && "the replay reader caps a frame at 10 touches");
+    for (size_t i = 0; i < input.touch_count; i++)
+        touches[i] = (host_touch_t){replay_touches[i].id, replay_touches[i].x, replay_touches[i].y};
+    replay_mouse_t mouse = replay_frame_mouse(replay, frame);
+    input.mouse = (host_mouse_t){mouse.x, mouse.y, mouse.left != 0};
     return input;
 }
 
@@ -132,7 +138,8 @@ static bool run_game(host_t *host, const arguments_t *arguments, const replay_t 
     host_set_window(host, width, height);
     bool ok = host_open(host, arguments->game_dir, disk) && load_game(host, replay);
     for (size_t frame = 0; ok && frame < replay_frame_count(replay); frame++) {
-        const host_frame_input_t input = read_frame_input(replay, frame);
+        host_touch_t touches[HOST_TOUCH_MAX];
+        const host_frame_input_t input = read_frame_input(replay, frame, touches);
         ok = host_frame(host, frame, &input);
         if (!ok)
             break;

@@ -8,7 +8,7 @@
   - [ ] Step 1.3 — touches and mouse
     - [x] Chunk 1 — replay reader: touches, mouse, optional pad
     - [x] Chunk 2 — e2e_limits.sh frame counter
-    - [ ] Chunk 3 — love.touch and love.mouse in the host
+    - [x] Chunk 3 — love.touch and love.mouse in the host
     - [ ] Chunk 4 — lua-guard, design.md, timing gate
   - [ ] Step 1.4 — screen framebuffer, free present, screens
   - [ ] Step 1.5 — scaled quads, alpha blending, pad_sheet

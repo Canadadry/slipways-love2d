@@ -92,7 +92,8 @@ static void test_love_reads_nil_for_an_absent_callback_or_module(void) {
     lua_State *lua = new_state_with_love();
     static const char *const names[] = {"conf",           "load",     "update", "draw",
                                         "gamepadpressed", "gamepadreleased", "resize",
-                                        "graphics",       "image",    "joystick", "filesystem"};
+                                        "graphics",       "image",    "joystick", "filesystem",
+                                        "touch",          "mouse"};
     for (size_t i = 0; i < sizeof names / sizeof names[0]; i++) {
         char chunk[64];
         snprintf(chunk, sizeof chunk, "return love.%s", names[i]);
@@ -128,6 +129,10 @@ static void test_love_takes_the_seven_callbacks_and_nothing_else(void) {
     assert_runs_to(lua, "love.load = nil; love.load = function() return 'again' end; return love.load()", "again");
     assert_runs_to(lua, "function love.keypressed() end",
                    "game.lua:1: love.keypressed is not in the function list of docs/love-port/design.md");
+    assert_runs_to(lua, "function love.touchpressed() end",
+                   "game.lua:1: love.touchpressed is not in the function list of docs/love-port/design.md");
+    assert_runs_to(lua, "love.mousepressed = print",
+                   "game.lua:1: love.mousepressed is not in the function list of docs/love-port/design.md");
     assert_runs_to(lua, "love.errorhandler = print",
                    "game.lua:1: love.errorhandler is not in the function list of docs/love-port/design.md");
     assert_runs_to(lua, "love.graphics = {}",
