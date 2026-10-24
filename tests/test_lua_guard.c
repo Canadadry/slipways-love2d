@@ -185,6 +185,7 @@ static void test_graphics_and_image_outside_the_glue_directory_fail(void) {
 
 static void test_an_undeclared_global_read_fails_with_file_line_and_name(void) {
     reset();
+    write_file(ROOT "/p8/fixed.lua", "return {}\n");
     write_file(ROOT "/p8/typo.lua", "local M = {}\n"
                                     "local fixed = require('p8.fixed')\n"
                                     "M.x = fixd\n"
@@ -233,7 +234,7 @@ static void test_every_listed_global_read_passes(void) {
     write_file(ROOT "/p8/ok.lua",
                "local M = {}\n"
                "local x = { assert, error, getmetatable, ipairs, next, pairs, pcall, rawequal, rawget, rawset,\n"
-               "  require, select, setmetatable, tonumber, tostring, type, unpack, xpcall, math, string, table }\n"
+               "  require('p8.ok'), select, setmetatable, tonumber, tostring, type, unpack, xpcall, math, string, table }\n"
                "function M.f()\n  return love.joystick.getJoysticks()\nend\n"
                "return M\n");
     assert(run_guard("p8/ok.lua") == 0);
@@ -274,6 +275,41 @@ static void test_another_touch_or_mouse_name_fails(void) {
     assert(out_lines() == 5);
 }
 
+static void test_every_required_module_and_named_png_must_be_under_the_root(void) {
+    reset();
+    write_file(ROOT "/p8/fixed.lua", "return {}\n");
+    write_file(ROOT "/p8/late.lua", "return {}\n");
+    write_file(ROOT "/game/lovers/init.lua", "return {}\n");
+    write_file(ROOT "/sprites.png", "");
+    write_file(ROOT "/game/lovers/needs.lua",
+               "local M = {}\n"
+               "local fixed = require(\"p8.fixed\")\n"
+               "local bit = require('bit')\n"
+               "local lovers = require \"game.lovers\"\n"
+               "function M.f()\n"
+               "  local late = require ( 'p8.late' )\n"
+               "  local gone = require(\"p8.gone\")\n"
+               "  local name = 'p8.fixed'\n"
+               "  return require(name),\n"
+               "    require('p8.fixed' .. name)\n"
+               "end\n"
+               "-- local ghost = require('p8.ghost') .. 'ghost.png'\n"
+               "local a = \"sprites.png\"\n"
+               "local b = 'game/missing.png'\n"
+               "local c = string.format(\"sprites.png: pixel (%d, %d) or ghost.png\", 1, 2)\n"
+               "local s = 'require(\"p8.ghost\")'\n"
+               "local r = M.require\n"
+               "return M\n");
+    write_file(ROOT "/game/lovers/first.lua", "require('p8.none')\n");
+    assert(run_guard("game/lovers/needs.lua game/lovers/first.lua") == 1);
+    assert(out_has(ROOT "/game/lovers/needs.lua:7: module p8.gone is not under " ROOT "/\n"));
+    assert(out_has(ROOT "/game/lovers/needs.lua:9: require takes a literal module name\n"));
+    assert(out_has(ROOT "/game/lovers/needs.lua:10: require takes a literal module name\n"));
+    assert(out_has(ROOT "/game/lovers/needs.lua:14: image game/missing.png is not under " ROOT "/\n"));
+    assert(out_has(ROOT "/game/lovers/first.lua:1: module p8.none is not under " ROOT "/\n"));
+    assert(out_lines() == 5);
+}
+
 int main(void) {
     assert(system("mkdir -p " DIR) == 0);
     test_a_file_that_does_not_compile_fails_with_its_line();
@@ -288,6 +324,7 @@ int main(void) {
     test_every_listed_global_read_passes();
     test_touch_and_mouse_polling_passes_outside_the_glue_directory();
     test_another_touch_or_mouse_name_fails();
+    test_every_required_module_and_named_png_must_be_under_the_root();
     puts("test_lua_guard: ok");
     return 0;
 }
