@@ -1,6 +1,3 @@
--- A filter in front of pad_touch.update: a touch it holds back is absent from
--- what it returns, so pad_touch sees it lifted. No module state: the caller
--- holds visibility.
 local bit = require("bit")
 
 local M = {}
@@ -14,7 +11,6 @@ local function check_visibility(visibility, caller)
     caller, "visibility", "a table passed to init", visibility)
 end
 
--- The fields are private: callers read shown.
 function M.init(visibility)
   refuse_unless(type(visibility) == "table", "init", "visibility", "a table", visibility)
   visibility.visible = false
@@ -43,7 +39,6 @@ local function forget_lifted(visibility, touches, mouse)
   end
 end
 
--- Returns whether a touch or the mouse was not held back yet.
 local function hold_back_all(visibility, touches, mouse)
   local any = false
   for _, record in ipairs(touches) do
@@ -79,8 +74,6 @@ local function check_input(gamepad_mask, touches, mouse)
   end
 end
 
--- Returns the touches and the mouse pad_touch may see; a hidden pad passes
--- nothing, not even a mouse with its button up.
 function M.filter(visibility, gamepad_mask, touches, mouse)
   check_visibility(visibility, "filter")
   check_input(gamepad_mask, touches, mouse)
