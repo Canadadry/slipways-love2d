@@ -72,9 +72,11 @@ The goals behind every rule below:
   - **tall** when `height > 2 * width`: the window is cut in two halves; the
     game fits at maximum size centred in the top half, the pad fits at
     maximum size centred in the bottom half. The game never moves when the
-    pad shows or hides. On a 390×844 iPhone: game 390×292 at y 65–357
-    (below the Dynamic Island, ~59), pad 390×292 at y 487–779 (above the home
-    indicator, ~34). No safe-area API: the halves make it unnecessary.
+    pad shows or hides. On a 390×844 iPhone the fit rule gives scale
+    390 / 160 = 2.4375: game 390×292.5 at y 64.75–357.25 (below the Dynamic
+    Island, ~59), pad 390×292.5 at y 486.75–779.25 (above the home indicator,
+    ~34). Rectangles are never rounded: the present and the pad draw at the
+    exact fractional values. No safe-area API: the halves make it unnecessary.
   - **overlay** otherwise (desktop, iPad, landscape iPhone): the game fits
     at maximum size centred in the window; the pad is drawn over the game's
     rectangle, exactly. Spreading it to the window's edges was rejected.
@@ -120,7 +122,8 @@ section is updated with each extension:
   black at each frame start, receiving the present and the pad's sprites.
   The rasterisation rule is stated once in `design.md` so a test can compute
   an expected frame from it: a screen pixel belongs to a draw if its centre
-  lies inside the destination rectangle, and samples the source texel that
+  lies inside the destination rectangle, half-open (`x0 <= cx < x1`, same
+  for y, so a centre on an edge belongs to exactly one draw), and samples the source texel that
   centre maps to (nearest). Alpha blending is LÖVE's default ("alpha" blend
   mode).
 - Replay format, every new field optional so the 20 replays are unchanged:
@@ -149,7 +152,27 @@ section is updated with each extension:
   expected frame the way that suits it** (a few lines of Lua filling
   rectangles, an SVG rasterised by ImageMagick, a committed PNG…): no
   universal tool is built. The expected frame is written before the code
-  (TDD).
+  (TDD). An expected frame made with an outside tool (ImageMagick…) is made
+  once and committed as a PNG: a check of `make test` never runs an outside
+  tool (design.md, "`make test` and the fake's checks", rule 2).
+- **Timing gate per step.** Every step that adds a check to `make test`
+  passes design.md's timing gate (same section, rule 4) before it closes,
+  and records the medians in §6.
+- **`make e2e` time per step.** Every step that changes the fake's
+  per-frame work or what the game draws each frame (steps 4, 5, 7, 16)
+  measures `make e2e` wall time and records it in §6 (before the plan:
+  ~6–7.4 s on 4 cores, 20 replays): the median of 5 runs, beside the step's
+  "before" commit in the same session. The step fails if the median plus
+  the touch replays' estimated cost (their frame count, twins included,
+  estimated once at step 4 and recorded in §6 as a cap step 15 keeps or
+  re-measures, times the per-frame cost measured at step 4) leaves less than 1 s under 9 s; it then reworks
+  its cost before it closes.
+- **design.md follows each step.** Every step that changes the fake's
+  contract updates `docs/love-port/design.md` in the same step; its check
+  includes "design.md states the new behaviour". The contract's sentence
+  "extending it is a decision recorded here, with its real-LÖVE capture"
+  is rewritten by the first such step: this plan's extensions are verified
+  by fake C tests and screen tests, not by real-LÖVE captures.
 - **One static test of the real sheet**: every sprite of `pad.png` drawn at a
   fixed position, compared with a committed PNG. It breaks when the art
   changes, on purpose: regenerate it then.
@@ -180,6 +203,10 @@ section is updated with each extension:
 
 ## 3. Phases and steps
 
+Every step's check includes, where it applies, the two rules of §2: the
+timing gate for a new `make test` check, and design.md updated for a change
+to the fake's contract.
+
 ### Phase 1 — The fake LÖVE learns windows, touches and the screen
 
 1. `setColor` accepts any colour and alpha in `tmp/fake_love`; the canvas 0
@@ -192,54 +219,83 @@ section is updated with each extension:
    (resize before update).
 3. Replay fields `touches` and `mouse`; `love.touch.getTouches/getPosition`,
    `love.mouse.getPosition/isDown` in the function list. Verified: fake C
-   tests over a replay with touches appearing, moving, lifting.
-4. The screen framebuffer, the present at any offset and scale, scaled quad
-   draws onto the screen, `screens` and `pad_sheet`. The rasterisation rule
-   is written in `design.md`. Verified: fake C tests comparing screen PNGs
-   with expected frames computed by the test (fractional scale, offset,
-   a quad stretched, alpha blend).
-5. `docs/love-port/design.md` lists every function and field added, and
-   "The present" describes the new present. Verified: read against the
-   fake's function list (the fake's own guard test).
+   tests over a replay with touches appearing, moving, lifting; and a replay
+   using the new fields (touch-only frames included) passes
+   `tools/e2e_limits.sh` with the right frame count, the checker adapted if
+   needed.
+4. The screen framebuffer, the present at any offset and scale, and
+   `screens`, with the rasterisation rule of §2 written in design.md.
+   Verified: fake C tests comparing screen PNGs with expected frames computed
+   by the test: fractional scale, offset, and the 390×844 present
+   (scale 2.4375, where source edges land exactly on pixel centres, e.g.
+   x = 19.5), which exercises the half-open rule.
+5. Scaled quad draws onto the screen, alpha blending, and `pad_sheet`.
+   The fake's `newImage` refusal of translucent ImageData is lifted for
+   images drawn on the screen (or the plan's sprites are proven opaque —
+   whichever the step decides, written in design.md). Verified: fake C
+   tests: a quad stretched by a fractional scale and a replay whose
+   `pad_sheet` replaces `pad.png`; plus, if the refusal is lifted, a PNG
+   with translucent pixels loaded by name, made an image and blended onto
+   the screen; if the sprites stay opaque, step 9's check gains a test that
+   both sheets load as opaque images, and design.md's asset-PNG rules are
+   updated there.
 
 ### Phase 2 — Fractional, centred present and resizable window
 
 6. A layout module computes, from a window size, the mode (tall / overlay),
    the game rectangle and the pad rectangle. Verified: Lua tests for
-   390×844 (tall, the numbers of §2), 640×480, 844×390, 820×1180, and the
-   boundary `height == 2 * width` (overlay).
+   390×844 (tall, the exact values of §2), 640×480, 844×390, 820×1180, and
+   the boundary `height == 2 * width` (overlay).
 7. `screen.present` draws the canvas into the game rectangle; `conf.lua`
    gets `resizable`, `highdpi`, 640×480. Verified: screen tests at
    640×480 and 390×844 compare the whole screen exactly; the 20 replays
-   unchanged.
+   unchanged. These are the first `make test` checks that boot the game:
+   the step measures one's cost, projects the timing gate for every screen
+   test the plan adds (step 16's six cases included), and records in §6 how
+   step 16 groups its cases into replays (several `screens` frames per
+   replay) to stay within the gate.
+8. `make love-file` and the completeness check (it does not depend on the
+   pad, and a build can be tried on the phone this early). Verified: the
+   check in `make test`; `unzip -l tmp/slipways.love` shows `main.lua` at
+   the root; and `make love-file` runs the fake on the unpacked archive
+   (`LOVE_E2E_GAME`) for at least one replay, matching its `.sha256`.
 
 ### Phase 3 — The virtual pad
 
-8. `game/pad.png` (first art), its quad table, `tests/fixtures/pad_flat.png`,
+9. `game/pad.png` (first art), its quad table, `tests/fixtures/pad_flat.png`,
    and the static sheet test. Verified: that test.
-9. Pad element table in reference units and their screen rectangles.
-   Verified: Lua tests per window size; each button ≥ 44 units on 390×844.
-10. Stick: floating base, knob cap, dead zone, 8 sectors. Verified: Lua
+10. Pad element table in reference units and their screen rectangles.
+    Verified: Lua tests per window size; each button ≥ 44 units on 390×844.
+11. Stick: floating base, knob cap, dead zone, 8 sectors. Verified: Lua
     tests on the sector edges (30°/60° boundaries) and the dead zone edge.
-11. Touch → mask: stick touch ownership, buttons hit every frame, mouse as a
+12. Touch → mask: stick touch ownership, buttons hit every frame, mouse as a
     touch, OR with the gamepad. Verified: Lua tests (slide A → B, two
     fingers, stick touch leaving its zone).
-12. Show / hide state: hidden at start, the revealing touch presses nothing,
+13. Show / hide state: hidden at start, the revealing touch presses nothing,
     a gamepad button hides and drops touches. Verified: Lua tests.
-13. Wire into `main.lua` and draw the pad on the screen with released and
-    pressed sprites. Verified: screen tests with `pad_flat.png` — hidden,
-    shown in tall mode, shown in overlay mode, a button pressed, the stick
-    pushed on a diagonal, after a `resize` — each against an exact expected
-    frame; the 20 replays unchanged.
-14. The touch e2e replays of §2, each with its `.txt` and a `.sha256` equal
-    to its pad equivalent's. Verified: `make e2e` green and under 9 s.
-15. skill: check-e2e — the whole e2e suite after the pad is wired.
+14. Wire touch → mask and show / hide into `main.lua`, drawing nothing.
+    Verified: the 20 replays unchanged.
+15. The touch e2e replays of §2, each with its `.txt` and a `.sha256` equal
+    to its pad equivalent's (the pad is drawn on the screen, never on
+    canvas 0, so they do not wait for the drawing). Each pad equivalent is a
+    pad twin with the same frames, written by this step (the existing pad
+    replays are long full scenarios); the touch replay's `.sha256` is the
+    twin's hash, never a baseline of the touch replay itself. Committed twins
+    count toward the e2e time. Verified: each touch hash equals its twin's;
+    `make e2e` green and under 9 s.
+16. Draw the pad on the screen with released and pressed sprites. Verified:
+    screen tests with `pad_flat.png` — hidden, shown in tall mode, shown in
+    overlay mode, a button pressed, the stick pushed on a diagonal, after a
+    `resize` — each against an exact expected frame; the 20 replays and the
+    touch replays unchanged; `make love-file` still passes.
+17. skill: check-e2e — the whole e2e suite after the pad is wired.
 
-### Phase 4 — The `.love` file
+### Phase 4 — Clean-up
 
-16. `make love-file` and the completeness check. Verified: the check in
-    `make test`; `unzip -l tmp/slipways.love` shows `main.lua` at the root.
-17. skill: rework-comments — the files this plan created or changed under
+18. A final read of design.md's fake contract against the fake's function
+    list and replay fields, fixing any drift. Verified: every function and
+    field the fake accepts is named in design.md, and the reverse.
+19. skill: rework-comments — the files this plan created or changed under
     `game/` and `tools/fake_love/`.
 
 ## 4. Done when
