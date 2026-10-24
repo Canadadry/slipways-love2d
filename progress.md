@@ -88,3 +88,4 @@
     - [x] fake_love.c
     - [x] fake replay
     - [x] fake touch
+    - [x] fake screen

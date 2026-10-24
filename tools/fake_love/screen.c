@@ -56,8 +56,6 @@ bool screen_begin_frame(screen_t *screen, int width, int height, bool recorded) 
     return true;
 }
 
-/* texels[p] is the texel index screen pixel p of `pixel_count` takes along
- * one axis, or NO_TEXEL when its centre is outside start <= c < end. */
 static void fill_texel_table(int *texels, int pixel_count, double start, int texel_count, double scale) {
     double end = start + texel_count * scale;
     for (int p = 0; p < pixel_count; p++) {
@@ -71,12 +69,10 @@ static void fill_texel_table(int *texels, int pixel_count, double start, int tex
     }
 }
 
-/* llvmpipe's 8-bit multiply; mul(p, 255) = p and mul(p, 0) = 0. */
 static int blend_multiply(int p, int q) {
     return (p * q + ((p * q) >> 8) + 128) >> 8;
 }
 
-/* LÖVE's "alpha" blend mode; the pixel's alpha, FF, stays FF. */
 static void blend_texel(unsigned char *pixel, const unsigned char *texel, const unsigned char tint[4]) {
     int alpha = canvas_tint_component(tint[3], texel[3]);
     if (alpha == 0x00) {
