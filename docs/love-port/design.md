@@ -21,7 +21,8 @@ Each plan holds its own steps.
 A C program that embeds LuaJIT (system package: `libluajit-5.1-dev` on
 Linux, `brew install luajit` on macOS; its version is checked at startup) and
 plays the role of LÖVE for a replay. It never opens a window. PNGs are read
-with `stb_image.h`, vendored as a single file.
+with `stb_image.h`, vendored as a single file, and written by the fake's own
+PNG module (8-bit RGBA, stored deflate blocks).
 
 For one replay it:
 
@@ -35,8 +36,9 @@ For one replay it:
 3. calls `love.load(arg)`, `arg` being `{"--attract-after", "N"}` when the
    replay has `"attract_after": N` (plain decimal), `{}` otherwise;
 4. for each frame of `frames`: on a frame carrying `resize`, makes the new
-   window size current and calls `love.resize(w, h)`; then makes the
-   frame's touches and mouse current, compares the held
+   window size current and calls `love.resize(w, h)`; then starts the
+   frame's screen, opaque black at the window size in force (see The
+   screen); then makes the frame's touches and mouse current, compares the held
    buttons with the previous frame's, calls `love.gamepadreleased` then `love.gamepadpressed` for those
    that changed, each in ascending button number, answers
    `Joystick:isGamepadDown` from the current list, calls `love.update(1/60)`
@@ -46,7 +48,13 @@ For one replay it:
    number 0–15, packs two pixels per byte (even x in the low nibble), row by
    row, and appends the 9 600 bytes to the capture (see Capture). The
    capture format is the one the `.json.sha256` were set with: its sha256
-   is compared with the replay's `.json.sha256`;
+   is compared with the replay's `.json.sha256`; then, on a frame listed
+   in the replay's `screens`, writes the whole screen to
+   `<capture>.screen-f<N>.png` (`N` the frame number in plain decimal; a
+   failure is `fake_love: <path>: cannot write`, exit 1). A run that fails
+   at any later point removes every screen PNG it wrote, with the capture
+   and the state file; a frame that fails writes no PNG, and PNGs of
+   frames not listed are left alone;
 6. after the last frame, once the capture is closed, calls the game's
    `debug_state()` and writes the text it returns next to the capture,
    compared with the replay's `.end-state`.
@@ -238,11 +246,20 @@ argument to `mouse.getPosition`) raises an error naming the function;
 `love.mouse.isDown: only isDown(1), the left button, is in the function list`.
 
 **Fake disk and arguments.** The replay members the fake reads are
-`input`, `frames`, `initial_save`, `bindings`, `attract_after` and
-`window`, each at most once: `initial_save` a non-empty string of an even
+`input`, `frames`, `initial_save`, `bindings`, `attract_after`, `window`
+and `screens`, each at most once: `initial_save` a non-empty string of an even
 number of hex digits, `bindings` the name of a `.cfg` file next to the
 replay, `attract_after` a positive integer, `window` the window size
-`[w, h]` for the run until a resize (640×480 when absent); `start` is
+`[w, h]` for the run until a resize (640×480 when absent), `screens` the
+frames whose screen is written as a PNG (see The screen): an array,
+possibly empty, of at most 16 integers, each a frame of the replay
+(0 to frame count − 1, frames counted as the objects of `frames`, touch-only
+and `{}` frames included), strictly ascending, refused otherwise with the
+file, the byte offset and the problem (`"screens" is <kind>, not an array
+of frame numbers`, `"screens" entry <v> is not an integer`, `"screens"
+entry <n> is not a frame of this replay (0-<last>)`, `"screens" entry <n>
+is not after <previous>`, `"screens" lists <n> frames, more than 16`,
+`"screens" given twice`); no replay of `tests/e2e/` carries it; `start` is
 refused, other members are ignored. A frame holds `pad`, `resize`,
 `touches` and `mouse`, each optional and at most once; any other frame key
 is refused. `pad` lists the held buttons; a frame without it holds none.
@@ -550,23 +567,64 @@ quad with integers, inside the image, on the image's own size.**
 Captures: `draw_quads`, `draw_tint`.
 
 **The present.** `draw(canvas, x, y, 0, s, s)` is the only other draw
-form: exactly six arguments, a Canvas, two integers of magnitude below
-2^20, a rotation equal to 0, and two equal integer scales from 1 to 16.
-It is accepted only while the screen is selected, the current colour is
-white `FFFFFFFF` and the current offset is 0 on both axes, and it changes
-nothing the fake models, as every screen draw. Every refusal is an error
-starting `love.graphics.draw: ` and changes nothing (the arguments are
-checked before the state): a canvas selected
+form: exactly six arguments, a Canvas, a position `x`, `y` of two finite
+numbers of magnitude below 2^20 (fractions and off-window values
+accepted), a rotation equal to 0, and two equal finite scales greater than
+0 and at most 1024 (below 1 included). It is accepted only while the
+screen is selected, the current colour is white `FFFFFFFF` and the current
+offset is 0 on both axes, and only for a canvas with no translucent pixel;
+it then draws the canvas onto the screen framebuffer (see The screen).
+Every refusal is an error starting `love.graphics.draw: ` and changes
+nothing (the arguments are checked before the state, the canvas's pixels
+last): a canvas selected
 (real LÖVE refuses a canvas drawn onto itself, and the fake does not model
 scaled draws between canvases), a non-white colour (it tints the window),
-a non-zero offset (it shifts it), unequal, fractional or out-of-range
-scales (they blur or distort it), another argument count, a
-non-Canvas first argument, a non-number (no string coercion), a
-non-finite or fractional position and a rotation other than 0. **The rule
+a non-zero offset (it shifts it; the position argument is the present's
+offset), unequal scales (they distort it, printed with `%g`), a scale that
+is zero, negative, above 1024 or non-finite
+(`argument <n> is out of range (s greater than 0, at most 1024)` or
+`argument <n> is not finite`), a position of magnitude 2^20 or more
+(`argument <n> is out of range (|v| >= 2^20)`) or non-finite, another
+argument count, a non-Canvas first argument, a non-number (no string
+coercion), a rotation other than 0, and a canvas holding a pixel whose
+alpha is neither `00` nor `FF`, the first in row order:
+`love.graphics.draw: the canvas's pixel (<x>, <y>) is <RRGGBBAA>, translucent (blending onto the screen is not modelled before plan 6 step 5)`.
+The canvas's 19 200 alpha bytes are scanned at every present. **The rule
 for the game: present canvas 0 once per frame, last in `love.draw`, with
 the screen selected, after `setColor(1, 1, 1)`, outside any `push`, at
-`(0, 0)` and scale `screen.SCALE`** (`screen.present()`). Capture:
-`game_frame`.
+`(0, 0)` and scale `screen.SCALE`** (`screen.present()`; plan 6 step 7
+rewrites this rule). Capture: `game_frame`.
+
+**The screen.** The fake keeps an RGBA8 screen framebuffer of the window
+size, opaque black `000000FF` at the start of every frame, after that
+frame's resize and `love.resize`. Only the present reaches it (points,
+rectangles, `clear` and quad draws with the screen selected change
+nothing the fake models). The rasterisation rule, in double precision, for
+a source canvas `W`×`H` presented at `x`, `y` with scale `s`:
+`x1 = x + W * s`, `y1 = y + H * s`; screen pixel `(i, j)` has centre
+`cx = i + 0.5`, `cy = j + 0.5` and belongs to the draw when `x <= cx < x1`
+and `y <= cy < y1` (half-open: a centre on the left or top edge is in, on
+the right or bottom edge out, so two abutting draws neither overlap nor
+leave a gap); its texel is column `floor((cx - x) / s)` and row
+`floor((cy - y) / s)`, each clamped to `0 … W-1` / `0 … H-1` (the clamp
+only guards rounding), so a centre on the edge between two texels takes
+the right or lower one. An alpha-`FF` texel writes its four bytes; an
+alpha-`00` texel leaves the pixel. A later present lies over an earlier
+one; pixels off the window do not exist (clipping). On a 390×844 window at
+`(0, 64.75)` and scale 2.4375 = 39/16 every quantity is exact: column 18 is
+texel column 7 and column 19 texel column 8 (centre 19.5 on the edge);
+row 64 is black, row 65 texel row 0, row 74 texel row 4 (centre 74.5 on
+the edge), row 356 texel row 119, row 357 black. Real LÖVE rasterises in
+single precision on the GPU with a top-left rule that is also half-open;
+this double rule is the fake's contract, verified by fake tests only, not
+by a real-LÖVE capture. The screen is rasterised only on the frames the
+replay's `screens` lists, and no framebuffer exists in a run that lists
+none; every check of every screen draw runs on every frame, listed or not,
+and since the screen is black at each frame start and only `screens`
+reads it, nothing else can observe the difference. A listed frame's
+screen is written after its capture as an 8-bit RGBA PNG of the window
+size, row 0 at the top, named `<capture>.screen-f<N>.png`. Checks:
+`test_fake_love_screen`, `test_fake_love_screens`.
 
 **Transforms.** `push()`, `pop()` and `translate(dx, dy)` are the only
 forms. The fake keeps a current offset, integer on each axis, and a stack
@@ -658,7 +716,8 @@ here, verified by its real-LÖVE capture, or, for plan 6's extensions
   `points({x1, y1, …})`,
   `rectangle("fill", x, y, w, h)`, `newImage(imagedata)`,
   `newQuad(x, y, w, h, sw, sh)`, `draw(image, quad, x, y)`,
-  `draw(canvas, x, y, 0, s, s)` onto the screen only (see The present),
+  `draw(canvas, x, y, 0, s, s)` onto the screen only, at any finite
+  position below 2^20 and an equal scale in (0, 1024] (see The present),
   `setDefaultFilter("nearest", "nearest")`,
   `push()`, `pop()`, `translate(dx, dy)` with integer offsets,
   `getDimensions()` with no argument: the window width and height in LÖVE
@@ -685,7 +744,8 @@ The game shows its canvas in the window with `draw(canvas, 0, 0, 0,
 screen.SCALE, screen.SCALE)`: **present canvas 0 once per frame, last in
 `love.draw`, with the screen selected, after `setColor(1, 1, 1)`, outside
 any `push`, at `(0, 0)` and scale `screen.SCALE`** (see The present). The
-fake reads the canvas, and the present changes nothing it models.
+fake reads the canvas, and the present draws it onto the screen framebuffer
+(see The screen), which only frames listed in `screens` rasterise.
 
 The exact pixel conventions (where `points(x, y)` lands, how `rectangle`
 rounds) are those of real LÖVE 11.5, settled by the captures of

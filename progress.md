@@ -15,7 +15,7 @@
     - [x] Chunk 2 — screen module
     - [x] Chunk 3 — present widened and wired
     - [x] Chunk 4 — screens and the PNGs
-    - [ ] Chunk 5 — contract and measurements
+    - [x] Chunk 5 — contract and measurements
   - [ ] Step 1.5 — scaled quads, alpha blending, pad_sheet
 - [ ] Phase 2 — Fractional, centred present and resizable window
   - [ ] Step 2.6 — layout module
