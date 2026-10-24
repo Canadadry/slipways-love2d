@@ -925,6 +925,40 @@ resizable, `highdpi` 640×480 window; the fake ignores `t.window`, so a
 replay without `window` runs at 640×480, where the present is `(0, 0)`
 at scale 4.
 
+**Pad layout.** `love.pad_layout` (pure, no `love.*` call) holds the pad's
+elements once, in reference units: origin at the top-left of the 160×120
+pad rectangle, y down, one unit per `pad.png` texel. Rectangles are
+`{x, y, width, height}`, half-open: `(px, py)` is inside when
+`x <= px < x + width` and `y <= py < y + height`.
+
+| element | key | x | y | width | height |
+|---|---|---|---|---|---|
+| stick zone | `STICK_ZONE` | 0 | 0 | 80 | 120 |
+| L | `leftshoulder` | 4 | 4 | 24 | 24 |
+| R | `rightshoulder` | 132 | 4 | 24 | 24 |
+| Y (top) | `y` | 108 | 36 | 24 | 24 |
+| X (left) | `x` | 84 | 60 | 24 | 24 |
+| B (right) | `b` | 132 | 60 | 24 | 24 |
+| A (bottom) | `a` | 108 | 84 | 24 | 24 |
+| Back | `back` | 54 | 94 | 24 | 24 |
+| Start | `start` | 82 | 94 | 24 | 24 |
+
+The buttons are `BUTTONS`, keyed by the LÖVE gamepad names of
+`love.pad_sheet`; `STICK_BASE_SIZE` 48 and `STICK_KNOB_SIZE` 24 are
+diameters, the sheet's sprite sizes. The stick zone is the left half; the
+diamond is centred at (120, 72) and its squares meet only at corners; Back
+and Start are centred on x = 80, 2 units above the bottom edge; "small" is
+their art's pill, not a smaller rectangle. L and Back lie inside the stick
+zone: **a touch that starts on a button's rectangle is that button's, never
+the stick's**; the stick zone takes only the touches that start on no
+button. `place(pad)` takes the `pad` rectangle of `window_layout.compute`
+(numeric `x`, `y`, a `scale > 0`, else an `assert` naming the field) and
+returns fresh `{stick_zone, stick_base_size, stick_knob_size, buttons}` in
+LÖVE units: each rectangle `pad.x + x × scale`, `pad.y + y × scale`,
+`width × scale`, `height × scale`, never rounded, so it is exactly what a
+sprite drawn there covers. At 390×844 every button is 58.5 points square
+(≥ 44 required).
+
 ### The asset PNGs
 
 `game/sprites.png` and `game/font.png` are committed sources, edited

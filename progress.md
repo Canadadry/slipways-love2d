@@ -44,6 +44,7 @@
     - [x] Chunk 2 — the static test, then love.pad_sheet
     - [x] Chunk 3 — docs, gate and report
   - [ ] Step 3.10 — pad element rectangles
+    - [x] PRD phase3-step10-pad-element-layout
   - [ ] Step 3.11 — stick
   - [ ] Step 3.12 — touch to mask
   - [ ] Step 3.13 — show / hide
