@@ -2,10 +2,9 @@
 -- of p8.vram's screen and p8.palette's colours.
 local palette = require("p8.palette")
 local vram = require("p8.vram")
+local window_layout = require("love.window_layout")
 
 local M = {}
-
-M.SCALE = 4
 
 -- Indexed 0..15 like palette.RGB: { red, green, blue } as byte / 255.
 M.COLORS = {}
@@ -40,11 +39,14 @@ function M.frame_end()
 end
 
 -- design.md's present: call it once, last in love.draw, outside any push.
+-- The layout is recomputed from the window size on every call, so a resize
+-- shows on its own frame.
 function M.present()
   assert(canvas ~= nil, "screen.present: screen.init has not run")
   love.graphics.setCanvas()
   love.graphics.setColor(1, 1, 1)
-  love.graphics.draw(canvas, 0, 0, 0, M.SCALE, M.SCALE)
+  local game = window_layout.compute(love.graphics.getDimensions()).game
+  love.graphics.draw(canvas, game.x, game.y, 0, game.scale, game.scale)
 end
 
 -- The ImageData of sprites.png, loaded once by screen.init: never write it.

@@ -631,8 +631,9 @@ alpha is neither `00` nor `FF`, the first in row order:
 The canvas's 19 200 alpha bytes are scanned at every present. **The rule
 for the game: present canvas 0 once per frame, last in `love.draw`, with
 the screen selected, after `setColor(1, 1, 1)`, outside any `push`, at
-`(0, 0)` and scale `screen.SCALE`** (`screen.present()`; plan 6 step 7
-rewrites this rule). Capture: `game_frame`.
+the position and scale of the game rectangle that `love.window_layout`
+computes from `getDimensions()`** (`screen.present()`). Capture:
+`game_frame`.
 
 **The screen.** The fake keeps an RGBA8 screen framebuffer of the window
 size, opaque black `000000FF` at the start of every frame, after that
@@ -679,7 +680,8 @@ reads it, nothing else can observe the difference. A listed frame's
 screen is written after its capture as an 8-bit RGBA PNG of the window
 size, row 0 at the top, named `<capture>.screen-f<N>.png`. Checks:
 `test_fake_love_screen`, `test_fake_love_screens`,
-`test_fake_love_image_draw`.
+`test_fake_love_image_draw`, and `test_game_screens` for the game itself
+(390×844, then a `resize` to 640×480).
 
 **Transforms.** `push()`, `pop()` and `translate(dx, dy)` are the only
 forms. The fake keeps a current offset, integer on each axis, and a stack
@@ -798,10 +800,10 @@ sets them, and for the six modules while `conf.lua` runs, they read `nil`.
 It is an ordinary Lua error, like every refusal of the fake. Both binaries,
 `tmp/fake_love` and `tmp/love_capture_check`, run under this guard.
 
-The game shows its canvas in the window with `draw(canvas, 0, 0, 0,
-screen.SCALE, screen.SCALE)`: **present canvas 0 once per frame, last in
-`love.draw`, with the screen selected, after `setColor(1, 1, 1)`, outside
-any `push`, at `(0, 0)` and scale `screen.SCALE`** (see The present). The
+The game shows its canvas in the window with `draw(canvas, x, y, 0, s,
+s)`: **present canvas 0 once per frame, last in `love.draw`, with the
+screen selected, after `setColor(1, 1, 1)`, outside any `push`, at the
+game rectangle's position and scale** (see The present). The
 fake reads the canvas, and the present draws it onto the screen framebuffer
 (see The screen), which only frames listed in `screens` rasterise.
 
@@ -913,7 +915,12 @@ window, the pad fitted in the game rectangle, so equal to it. Fitting
 `cw × scale` by `ch × scale` and centres it; nothing is rounded, so a
 rectangle is exactly what `draw(..., scale, scale)` covers. On a 390×844
 iPhone: tall, scale 2.4375, game at y 64.75, pad at y 486.75, both
-390×292.5.
+390×292.5. `screen.present()` draws canvas 0 at the game rectangle of the
+layout of `getDimensions()` on every frame, with no `love.resize`
+handler, so a resize shows on its own frame. `conf.lua` opens a
+resizable, `highdpi` 640×480 window; the fake ignores `t.window`, so a
+replay without `window` runs at 640×480, where the present is `(0, 0)`
+at scale 4.
 
 ### The asset PNGs
 
