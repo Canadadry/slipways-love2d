@@ -40,6 +40,9 @@
     - [x] Chunk 3 — gate and report
 - [ ] Phase 3 — The virtual pad
   - [ ] Step 3.9 — pad.png, quad table, pad_flat.png, static sheet test
+    - [x] Chunk 1 — the art generator and the three PNGs
+    - [ ] Chunk 2 — the static test, then love.pad_sheet
+    - [ ] Chunk 3 — docs, gate and report
   - [ ] Step 3.10 — pad element rectangles
   - [ ] Step 3.11 — stick
   - [ ] Step 3.12 — touch to mask

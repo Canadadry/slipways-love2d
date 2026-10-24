@@ -125,6 +125,15 @@ fake-love: $(TMP_DIR)/fake_love ## builds tmp/fake_love, the headless LÖVE that
 
 .PHONY: fake-love
 
+pad_art_objs := $(call objs,tools/pad_art.c tools/fake_love/png_file.c)
+$(TMP_DIR)/pad_art: $(pad_art_objs) | $(TMP_DIR)
+	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) -lm
+
+pad-art: $(TMP_DIR)/pad_art game/font.png ## rewrites game/pad.png, tests/fixtures/pad_flat.png and the static sheet test's expected PNG
+	$(TMP_DIR)/pad_art game/font.png game/pad.png tests/fixtures/pad_flat.png tests/fixtures/pad_sheet_expected.png
+
+.PHONY: pad-art
+
 FAKE_LOVE_HARNESS := tools/fake_love/harness/main.lua
 
 FAKE_LOVE_FIXTURES := $(wildcard tests/fixtures/fake_love/*.json tests/fixtures/fake_love/*.png tests/fixtures/fake_love/*.cfg tests/fixtures/fake_love/*.lua tests/fixtures/fake_love/*/*.lua tests/fixtures/fake_love/*/*.txt tests/fixtures/fake_love/*/*/*.lua tests/fixtures/fake_love/*/*/*.txt tests/fixtures/fake_love/*/*.png tests/fixtures/fake_love/*/*/*.png)
