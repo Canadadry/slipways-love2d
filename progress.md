@@ -76,3 +76,4 @@
     - [x] pad_sheet
     - [x] pad_view
     - [x] conf
+    - [x] pad_touch
