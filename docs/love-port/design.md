@@ -902,6 +902,19 @@ in `push`/`pop`; build see-through and recoloured copies with `getPixel`
 compared with `byte / 255` and `setPixel` of palette bytes.** Capture:
 `game_frame`.
 
+**Window layout.** `love.window_layout.compute(width, height)` (LÖVE
+units, recomputed on every call, no state) places canvas 0 and the pad's
+160×120 reference rectangle in a window of any size. **Tall** when
+`height > 2 * width`: the window is cut into two halves of `height / 2`,
+the game fitted in the top one, the pad in the bottom one. **Overlay**
+otherwise (`height == 2 * width` included): the game fitted in the whole
+window, the pad fitted in the game rectangle, so equal to it. Fitting
+`cw × ch` into an area takes `scale = min(aw / cw, ah / ch)`, the size
+`cw × scale` by `ch × scale` and centres it; nothing is rounded, so a
+rectangle is exactly what `draw(..., scale, scale)` covers. On a 390×844
+iPhone: tall, scale 2.4375, game at y 64.75, pad at y 486.75, both
+390×292.5.
+
 ### The asset PNGs
 
 `game/sprites.png` and `game/font.png` are committed sources, edited
