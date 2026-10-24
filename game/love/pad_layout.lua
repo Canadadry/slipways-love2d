@@ -1,5 +1,3 @@
--- Reference units: the 160×120 rectangle of window_layout.PAD_WIDTH/HEIGHT,
--- one unit per pad.png texel. Rectangles are half-open: x <= px < x + width.
 local M = {}
 
 local function rectangle(x, y, width, height)
@@ -7,12 +5,9 @@ local function rectangle(x, y, width, height)
 end
 
 M.STICK_ZONE = rectangle(0, 0, 80, 120)
--- Diameters; the base is centred where the stick touch starts.
 M.STICK_BASE_SIZE = 48
 M.STICK_KNOB_SIZE = 24
 
--- A touch starting on a button is that button's, never the stick zone's:
--- leftshoulder and back lie inside the zone.
 M.BUTTONS = {
   leftshoulder = rectangle(4, 4, 24, 24),
   rightshoulder = rectangle(132, 4, 24, 24),
@@ -34,8 +29,6 @@ local function check_number(value, field)
     string.format("pad_layout.place: pad.%s must be a number, got %s", field, tostring(value)))
 end
 
--- pad: the pad rectangle of window_layout.compute (its width and height are
--- not read). Returns fresh screen rectangles, never rounded.
 function M.place(pad)
   check_number(pad.x, "x")
   check_number(pad.y, "y")
