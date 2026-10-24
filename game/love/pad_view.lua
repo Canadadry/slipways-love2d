@@ -5,10 +5,9 @@ local virtual_pad_module = require("love.virtual_pad")
 
 local M = {}
 
--- The sheet's order, never pairs: the later draw lies over the earlier one.
 local BUTTON_NAMES = { "a", "b", "x", "y", "leftshoulder", "rightshoulder", "start", "back" }
 
--- Call once, in love.load after screen.init: the sheet is built under its nearest filter.
+-- After screen.init, whose nearest default filter the sheet's image must be created under.
 function M.init(view)
   view.sheet = pad_sheet.load()
 end
@@ -21,7 +20,6 @@ local function draw_centred(image, quad, sprite, centre_x, centre_y, side)
   draw_stretched(image, quad, sprite, centre_x - side / 2, centre_y - side / 2, side, side)
 end
 
--- Draws onto the screen, after screen.present: never onto canvas 0.
 function M.draw(view, virtual_pad)
   assert(type(view) == "table" and view.sheet ~= nil, "pad_view.draw: view must be a table passed to init")
   assert(type(virtual_pad) == "table", "pad_view.draw: virtual_pad must be a table passed to virtual_pad.init")
