@@ -618,3 +618,19 @@ call counts as lifted (step 13 relies on it). 24 tests (slide A → B, two
 fingers = the 5+6 chord, stick leaving its zone, L/Back win, same-frame
 hand-over, resize); four mutations caught. `lua-test-game` 92 → 86 ms
 (noise), no full gate. `make e2e` 20/20.
+
+### Step 3.13
+
+`love.pad_visibility` (`game/love/`, pure, requires `bit`): `init`,
+`shown`, `filter(visibility, gamepad_mask, touches, mouse)` → the
+touches and mouse `pad_touch.update` may see. Hidden at start, a hidden
+pad passes nothing (the mouse included, button up or not). A new touch
+or click on a hidden pad shows it and is held back until it lifts. A
+gamepad press — a bit going down, any of the 12 — hides the pad and
+holds back every current touch and the mouse if down, which `pad_touch`
+then treats as lifted; a press wins over a new touch on the same frame.
+Once shown it stays shown. Call order for step 14: `read_pad_buttons` →
+`filter` → `pad_touch.update` → `pad_touch.combine`. 23 tests, five of
+them through `pad_touch` at 390×844 and `game.attract` (the revealing
+touch keeps the demo playing, the next touch leaves it). `lua-test-game`
+89 → 95 ms (under the ~10 ms threshold), no full gate. `make e2e` 20/20.

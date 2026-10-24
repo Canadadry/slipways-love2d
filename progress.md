@@ -51,7 +51,7 @@
   - [x] Step 3.12 — touch to mask
     - [x] Chunk 1 — buttons, mouse, combine
     - [x] Chunk 2 — the stick in update
-  - [ ] Step 3.13 — show / hide
+  - [x] Step 3.13 — show / hide
     - [x] Chunk 1 — love.pad_visibility alone
     - [x] Chunk 2 — tests through pad_touch and attract
   - [ ] Step 3.14 — wire into main.lua, no drawing
