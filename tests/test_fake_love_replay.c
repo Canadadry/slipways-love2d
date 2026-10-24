@@ -552,6 +552,8 @@ static void test_touches_are_checked_against_the_window_after_the_frames_resize(
     replay_free(replay);
     assert_refused("{\"input\": \"pad\", \"frames\": [{\"touches\": [[1, 700, 10]], \"resize\": [700, 480]}]}",
                    "f0: touch 1 at (700, 10) is outside the 700x480 window");
+    assert_refused("{\"input\": \"pad\", \"window\": [390, 844], \"frames\": [{}, {\"touches\": [[4, 390, 10]]}]}",
+                   "f1: touch 4 at (390, 10) is outside the 390x844 window");
     assert_refused("{\"input\": \"pad\", \"frames\": [{\"resize\": [100, 50], \"mouse\": [10, 50, 0]}]}",
                    "f0: mouse at (10, 50) is outside the 100x50 window");
 }
