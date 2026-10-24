@@ -1,0 +1,262 @@
+# Plan 6 — The game on a portrait iPhone, through Love2D Studio and a virtual pad
+
+## 1. Goal
+
+The game runs on an iPhone held in portrait, in the iOS app Love2D Studio
+(https://apps.apple.com/fr/app/love2d-studio/id6474188075), which imports and
+runs `.love` files. With no controller, it is played with a virtual pad
+drawn on the touch screen. On desktop nothing is lost: the real gamepad still
+plays, the window becomes resizable, and a mouse click shows the virtual pad.
+
+The goals behind every rule below:
+
+- **The game logic does not change.** The virtual pad produces the same 12
+  bits of `pad_buttons` as a real gamepad (`main.lua`'s `read_pad_buttons`,
+  `PAD_BUTTON_NAMES`); the cart, `input_step`, `pad_nav` and the bindings see
+  no difference. The 20 replays of `tests/e2e/` keep their `*.sha256` and
+  `*.end-state` byte for byte.
+- **Everything is verified headless, by an agent, exactly.** No human looks
+  at a frame, no window opens, and real LÖVE is not a verification tool
+  (that is why the fake LÖVE exists). Every visual requirement is a test
+  that compares a frame with an expected frame **pixel for pixel, with no
+  tolerance**: a tolerance opens the door to flaky tests.
+- **The look of the pad changes without breaking the tests.** The pad is
+  made of sprites; tests use a flat-colour sheet, the game uses the real art.
+- `make test` stays as fast as today and `make e2e` under 9 seconds
+  (`CLAUDE.md`).
+
+## 2. Rules
+
+### Input
+
+- The virtual pad's mask is OR-ed with the real gamepad's mask in
+  `love.update`, before `input_step.run`. No other input path is added (no
+  direct "tap a planet"): rejected, because it would be a second way to play
+  that every replay would have to cover.
+- **Stick, not d-pad.** A *floating* stick on the left half of the pad
+  rectangle: the base appears where the touch starts; a touch that starts in
+  that zone stays the stick's touch until it lifts, even if it leaves the
+  zone. The knob follows the touch, capped at the base's edge. **Dead zone:
+  25 % of the base radius** (no direction). Outside it, the direction is the
+  angle from the base centre, cut into **8 sectors: up, down, left, right
+  60° wide each, the 4 diagonals 30° each**. A diagonal sets two direction
+  bits (button 1–4). Aim and placement pans combine both axes
+  (`pad_nav.lua` `aim_pan`); jumps and menus read one direction.
+- **The 8 other buttons** (5–12: A, B, X, Y, L, R, Start, Back, per
+  `PAD_BUTTON_NAMES`) are tested every frame against each touch's *current*
+  position: sliding a finger from A to B releases A and presses B. Several
+  fingers press several buttons (5 + 6 is the developer cheat chord, fixed
+  in `input_step`; it stays reachable).
+- Touches are read with `love.touch.getTouches` / `getPosition`; on desktop,
+  the mouse with its left button down counts as one more touch
+  (`love.mouse.getPosition` / `isDown`). Polling, not callbacks.
+- **Shown / hidden.** The pad starts hidden. The first touch or click while
+  it is hidden shows it and **presses nothing**, for as long as it is held
+  (else a tap would press an invisible button). Any real gamepad button
+  pressed hides it and drops the held touches (no button stays stuck); the
+  next touch shows it again under the same rule. Once shown it stays shown
+  (no fade). In the attract demo the first touch only shows the pad; the
+  next press leaves the demo like any button.
+
+### Layout
+
+- The game stays a 160×120 canvas (`vram.SCREEN_WIDTH/HEIGHT`, canvas 0).
+  `screen.present` draws it onto the screen **scaled by a fractional factor
+  and centred** in its rectangle, nearest filtering. Whole-number scaling
+  was rejected (black bars).
+- The pad is designed once in a **160×120 unit reference rectangle (4:3, as
+  the game)**: every element has fixed coordinates in it. It is drawn by
+  scaling that rectangle uniformly, as the game. Layout tests therefore only
+  vary scale and offset.
+- **Two modes**, from the window size, recomputed every frame:
+  - **tall** when `height > 2 * width`: the window is cut in two halves; the
+    game fits at maximum size centred in the top half, the pad fits at
+    maximum size centred in the bottom half. The game never moves when the
+    pad shows or hides. On a 390×844 iPhone: game 390×292 at y 65–357
+    (below the Dynamic Island, ~59), pad 390×292 at y 487–779 (above the home
+    indicator, ~34). No safe-area API: the halves make it unnecessary.
+  - **overlay** otherwise (desktop, iPad, landscape iPhone): the game fits
+    at maximum size centred in the window; the pad is drawn over the game's
+    rectangle, exactly. Spreading it to the window's edges was rejected.
+- Pad elements in the reference rectangle: the stick zone is the left half;
+  A/B/X/Y in an Xbox diamond on the right (A bottom, B right, X left, Y top);
+  L and R in the top corners; Back and Start small, centred at the bottom.
+  Exact coordinates are the implementer's choice, written once in a table;
+  each button at least 44 points on a 390-point-wide iPhone.
+- The pad is drawn on the screen (no canvas selected), after the present, so
+  it never touches canvas 0 and the capture hashes cannot see it.
+
+### Look
+
+- Everything the pad draws is a **sprite** from `game/pad.png`, cut by a Lua
+  quad table: stick base, stick knob, and for each of the 8 buttons a
+  **released and a pressed sprite** (pre-rendered; no tint or light effect).
+  Each sprite is drawn stretched into its layout rectangle, nearest
+  filtering. Changing the look means redrawing `pad.png` (and the quad table
+  if sizes change), never the layout code. Circles drawn with
+  `love.graphics.circle` were rejected in favour of sprites.
+- Labels are part of the sprites.
+
+### Fake LÖVE (`tools/fake_love/`)
+
+The fake's function list is a contract recorded in `docs/love-port/design.md`
+("The LÖVE functions the game may use"); this plan extends it and the
+section is updated with each extension:
+
+- `love.touch.getTouches`, `love.touch.getPosition`,
+  `love.mouse.getPosition`, `love.mouse.isDown`: answered from the replay
+  (below); without replay data, no touch and no click.
+- `love.graphics.getDimensions`: the replay's window size.
+- the `love.resize(w, h)` callback, called by the fake before `love.update`
+  on a frame that carries `resize`.
+- `draw(canvas, x, y, 0, s, s)` with any offset and any positive scale
+  (today: `(0, 0)` and `screen.SCALE` only, "The present" section), and
+  `draw(image, quad, x, y, 0, sx, sy)` onto the screen.
+- **`setColor`'s palette and alpha check is dropped**, everywhere. The
+  end-of-frame check that every pixel of canvas 0 is a palette colour
+  **stays**: the capture packs canvas 0 into 4-bit palette indices, and
+  without the check a stray colour would be packed wrong silently.
+- **The fake rasterises the screen**: an RGBA framebuffer of the window size,
+  black at each frame start, receiving the present and the pad's sprites.
+  The rasterisation rule is stated once in `design.md` so a test can compute
+  an expected frame from it: a screen pixel belongs to a draw if its centre
+  lies inside the destination rectangle, and samples the source texel that
+  centre maps to (nearest). Alpha blending is LÖVE's default ("alpha" blend
+  mode).
+- Replay format, every new field optional so the 20 replays are unchanged:
+  - top level: `"window": [w, h]` (default 640×480), `"pad_sheet": "<file>"`
+    (resolved next to the replay like `bindings`; the fake serves it in
+    place of `game/pad.png`; default the real one), `"screens": [frame
+    numbers]` (the fake writes the whole screen of those frames as PNG next
+    to the capture);
+  - per frame: `"touches": [[id, x, y], …]` (the touches held that frame,
+    window coordinates), `"mouse": [x, y, left 0/1]` (position kept between
+    frames), `"resize": [w, h]`.
+
+### Tests
+
+- **Touch e2e replays**: a few short `tests/e2e/touch_*.json`, each the
+  touch version of a pad scenario, with its `.txt` note. Their capture hash
+  must equal the pad equivalent's (same frames on canvas 0). Planned: title
+  to first slipway; aim pan on a diagonal; Back held to end the year; show,
+  hide by a gamepad button, show again. They must fit in `make e2e`'s 9 s
+  (measure; today ~7 s).
+- **Screen tests** in `make test` (parallel, one target each, as the fake's
+  other checks): a short replay with the flat sheet
+  (`tests/fixtures/pad_flat.png`: each sprite a solid square of its own
+  colour, pressed ≠ released) and `screens`; the test compares each PNG
+  exactly with the expected frame it builds itself. **Each test builds its
+  expected frame the way that suits it** (a few lines of Lua filling
+  rectangles, an SVG rasterised by ImageMagick, a committed PNG…): no
+  universal tool is built. The expected frame is written before the code
+  (TDD).
+- **One static test of the real sheet**: every sprite of `pad.png` drawn at a
+  fixed position, compared with a committed PNG. It breaks when the art
+  changes, on purpose: regenerate it then.
+- **Pure-Lua tests** (`tests/lua/game/`): layout per window size (mode,
+  game and pad rectangles), stick sectors and dead zone, touch → mask,
+  show/hide.
+
+### Packaging
+
+- `make love-file` (outside `make test-all`, with a `## ` help line) zips the
+  content of `game/` with `main.lua` at the zip's root into
+  `tmp/slipways.love`, real `pad.png` included. A check in `make test`
+  verifies every module the game requires and every PNG it loads is under
+  `game/`.
+- Delivery is the user's: import the `.love` into Love2D Studio (AirDrop,
+  Files). The app's git sync was rejected: `main.lua` is not at the repo
+  root.
+- `conf.lua`: `resizable = true`, `highdpi = true`, window 640×480 (the
+  game's shape; tall mode is for the phone). The layout works in LÖVE units.
+
+### Out of scope
+
+- iPad-specific and landscape-specific layouts (they get overlay mode).
+- A layout that follows rotation beyond what the mode rule gives.
+- Audio (`CLAUDE.md`).
+- Haptics, a settings screen, remappable touch buttons.
+- Fading the pad, a light effect on press.
+
+## 3. Phases and steps
+
+### Phase 1 — The fake LÖVE learns windows, touches and the screen
+
+1. `setColor` accepts any colour and alpha in `tmp/fake_love`; the canvas 0
+   end-of-frame check is unchanged. Verified: a fake check that a non-palette
+   `setColor` then drawing on the screen passes, and one drawing it on canvas
+   0 still fails with the frame error; the 20 replays unchanged.
+2. Replay fields `window` and per-frame `resize`; `love.graphics.getDimensions`
+   and the `love.resize` callback in the function list. Verified: fake C
+   tests reading the size before and after a resize, and the callback order
+   (resize before update).
+3. Replay fields `touches` and `mouse`; `love.touch.getTouches/getPosition`,
+   `love.mouse.getPosition/isDown` in the function list. Verified: fake C
+   tests over a replay with touches appearing, moving, lifting.
+4. The screen framebuffer, the present at any offset and scale, scaled quad
+   draws onto the screen, `screens` and `pad_sheet`. The rasterisation rule
+   is written in `design.md`. Verified: fake C tests comparing screen PNGs
+   with expected frames computed by the test (fractional scale, offset,
+   a quad stretched, alpha blend).
+5. `docs/love-port/design.md` lists every function and field added, and
+   "The present" describes the new present. Verified: read against the
+   fake's function list (the fake's own guard test).
+
+### Phase 2 — Fractional, centred present and resizable window
+
+6. A layout module computes, from a window size, the mode (tall / overlay),
+   the game rectangle and the pad rectangle. Verified: Lua tests for
+   390×844 (tall, the numbers of §2), 640×480, 844×390, 820×1180, and the
+   boundary `height == 2 * width` (overlay).
+7. `screen.present` draws the canvas into the game rectangle; `conf.lua`
+   gets `resizable`, `highdpi`, 640×480. Verified: screen tests at
+   640×480 and 390×844 compare the whole screen exactly; the 20 replays
+   unchanged.
+
+### Phase 3 — The virtual pad
+
+8. `game/pad.png` (first art), its quad table, `tests/fixtures/pad_flat.png`,
+   and the static sheet test. Verified: that test.
+9. Pad element table in reference units and their screen rectangles.
+   Verified: Lua tests per window size; each button ≥ 44 units on 390×844.
+10. Stick: floating base, knob cap, dead zone, 8 sectors. Verified: Lua
+    tests on the sector edges (30°/60° boundaries) and the dead zone edge.
+11. Touch → mask: stick touch ownership, buttons hit every frame, mouse as a
+    touch, OR with the gamepad. Verified: Lua tests (slide A → B, two
+    fingers, stick touch leaving its zone).
+12. Show / hide state: hidden at start, the revealing touch presses nothing,
+    a gamepad button hides and drops touches. Verified: Lua tests.
+13. Wire into `main.lua` and draw the pad on the screen with released and
+    pressed sprites. Verified: screen tests with `pad_flat.png` — hidden,
+    shown in tall mode, shown in overlay mode, a button pressed, the stick
+    pushed on a diagonal, after a `resize` — each against an exact expected
+    frame; the 20 replays unchanged.
+14. The touch e2e replays of §2, each with its `.txt` and a `.sha256` equal
+    to its pad equivalent's. Verified: `make e2e` green and under 9 s.
+15. skill: check-e2e — the whole e2e suite after the pad is wired.
+
+### Phase 4 — The `.love` file
+
+16. `make love-file` and the completeness check. Verified: the check in
+    `make test`; `unzip -l tmp/slipways.love` shows `main.lua` at the root.
+17. skill: rework-comments — the files this plan created or changed under
+    `game/` and `tools/fake_love/`.
+
+## 4. Done when
+
+- `make test-all` green, `make test` no slower than before the plan,
+  `make e2e` under 9 s.
+- The 20 original replays keep their `*.sha256` and `*.end-state`.
+- Every touch replay's hash equals its pad equivalent's.
+- Every screen test passes with an exact comparison.
+- `make love-file` produces `tmp/slipways.love` with `main.lua` at its root.
+- `docs/love-port/design.md` describes the extended fake contract, the
+  layout and the pad; the "nothing in these plans targets iOS" line is gone.
+
+## 5. Open questions
+
+- Which LÖVE version Love2D Studio embeds is unknown (the store page does
+  not say). The APIs used here are stable since 11.0; if the game misbehaves
+  on the phone, check that first.
+
+## 6. Step notes
