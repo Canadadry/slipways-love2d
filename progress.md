@@ -78,3 +78,4 @@
     - [x] conf
     - [x] pad_touch
     - [x] pad_visibility
+    - [x] virtual_pad

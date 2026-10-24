@@ -12,9 +12,6 @@ local function check_state(virtual_pad, caller)
   end
 end
 
--- Readable: placed, this frame's pad_layout.place result (nil before the first
--- update), touch_state.stick, and virtual_mask, the touches' mask without the
--- gamepad's (0 before the first update). visibility is private: callers read shown.
 function M.init(virtual_pad)
   virtual_pad.visibility = {}
   pad_visibility.init(virtual_pad.visibility)
