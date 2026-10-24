@@ -737,3 +737,24 @@ a balanced 12-round run +1.04 / −87.50 / −1.73 %. Fresh gate, 12 rounds,
 / 24 / 47 %: −1.90 % vs e53e5c8, −88.12 % vs 8dff812, **−7.63 % vs
 8c830c6** (the §4 closing number). `make e2e` median of 5 6.43 s < 9 s;
 28/28, end-state 28/28.
+
+### Step 4.19
+
+`rework-comments` (catch-up) on the 36 `.lua`/`.c`/`.h`/`.sh` files plan 6
+changed under `game/` and `tools/`, five agents in one wave, one commit
+per module (25): 284 → 19 comment lines. Kept, one sentence each: the
+`p8.input` source of the stick bits, `pad_sheet`/`pad_art.c` sync (both
+sides), `pad_view.init` after `screen.init`, `MOUSE_ID` a table, present
+outside any push, `PAD_BUTTON_NAMES`' bit order (`P8_PAD_BUTTON_n` named
+nothing), Adler-32's 5552 bound, `describe()` on the Lua stack, the one
+awk of `e2e_limits.sh`, the man-page trap of `love_install.sh`,
+`lua_guard`'s three return contracts. One assert, its own `refactor:`
+commit: `lua_guard.strip` looped forever on an unterminated string. Stale
+claims deleted: `host_new` NULL only on memory, `graphics.h`'s name list
+(missed `setDefaultFilter`), button overlap in `pad_view`. Gate: stripped
+C identical; Lua bytecode is not deterministic (string-key hashing), so
+proven by an overlap of 25-compile hash sets, `lua_guard` by `luajit -bl`
+without line numbers; shell by identical output over every refusal.
+`make test-all` green, `make e2e` 28/28, end-state 28/28. Notes left open
+for the PR: the fake accepts a repeated `input`/`frames`; `e2e_limits.sh`
+matches `"input": "pad"` on any line; path buffers truncate silently.

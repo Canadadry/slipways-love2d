@@ -65,12 +65,12 @@
     - [x] Chunk 1 — virtual_pad.virtual_mask
     - [x] Chunks 2-3 — the screen test, love.pad_view and its wiring
   - [x] Step 3.17 — check-e2e
-- [ ] Phase 4 — Clean-up
+- [x] Phase 4 — Clean-up
   - [x] Step 4.18 — design.md contract read
     - [x] Chunk 1 — tools/love_function_list.lua and lua-guard on it
     - [x] Chunk 2 — the fake ↔ list check
     - [x] Chunk 3 — the by-hand read, design.md and the closing gate
-  - [ ] Step 4.19 — rework-comments
+  - [x] Step 4.19 — rework-comments
     - [x] pad_stick
     - [x] pad_layout
     - [x] pad_sheet
