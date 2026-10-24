@@ -93,3 +93,4 @@
     - [x] fake png_file
     - [x] fake graphics
     - [x] e2e_limits.sh
+    - [x] love_install.sh
