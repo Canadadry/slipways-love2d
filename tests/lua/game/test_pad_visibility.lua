@@ -1,5 +1,9 @@
+local attract = require("game.attract")
 local check = require("check")
+local pad_layout = require("love.pad_layout")
+local pad_touch = require("love.pad_touch")
 local pad_visibility = require("love.pad_visibility")
+local window_layout = require("love.window_layout")
 
 local expect = check.expect
 
@@ -201,6 +205,114 @@ local function test_init_refuses_a_non_table()
   expect_refused(function() pad_visibility.init(nil) end, "pad_visibility.init: visibility", "no state")
 end
 
+local PHONE = pad_layout.place(window_layout.compute(390, 844).pad)
+
+local function new_pad()
+  local pad = { visibility = {}, touch_state = {} }
+  pad_visibility.init(pad.visibility)
+  pad_touch.init(pad.touch_state)
+  return pad
+end
+
+-- Step 14's call order; returns the combined mask.
+local function pad_frame(pad, gamepad_mask, touches, the_mouse)
+  local passed, passed_mouse = pad_visibility.filter(pad.visibility, gamepad_mask, touches, the_mouse)
+  return pad_touch.combine(gamepad_mask, pad_touch.update(pad.touch_state, passed, passed_mouse, PHONE))
+end
+
+local function touch_on(id, name)
+  local button = PHONE.buttons[name]
+  return { id = id, x = button.x + button.width / 2, y = button.y + button.height / 2 }
+end
+
+local function test_through_pad_touch_the_revealing_touch_presses_nothing_wherever_it_slides()
+  local pad = new_pad()
+  expect(pad_frame(pad, 0, { touch_on(1, "a") }, nil), 0, "landed on a")
+  expect(pad_frame(pad, 0, { touch_on(1, "b") }, nil), 0, "slid onto b")
+  expect(pad_frame(pad, 0, { touch_on(1, "b"), touch_on(2, "start") }, nil), 1024, "second finger on start")
+  expect(pad_frame(pad, 0, { touch_on(2, "start"), touch_on(3, "a") }, nil), 1024 + 16, "first lifted, new touch on a")
+end
+
+local FREE_X, FREE_Y = 100, 650
+
+local function free_touch(id, dx)
+  return { id = id, x = FREE_X + dx, y = FREE_Y }
+end
+
+local function test_through_pad_touch_the_revealing_touch_never_steers()
+  local pad = new_pad()
+  expect(pad_frame(pad, 0, { free_touch(1, 0) }, nil), 0, "landed in the free stick zone")
+  expect(pad.touch_state.stick == nil, true, "landed: no stick")
+  expect(pad_frame(pad, 0, { free_touch(1, 60) }, nil), 0, "slid 60 right")
+  expect(pad.touch_state.stick == nil, true, "slid: no stick")
+end
+
+local function shown_pad()
+  local pad = new_pad()
+  pad_frame(pad, 0, { touch(9) }, nil)
+  pad_frame(pad, 0, {}, nil)
+  expect(pad_visibility.shown(pad.visibility), true, "shown")
+  return pad
+end
+
+local function test_through_pad_touch_a_gamepad_press_releases_a_held_button()
+  local pad = shown_pad()
+  expect(pad_frame(pad, 0, { touch_on(1, "a") }, nil), 16, "finger on a")
+  expect(pad_frame(pad, 1, { touch_on(1, "a") }, nil), 1, "dpup pressed, finger still on a")
+  expect(pad_frame(pad, 0, { touch_on(1, "a") }, nil), 0, "dpup released, finger still on a")
+end
+
+local function test_through_pad_touch_a_gamepad_press_releases_the_stick()
+  local pad = shown_pad()
+  expect(pad_frame(pad, 0, { free_touch(1, 0) }, nil), 0, "stick claimed")
+  expect(pad.touch_state.stick ~= nil, true, "claimed: a stick")
+  expect(pad_frame(pad, 0, { free_touch(1, 60) }, nil), 8, "pushed 60 right")
+  expect(pad_frame(pad, 16, { free_touch(1, 60) }, nil), 16, "a pressed")
+  expect(pad.touch_state.stick == nil, true, "a pressed: no stick")
+  expect(pad_frame(pad, 0, { free_touch(2, 0) }, nil), 0, "first lifted, second reveals")
+  expect(pad.touch_state.stick == nil, true, "second: no stick")
+  expect(pad_frame(pad, 0, {}, nil), 0, "second lifted")
+  expect(pad_frame(pad, 0, { free_touch(3, 0) }, nil), 0, "third lands")
+  expect(pad.touch_state.stick ~= nil, true, "third claims the stick")
+  expect(pad_frame(pad, 0, { free_touch(3, 60) }, nil), 8, "third pushed 60 right")
+end
+
+local function playing_demo(pad)
+  local demo = {}
+  attract.init(demo, 1)
+  for frame = 1, 3 do
+    local action = attract.frame(demo, true, pad_frame(pad, 0, {}, nil), 0)
+    if action == attract.ACTION_START then
+      expect(attract.phase(demo), attract.PHASE_PLAYING, "demo playing")
+      return demo
+    end
+    expect(action, attract.ACTION_NONE, "title frame " .. frame)
+  end
+  error("the demo never started")
+end
+
+local function test_through_attract_the_revealing_touch_keeps_the_demo_and_the_next_press_leaves_it()
+  local pad = new_pad()
+  local demo = playing_demo(pad)
+  local mask = pad_frame(pad, 0, { touch_on(1, "a") }, nil)
+  expect(mask, 0, "revealing touch on a")
+  expect(attract.frame(demo, false, mask, 0), attract.ACTION_NONE, "revealing touch")
+  mask = pad_frame(pad, 0, {}, nil)
+  expect(attract.frame(demo, false, mask, 0), attract.ACTION_NONE, "revealing touch lifted")
+  mask = pad_frame(pad, 0, { touch_on(2, "a") }, nil)
+  expect(mask, 16, "next touch on a")
+  expect(attract.frame(demo, false, mask, 0), attract.ACTION_RETURN, "next touch")
+end
+
+local function test_through_attract_a_gamepad_press_leaves_the_demo_and_hides_the_pad()
+  local pad = shown_pad()
+  local demo = playing_demo(pad)
+  local mask = pad_frame(pad, 32, {}, nil)
+  expect(mask, 32, "b pressed")
+  expect(attract.frame(demo, false, mask, 0), attract.ACTION_RETURN, "gamepad press")
+  expect(pad_visibility.shown(pad.visibility), false, "pad hidden")
+end
+
 return check.run({
   { "the pad starts hidden and an empty frame keeps it hidden", test_the_pad_starts_hidden_and_an_empty_frame_keeps_it_hidden },
   { "the revealing touch shows the pad and passes nowhere until it lifts", test_the_revealing_touch_shows_the_pad_and_passes_nowhere_until_it_lifts },
@@ -220,4 +332,10 @@ return check.run({
   { "filter refuses malformed input naming the field", test_filter_refuses_malformed_input_naming_the_field },
   { "shown refuses a state never initialised", test_shown_refuses_a_state_never_initialised },
   { "init refuses a non table", test_init_refuses_a_non_table },
+  { "through pad touch the revealing touch presses nothing wherever it slides", test_through_pad_touch_the_revealing_touch_presses_nothing_wherever_it_slides },
+  { "through pad touch the revealing touch never steers", test_through_pad_touch_the_revealing_touch_never_steers },
+  { "through pad touch a gamepad press releases a held button", test_through_pad_touch_a_gamepad_press_releases_a_held_button },
+  { "through pad touch a gamepad press releases the stick", test_through_pad_touch_a_gamepad_press_releases_the_stick },
+  { "through attract the revealing touch keeps the demo and the next press leaves it", test_through_attract_the_revealing_touch_keeps_the_demo_and_the_next_press_leaves_it },
+  { "through attract a gamepad press leaves the demo and hides the pad", test_through_attract_a_gamepad_press_leaves_the_demo_and_hides_the_pad },
 })

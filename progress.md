@@ -53,7 +53,7 @@
     - [x] Chunk 2 — the stick in update
   - [ ] Step 3.13 — show / hide
     - [x] Chunk 1 — love.pad_visibility alone
-    - [ ] Chunk 2 — tests through pad_touch and attract
+    - [x] Chunk 2 — tests through pad_touch and attract
   - [ ] Step 3.14 — wire into main.lua, no drawing
   - [ ] Step 3.15 — touch e2e replays
   - [ ] Step 3.16 — draw the pad
