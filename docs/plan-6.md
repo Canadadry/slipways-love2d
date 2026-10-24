@@ -445,3 +445,40 @@ method changes (step 6 plans the remaining `make test` budget; step 18
 also compares `tools/lua_guard.lua`); the other warnings are left open,
 the fake's format being frozen after phase 1.
 
+
+### Step 2.6
+
+`love.window_layout.compute(width, height)` (in `game/love/`, beside
+`love.screen`; `game.layout` was taken) returns the mode (`MODE_TALL` when
+`height > 2 * width`, else `MODE_OVERLAY`) and the game and pad rectangles
+`{x, y, width, height, scale}`, fitted at max scale, centred, never
+rounded; exact tests for 390×844, 640×480, 844×390, 820×1180, 390×780,
+390×781. Nothing calls it yet. All `tests/lua/game/` tests now run in one
+LuaJIT process (`tests/lua/game/runner.lua`, target `lua-test-game`; a
+file ends with `return check.run({...})`), so later test files add no
+process; the skills' per-file commands follow.
+
+**Budget plan** (`-O2`, 4 cores): 1 point ≈ 32 ms of a check's own time;
+game boot in the fake ~43 ms + ~1.6 ms per frame; a 390×844 screen PNG
+~4.7 ms + ~5.4 ms to compare (640×480: ~5 + ~9.5 ms); a Lua test process
+~5 ms. Checks still to come: step 7 one target, one boot, 390×844 and a
+resize to 640×480, ~67–73 ms; step 8 inside `lua-guard`, ~1–2 ms; step 9
+a non-game run inside an existing fake check, window ≤ 256×128,
+~8–10 ms; steps 10–13 files of the runner, ~2 ms; step 16 ~6 frames and
+`screens` appended to step 7's replay with small windows (160×322 or
+200×420 tall, 160×120 or 320×240 overlay), ~+17 ms (step 7+16 target
+~85–90 ms, under 100 ms). Total ~3.2–3.3 points. Reclaims: (a) fold
+`test_fake_love_touch`'s misuse runs (done in this step, see below);
+(b) `test_fake_love_screens`: frames 2–4 at ~200×150, a tiny replay for
+its failing run, drop the malformed-`screens` CLI refusal (≈ −25–30 ms,
+step 7); reserve (c) `test_fake_love_window` misuse via pcall, drop
+`window_invalid` (≈ −11 ms). Biggest levers outside the plan:
+`test_e2e_limits` ~0.70 s of own time, `test_love_e2e` ~255 ms.
+
+Gate: first run failed against 8c830c6 (+3.34 %, 22 rounds; this step
++0.23 % vs c67b0b4). Guideline decision: reclaim (a) pulled into this
+step — seven misuses in one pcall-logged run, compared whole; the
+`touch_invalid` CLI refusal dropped (its message asserted in
+`test_fake_love_replay`); 11 fake runs → 4, ~61 → ~27 ms. Rerun, 11
+rounds: −1.26 % vs c67b0b4, +2.32 % vs 8c830c6, −87.51 % vs 8dff812:
+pass. **Headroom vs 8c830c6: ~0.7 point.** `make e2e`: 20/20.

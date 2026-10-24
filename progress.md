@@ -23,11 +23,11 @@
     - [x] Chunk 4 — screen draw cases in test_fake_love_image_draw
     - [x] Chunk 5 — contract and measurements
 - [ ] Phase 2 — Fractional, centred present and resizable window
-  - [ ] Step 2.6 — layout module
+  - [x] Step 2.6 — layout module
     - [x] Chunk 1 — budget plan
     - [x] Chunk 2 — one LuaJIT runner for tests/lua/game
     - [x] Chunk 3 — love.window_layout
-    - [ ] Chunk 4 — timing gate
+    - [x] Chunk 4 — timing gate
     - [x] Chunk 5 — slim test_fake_love_touch (reclaim a)
   - [ ] Step 2.7 — present into the game rectangle, conf.lua
   - [ ] Step 2.8 — make love-file
