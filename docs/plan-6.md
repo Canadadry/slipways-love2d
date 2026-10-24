@@ -347,3 +347,21 @@ ignored; `highdpi` not modelled. New check `test_fake_love_window`,
 43–54 ms. Timing gate (11 rounds): paired median +1.07 % vs 54cd5d8,
 −87 % vs 8dff812 (plain medians 0.893 / 0.892 / 6.848 s): pass.
 `make e2e`: 20/20.
+
+### Step 1.3
+
+A frame may hold `pad`, `resize`, `touches` and `mouse`, each optional
+and at most once; a missing `pad` holds nothing, so touch-only frames and
+`{}` are valid. `touches`: at most 10 `[id, x, y]`, ids 1–2147483647
+unique in the frame, inside the window after the frame's own resize.
+`mouse`: `[x, y, left]`, kept until the next one, (0, 0) up before the
+first. The fake answers `love.touch.getTouches/getPosition` (ids are light
+userdata equal to the replay id; a lifted id raises `Invalid active touch
+ID`) and `love.mouse.getPosition/isDown(1)`, made current with the pad
+after `love.resize`; touch and mouse callbacks stay refused.
+`tools/e2e_limits.sh` counts the objects of `frames` (one awk for all
+replays: ~280 → ~185 ms). Shared fixture `tests/fixtures/touch_frames.json`.
+New check `test_fake_love_touch`, ~55–80 ms. Timing gate: first 11
+rounds +3.14 % vs 6cd6898, so 22 pooled: +2.78 % vs 6cd6898, −86.67 % vs
+8dff812 (plain medians 0.894 / 0.877 / 6.572 s): pass, with little margin
+left for later checks. `make e2e`: 20/20.

@@ -5,7 +5,7 @@
     - [x] Chunk 1 — replay reader: window and resize
     - [x] Chunk 2 — host and graphics: getDimensions, love.resize
     - [x] Chunk 3 — lua-guard, design.md, timing gate
-  - [ ] Step 1.3 — touches and mouse
+  - [x] Step 1.3 — touches and mouse
     - [x] Chunk 1 — replay reader: touches, mouse, optional pad
     - [x] Chunk 2 — e2e_limits.sh frame counter
     - [x] Chunk 3 — love.touch and love.mouse in the host
