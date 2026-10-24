@@ -714,3 +714,26 @@ from `pad_layout`'s tunables; `pad_view` reaches into
 `pad_view` has no Lua unit test (the exact screen frames cover it). The
 comment items go to step 19. plan-review: step 19 widened to `tools/` and
 briefed with those items; §4 now asks the PR body for every open warning.
+
+### Step 4.18
+
+`tools/love_function_list.lua` holds the callbacks, each module's
+functions and each object kind's methods as plain data (15399fa);
+`lua-guard` reads it with byte-identical output, and a missing or
+malformed file exits 2 with one line. `test_fake_love_function_list`
+boots the host in-process on a tiny fixture and compares what the fake
+installs with the file both ways, plus `kind` lines so a kind with no
+methods is checked (dd55dbf); eight mutations each turn it red, +0.6 ms.
+design.md read by hand on dd55dbf: D1–D4 fixed, plus a repeated `input`
+or `frames` (accepted, first read — documented, the fake left as is),
+the name rule covering `bindings`, the present rule written once, and
+fixture refusals carrying no offset; README counts 28 replays. Closing
+gate: the cyclic-order batches (+4.25 % vs e53e5c8 pooled) are void, as
+e53e5c8 always ran after the 7.7 s 8dff812; guideline decided a fresh
+run under a rule written first, so design.md rule 4 now orders three or
+more trees by a Williams square. For information: e53e5c8 alone −1.18 %,
+a balanced 12-round run +1.04 / −87.50 / −1.73 %. Fresh gate, 12 rounds,
+4 cores, plain medians 0.850 / 0.840 / 7.113 / 0.940 s, spreads 23 / 23
+/ 24 / 47 %: −1.90 % vs e53e5c8, −88.12 % vs 8dff812, **−7.63 % vs
+8c830c6** (the §4 closing number). `make e2e` median of 5 6.43 s < 9 s;
+28/28, end-state 28/28.
