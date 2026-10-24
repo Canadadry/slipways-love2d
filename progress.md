@@ -79,3 +79,4 @@
     - [x] pad_touch
     - [x] pad_visibility
     - [x] virtual_pad
+    - [x] window_layout

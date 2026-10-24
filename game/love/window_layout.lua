@@ -1,4 +1,3 @@
--- Pure: the caller passes the window size in LÖVE units.
 local vram = require("p8.vram")
 
 local M = {}
@@ -9,8 +8,6 @@ M.MODE_OVERLAY = "overlay"
 M.PAD_WIDTH = 160
 M.PAD_HEIGHT = 120
 
--- Width and height are content × scale, never the area's: the rectangle is
--- exactly what draw(..., scale, scale) covers.
 local function fit(content_width, content_height, area_x, area_y, area_width, area_height)
   local scale = math.min(area_width / content_width, area_height / content_height)
   local width = content_width * scale
