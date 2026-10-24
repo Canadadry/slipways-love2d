@@ -73,3 +73,4 @@
   - [ ] Step 4.19 — rework-comments
     - [x] pad_stick
     - [x] pad_layout
+    - [x] pad_sheet

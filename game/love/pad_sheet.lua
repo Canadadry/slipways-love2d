@@ -1,4 +1,4 @@
--- The sprite rectangles of pad.png. tools/pad_art.c holds its own copy: change both, then run make pad-art.
+-- tools/pad_art.c holds its own copy of these pad.png rectangles: change both, then run make pad-art.
 local M = {}
 
 M.WIDTH = 240
@@ -24,9 +24,6 @@ local function new_quad(rectangle)
   return love.graphics.newQuad(rectangle.x, rectangle.y, rectangle.width, rectangle.height, M.WIDTH, M.HEIGHT)
 end
 
--- Reads pad.png: call once, in love.load. Returns { image, stick_base,
--- stick_knob, buttons = { [name] = { released, pressed } } }: image is the
--- Image, every other leaf a Quad.
 function M.load()
   local sheet = {
     image = love.graphics.newImage(love.image.newImageData("pad.png")),
