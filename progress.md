@@ -1,7 +1,7 @@
 - [ ] Phase 1 — The fake LÖVE learns windows, touches and the screen
   - [x] Step 1.1 — setColor accepts any colour and alpha
     - [x] PRD phase1-step1-set-color-any-colour
-  - [ ] Step 1.2 — window, resize, getDimensions, love.resize
+  - [x] Step 1.2 — window, resize, getDimensions, love.resize
     - [x] Chunk 1 — replay reader: window and resize
     - [x] Chunk 2 — host and graphics: getDimensions, love.resize
     - [x] Chunk 3 — lua-guard, design.md, timing gate

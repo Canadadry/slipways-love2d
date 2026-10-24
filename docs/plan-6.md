@@ -331,3 +331,19 @@ the two set_color failure fixtures became `set_color_screen` (passes) and
 `set_color_canvas_zero` (frame error), so the timing gate did not apply;
 the set_color check runs in 32–41 ms. design.md updated, including the
 "with its real-LÖVE capture" sentence. `make e2e`: 20/20.
+
+### Step 1.2
+
+Replays take `"window": [w, h]` (default 640×480) and a per-frame
+`"resize": [w, h]`, integers 1–4096; a resize to the size in force is
+refused at parse time; a frame holds only `pad` (still required) and
+`resize`. The host holds the size; `getDimensions` answers it whatever
+canvas is selected; on a resize frame `love.resize(w, h)` runs first,
+before the pad callbacks and `update`, never for the start size.
+`host_frame` takes a frame-input struct (for step 3's touches). PRD
+decisions: start-state members are read before the frames (the resize
+check needs the window); `lua-guard` extended now; `t.window` stays
+ignored; `highdpi` not modelled. New check `test_fake_love_window`,
+43–54 ms. Timing gate (11 rounds): paired median +1.07 % vs 54cd5d8,
+−87 % vs 8dff812 (plain medians 0.893 / 0.892 / 6.848 s): pass.
+`make e2e`: 20/20.
