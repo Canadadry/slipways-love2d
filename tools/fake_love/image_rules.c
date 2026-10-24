@@ -49,8 +49,6 @@ image_rules_verdict_t image_rules_check_quad(const double values[IMAGE_RULES_QUA
     double y = values[QUAD_Y];
     double reference_width = values[QUAD_REFERENCE_WIDTH];
     double reference_height = values[QUAD_REFERENCE_HEIGHT];
-    /* Reference sides first: the ranges of x and y use them, and those of
-     * the width and height use x and y. */
     const struct {
         int index;
         double low;

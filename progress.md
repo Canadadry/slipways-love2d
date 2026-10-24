@@ -89,3 +89,4 @@
     - [x] fake replay
     - [x] fake touch
     - [x] fake screen
+    - [x] fake image_rules
