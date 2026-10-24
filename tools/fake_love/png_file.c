@@ -32,7 +32,6 @@ static uint32_t big_endian_at(const unsigned char *bytes) {
     return (uint32_t)bytes[0] << 24 | (uint32_t)bytes[1] << 16 | (uint32_t)bytes[2] << 8 | bytes[3];
 }
 
-/* Slicing by 8: table[k][n] is the CRC of byte n followed by k zero bytes. */
 static uint32_t crc32_of(const unsigned char *bytes, size_t length) {
     static uint32_t table[8][256];
     if (table[0][1] == 0) {
@@ -152,8 +151,6 @@ static const char *check_image_data(const unsigned char *zlib, size_t length, co
     return NULL;
 }
 
-/* What lodepng checks and stb_image does not, plus the kinds and sides the
- * fake accepts. */
 static const char *check_png(const unsigned char *bytes, size_t length, int max_side) {
     static const unsigned char signature[8] = {0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'};
     if (length < 8 || memcmp(bytes, signature, 8) != 0)
