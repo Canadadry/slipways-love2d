@@ -160,8 +160,10 @@ stderr); all four are removed before each run. These runs are shared:
 `make e2e end-state` runs each replay once.
 
 `tools/e2e_limits.sh` checks the replay limits, counting a replay's frames
-as the objects of its `frames` array, whatever they hold; then each replay
-is reported on one line:
+as the objects of its `frames` array, whatever they hold, and the pairing
+rule: every `touch_<s>.json` has a `pad_twin_<s>.json` beside it whose
+`.json.sha256` has the same first line, and every `pad_twin_<s>.json` has
+its `touch_<s>.json`; then each replay is reported on one line:
 
 - **matches**: the capture's sha256 equals the replay's `.json.sha256`;
 - **DIVERGENT**: it does not, with the expected and actual hash and, if the

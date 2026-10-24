@@ -1,7 +1,8 @@
 /* tools/e2e_limits.sh, the guard of new e2e files (companion files, 180
  * frames counted as the objects of "frames", 600 for a listed exception, the
  * pad header, no old mouse field, the .txt's "N frames.", each exception's
- * "N frames:" and its length over 180), on built events files and the shared
+ * "N frames:" and its length over 180, each touch_<s> paired with its
+ * pad_twin_<s> of the same hash), on built events files and the shared
  * fixture tests/fixtures/touch_frames.json. */
 
 #include <assert.h>
@@ -71,6 +72,14 @@ static void write_e2e(const char *name, int frames, const char *odd) {
     write_e2e_with(name, PAD_HEADER, frames, "{ \"pad\": [] }", odd);
 }
 
+/* A 10-frame e2e whose .json.sha256 holds `hash`. */
+static void write_hashed_e2e(const char *name, const char *hash) {
+    write_e2e(name, 10, NULL);
+    char path[256];
+    snprintf(path, sizeof path, DIR "/%s.json.sha256", name);
+    write_file(path, hash);
+}
+
 static int run(const char *events) {
     char cmd[1024];
     snprintf(cmd, sizeof cmd, SCRIPT " " EXCEPTIONS " %s > " LOG " 2>&1", events);
@@ -90,17 +99,32 @@ static void test_no_e2e_passes(void) {
 static void test_e2e_of_180_frames_passes(void) {
     reset();
     write_e2e("short", 180, NULL);
-    assert(run(DIR "/short.json") == 0);
+    write_hashed_e2e("touch_same", "abcd  touch_same.json.bin\n");
+    write_hashed_e2e("pad_twin_same", "abcd  touch_same.json.bin\n");
+    assert(run(DIR "/short.json " DIR "/touch_same.json " DIR "/pad_twin_same.json") == 0);
 }
 
 static void test_e2e_over_180_frames_fails_and_is_named(void) {
     reset();
     write_e2e("short", 10, NULL);
     write_e2e("long", 181, NULL);
-    assert(run(DIR "/short.json " DIR "/long.json") != 0);
+    write_hashed_e2e("touch_other", "abcd\n");
+    write_hashed_e2e("pad_twin_other", "abce\n");
+    write_hashed_e2e("touch_alone", "abcd\n");
+    write_hashed_e2e("pad_twin_orphan", "abcd\n");
+    write_hashed_e2e("touch_same", "abcd\nfirst line only\n");
+    write_hashed_e2e("pad_twin_same", "abcd\n");
+    assert(run(DIR "/short.json " DIR "/long.json " DIR "/touch_other.json " DIR "/pad_twin_other.json " DIR
+                   "/touch_alone.json " DIR "/pad_twin_orphan.json " DIR "/touch_same.json " DIR "/pad_twin_same.json") != 0);
     assert(strstr(read_log(), DIR "/long.json") != NULL);
     assert(strstr(read_log(), "181") != NULL);
     assert(strstr(read_log(), DIR "/short.json:") == NULL);
+    assert(strstr(read_log(), "e2e: " DIR "/touch_other.json: .sha256 differs from its twin's\n") != NULL);
+    assert(strstr(read_log(), "e2e: " DIR "/touch_alone.json: no pad twin " DIR "/pad_twin_alone.json\n") != NULL);
+    assert(strstr(read_log(), "e2e: " DIR "/pad_twin_orphan.json: twin of no touch replay " DIR "/touch_orphan.json\n") !=
+           NULL);
+    assert(strstr(read_log(), DIR "/pad_twin_other.json:") == NULL);
+    assert(strstr(read_log(), DIR "/touch_same.json:") == NULL && strstr(read_log(), DIR "/pad_twin_same.json:") == NULL);
 }
 
 static void test_frames_are_counted_whatever_they_hold(void) {

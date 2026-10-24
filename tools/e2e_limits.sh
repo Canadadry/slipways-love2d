@@ -8,7 +8,10 @@
 # lines joined by single spaces, does not hold exactly one "<N> frames." with
 # N its frame count; or when a line of <exceptions> names no given e2e,
 # does not state "<N> frames:" as its second and third fields with N the
-# e2e's frame count, or names an e2e of 180 frames or fewer.
+# e2e's frame count, or names an e2e of 180 frames or fewer; or when a given
+# touch_<s>.json has no given pad_twin_<s>.json in its directory, or the
+# first lines of their .json.sha256 differ, or a given pad_twin_<s>.json has
+# no given touch_<s>.json.
 # Every file is examined before concluding.
 # A frame is an object of the "frames" array: with strings ignored, each "{"
 # at depth 2 (root object, array, object), whatever the frame holds.
@@ -25,6 +28,7 @@ fi
 failed=0
 listed=$#
 given=""
+hashed=""
 for events in "$@"; do
     if [ ! -f "$events" ]; then
         echo "e2e: $events missing" >&2
@@ -40,6 +44,14 @@ for events in "$@"; do
 
     given="$given $events"
     set -- "$@" "reading=json" "$events"
+    case ${events##*/} in
+    touch_* | pad_twin_*)
+        if [ -f "$events.sha256" ]; then
+            hashed="$hashed $events"
+            set -- "$@" "reading=sha256" "$events.sha256"
+        fi
+        ;;
+    esac
     if [ -f "${events%.json}.txt" ] && [ ! -s "${events%.json}.txt" ]; then
         echo "e2e: $events: .txt states no \"N frames.\"" >&2
         failed=1
@@ -52,7 +64,7 @@ done
 # so make e2e pays one process, not one per replay. An empty file never
 # reaches FNR == 1, hence the -s test above. A JSON string never spans lines.
 shift "$listed"
-if ! awk -v given="$given" -v exceptions="$exceptions" '
+if ! awk -v given="$given" -v hashed="$hashed" -v exceptions="$exceptions" '
     function judge(    rest, count, said) {
         rest = " " text
         while (match(rest, /[^0-9A-Za-z_][0-9]+ frames\./)) {
@@ -69,10 +81,16 @@ if ! awk -v given="$given" -v exceptions="$exceptions" '
     BEGIN {
         replays = split(given, replay, " ")
         for (i = 1; i <= replays; i++) frames_of[replay[i]] = 0
+        split(hashed, list, " ")
+        for (i in list) hash_of[list[i]] = ""
         keys = split("mouse_x mouse_y mouse_buttons dpad", key, " ")
     }
     FILENAME == exceptions {
         if ($0 !~ /^[ \t]*$/) { lines++; first[lines] = $1; second[lines] = $2; third[lines] = $3; exception[$1] = 1 }
+        next
+    }
+    reading == "sha256" {
+        if (FNR == 1) hash_of[substr(FILENAME, 1, length(FILENAME) - 7)] = $0
         next
     }
     reading == "json" {
@@ -104,6 +122,22 @@ if ! awk -v given="$given" -v exceptions="$exceptions" '
             }
             for (k = 1; k <= keys; k++) if ((replay[i], key[k]) in carries) {
                 printf "e2e: %s: carries the mouse field \"%s\"\n", replay[i], key[k]
+                bad = 1
+            }
+            match(replay[i], /[^\/]*$/)
+            dir = substr(replay[i], 1, RSTART - 1)
+            base = substr(replay[i], RSTART)
+            if (base ~ /^touch_/) {
+                twin = dir "pad_twin_" substr(base, 7)
+                if (!(twin in frames_of)) {
+                    printf "e2e: %s: no pad twin %s\n", replay[i], twin
+                    bad = 1
+                } else if ((replay[i] in hash_of) && (twin in hash_of) && hash_of[replay[i]] != hash_of[twin]) {
+                    printf "e2e: %s: .sha256 differs from its twin\047s\n", replay[i]
+                    bad = 1
+                }
+            } else if (base ~ /^pad_twin_/ && !((dir "touch_" substr(base, 10)) in frames_of)) {
+                printf "e2e: %s: twin of no touch replay %s\n", replay[i], dir "touch_" substr(base, 10)
                 bad = 1
             }
             limit = replay[i] in exception ? 600 : 180
