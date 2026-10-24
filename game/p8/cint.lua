@@ -1,5 +1,5 @@
--- C integer division and remainder on Lua numbers holding C ints. Lua's `%`
--- and math.floor round toward minus infinity; C truncates toward zero.
+-- Integer division and remainder truncating toward zero, on Lua numbers
+-- holding 32-bit integers. Lua's `%` and math.floor round toward minus infinity.
 local M = {}
 
 local floor = math.floor

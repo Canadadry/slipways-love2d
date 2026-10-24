@@ -1,6 +1,4 @@
--- Copy of src/game/cart.h then src/game/cart.c.
---
--- Help and the score panel receive cart_request_start_game and cart_init_method at cart_load time,
+-- Help and the score panel receive cart.request_start_game and cart.init_method at cart.load time,
 -- never by require: no game module requires the cart, so it requires everything at load.
 local bootstrap = require("engine.bootstrap")
 local dispatch_context = require("engine.dispatch_context")
@@ -8,8 +6,6 @@ local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_registry = require("engine.entity_registry")
 local exit_queue = require("engine.exit_queue")
-local frame_zone = require("engine.frame_zone")
-local game_zone = require("engine.game_zone")
 local background = require("game.background")
 local button_image = require("game.button_image")
 local data_init = require("game.data_init")
@@ -18,7 +14,6 @@ local economy_module = require("game.economy")
 local economy_score = require("game.economy_score")
 local galaxy = require("game.galaxy")
 local game_data = require("game.game_data")
-local grab_arena = require("game.grab_arena")
 local help = require("game.help")
 local hud = require("game.hud")
 local layout = require("game.layout")
@@ -49,241 +44,201 @@ local gfx = require("p8.gfx")
 
 local M = {}
 
-M.CART_NO_DEMO_FRAME = -1
+M.NO_DEMO_FRAME = -1
 
-M.SIZEOF = {
-  g_save_bytes = 8192,
-}
-local SIZEOF = M.SIZEOF
-
-local g_title_built = 0
-local g_save_cut = 0
-local g_demo_frame = M.CART_NO_DEMO_FRAME
--- 0 when not loading, else the loading frame being played, from 1 (the press) to LOADING_SCREEN_FRAMES.
+local g_title_built = false
+local g_save_cut = false
+local g_demo_frame = M.NO_DEMO_FRAME
+-- 0 when not loading, else the loading frame being played, from 1 (the press) to loading_screen.FRAMES.
 local g_loading_frame = 0
-local g_requested_option = ui_button.button_zero()
-local g_has_requested_option = 0
+local g_requested_option = nil
 
-local function quit_game_zone()
-  entity_registry.entity_registry_abandon_live_entities()
-  M.cart_flush_exit_queue()
-  game_zone.game_zone_reset()
-  entity_registry.entity_registry_forget_registries()
-  grab_arena.grab_arena_forget_free()
+local function quit_game()
+  entity_registry.abandon_live_entities()
+  M.flush_exit_queue()
+  entity_registry.forget_registries()
 end
 
--- Do not list the inits data_init() and score_panel_init() run themselves: they would run twice.
-function M.cart_load()
+-- Do not list the inits data_init.init() and score_panel.init() run themselves: they would run twice.
+function M.load()
   local memory
 
-  quit_game_zone()
-  g_title_built = 0
-  g_save_cut = 0
-  g_demo_frame = M.CART_NO_DEMO_FRAME
+  quit_game()
+  g_title_built = false
+  g_save_cut = false
+  g_demo_frame = M.NO_DEMO_FRAME
   g_loading_frame = 0
-  entity.entity_init()
-  assert(entity.entity_ready() ~= 0, "cart_load: entity_init() must run before every class that extends entity_t")
+  entity.init()
+  assert(entity.ready(), "cart.load: entity.init() must run before every class that extends entity_t")
   scroll.camera_init()
-  mouse.mouse_init()
-  ui.ui_init()
+  mouse.init()
+  ui.init()
 
-  layout.layout_init()
-  trade.trade_init()
+  layout.init()
+  trade.init()
 
   ui_button.button_init()
   ui_button.modal_backdrop_init()
-  background.background_init()
-  message_box.message_box_init()
+  background.init()
+  message_box.init()
   message_box.toast_init()
-  probe.probe_init()
-  economy_module.economy_init()
+  probe.init()
+  economy_module.init()
 
-  memory = dispatch_context.dispatch_context_mem()
+  memory = dispatch_context.mem()
   if memory ~= nil then
-    data_init.data_init()
+    data_init.init()
   end
 
-  planet.planet_init()
-  slipway.slipway_init()
-  planet_family.planet_family_init()
-  assert(planet_family.structure_ready() ~= 0 and planet_family.burst_ready() ~= 0 and planet.planet_ready() ~= 0,
-    "cart_load: structure and burst extend planet: planet_init() must run first")
-  planet_family_trade.planet_family_trade_init()
-  assert(planet_family_trade.slipgate_ready() ~= 0 and planet_family_trade.synthesizer_ready() ~= 0
-      and planet_family.structure_ready() ~= 0 and planet_family.ascension_ready() ~= 0,
-    "cart_load: slipgate extends structure and synthesizer extends ascension: planet_family_init() must run first")
-  wormhole.wormhole_init()
+  planet.init()
+  slipway.init()
+  planet_family.init()
+  assert(planet_family.structure_ready() and planet_family.burst_ready() and planet.ready(),
+    "cart.load: structure and burst extend planet: planet.init() must run first")
+  planet_family_trade.init()
+  assert(planet_family_trade.slipgate_ready() and planet_family_trade.synthesizer_ready()
+      and planet_family.structure_ready() and planet_family.ascension_ready(),
+    "cart.load: slipgate extends structure and synthesizer extends ascension: planet_family.init() must run first")
+  wormhole.init()
 
-  help.help_init()
-  assert(help.help_screen_ready() ~= 0 and probe.probe_ready() ~= 0,
-    "cart_load: the help screen extends probe: probe_init() must run first")
-  score_panel.score_panel_init()
-  structure_icon.structure_icon_init()
-  menu.menu_init()
+  help.init()
+  assert(help.screen_ready() and probe.ready(),
+    "cart.load: the help screen extends probe: probe.init() must run first")
+  score_panel.init()
+  structure_icon.init()
+  menu.init()
 
-  help.help_set_start_game(M.cart_request_start_game)
-  score_panel.score_panel_set_init(M.cart_init_method)
+  help.set_start_game(M.request_start_game)
+  score_panel.set_init(M.init_method)
 end
 
-local function forget_game_zone()
-  grab_arena.grab_arena_forget_free()
+function M.flush_exit_queue()
+  exit_queue.flush()
 end
 
-function M.cart_flush_exit_queue()
-  exit_queue.exit_queue_flush()
-  if game_zone.game_zone_pending() ~= 0 then
-    forget_game_zone()
-    game_zone.game_zone_release()
-  end
-end
+function M.shutdown()
+  quit_game()
+  menu.shutdown()
+  structure_icon.shutdown()
+  score_panel.shutdown()
+  help.shutdown()
 
-function M.cart_shutdown()
-  quit_game_zone()
-  menu.menu_shutdown()
-  structure_icon.structure_icon_shutdown()
-  score_panel.score_panel_shutdown()
-  help.help_shutdown()
+  wormhole.shutdown()
+  planet_family_trade.shutdown()
+  planet_family.shutdown()
+  slipway.shutdown()
+  planet.shutdown()
 
-  wormhole.wormhole_shutdown()
-  planet_family_trade.planet_family_trade_shutdown()
-  planet_family.planet_family_shutdown()
-  slipway.slipway_shutdown()
-  planet.planet_shutdown()
+  data_init.shutdown()
 
-  data_init.data_init_shutdown()
-
-  economy_module.economy_shutdown()
-  probe.probe_shutdown()
+  economy_module.shutdown()
+  probe.shutdown()
   message_box.toast_shutdown()
-  message_box.message_box_shutdown()
-  background.background_shutdown()
+  message_box.shutdown()
+  background.shutdown()
   ui_button.modal_backdrop_shutdown()
   ui_button.button_shutdown()
 
-  trade.trade_shutdown()
-  layout.layout_shutdown()
+  trade.shutdown()
+  layout.shutdown()
 
-  ui.ui_shutdown()
-  mouse.mouse_shutdown()
+  ui.shutdown()
+  mouse.shutdown()
   scroll.camera_shutdown()
-  entity.entity_shutdown()
+  entity.shutdown()
 end
 
 local g_save_state = {}
-save_state.save_state_zero(g_save_state)
+save_state.zero(g_save_state)
 local g_save_bytes = {}
-for i = 0, save_state.SAVE_STATE_MAX_BYTES - 1 do
+for i = 1, save_state.MAX_BYTES do
   g_save_bytes[i] = 0
 end
 
 local function resume_saved_game(self)
-  M.cart_resume_game(g_save_state)
+  M.resume_game(g_save_state)
 end
 
 local function title_resume_handler()
-  local count = save_storage.save_storage_read(g_save_bytes, SIZEOF.g_save_bytes)
+  local count = save_storage.read(g_save_bytes)
 
-  if count > 0 and save_state.save_state_decode(g_save_bytes, count, g_save_state) ~= 0 then
+  if count > 0 and save_state.decode(g_save_bytes, count, g_save_state) then
     return resume_saved_game
   else
     return nil
   end
 end
 
-function M.cart_init()
-  assert(structure_icon.structure_icon_ready() ~= 0, "cart_init: cart_load() must run first")
-  assert(help.help_start_game_field_value() == M.cart_request_start_game
-      and score_panel.score_panel_init_field_value() == M.cart_init_method,
-    "cart_init: help_init() and score_panel_init() reset these bridges, so cart_load() must "
+function M.init()
+  assert(structure_icon.ready(), "cart.init: cart.load() must run first")
+  assert(help.start_game_field_value() == M.request_start_game
+      and score_panel.init_field_value() == M.init_method,
+    "cart.init: help.init() and score_panel.init() reset these bridges, so cart.load() must "
       .. "install them afterwards: every button copies the value when it is built")
 
   g_loading_frame = 0
-  if game_zone.game_zone_pending() == 0 and game_zone.game_zone_used() > 0 then game_zone.game_zone_flip() end
-  bootstrap.reset_world(nil)
-  research.research_expire_project_ids()
+  bootstrap.reset_world()
+  research.expire_project_ids()
 
-  if structure_icon.structure_icon_rest_cursor() ~= nil then
-    structure_icon.structure_icon_set_cursor(structure_icon.structure_icon_rest_cursor())
+  if structure_icon.rest_cursor() ~= nil then
+    structure_icon.set_cursor(structure_icon.rest_cursor())
   end
-  message_box.message_box_set_shown(nil)
+  message_box.set_shown(nil)
 
-  if probe.main_economy_typed() ~= nil then probe.probe_set_main_economy(nil) end
-  score_panel.score_panel_set_main(nil)
+  if probe.main_economy_typed() ~= nil then probe.set_main_economy(nil) end
+  score_panel.set_main(nil)
 
-  help.help_set_resume_game(title_resume_handler())
-  help.help_screen_new()
-  g_title_built = 1
+  help.set_resume_game(title_resume_handler())
+  help.screen_new()
+  g_title_built = true
 end
 
-function M.cart_title_shown()
-  return (g_title_built ~= 0 and g_loading_frame == 0 and message_box.shown_message_box() == nil
-    and entity_registry.entity_registry_count_tagged(entity_class.TAG_MESSAGE_BOX) == 0) and 1 or 0
+function M.title_shown()
+  return g_title_built and g_loading_frame == 0 and message_box.shown_message_box() == nil
+    and entity_registry.count_tagged(entity_class.TAG_MESSAGE_BOX) == 0
 end
 
--- Between frames only, never from a handler inside ui_update or update_entities: it releases
+-- Between frames only, never from a handler inside ui.update or update_entities: it releases
 -- every live entity while they are still being walked.
-function M.cart_return_to_title()
-  entity_registry.entity_registry_abandon_live_entities()
-  M.cart_flush_exit_queue()
+function M.return_to_title()
+  entity_registry.abandon_live_entities()
+  M.flush_exit_queue()
   -- After the flush: reset_world's own abandon would walk the released entries.
-  entity_registry.entity_registry_forget_registries()
-  g_save_cut = 0
-  g_demo_frame = M.CART_NO_DEMO_FRAME
-  M.cart_init()
+  entity_registry.forget_registries()
+  g_save_cut = false
+  g_demo_frame = M.NO_DEMO_FRAME
+  M.init()
 end
 
-function M.cart_cut_save()
-  g_save_cut = 1
+function M.cut_save()
+  g_save_cut = true
 end
 
-function M.cart_set_demo_frame(frame)
+function M.set_demo_frame(frame)
   g_demo_frame = frame
 end
 
-function M.cart_init_method(self)
-  M.cart_init()
+function M.init_method(self)
+  M.init()
 end
-
-M.cart_game_registry_reserve = { live = 329, by_message = {}, by_tag = {} }
-for i = 0, entity_registry.ENTITY_MESSAGE_COUNT - 1 do
-  M.cart_game_registry_reserve.by_message[i] = 0
-end
-for i = 0, entity_class.TAG_COUNT - 1 do
-  M.cart_game_registry_reserve.by_tag[i] = 0
-end
-M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_DRAW] = 322
-M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_DRAW_OVERLAY] = 265
-M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_HIT_TEST] = 125
-M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_NEW_YEAR] = 111
-M.cart_game_registry_reserve.by_message[entity_registry.ENTITY_MESSAGE_REFRESH] = 120
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_STRUCTURE] = 8
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_ASCENSION] = 3
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_SLIPGATE] = 14
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_PROBE] = 2
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_MESSAGE_BOX] = 4
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_SLIPWAY] = 216
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_WORMHOLE] = 3
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_PLANET] = 110
-M.cart_game_registry_reserve.by_tag[entity_class.TAG_NODE] = 110
 
 local function start_world(difficulty)
-  assert(economy_module.economy_ready() ~= 0 and planet_family.structure_ready() ~= 0,
-    "game start: cart_load() must run first")
+  assert(economy_module.ready() and planet_family.structure_ready(),
+    "game start: cart.load() must run first")
 
-  economy_score.economy_score_set_difficulty(difficulty)
-  g_title_built = 0
-  game_zone.game_zone_flip()
+  economy_score.set_difficulty(difficulty)
+  g_title_built = false
 
-  bootstrap.reset_world(M.cart_game_registry_reserve)
-  research.research_expire_project_ids()
-  background.background_new()
+  bootstrap.reset_world()
+  research.expire_project_ids()
+  background.new()
 end
 
 local function start_interface()
   local kind_table = {}
 
-  probe.probe_set_main_economy(economy_module.economy_new())
-  score_panel.score_panel_set_main(score_panel.score_panel_new())
+  probe.set_main_economy(economy_module.new())
+  score_panel.set_main(score_panel.new())
 
   if menu.pause_menu_open_box() ~= nil then
     for j = 1, game_data.GALAXY_MENU_COUNT do
@@ -291,121 +246,113 @@ local function start_interface()
     end
   end
 
-  kind_table[0] = planet_family.structure_kind()
-  kind_table[1] = planet_family.processor_kind()
-  kind_table[2] = planet_family_trade.slipgate_kind()
-  kind_table[3] = planet_family_trade.infraspace_gate_kind()
-  kind_table[4] = planet_family.trading_hub_kind()
-  kind_table[5] = planet_family_trade.synthesizer_kind()
-  kind_table[6] = planet_family.ascension_kind()
+  kind_table[1] = planet_family.structure_kind()
+  kind_table[2] = planet_family.processor_kind()
+  kind_table[3] = planet_family_trade.slipgate_kind()
+  kind_table[4] = planet_family_trade.infraspace_gate_kind()
+  kind_table[5] = planet_family.trading_hub_kind()
+  kind_table[6] = planet_family_trade.synthesizer_kind()
+  kind_table[7] = planet_family.ascension_kind()
 
-  for index = 0, 6 do
+  for index = 1, map_tables.ICON_TOOLTIPS_COUNT do
     local keys = { kind = nil, tooltip = nil }
 
     keys.kind = kind_table[index]
-    keys.tooltip = layout.tooltip_new(game_zone.game_zone(), map_tables.icon_tooltips_table[index])
-    structure_icon.structure_icon_new(keys)
+    keys.tooltip = layout.tooltip_new(map_tables.icon_tooltips_table[index])
+    structure_icon.new(keys)
   end
 end
 
 local function recompute_economy()
   assert(probe.main_economy_typed() ~= nil,
-    "game start: the main economy must be this game's economy before economy_recompute()")
-  economy_module.economy_recompute(probe.main_economy_typed())
+    "game start: the main economy must be this game's economy before economy.recompute()")
+  economy_module.recompute(probe.main_economy_typed())
 end
 
-function M.cart_start_game(chosen_option)
+function M.start_game(chosen_option)
   start_world(chosen_option)
-  galaxy.galaxy_populate(fixed.p8_fixed_from_int(90))
+  galaxy.populate(fixed.from_int(90))
   start_interface()
   recompute_economy()
 end
 
 -- The title's difficulty buttons: copies the option's value, then the press frame and the next
 -- draw the loading screen and the frame after generates the galaxy. nil starts with no difficulty.
-function M.cart_request_start_game(chosen_option)
-  g_has_requested_option = (chosen_option ~= nil) and 1 or 0
-  g_requested_option = ui_button.button_zero()
+function M.request_start_game(chosen_option)
+  g_requested_option = nil
   if chosen_option ~= nil then
+    g_requested_option = ui_button.button_zero()
     g_requested_option.name = chosen_option.name
-    g_requested_option.has_trade = chosen_option.has_trade
     g_requested_option.trade = chosen_option.trade
-    g_requested_option.has_type_bias = chosen_option.has_type_bias
     g_requested_option.type_bias = chosen_option.type_bias
   end
   g_loading_frame = 1
 end
 
-function M.cart_loading()
-  return (g_loading_frame ~= 0) and 1 or 0
+function M.loading()
+  return g_loading_frame ~= 0
 end
 
-function M.cart_resume_game(state)
+function M.resume_game(state)
   local difficulty = {}
 
-  save_load.save_load_difficulty(state, difficulty)
-  save_load.save_load_background_seed(state)
+  save_load.difficulty(state, difficulty)
+  save_load.background_seed(state)
   start_world(difficulty)
-  assert(background.background_live().seed == state.background_seed,
-    "cart_resume_game: the RNG moved between the reseed and the background")
-  save_load.save_load_world(state)
+  assert(background.live().seed == state.background_seed,
+    "cart.resume_game: the RNG moved between the reseed and the background")
+  save_load.world(state)
   start_interface()
-  save_load.save_load_globals(state)
+  save_load.globals(state)
   recompute_economy()
 end
 
 local function save_at_frame_end()
   local economy = probe.main_economy_typed()
 
-  if economy == nil or economy.save_pending == 0 or economy_score.economy_score_difficulty() == nil then return end
-  if economy.has_end_status ~= 0 and economy.end_status ~= nil then
-    save_storage.save_storage_erase()
-    economy.save_pending = 0
-  elseif wormhole.wormhole_live_count() == 0 then
-    save_state.save_state_capture(g_save_state)
-    save_storage.save_storage_write(g_save_bytes, save_state.save_state_encode(g_save_state, g_save_bytes))
-    economy.save_pending = 0
+  if economy == nil or not economy.save_pending or economy_score.difficulty() == nil then return end
+  if economy.end_status ~= nil then
+    save_storage.erase()
+    economy.save_pending = false
+  elseif wormhole.live_count() == 0 then
+    save_state.capture(g_save_state)
+    save_storage.write(g_save_bytes, save_state.encode(g_save_state, g_save_bytes))
+    economy.save_pending = false
   end
 end
 
-function M.cart_update60()
-  if g_loading_frame > 0 and g_loading_frame < loading_screen.LOADING_SCREEN_FRAMES then
+function M.update60()
+  if g_loading_frame > 0 and g_loading_frame < loading_screen.FRAMES then
     g_loading_frame = g_loading_frame + 1
     return
   end
-  if g_loading_frame == loading_screen.LOADING_SCREEN_FRAMES then
-    frame_zone.frame_zone_reset()
-    M.cart_flush_exit_queue()
-    if g_has_requested_option ~= 0 then
-      M.cart_start_game(g_requested_option)
-    else
-      M.cart_start_game(nil)
-    end
+  if g_loading_frame == loading_screen.FRAMES then
+    M.flush_exit_queue()
+    M.start_game(g_requested_option)
     g_loading_frame = 0
-    if g_save_cut == 0 then save_at_frame_end() end
+    if not g_save_cut then save_at_frame_end() end
     return
   end
-  frame_zone.frame_zone_reset()
-  M.cart_flush_exit_queue()
+  M.flush_exit_queue()
   bootstrap.update_entities()
-  ui.ui_update(dispatch_context.dispatch_context_mem(), ui.main_ui())
-  if g_save_cut == 0 then save_at_frame_end() end
+  ui.update(dispatch_context.mem(), ui.main_ui())
+  if not g_save_cut then save_at_frame_end() end
 end
 
-function M.cart_draw()
-  local mem = dispatch_context.dispatch_context_mem()
+function M.draw()
+  local mem = dispatch_context.mem()
 
   if g_loading_frame ~= 0 then
-    loading_screen.loading_screen_draw(dispatch_context.dispatch_context_gfx(), mem)
+    loading_screen.draw(dispatch_context.gfx(), mem)
     return
   end
-  text_image.text_image_frame_begin()
-  button_image.button_image_frame_begin()
-  gfx.p8_cls(mem)
-  hud.hud_select_palette_block_default(mem)
-  entity_registry.draw_layers(entity_registry.ENTITY_MESSAGE_DRAW)
-  entity_registry.draw_layers(entity_registry.ENTITY_MESSAGE_DRAW_OVERLAY)
-  demo_overlay.demo_overlay_draw(dispatch_context.dispatch_context_gfx(), mem, g_demo_frame)
+  text_image.frame_begin()
+  button_image.frame_begin()
+  gfx.cls(mem)
+  hud.select_palette_block_default(mem)
+  entity_registry.draw_layers(entity_registry.MESSAGE_DRAW)
+  entity_registry.draw_layers(entity_registry.MESSAGE_DRAW_OVERLAY)
+  demo_overlay.draw(dispatch_context.gfx(), mem, g_demo_frame)
 end
 
 return M

@@ -72,14 +72,12 @@ file cut after fN>`, the file cut as help-me-debug cuts it:
 - f197-226: Select held 30 frames in aim mode, the camera unmoved: on
   f226, its 30th frame, the cursor on the year-skip button (154 5),
   pressed: year 3402, $192 -> $191. p47 pays its -1 off screen, so
-  planet_new_year returns before its toast. Until plan 12 step 9 this
+  planet.new_year returns before its toast. Until plan 12 step 9 this
   year was R1 R1, X on `end turn`.
 
 The state at f227: year 3402 month 1, credits 191, research 59,
 income -1, techs space folding, geneseeds, geoharvesting, replication;
-camera 190 132, p47 colonized type f, planets 89, colonies 1. Peaks:
-burst 1, bytes_burst 560, elements_particles 140; with the C, burst 1,
-bytes_burst 528, elements_particles 140, as tech_geoharvesting_burst.
+camera 190 132, p47 colonized type f, planets 89, colonies 1.
 
 Replaces tech_geoharvesting_burst ("harvest" on a mineral planet: +$20,
 a burst that burns out), tech_replication_mechanize ("mechanize" turns
@@ -155,9 +153,7 @@ The state at f523: year 3402 month 11, credits 140, research 49,
 income 6, techs + infraspace, autoassemblers, skill implants, void
 synthesis, ascension; camera 216 157; s2, s3 colonized synthesizer, s4
 colonized ascension, structure s1 infragate links 1; slipways s1 p47
-infragate, s3 p47 normal, p47 s2 normal; planets 92, colonies 4. Peaks:
-particles 4 (synthesizer_second_link's 3), zone frame 11344 (13840
-with the C).
+infragate, s3 p47 normal, p47 s2 normal; planets 92, colonies 4.
 
 Replaces tech_infraspace_infragate (an infragate and its slipway from a
 mine, then an ordinary slipway that ignores it), synthesizer_second_link

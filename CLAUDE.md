@@ -2,15 +2,15 @@
 
 ## The game
 
-- A Lua game in `game/`, played by LÖVE 11.5 and, headless, by the fake LÖVE (`tools/fake_love/`, C). The 20 replays of `tests/e2e/` and their hashes, set by the C game before plan 4 deleted it, are the reference. The C is in history only: `git show 60e62c1:src/<path>`. The cart's decompiled source is in the history of `slipways-psx` only: `git show 536ddd4:pico8/lua.lua` there. Game objects are flat Lua tables: a shared header (the fields of `entity_t` in `game/engine/entity_class.lua`), one class table per kind, optional parts flagged by bits in `has` rather than by a nil field, and links to other entities held as ids. The design is `docs/love-port/design.md`.
+- A Lua game in `game/`, played by LÖVE 11.5 and, headless, by the fake LÖVE (`tools/fake_love/`, C). The 20 replays of `tests/e2e/` and their hashes, set by the C game before plan 4 deleted it, are the reference. The C is in history only: `git show 60e62c1:src/<path>`. The cart's decompiled source is in the history of `slipways-psx` only: `git show 536ddd4:pico8/lua.lua` there. Game objects are flat Lua tables: a shared header (the header fields listed at the top of `game/engine/entity_class.lua`), one class table per kind, optional parts as fields that are `nil` when absent, and links to other entities held as plain number ids (`nil` for none). The design is `docs/love-port/design.md`.
 - Audio (`sfx`, `music`) is **out of scope**, not postponed.
 - **The e2e replays are the source of truth, not the unit tests.** A change that improves the game and keeps every `*.sha256` in `tests/e2e/` unchanged may break a unit test that froze the old behavior: update that test.
 
 ## Layout and naming
 
-- `game/` has `main.lua` and `conf.lua` (LÖVE's entry points) and five directories: `p8/` is the emulated PICO-8 runtime (symbols prefixed `p8_`, file names unprefixed); `engine/` is the object and memory layer, with no planets or slipways (entities, classes, registries, lists, zones, allocator); `game/` is the game; `love/` draws through LÖVE (backend, screen, sprite sheet, text); `devtools/` is the state dump. A module is required by its path under `game/` (`require("game.planet")`).
+- `game/` has `main.lua` and `conf.lua` (LÖVE's entry points) and five directories: `p8/` is the emulated PICO-8 runtime; `engine/` is the object layer, with no planets or slipways (entities, ids, classes, the registry, geometry, the exit queue); `game/` is the game; `love/` draws through LÖVE (backend, screen, sprite sheet, text); `devtools/` is the state dump. A module is required by its path under `game/` (`require("game.planet")`).
 - `tests/` holds the C tests of the fake and the tools (`tests/test_<name>.c`, listed in `UNIT_TESTS`), the Lua library tests and their frozen references (`tests/lua/`), the game regression tests (`tests/lua/game/test_<module>.lua`), the fixtures (`tests/fixtures/`) and the replays (`tests/e2e/`). `tools/` holds the fake LÖVE, the real-LÖVE capture programs (`tools/love_capture/`) and the check scripts.
-- Names are full English words: no prefix for the game, `p8_` for the runtime only. An exported function is named `module_verb[_object]` (`M.planet_init_instance`). One- or two-letter names are only for a local or parameter whose scope fits in 40 lines.
+- Names are full English words, with no prefix: an exported name does not repeat its module's name, which every caller already writes (`planet.init_instance`, `vec.add`, `fixed.mul`, `gfx.rectfill`, `entity_class.STATE_NORMAL`). An exported function is named `verb[_object]`. One- or two-letter names are only for a local or parameter whose scope fits in 40 lines.
 
 ## Language
 

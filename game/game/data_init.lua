@@ -1,19 +1,18 @@
--- Copy of src/game/data_init.h then src/game/data_init.c.
 local research = require("game.research")
 local tech_gate = require("game.tech_gate")
 
 local M = {}
 
-function M.data_init()
-  -- research_init() forgets the projects, so it runs before the build.
-  research.research_init()
-  research.research_build_projects()
+function M.init()
+  -- research.init() forgets the projects, so it runs before the build.
+  research.init()
+  research.build_projects()
 
-  tech_gate.tech_gate_reset_affordable_flags()
+  tech_gate.reset_affordable_flags()
 end
 
-function M.data_init_shutdown()
-  research.research_shutdown()
+function M.shutdown()
+  research.shutdown()
 end
 
 return M

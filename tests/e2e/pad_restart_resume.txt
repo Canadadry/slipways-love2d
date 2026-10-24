@@ -46,8 +46,7 @@ pad_pause_restart.txt.
   resumed during that frame's update; the crosshair is back from f135.
   f135-156: idle in aim mode.
 
-The state at f113, at f134 and at f156, the same lines apart from
-zone and cap: clock year 3401 month 2, difficulty reasonable, credits
+The state at f113, at f134 and at f156, the same lines: clock year 3401 month 2, difficulty reasonable, credits
 97, science 0, income 0, camera world 188 184, planets 90, colonies 0,
 slipways 0, structures 0, techs 0, nodes 90. Known: p25 type f, p47
 type r; the other 88 planets unknown.

@@ -14,9 +14,9 @@ local fixed = require("p8.fixed")
 
 local function test_set_updates_an_existing_resource_in_place()
   local map = { count = 0, entries = {} }
-  economy_formulas.resource_map_set(map, fixed.p8_fixed_from_int(28), 3)
-  economy_formulas.resource_map_set(map, fixed.p8_fixed_from_int(28), 7)
-  local found, value = economy_formulas.resource_map_get(map, fixed.p8_fixed_from_int(28), -1)
+  economy_formulas.resource_map_set(map, fixed.from_int(28), 3)
+  economy_formulas.resource_map_set(map, fixed.from_int(28), 7)
+  local found, value = economy_formulas.resource_map_get(map, fixed.from_int(28), -1)
   check.expect(found, 1, "food found")
   check.expect(value, 7, "food value after update")
 end
@@ -53,7 +53,7 @@ For a path only a player reaches (a click, a rendered frame), drive it headless 
 
 ```lua
 -- BAD: digs a local helper out of the module through the debug library
-local _, fixed_max = debug.getupvalue(economy_formulas.economy_formulas_route_base_cost, 2)
+local _, fixed_max = debug.getupvalue(economy_formulas.route_base_cost, 2)
 check.expect(fixed_max(1, 2), 2, "max")
 ```
 
@@ -81,14 +81,14 @@ Tests verify behavior from the outside. Assertions enforce contracts from the in
 When production code asserts, a failing test tells you not just _that_ something broke but _where_ the contract was violated:
 
 ```lua
--- Without assertion: a nil gfx fails deep inside p8_rectfill
-function M.hud_draw_bar(gfx, mem, y1, y2, col)
-  gfx_module.p8_rectfill(gfx, mem, 0, to_int(y1), vram.P8_SCREEN_WIDTH - 1, to_int(y2), col)
+-- Without assertion: a nil gfx fails deep inside gfx.rectfill
+function M.draw_bar(gfx, mem, y1, y2, col)
+  gfx_module.rectfill(gfx, mem, 0, to_int(y1), vram.SCREEN_WIDTH - 1, to_int(y2), col)
 end
 
 -- With assertion (real code): fails at the violated contract
-function M.hud_draw_bar(gfx, mem, y1, y2, col)
-  assert(gfx ~= nil, "hud_draw_bar: p8_rectfill dereferences the graphics state, so a NULL one is not a no-op")
+function M.draw_bar(gfx, mem, y1, y2, col)
+  assert(gfx ~= nil, "hud.draw_bar: gfx.rectfill dereferences the graphics state, so a NULL one is not a no-op")
   -- ...
 end
 ```
@@ -96,15 +96,17 @@ end
 Rule of thumb: if a test setup must respect a constraint to call a function, that constraint is asserted inside the function.
 
 ```lua
--- BAD: verifies by poking the list's storage
-local function test_add_stores_the_entity_last()
-  entity_list.entity_list_add(list, e)
-  check.expect(list.items[list.count - 1], e, "last item")
+-- BAD: verifies by poking the map's storage
+local function test_set_stores_the_resource_last()
+  economy_formulas.resource_map_set(map, resource(28), 3)
+  check.expect(map.entries[map.count - 1].value, 3, "last entry")
 end
 
 -- GOOD: verifies through the interface
-local function test_an_added_entity_is_in_the_list()
-  entity_list.entity_list_add(list, e)
-  check.expect(entity_list.entity_list_has(list, e), 1, "e in the list")
+local function test_a_set_resource_is_found()
+  economy_formulas.resource_map_set(map, resource(28), 3)
+  local found, value = economy_formulas.resource_map_get(map, resource(28), -1)
+  check.expect(found, 1, "food found")
+  check.expect(value, 3, "food value")
 end
 ```

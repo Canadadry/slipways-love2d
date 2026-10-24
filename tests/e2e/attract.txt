@@ -15,7 +15,7 @@ The four frames plan 18 step 12 names:
 The save is pad_tech_costs.json's `initial_save`, copied byte for byte:
 a record cut from a real game, never typed (pad_tech_costs.txt records
 how it was cut), year 3407 month 1, credits 100, 90 nodes, a galaxy
-other than the demo record's (`demo_data_record` in
+other than the demo record's (`demo_data.record` in
 game/game/demo_data.lua, year 3412). Not
 the demo record itself: a demo that wrote its own record over the save
 would then go unnoticed. The fake LÖVE seeds the storage from it, so the boot
@@ -37,7 +37,7 @@ cut after fN>`, the file cut as help-me-debug cuts it:
   resumed and demo frame 0 is played. The state at f3: year 3412 month
   1, credits 86, science 12, income 48, techs space folding and
   geneseeds, 16 colonies, 18 slipways, 75 planets.
-- f4-152: demo frames 1-149, all empty in `demo_data_pad_buttons`
+- f4-152: demo frames 1-149, all empty in `demo_data.pad_buttons`
   (game/game/demo_data.lua) and all under caption 0 (demo frames
   0-299). The state at f152: the same, but 74
   planets (p46, still vanishing in the record, is gone).

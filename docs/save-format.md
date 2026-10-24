@@ -1,21 +1,21 @@
 # Save format
 
-The binary record that `game/game/save_state.lua` writes and reads: one save of a running game, pointer-free, at most `SAVE_STATE_MAX_BYTES` = 8192 bytes. This page describes version 1 as the code has it. Any change to the encoder or the decoder updates this page in the same commit.
+The binary record that `game/game/save_state.lua` writes and reads: one save of a running game, pointer-free, at most `save_state.MAX_BYTES` = 8192 bytes. This page describes version 1 as the code has it. Any change to the encoder or the decoder updates this page in the same commit.
 
-The module (`require("game.save_state")`) has four entry points. A byte buffer is a 0-indexed array of integers 0–255, filled in place.
+The module (`require("game.save_state")`) has four entry points. A byte buffer is a 1-based array of integers 0–255, filled in place: byte `i` of the record, counted from 1 as in a Lua string, is `buffer[i]`, so the offsets below are those of `buffer[offset + 1]`.
 
-- `save_state_capture(out)` reads the live game into the save state table `out`, changing nothing else;
-- `save_state_encode(state, buffer)` writes a save state table to `buffer` and returns the record's byte count, asserting that the record fits 8 KiB; it writes what it is given and validates nothing;
-- `save_state_decode(bytes, count, out)` reads `count` bytes back into the table `out` and returns 1 for a valid record, 0 otherwise, never asserting on the bytes;
-- `save_state_crc32(bytes, count)` is the trailer checksum.
+- `save_state.capture(out)` reads the live game into the save state table `out`, changing nothing else;
+- `save_state.encode(state, buffer)` writes a save state table to `buffer` and returns the record's byte count, asserting that the record fits 8 KiB; it writes what it is given and validates nothing;
+- `save_state.decode(bytes, count, out)` reads `count` bytes back into the table `out` and returns true for a valid record, false otherwise, never asserting on the bytes;
+- `save_state.crc32(bytes, count)` is the trailer checksum.
 
-`save_state_zero(out)` resets a table to the empty save state. The module exports the constants this page names as `M.SAVE_STATE_*` fields (`M.SAVE_STATE_MAX_BYTES`) and `M.SAVE_NODE_*` fields (`M.SAVE_NODE_HAS_POS` for the flag `HAS_POS`).
+`save_state.zero(out)` resets a table to the empty save state. The module exports the constants this page names as fields: a limit by its own name (`save_state.MAX_BYTES`), a node flag with `NODE_` before it (`save_state.NODE_HAS_POS` for the flag `HAS_POS`).
 
 The largest record of the `worst-case/` games, measured with the C game before plan 4 deleted it, is 4519 bytes (`worst-case/full_game.json`, frame 5964), 3673 bytes under the limit. If the size assert ever fires, the encoding gets more compact; the limit never moves.
 
 When the record format changes (a version bump, a new field), `tests/e2e/pad_resume_at_start.json`'s `initial_save` stops decoding and its hash changes: the fixture must be re-cut from `pad_research`'s last record, as `tests/e2e/pad_resume_at_start.txt` records, and that one hash rebaselined. No target writes a save to a file today, so re-cutting it first needs one (a leftover for plan 5).
 
-Visual-only effects (particles, the probe and title emitters, harvest bursts, transit dots, the flicker of a vanishing planet) draw from a second random stream, `game/game/visual_random.lua`, that the record does not hold. The stream is seeded once at boot and never reseeded: a resumed game draws from wherever the stream stands at the resume, and particles restart from nothing. `visual_random_state` and `visual_random_set_state` read and set the stream; nothing in `game/` calls them.
+Visual-only effects (particles, the probe and title emitters, harvest bursts, transit dots, the flicker of a vanishing planet) draw from a second random stream, `game/game/visual_random.lua`, that the record does not hold. The stream is seeded once at boot and never reseeded: a resumed game draws from wherever the stream stands at the resume, and particles restart from nothing. `visual_random.state` and `visual_random.set_state` read and set the stream; nothing in `game/` calls them.
 
 ## Encoding rules
 
@@ -47,11 +47,11 @@ In this order.
 | year | i32 | any |
 | year_ticks | i32 | any |
 | invented count | u8 | 0–19 |
-| invented tech, × invented count | u8 each | 0–18, a `technologies_table` index; no duplicate; in invention order |
+| invented tech, × invented count | u8 each | 0–18, the 0-based rank of a `technologies_table` entry (its position − 1); no duplicate; in invention order |
 | `rnd_state` | u32 | any; the game stream, which only game decisions draw from |
 | `background_seed` | u32 | any; the `rnd_state` the galaxy background drew its tile map from |
 | type picker tickets count | u8 | 0–66 (`WEIGHTED_PICKER_TICKETS_CAP`) |
-| ticket, × tickets count | u8 each | 0–10, a `planet_types_table` index |
+| ticket, × tickets count | u8 each | 0–10, the 0-based rank of a `planet_types_table` entry (its position − 1) |
 | recent, × 3 | u8 each | 0–10 when its recent_set is 1; anything when 0 (capture writes 0) |
 | recent_set, × 3 | u8 each | 0 or 1 |
 | type picker multiplier | i32 | any |
@@ -63,7 +63,7 @@ In this order.
 | has_probe | u8 | 0 or 1 |
 | probe pos x, y | i32 × 2 | any; only when has_probe is 1 |
 | probe map_pos x, y | i32 × 2 | any; only when has_probe is 1 |
-| probe fold_anchor | i32 | any; only when has_probe is 1 |
+| probe fold_anchor | i32 | any, nonzero loads as anchored (capture writes 0x10000 or 0); only when has_probe is 1 |
 | camera map_pos x, y | i32 × 2 | any |
 | node count | u8 | 0–255 |
 | node record, × node count | see below | |
@@ -81,11 +81,11 @@ In this order.
 | map_pos x, y | i32 × 2 | if `HAS_MAP_POS` | any |
 | planet id length | u8 | if `HAS_PLANET_ID` | 1–7 |
 | planet id bytes, × length | u8 each | if `HAS_PLANET_ID` | printable ASCII 0x21–0x7E, no NUL |
-| fold_anchor | i32 | always | any |
-| infraspace | i32 | always | any |
+| fold_anchor | i32 | always | any; nonzero loads as anchored (capture writes 0x10000 or 0) |
+| infraspace | i32 | always | any; 0 for a node without one, nonzero loads as one (capture writes 0x10000) |
 | planet_type | u8 | always | 0 = none, 1–11 the 1-based `planet_types_table` entry |
 | description_type | u8 | always | 0 = no description, 1–11 the 1-based `planet_types_table` entry whose `description` the node holds (terraform leaves the old type's) |
-| project | u8 | always | 0 = none, 1–42 the 1-based `research_projects_at` entry |
+| project | u8 | always | 0 = none, 1–42 the 1-based `research.projects_at` entry |
 | need count | u8 | if `HAS_NEEDS` | 0–8 |
 | need has_resource, × need count | u8 | if `HAS_NEEDS` | 0 or 1 |
 | need resource | i32 | after each need whose has_resource is 1 | one of the 13 `resource_codes` values, as an integer in 16.16 |
@@ -107,13 +107,13 @@ Node kinds: 0 planet, 1 protostar, 2 structure, 3 processor, 4 slipgate, 5 infra
 | 0 | `HAS_POS` | pos follows |
 | 1 | `HAS_MAP_POS` | map_pos follows |
 | 2 | `HAS_PLANET_ID` | the planet id follows |
-| 3 | `HAS_NEEDS` | mirrors `PLANET_HAS_NEEDS`; the needs follow |
+| 3 | `HAS_NEEDS` | set when the planet holds needs; the needs follow |
 | 4 | `HAS_DEVELOPMENT_TIER` | development_tier follows |
 | 5 | `HAS_PRODUCTION_BONUS` | production_bonus follows |
-| 6 | `HAS_PRODUCTION` | mirrors `PLANET_HAS_PRODUCTION`; no field of its own |
+| 6 | `HAS_PRODUCTION` | set when the planet holds its own production; no field of its own |
 | 7 | `PRODUCTION_HAS_RESOURCE` | the production resource follows; requires `HAS_PRODUCTION` |
 | 8 | `SYNTHESIZER_SPENT` | the node's `synthesizable_resources` differs from its archetype's; synthesizer kind only; no field |
-| 9 | `HAS_OUTGOING_ROUTES` | mirrors `PLANET_HAS_OUTGOING_ROUTES`; the routes follow |
+| 9 | `HAS_OUTGOING_ROUTES` | set when the planet holds outgoing routes; the routes follow |
 | 10 | `HAS_STATE_TIME` | state_time follows; set if and only if the state is `VANISHING` or the kind is not planet |
 
 Bits 11–15 are always 0.
@@ -141,22 +141,22 @@ The CRC is CRC-32 IEEE 802.3, reflected: polynomial `0xEDB88320`, initial value 
 
 ## In memory: the save state table
 
-Decode fills one flat table, with the field names listed at the head of `game/game/save_state.lua`; `background_seed`, like `rnd_state`, is an unsigned 32-bit value (0 to 2^32 − 1), every `i32` its signed raw value. Each node's routes and slipway list live in shared pools, filled in node order (`routes`, `route_indices` for the route planet and slipway indices, `node_slipways`); a node or route holds a first index and a count into them. Those offsets never appear in the bytes: the encoder writes each slice inline in its node record. Pool caps, exceeded means invalid: `SAVE_STATE_ROUTES_CAP` = 8192 / 3 routes, `SAVE_STATE_ROUTE_INDICES_CAP` = 8192 indices, `SAVE_STATE_NODE_SLIPWAYS_CAP` = 510 node slipway entries. A decoded planet id is a Lua string. Every array of the table is 0-indexed.
+Decode fills one flat table, with the field names listed at the head of `game/game/save_state.lua`; `background_seed`, like `rnd_state`, is an unsigned 32-bit value (0 to 2^32 − 1), every `i32` its signed raw value. Each node's routes and slipway list live in shared pools, filled in node order (`routes`, `route_indices` for the route planet and slipway ranks, `node_slipways`); a node or route holds a first position and a count into them, its slice being `pool[first .. first + count - 1]`. Those positions never appear in the bytes: the encoder writes each slice inline in its node record. Pool caps, exceeded means invalid: `save_state.ROUTES_CAP` = 8192 / 3 routes, `save_state.ROUTE_INDICES_CAP` = 8192 indices, `save_state.NODE_SLIPWAYS_CAP` = 510 node slipway entries. A decoded planet id is a Lua string. Every array of the table is 1-based; every value it holds is the value on disk, so a node, slipway, technology or ticket reference stays its 0-based rank: `save_state.capture` writes `position - 1`, and `save_load` and the decoder's node-slipway check look rank `r` up at position `r + 1`.
 
 ## Validation
 
-`save_state_decode` returns 0 on the first failure, in this order:
+`save_state.decode` returns false on the first failure, in this order:
 
 1. the byte count is below 12 (header and trailer) or above 8192;
 2. the magic is not `SLWY`;
 3. the version is not 1;
 4. the payload length is not the byte count minus 12;
 5. the CRC does not match;
-6. while parsing: a read past the payload's end; an invented count above 19; a tickets count above 66; a planet id length of 0 or above 7, or a byte outside 0x21–0x7E; a need count above 8; unknown route resource flag bits; a pool cap exceeded;
+6. while parsing: a read past the payload's end; an invented count above 19; a tickets count above 66; has_probe outside 0/1; a planet id length of 0 or above 7, or a byte outside 0x21–0x7E; a need count above 8; a need has_resource outside 0/1; unknown route resource flag bits; a pool cap exceeded;
 7. a payload byte left unread;
-8. the field rules: difficulty outside 1–4; a tech ≥ 19 or a duplicate tech; a ticket ≥ 11; a recent_set outside 0/1, or a recent ≥ 11 whose recent_set is 1; has_probe outside 0/1; a node kind ≥ 9; a forbidden node state; an unknown flag bit; `PRODUCTION_HAS_RESOURCE` without `HAS_PRODUCTION`; `SYNTHESIZER_SPENT` on another kind; `HAS_STATE_TIME` not matching (`VANISHING` or kind ≠ planet); planet_type or description_type above 11; project above 42; a need has_resource outside 0/1; a need or production resource that is not a `resource_codes` value; a slipway end ≥ node count, or start equal to end; a route planet ≥ node count or route slipway ≥ slipway count; a node slipway entry ≥ slipway count, not having the node as an end, or twice in the node's list.
+8. the field rules: difficulty outside 1–4; a tech ≥ 19 or a duplicate tech; a ticket ≥ 11; a recent_set outside 0/1, or a recent ≥ 11 whose recent_set is 1; a node kind ≥ 9; a forbidden node state; an unknown flag bit; `PRODUCTION_HAS_RESOURCE` without `HAS_PRODUCTION`; `SYNTHESIZER_SPENT` on another kind; `HAS_STATE_TIME` not matching (`VANISHING` or kind ≠ planet); planet_type or description_type above 11; project above 42; a need or production resource that is not a `resource_codes` value; a slipway end ≥ node count, or start equal to end; a route planet ≥ node count or route slipway ≥ slipway count; a node slipway entry ≥ slipway count, not having the node as an end, or twice in the node's list.
 
-Values that are not references (credits, positions, tiers, bonuses, route resources, timers) are not range-checked: they are game values, and the game's readers bound their own table lookups. On 0, the contents of the output table are unspecified.
+Values that are not references (credits, positions, tiers, bonuses, route resources, timers) are not range-checked: they are game values, and the game's readers bound their own table lookups. On false, the contents of the output table are unspecified.
 
 ## What capture reads
 

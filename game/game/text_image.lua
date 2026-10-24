@@ -1,9 +1,3 @@
--- Copy of src/game/text_image.h then src/game/text_image.c.
---
--- Shapes, with the C field names:
---   text_image_key_t: { col, length, text }, text a Lua string of length bytes.
---   text_image_slot_t: { key, stamp, frame }.
--- The unsigned long counters are Lua numbers: exact to 2^53, the C's wrap is unreachable.
 local gfx = require("p8.gfx")
 local image = require("p8.image")
 local image_slot = require("game.image_slot")
@@ -12,39 +6,33 @@ local M = {}
 
 -- The outline's pixel on each side of the glyphs: 4 a character plus 1 wide, 7 high.
 local OUTLINE = 1
-local TEXT_IMAGE_HEIGHT = gfx.P8_FONT_GLYPH_HEIGHT + 2 * OUTLINE
-local TEXT_CAP = 31
+local TEXT_IMAGE_HEIGHT = gfx.FONT_GLYPH_HEIGHT + 2 * OUTLINE
 
 local g_slots = {}
-for i = 0, image_slot.IMAGE_SLOT_TEXT_COUNT - 1 do
+for i = 1, image_slot.TEXT_COUNT do
   g_slots[i] = { key = { col = 0, length = 0, text = "" }, stamp = 0, frame = 0 }
 end
 local g_stamp = 0
 local g_frame = 1
 
 local function image_width(length)
-  return length * gfx.P8_FONT_CELL_WIDTH + OUTLINE
+  return length * gfx.FONT_CELL_WIDTH + OUTLINE
 end
 
--- strlen: a NUL byte ends the text.
+-- A NUL byte ends the text.
 local function text_length(str)
-  local length = (string.find(str, "\0", 1, true) or #str + 1) - 1
-  if length > TEXT_CAP then
-    return -1
-  end
-  return length
+  return (string.find(str, "\0", 1, true) or #str + 1) - 1
 end
 
--- 1 when str fits a text slot: text_image_print_outlined then copies it, unless every slot was
+-- true when str fits a text slot: text_image.print_outlined then copies it, unless every slot was
 -- used this frame.
-function M.text_image_cacheable(str)
+function M.cacheable(str)
   local length = text_length(str)
-  return (length > 0 and image_width(length) <= image.p8_image_size(image_slot.IMAGE_SLOT_TEXT_FIRST).width)
-    and 1 or 0
+  return length > 0 and image_width(length) <= image.size(image_slot.TEXT_FIRST).width
 end
 
 -- Starts a draw frame: a slot copied earlier in the frame is never rebuilt before the next call.
-function M.text_image_frame_begin()
+function M.frame_begin()
   g_frame = g_frame + 1
 end
 
@@ -52,33 +40,33 @@ local function same_key(a, b)
   return a.col == b.col and a.length == b.length and a.text == b.text
 end
 
--- Returns the slot holding key and 1, else the least recently used slot not copied this
--- frame and 0, else -1 and 0.
+-- Returns the slot holding key and true, else the least recently used slot not copied this
+-- frame and false, else nil and false.
 local function slot_for(key)
-  local oldest = -1
-  for i = 0, image_slot.IMAGE_SLOT_TEXT_COUNT - 1 do
+  local oldest = nil
+  for i = 1, image_slot.TEXT_COUNT do
     if g_slots[i].key.length > 0 and same_key(g_slots[i].key, key) then
-      return i, 1
+      return i, true
     end
-    if g_slots[i].frame ~= g_frame and (oldest < 0 or g_slots[i].stamp < g_slots[oldest].stamp) then
+    if g_slots[i].frame ~= g_frame and (oldest == nil or g_slots[i].stamp < g_slots[oldest].stamp) then
       oldest = i
     end
   end
-  return oldest, 0
+  return oldest, false
 end
 
 -- Draws no visual random number and reads no game state.
 local function text_image_build_draw(graphics, mem, context)
   local key = context
-  gfx.p8_print_outlined(graphics, mem, key.text, OUTLINE, OUTLINE, key.col)
+  gfx.print_outlined(graphics, mem, key.text, OUTLINE, OUTLINE, key.col)
 end
 
--- p8_print_outlined's contract (same pixels, same draw palette after), through a text slot keyed
+-- gfx.print_outlined's contract (same pixels, same draw palette after), through a text slot keyed
 -- by str and col when str is cacheable and a slot is free. gfx's camera moves during a build and
 -- is restored.
-function M.text_image_print_outlined(graphics, mem, str, x, y, col)
-  if M.text_image_cacheable(str) == 0 then
-    gfx.p8_print_outlined(graphics, mem, str, x, y, col)
+function M.print_outlined(graphics, mem, str, x, y, col)
+  if not M.cacheable(str) then
+    gfx.print_outlined(graphics, mem, str, x, y, col)
     return
   end
   local key = { col = 0, length = 0, text = "" }
@@ -86,19 +74,19 @@ function M.text_image_print_outlined(graphics, mem, str, x, y, col)
   key.length = text_length(str)
   key.text = str:sub(1, key.length)
   local i, built = slot_for(key)
-  if i < 0 then
-    gfx.p8_print_outlined(graphics, mem, str, x, y, col)
+  if i == nil then
+    gfx.print_outlined(graphics, mem, str, x, y, col)
     return
   end
-  if built == 0 then
+  if not built then
     g_slots[i].key = { col = key.col, length = key.length, text = key.text }
-    image.p8_image_build(graphics, mem, image_slot.IMAGE_SLOT_TEXT_FIRST + i, image_width(key.length),
+    image.build(graphics, mem, image_slot.TEXT_FIRST + i - 1, image_width(key.length),
       TEXT_IMAGE_HEIGHT, text_image_build_draw, g_slots[i].key)
   end
   g_stamp = g_stamp + 1
   g_slots[i].stamp = g_stamp
   g_slots[i].frame = g_frame
-  image.p8_image_draw(graphics, mem, image_slot.IMAGE_SLOT_TEXT_FIRST + i, x - OUTLINE, y - OUTLINE)
+  image.draw(graphics, mem, image_slot.TEXT_FIRST + i - 1, x - OUTLINE, y - OUTLINE)
 end
 
 return M

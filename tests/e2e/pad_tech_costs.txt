@@ -85,7 +85,7 @@ known e, p47 known f, planets 89, colonies 0, slipways 0.
 Replaces tech_nanomaterials_discount (6 years, "nanomaterials", a build
 menu at x0.85) and tech_xenofoods_recipes (cheat, "space folding",
 "geneseeds", "xenofoods", an earth-like menu with improved recipes and
-x1.5): `research_project_cost` x0.85 and x1.5, the upgraded production
+x1.5): `research.project_cost` x0.85 and x1.5, the upgraded production
 entry. Two era-1 inventions open era 2 here, so "geneseeds" is not
 needed.
 
@@ -170,9 +170,7 @@ The state at f557: year 3410 month 1, credits 136, research 90,
 income 17; camera 101 242; p54 colonized m, p31 colonized e, p1
 colonized x, p37 colonized o, s1 and s2 colonized structure; slipways
 p54 p31, p54 p1, p54 p37, s1 p54, s2 p31, s2 p54; planets 90, colonies
-6, transit dots live at the end. Peak: transit_dots 39 (29 before the
-plan 12 step 9 hold, 25 before the cross route: the slipways age
-differently before the year).
+6, transit dots live at the end.
 
 Replaces trade_rich_mine (a mine linked to three people suppliers and
 three labs, rich at the year, its "exports:" panel, a served lab's

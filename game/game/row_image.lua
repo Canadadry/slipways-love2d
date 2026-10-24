@@ -1,11 +1,3 @@
--- Copy of src/game/row_image.h then src/game/row_image.c.
---
--- Shapes, with the C field names:
---   row_image_key_t: { mem, hash, count, extent, entries }, entries 0-indexed of uint32_t.
---   row_image_slot_t: { key, stamp }.
--- The hash mixes in 0 where the C mixes in the p8_vram_t address: same_key also compares mem by
--- identity and every entry, so two keys are equal in Lua exactly when they are in C.
--- The unsigned long g_stamp is a Lua number: exact to 2^53, the C's wrap is unreachable.
 local bit = require("bit")
 local vec = require("engine.vec")
 local hud = require("game.hud")
@@ -17,8 +9,7 @@ local image = require("p8.image")
 
 local M = {}
 
-local ROW_IMAGE_HEIGHT = gfx_module.P8_SPRITE_SIZE
-local ROW_IMAGE_KEY_CAP = layout.LAYOUT_ROW_KEYS_CAP
+local ROW_IMAGE_HEIGHT = gfx_module.SPRITE_SIZE
 local SPRITE_COUNT = 256
 local BLOCK_COUNT = 16
 
@@ -33,13 +24,9 @@ local function mul_u32(a, b)
   return u32(lo * b + u32(hi * b) % 65536 * 65536)
 end
 
--- row_image_key_t key, every field at its C zero.
+-- A key's entries are numbers in 0 .. 2^32 - 1, read up to count only.
 local function key_zero()
-  local entries = {}
-  for i = 0, ROW_IMAGE_KEY_CAP - 1 do
-    entries[i] = 0
-  end
-  return { mem = nil, hash = 0, count = 0, extent = 0, entries = entries }
+  return { mem = nil, hash = 0, count = 0, extent = 0, entries = {} }
 end
 
 local function key_copy(key)
@@ -48,28 +35,28 @@ local function key_copy(key)
   copy.hash = key.hash
   copy.count = key.count
   copy.extent = key.extent
-  for i = 0, ROW_IMAGE_KEY_CAP - 1 do
+  for i = 1, key.count do
     copy.entries[i] = key.entries[i]
   end
   return copy
 end
 
 local g_slots = {}
-for i = 0, image_slot.IMAGE_SLOT_ROW_COUNT - 1 do
+for i = 1, image_slot.ROW_COUNT do
   g_slots[i] = { key = key_zero(), stamp = 0 }
 end
 local g_stamp = 0
 
 local function row_image_width()
-  return image.p8_image_size(image_slot.IMAGE_SLOT_ROW_FIRST).width
+  return image.size(image_slot.ROW_FIRST).width
 end
 
 local function entry_of(item)
-  return u32(bit.bor(fixed.p8_fixed_flr_int(item.sprite_id), bit.lshift(fixed.p8_fixed_flr_int(item.sprite_palette_block), 8),
-    bit.lshift(fixed.p8_fixed_flr_int(item.offset.x), 12)))
+  return u32(bit.bor(fixed.flr_int(item.sprite_id), bit.lshift(fixed.flr_int(item.sprite_palette_block), 8),
+    bit.lshift(fixed.flr_int(item.offset.x), 12)))
 end
 
--- Fills key from the row; returns 0 when the row cannot be copied exactly.
+-- Fills key from the row; returns false when the row cannot be copied exactly.
 local function key_of(row, mem, key)
   local hash
 
@@ -77,110 +64,109 @@ local function key_of(row, mem, key)
   key.count = 0
   key.extent = 0
   if row == nil or row.placed_items == nil then
-    return 0
+    return false
   end
-  for i = 0, row.placed_items_count - 1 do
+  for i = 1, row.placed_items_count do
     local item = row.placed_items[i]
-    if item.kind == layout.LAYOUT_ROW_ITEM_NONE then
+    if item.kind == layout.ROW_ITEM_NONE then
       goto continue
     end
-    if item.kind ~= layout.LAYOUT_ROW_ITEM_SPRITE then
-      return 0
+    if item.kind ~= layout.ROW_ITEM_SPRITE then
+      return false
     end
     do
-      local sprite = fixed.p8_fixed_flr_int(item.sprite_id)
-      local block = fixed.p8_fixed_flr_int(item.sprite_palette_block)
-      local x = fixed.p8_fixed_flr_int(item.offset.x)
-      if fixed.p8_fixed_from_int(x) ~= item.offset.x or item.offset.y ~= 0 or x < 0
-        or x + gfx_module.P8_SPRITE_SIZE > row_image_width() or sprite < 0 or sprite >= SPRITE_COUNT or block < 0
+      local sprite = fixed.flr_int(item.sprite_id)
+      local block = fixed.flr_int(item.sprite_palette_block)
+      local x = fixed.flr_int(item.offset.x)
+      if fixed.from_int(x) ~= item.offset.x or item.offset.y ~= 0 or x < 0
+        or x + gfx_module.SPRITE_SIZE > row_image_width() or sprite < 0 or sprite >= SPRITE_COUNT or block < 0
         or block >= BLOCK_COUNT then
-        return 0
+        return false
       end
-      assert(key.count < ROW_IMAGE_KEY_CAP, "a row holds at most LAYOUT_ROW_KEYS_CAP items")
-      key.entries[key.count] = entry_of(item)
-      key.count = key.count + 1
-      if x + gfx_module.P8_SPRITE_SIZE > key.extent then
-        key.extent = x + gfx_module.P8_SPRITE_SIZE
+      local n = key.count + 1
+      key.entries[n] = entry_of(item)
+      key.count = n
+      if x + gfx_module.SPRITE_SIZE > key.extent then
+        key.extent = x + gfx_module.SPRITE_SIZE
       end
     end
     ::continue::
   end
   if key.count == 0 then
-    return 0
+    return false
   end
+  -- The hash mixes in 0 for mem: same_key compares mem by identity, and every entry.
   hash = u32(bit.bxor(2166136261, 0))
-  for i = 0, key.count - 1 do
+  for i = 1, key.count do
     hash = mul_u32(u32(bit.bxor(hash, key.entries[i])), 16777619)
   end
   key.hash = hash
-  return 1
+  return true
 end
 
--- 1 when row_image_draw_at copies the row from an image slot: only sprite and nothing items, at
+-- true when row_image.draw_at copies the row from an image slot: only sprite and nothing items, at
 -- least one sprite, each at a whole, non-negative x offset, a y offset of 0, within a slot.
-function M.row_image_cacheable(row)
+function M.cacheable(row)
   local key = key_zero()
   return key_of(row, nil, key)
 end
 
 local function same_key(a, b)
   if not (a.hash == b.hash and a.mem == b.mem and a.count == b.count) then
-    return 0
+    return false
   end
-  for i = 0, a.count - 1 do
+  for i = 1, a.count do
     if a.entries[i] ~= b.entries[i] then
-      return 0
+      return false
     end
   end
-  return 1
+  return true
 end
 
 -- Draws no visual random number and reads no game state: only the row's own items, each at its
 -- whole offset, so at (offset, 0) whatever the caller's alignment.
 local function row_image_build_draw(gfx, mem, context)
-  layout.layout_row_draw_at(gfx, mem, context, vec.vec_make(0, 0), 0)
+  layout.row_draw_at(gfx, mem, context, vec.make(0, 0), 0)
 end
 
-local function slot_for(key, built)
-  local oldest = 0
-  for i = 0, image_slot.IMAGE_SLOT_ROW_COUNT - 1 do
-    if g_slots[i].key.mem ~= nil and same_key(g_slots[i].key, key) ~= 0 then
-      built = 1
-      return i, built
+local function slot_for(key)
+  local oldest = 1
+  for i = 1, image_slot.ROW_COUNT do
+    if g_slots[i].key.mem ~= nil and same_key(g_slots[i].key, key) then
+      return i, true
     end
     if g_slots[i].stamp < g_slots[oldest].stamp then
       oldest = i
     end
   end
-  built = 0
-  return oldest, built
+  return oldest, false
 end
 
--- layout_row_draw_at's contract (same pixels, same draw palette after), through an image slot
+-- layout.row_draw_at's contract (same pixels, same draw palette after), through an image slot
 -- keyed by the row's content when the row is cacheable. gfx's camera moves during a build and is
 -- restored.
-function M.row_image_draw_at(gfx, mem, row, p, a)
+function M.draw_at(gfx, mem, row, p, a)
   local key = key_zero()
   local built
   local i
   local origin
 
-  if key_of(row, mem, key) == 0 then
-    layout.layout_row_draw_at(gfx, mem, row, p, a)
+  if not key_of(row, mem, key) then
+    layout.row_draw_at(gfx, mem, row, p, a)
     return
   end
-  i, built = slot_for(key, built)
-  if built == 0 then
-    image.p8_image_build(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i, key.extent, ROW_IMAGE_HEIGHT,
+  i, built = slot_for(key)
+  if not built then
+    image.build(gfx, mem, image_slot.ROW_FIRST + i - 1, key.extent, ROW_IMAGE_HEIGHT,
       row_image_build_draw, row)
     g_slots[i].key = key_copy(key)
   end
   g_stamp = g_stamp + 1
   g_slots[i].stamp = g_stamp
-  origin = vec.vec_sub(p, vec.vec_make(fixed.p8_fixed_mul(a, row.width), 0))
-  image.p8_image_draw(gfx, mem, image_slot.IMAGE_SLOT_ROW_FIRST + i, fixed.p8_fixed_flr_int(origin.x),
-    fixed.p8_fixed_flr_int(origin.y))
-  hud.hud_select_palette_block_default(mem)
+  origin = vec.sub(p, vec.make(fixed.mul(a, row.width), 0))
+  image.draw(gfx, mem, image_slot.ROW_FIRST + i - 1, fixed.flr_int(origin.x),
+    fixed.flr_int(origin.y))
+  hud.select_palette_block_default(mem)
 end
 
 return M

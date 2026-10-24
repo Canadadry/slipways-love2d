@@ -1,21 +1,18 @@
--- Copy of src/game/save_state.h then src/game/save_state.c.
---
--- Shapes, with the C field names:
---   A byte buffer is a 0-indexed array of integers 0 .. 255, owned and filled in place as the C's.
---   cursor_t: { position, end_, failed }.
---   save_vec_t: { x, y }; save_need_t: { has_resource, resource }.
---   save_state_t: { difficulty, economy, rnd_state, background_seed, type_picker, vanish_walk,
---     structure_id_counter, has_probe, probe, camera_map_pos, node_count, nodes, slipway_count,
---     slipways, route_count, routes, route_index_count, route_indices, node_slipway_count,
---     node_slipways }, every array 0-indexed. memset leaves nodes, slipways, routes,
---     route_indices and node_slipways empty: an element is created at its C zero value when the
---     C first writes into it, and nothing reads one past its count.
---   save_node_t.planet_id is a Lua string; u32 values (rnd_state, background_seed, the CRC) are
---     unsigned 0 .. 2^32-1, i32 values the signed raw value.
+-- A byte buffer is a 1-based array of integers 0 .. 255, like a Lua string's bytes, owned by the
+-- caller and filled in place.
+-- A cursor's position is that of the next byte, end_ that of the last readable one, so a
+-- record's byte count is the writer's position - 1.
+-- A need's resource and a route's are nil when absent, and so is the state's probe
+-- { pos, map_pos, fold_anchor }; the flag bytes are written from presence.
+-- Every array of a state is 1-based; first_route, first_slipway and first_planet are positions
+-- in their pool, a slice being pool[first .. first + count - 1]. save_state.zero leaves nodes,
+-- slipways, routes, route_indices and node_slipways empty: an element is created at its zero
+-- value when first written, and nothing reads one past its count.
+-- u32 values (rnd_state, background_seed, the CRC) are numbers in 0 .. 2^32 - 1, i32 values
+-- the signed raw value.
 local bit = require("bit")
 local entity_class = require("engine.entity_class")
 local entity_id = require("engine.entity_id")
-local entity_id_type = require("engine.entity_id_type")
 local entity_registry = require("engine.entity_registry")
 local background_module = require("game.background")
 local economy_score = require("game.economy_score")
@@ -28,80 +25,76 @@ local planet_family_trade = require("game.planet_family_trade")
 local probe = require("game.probe")
 local research = require("game.research")
 local structure_icon = require("game.structure_icon")
-local trade = require("game.trade")
 local cint = require("p8.cint")
 local fixed = require("p8.fixed")
 
 local M = {}
 
-M.SAVE_STATE_MAX_BYTES = 8192
-M.SAVE_STATE_VERSION = 1
-M.SAVE_STATE_RECENT_COUNT = 3
-M.SAVE_STATE_NODES_CAP = 255
-M.SAVE_STATE_SLIPWAYS_CAP = 255
-M.SAVE_STATE_ROUTES_CAP = cint.div(M.SAVE_STATE_MAX_BYTES, 3)
-M.SAVE_STATE_ROUTE_INDICES_CAP = M.SAVE_STATE_MAX_BYTES
-M.SAVE_STATE_NODE_SLIPWAYS_CAP = 2 * M.SAVE_STATE_SLIPWAYS_CAP
-M.SAVE_STATE_NEEDS_CAP = 8
-M.SAVE_STATE_PLANET_ID_MAX = 7
+M.MAX_BYTES = 8192
+M.VERSION = 1
+M.RECENT_COUNT = 3
+M.NODES_CAP = 255
+M.SLIPWAYS_CAP = 255
+M.ROUTES_CAP = cint.div(M.MAX_BYTES, 3)
+M.ROUTE_INDICES_CAP = M.MAX_BYTES
+M.NODE_SLIPWAYS_CAP = 2 * M.SLIPWAYS_CAP
+M.NEEDS_CAP = 8
+M.PLANET_ID_MAX = 7
 
-M.SAVE_NODE_PLANET = 0
-M.SAVE_NODE_PROTOSTAR = 1
-M.SAVE_NODE_STRUCTURE = 2
-M.SAVE_NODE_PROCESSOR = 3
-M.SAVE_NODE_SLIPGATE = 4
-M.SAVE_NODE_INFRASPACE_GATE = 5
-M.SAVE_NODE_TRADING_HUB = 6
-M.SAVE_NODE_SYNTHESIZER = 7
-M.SAVE_NODE_ASCENSION = 8
-M.SAVE_NODE_KIND_COUNT = 9
+M.NODE_PLANET = 0
+M.NODE_PROTOSTAR = 1
+M.NODE_STRUCTURE = 2
+M.NODE_PROCESSOR = 3
+M.NODE_SLIPGATE = 4
+M.NODE_INFRASPACE_GATE = 5
+M.NODE_TRADING_HUB = 6
+M.NODE_SYNTHESIZER = 7
+M.NODE_ASCENSION = 8
+M.NODE_KIND_COUNT = 9
 
-M.SAVE_NODE_HAS_POS = bit.lshift(1, 0)
-M.SAVE_NODE_HAS_MAP_POS = bit.lshift(1, 1)
-M.SAVE_NODE_HAS_PLANET_ID = bit.lshift(1, 2)
-M.SAVE_NODE_HAS_NEEDS = bit.lshift(1, 3)
-M.SAVE_NODE_HAS_DEVELOPMENT_TIER = bit.lshift(1, 4)
-M.SAVE_NODE_HAS_PRODUCTION_BONUS = bit.lshift(1, 5)
-M.SAVE_NODE_HAS_PRODUCTION = bit.lshift(1, 6)
-M.SAVE_NODE_PRODUCTION_HAS_RESOURCE = bit.lshift(1, 7)
-M.SAVE_NODE_SYNTHESIZER_SPENT = bit.lshift(1, 8)
-M.SAVE_NODE_HAS_OUTGOING_ROUTES = bit.lshift(1, 9)
-M.SAVE_NODE_HAS_STATE_TIME = bit.lshift(1, 10)
-M.SAVE_NODE_KNOWN_FLAGS = bit.lshift(1, 11) - 1
+M.NODE_HAS_POS = bit.lshift(1, 0)
+M.NODE_HAS_MAP_POS = bit.lshift(1, 1)
+M.NODE_HAS_PLANET_ID = bit.lshift(1, 2)
+M.NODE_HAS_NEEDS = bit.lshift(1, 3)
+M.NODE_HAS_DEVELOPMENT_TIER = bit.lshift(1, 4)
+M.NODE_HAS_PRODUCTION_BONUS = bit.lshift(1, 5)
+M.NODE_HAS_PRODUCTION = bit.lshift(1, 6)
+M.NODE_PRODUCTION_HAS_RESOURCE = bit.lshift(1, 7)
+M.NODE_SYNTHESIZER_SPENT = bit.lshift(1, 8)
+M.NODE_HAS_OUTGOING_ROUTES = bit.lshift(1, 9)
+M.NODE_HAS_STATE_TIME = bit.lshift(1, 10)
+M.NODE_KNOWN_FLAGS = bit.lshift(1, 11) - 1
 
 -- planet_id holds up to 8 bytes on encode; a decoded one is a Lua string.
 -- planet_type, description_type and project are 1-based, 0 for none;
 -- description_type is the type whose description the planet holds, which
 -- terraform leaves on the old type. The route and slipway
 -- slices index the state's pools.
--- Both route slices index route_indices: node indices, then slipway indices.
--- Every fixed-point value is its raw 16.16 int32_t; every reference is a
--- 0-based table index, except difficulty (1-based in difficulty_options_table).
+-- Both route slices are positions in route_indices, which holds node ranks, then slipway ranks.
+-- Every fixed-point value is its raw 16.16 value, a signed 32-bit integer; every
+-- other reference is a 0-based rank, except difficulty (its difficulty_options_table position).
 
-M.SIZEOF = {
-  magic = 4,
-  ["save_node_t.planet_id"] = 8,
-}
-local SIZEOF = M.SIZEOF
+local MAGIC_LENGTH = 4
+local NODE_PLANET_ID_LENGTH = 8
 
 local HEADER_BYTES = 8
 local TRAILER_BYTES = 4
 local LENGTH_OFFSET = 6
 
-M.magic = { [0] = string.byte("S"), string.byte("L"), string.byte("W"), string.byte("Y") }
+M.magic = { string.byte("S"), string.byte("L"), string.byte("W"), string.byte("Y") }
 local magic = M.magic
 
 local crc32_table
 
 local function zero_array(count)
   local array = {}
-  for i = 0, count - 1 do
+  for i = 1, count do
     array[i] = 0
   end
   return array
 end
 
--- Lua only: memset(out, 0, sizeof *out) on a save_state_t.
+-- Resets every field of out in place, probe to nil.
 local function save_state_zero(out)
   out.difficulty = 0
   out.economy = {
@@ -118,16 +111,15 @@ local function save_state_zero(out)
   out.type_picker = {
     tickets_count = 0,
     tickets = zero_array(gen.WEIGHTED_PICKER_TICKETS_CAP),
-    recent = zero_array(M.SAVE_STATE_RECENT_COUNT),
-    recent_set = zero_array(M.SAVE_STATE_RECENT_COUNT),
+    recent = zero_array(M.RECENT_COUNT),
+    recent_set = zero_array(M.RECENT_COUNT),
     multiplier = 0,
     walk_step = 0,
     walk_bias = 0,
   }
   out.vanish_walk = { step = 0, bias = 0 }
   out.structure_id_counter = 0
-  out.has_probe = 0
-  out.probe = { pos = { x = 0, y = 0 }, map_pos = { x = 0, y = 0 }, fold_anchor = 0 }
+  out.probe = nil
   out.camera_map_pos = { x = 0, y = 0 }
   out.node_count = 0
   out.nodes = {}
@@ -141,11 +133,10 @@ local function save_state_zero(out)
   out.node_slipways = {}
 end
 
--- Lua only: a save_node_t at its C zero value.
 local function save_node_zero()
   local needs = {}
-  for i = 0, M.SAVE_STATE_NEEDS_CAP - 1 do
-    needs[i] = { has_resource = 0, resource = 0 }
+  for i = 1, M.NEEDS_CAP do
+    needs[i] = {}
   end
   return {
     kind = 0,
@@ -165,36 +156,32 @@ local function save_node_zero()
     production_bonus = 0,
     production_resource = 0,
     state_time = 0,
-    first_route = 0,
+    first_route = 1,
     route_count = 0,
-    first_slipway = 0,
+    first_slipway = 1,
     slipway_count = 0,
   }
 end
 
--- Lua only: a save_route_t at its C zero value.
 local function save_route_zero()
   return {
-    first_planet = 0,
+    first_planet = 1,
     planet_count = 0,
-    first_slipway = 0,
+    first_slipway = 1,
     slipway_count = 0,
-    has_resource = 0,
     resource_is_bool = 0,
-    resource = 0,
   }
 end
 
--- Lua only: a save_slipway_t at its C zero value.
 local function save_slipway_zero()
   return { start = 0, end_ = 0, state_time = 0 }
 end
 
--- Writing past SAVE_STATE_MAX_BYTES asserts. Reading past end sets failed and
+-- Writing past save_state.MAX_BYTES asserts. Reading past end sets failed and
 -- returns 0, so a parser checks failed once at the end.
 
 local function write_u8(bytes, writer, value)
-  assert(writer.position >= 0 and writer.position < M.SAVE_STATE_MAX_BYTES, "save_state_encode: the record must fit SAVE_STATE_MAX_BYTES, 8 KiB")
+  assert(writer.position >= 1 and writer.position <= M.MAX_BYTES, "save_state.encode: the record must fit save_state.MAX_BYTES, 8 KiB")
   bytes[writer.position] = bit.band(value, 0xFF)
   writer.position = writer.position + 1
 end
@@ -219,8 +206,8 @@ local function write_vec(bytes, writer, vec)
 end
 
 local function read_u8(bytes, reader)
-  if reader.position >= reader.end_ then
-    reader.failed = 1
+  if reader.position > reader.end_ then
+    reader.failed = true
     return 0
   end
   local value = bytes[reader.position]
@@ -250,18 +237,18 @@ local function read_vec(bytes, reader)
 end
 
 local function write_indices(bytes, writer, state, first, count)
-  assert(count >= 0 and count <= 0xFF and first >= 0 and first + count <= state.route_index_count)
+  assert(count >= 0 and count <= 0xFF and first >= 1 and first + count - 1 <= state.route_index_count)
   write_u8(bytes, writer, count)
-  for i = 0, count - 1 do
-    write_u8(bytes, writer, state.route_indices[first + i])
+  for i = first, first + count - 1 do
+    write_u8(bytes, writer, state.route_indices[i])
   end
 end
 
 local function write_route(bytes, writer, state, route)
   write_indices(bytes, writer, state, route.first_planet, route.planet_count)
   write_indices(bytes, writer, state, route.first_slipway, route.slipway_count)
-  write_u8(bytes, writer, bit.bor(route.has_resource, bit.lshift(route.resource_is_bool, 1)))
-  if route.has_resource ~= 0 then
+  write_u8(bytes, writer, bit.bor((route.resource ~= nil) and 1 or 0, bit.lshift(route.resource_is_bool, 1)))
+  if route.resource ~= nil then
     write_i32(bytes, writer, route.resource)
   end
 end
@@ -270,20 +257,20 @@ local function write_node(bytes, writer, state, node)
   write_u8(bytes, writer, node.kind)
   write_u8(bytes, writer, node.state)
   write_u16(bytes, writer, node.flags)
-  if bit.band(node.flags, M.SAVE_NODE_HAS_POS) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_POS) ~= 0 then
     write_vec(bytes, writer, node.pos)
   end
-  if bit.band(node.flags, M.SAVE_NODE_HAS_MAP_POS) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_MAP_POS) ~= 0 then
     write_vec(bytes, writer, node.map_pos)
   end
-  if bit.band(node.flags, M.SAVE_NODE_HAS_PLANET_ID) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_PLANET_ID) ~= 0 then
     local length = 0
-    while length < SIZEOF["save_node_t.planet_id"] and (string.byte(node.planet_id, length + 1) or 0) ~= 0 do
+    while length < NODE_PLANET_ID_LENGTH and (string.byte(node.planet_id, length + 1) or 0) ~= 0 do
       length = length + 1
     end
     write_u8(bytes, writer, length)
-    for i = 0, length - 1 do
-      write_u8(bytes, writer, string.byte(node.planet_id, i + 1))
+    for i = 1, length do
+      write_u8(bytes, writer, string.byte(node.planet_id, i))
     end
   end
   write_i32(bytes, writer, node.fold_anchor)
@@ -291,47 +278,47 @@ local function write_node(bytes, writer, state, node)
   write_u8(bytes, writer, node.planet_type)
   write_u8(bytes, writer, node.description_type)
   write_u8(bytes, writer, node.project)
-  if bit.band(node.flags, M.SAVE_NODE_HAS_NEEDS) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_NEEDS) ~= 0 then
     assert(node.need_count >= 0 and node.need_count <= 0xFF)
     write_u8(bytes, writer, node.need_count)
-    local i = 0
-    while i < node.need_count and i < M.SAVE_STATE_NEEDS_CAP do
-      write_u8(bytes, writer, node.needs[i].has_resource)
-      if node.needs[i].has_resource ~= 0 then
+    local i = 1
+    while i <= node.need_count and i <= M.NEEDS_CAP do
+      write_u8(bytes, writer, (node.needs[i].resource ~= nil) and 1 or 0)
+      if node.needs[i].resource ~= nil then
         write_i32(bytes, writer, node.needs[i].resource)
       end
       i = i + 1
     end
   else
-    assert(node.need_count == 0, "save_state_encode: needs without SAVE_NODE_HAS_NEEDS would be dropped")
+    assert(node.need_count == 0, "save_state.encode: needs without save_state.NODE_HAS_NEEDS would be dropped")
   end
-  if bit.band(node.flags, M.SAVE_NODE_HAS_DEVELOPMENT_TIER) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_DEVELOPMENT_TIER) ~= 0 then
     write_i32(bytes, writer, node.development_tier)
   end
-  if bit.band(node.flags, M.SAVE_NODE_HAS_PRODUCTION_BONUS) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_PRODUCTION_BONUS) ~= 0 then
     write_i32(bytes, writer, node.production_bonus)
   end
-  if bit.band(node.flags, M.SAVE_NODE_PRODUCTION_HAS_RESOURCE) ~= 0 then
+  if bit.band(node.flags, M.NODE_PRODUCTION_HAS_RESOURCE) ~= 0 then
     write_i32(bytes, writer, node.production_resource)
   end
-  if bit.band(node.flags, M.SAVE_NODE_HAS_STATE_TIME) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_STATE_TIME) ~= 0 then
     write_i32(bytes, writer, node.state_time)
   end
-  if bit.band(node.flags, M.SAVE_NODE_HAS_OUTGOING_ROUTES) ~= 0 then
-    assert(node.route_count >= 0 and node.route_count <= 0xFFFF and node.first_route >= 0 and
-           node.first_route + node.route_count <= state.route_count)
+  if bit.band(node.flags, M.NODE_HAS_OUTGOING_ROUTES) ~= 0 then
+    assert(node.route_count >= 0 and node.route_count <= 0xFFFF and node.first_route >= 1 and
+           node.first_route + node.route_count - 1 <= state.route_count)
     write_u16(bytes, writer, node.route_count)
-    for i = 0, node.route_count - 1 do
-      write_route(bytes, writer, state, state.routes[node.first_route + i])
+    for i = node.first_route, node.first_route + node.route_count - 1 do
+      write_route(bytes, writer, state, state.routes[i])
     end
   else
-    assert(node.route_count == 0, "save_state_encode: routes without SAVE_NODE_HAS_OUTGOING_ROUTES would be dropped")
+    assert(node.route_count == 0, "save_state.encode: routes without save_state.NODE_HAS_OUTGOING_ROUTES would be dropped")
   end
-  assert(node.slipway_count >= 0 and node.slipway_count <= 0xFF and node.first_slipway >= 0 and
-         node.first_slipway + node.slipway_count <= state.node_slipway_count)
+  assert(node.slipway_count >= 0 and node.slipway_count <= 0xFF and node.first_slipway >= 1 and
+         node.first_slipway + node.slipway_count - 1 <= state.node_slipway_count)
   write_u8(bytes, writer, node.slipway_count)
-  for i = 0, node.slipway_count - 1 do
-    write_u8(bytes, writer, state.node_slipways[node.first_slipway + i])
+  for i = node.first_slipway, node.first_slipway + node.slipway_count - 1 do
+    write_u8(bytes, writer, state.node_slipways[i])
   end
 end
 
@@ -350,7 +337,7 @@ local function write_payload(bytes, writer, state)
   write_i32(bytes, writer, economy.year)
   write_i32(bytes, writer, economy.year_ticks)
   write_u8(bytes, writer, economy.invented_count)
-  for i = 0, economy.invented_count - 1 do
+  for i = 1, economy.invented_count do
     write_u8(bytes, writer, economy.invented[i])
   end
 
@@ -358,13 +345,13 @@ local function write_payload(bytes, writer, state)
   write_u32(bytes, writer, state.background_seed)
 
   write_u8(bytes, writer, picker.tickets_count)
-  for i = 0, picker.tickets_count - 1 do
+  for i = 1, picker.tickets_count do
     write_u8(bytes, writer, picker.tickets[i])
   end
-  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
+  for i = 1, M.RECENT_COUNT do
     write_u8(bytes, writer, picker.recent[i])
   end
-  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
+  for i = 1, M.RECENT_COUNT do
     write_u8(bytes, writer, picker.recent_set[i])
   end
   write_i32(bytes, writer, picker.multiplier)
@@ -376,8 +363,8 @@ local function write_payload(bytes, writer, state)
 
   write_i32(bytes, writer, state.structure_id_counter)
 
-  write_u8(bytes, writer, state.has_probe)
-  if state.has_probe ~= 0 then
+  write_u8(bytes, writer, (state.probe ~= nil) and 1 or 0)
+  if state.probe ~= nil then
     write_vec(bytes, writer, state.probe.pos)
     write_vec(bytes, writer, state.probe.map_pos)
     write_i32(bytes, writer, state.probe.fold_anchor)
@@ -385,15 +372,15 @@ local function write_payload(bytes, writer, state)
 
   write_vec(bytes, writer, state.camera_map_pos)
 
-  assert(state.node_count >= 0 and state.node_count <= M.SAVE_STATE_NODES_CAP, "save_state_encode: node indices are one byte")
+  assert(state.node_count >= 0 and state.node_count <= M.NODES_CAP, "save_state.encode: node indices are one byte")
   write_u8(bytes, writer, state.node_count)
-  for i = 0, state.node_count - 1 do
+  for i = 1, state.node_count do
     write_node(bytes, writer, state, state.nodes[i])
   end
 
-  assert(state.slipway_count >= 0 and state.slipway_count <= M.SAVE_STATE_SLIPWAYS_CAP, "save_state_encode: slipway indices are one byte")
+  assert(state.slipway_count >= 0 and state.slipway_count <= M.SLIPWAYS_CAP, "save_state.encode: slipway indices are one byte")
   write_u8(bytes, writer, state.slipway_count)
-  for i = 0, state.slipway_count - 1 do
+  for i = 1, state.slipway_count do
     write_u8(bytes, writer, state.slipways[i].start)
     write_u8(bytes, writer, state.slipways[i].end_)
     write_i32(bytes, writer, state.slipways[i].state_time)
@@ -401,19 +388,19 @@ local function write_payload(bytes, writer, state)
 end
 
 -- Returns the record's byte count; the caller owns buffer. Writes what it is
--- given: only save_state_decode validates.
-function M.save_state_encode(state, buffer)
-  local writer = { position = 0, end_ = M.SAVE_STATE_MAX_BYTES, failed = 0 }
-  local length = { position = LENGTH_OFFSET, end_ = LENGTH_OFFSET + 2, failed = 0 }
-  for i = 0, SIZEOF.magic - 1 do
+-- given: only save_state.decode validates.
+function M.encode(state, buffer)
+  local writer = { position = 1, end_ = M.MAX_BYTES, failed = false }
+  local length = { position = LENGTH_OFFSET + 1, end_ = LENGTH_OFFSET + 2, failed = false }
+  for i = 1, MAGIC_LENGTH do
     write_u8(buffer, writer, magic[i])
   end
-  write_u16(buffer, writer, M.SAVE_STATE_VERSION)
+  write_u16(buffer, writer, M.VERSION)
   write_u16(buffer, writer, 0)
   write_payload(buffer, writer, state)
-  write_u16(buffer, length, writer.position - HEADER_BYTES)
-  write_u32(buffer, writer, M.save_state_crc32(buffer, writer.position))
-  return writer.position
+  write_u16(buffer, length, writer.position - 1 - HEADER_BYTES)
+  write_u32(buffer, writer, M.crc32(buffer, writer.position - 1))
+  return writer.position - 1
 end
 
 local function read_economy(bytes, reader, economy)
@@ -424,10 +411,10 @@ local function read_economy(bytes, reader, economy)
   economy.year_ticks = read_i32(bytes, reader)
   economy.invented_count = read_u8(bytes, reader)
   if economy.invented_count > map_tables.TECHNOLOGIES_COUNT then
-    reader.failed = 1
+    reader.failed = true
     return
   end
-  for i = 0, economy.invented_count - 1 do
+  for i = 1, economy.invented_count do
     economy.invented[i] = read_u8(bytes, reader)
   end
 end
@@ -435,16 +422,16 @@ end
 local function read_type_picker(bytes, reader, picker)
   picker.tickets_count = read_u8(bytes, reader)
   if picker.tickets_count > gen.WEIGHTED_PICKER_TICKETS_CAP then
-    reader.failed = 1
+    reader.failed = true
     return
   end
-  for i = 0, picker.tickets_count - 1 do
+  for i = 1, picker.tickets_count do
     picker.tickets[i] = read_u8(bytes, reader)
   end
-  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
+  for i = 1, M.RECENT_COUNT do
     picker.recent[i] = read_u8(bytes, reader)
   end
-  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
+  for i = 1, M.RECENT_COUNT do
     picker.recent_set[i] = read_u8(bytes, reader)
   end
   picker.multiplier = read_i32(bytes, reader)
@@ -452,18 +439,19 @@ local function read_type_picker(bytes, reader, picker)
   picker.walk_bias = read_i32(bytes, reader)
 end
 
--- Returns the slice's first index into route_indices, then count.
+-- Returns the slice's first position in route_indices, then count.
 local function read_indices(bytes, reader, out, count)
-  local first = out.route_index_count
+  local first = out.route_index_count + 1
   count = read_u8(bytes, reader)
-  if first + count > M.SAVE_STATE_ROUTE_INDICES_CAP then
-    reader.failed = 1
+  if first + count - 1 > M.ROUTE_INDICES_CAP then
+    reader.failed = true
     count = 0
     return first, count
   end
-  for _ = 0, count - 1 do
-    out.route_indices[out.route_index_count] = read_u8(bytes, reader)
-    out.route_index_count = out.route_index_count + 1
+  for _ = 1, count do
+    local n = out.route_index_count + 1
+    out.route_indices[n] = read_u8(bytes, reader)
+    out.route_index_count = n
   end
   return first, count
 end
@@ -473,12 +461,11 @@ local function read_route(bytes, reader, out, route)
   route.first_slipway, route.slipway_count = read_indices(bytes, reader, out, route.slipway_count)
   local resource_flags = read_u8(bytes, reader)
   if bit.band(resource_flags, bit.bnot(3)) ~= 0 then
-    reader.failed = 1
+    reader.failed = true
     return
   end
-  route.has_resource = bit.band(resource_flags, 1)
   route.resource_is_bool = bit.band(bit.rshift(resource_flags, 1), 1)
-  if route.has_resource ~= 0 then
+  if bit.band(resource_flags, 1) ~= 0 then
     route.resource = read_i32(bytes, reader)
   end
 end
@@ -487,22 +474,22 @@ local function read_node(bytes, reader, out, node)
   node.kind = read_u8(bytes, reader)
   node.state = read_u8(bytes, reader)
   node.flags = read_u16(bytes, reader)
-  if bit.band(node.flags, M.SAVE_NODE_HAS_POS) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_POS) ~= 0 then
     node.pos = read_vec(bytes, reader)
   end
-  if bit.band(node.flags, M.SAVE_NODE_HAS_MAP_POS) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_MAP_POS) ~= 0 then
     node.map_pos = read_vec(bytes, reader)
   end
-  if bit.band(node.flags, M.SAVE_NODE_HAS_PLANET_ID) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_PLANET_ID) ~= 0 then
     local length = read_u8(bytes, reader)
-    if length == 0 or length > M.SAVE_STATE_PLANET_ID_MAX then
-      reader.failed = 1
+    if length == 0 or length > M.PLANET_ID_MAX then
+      reader.failed = true
       return
     end
-    for _ = 0, length - 1 do
+    for _ = 1, length do
       local character = read_u8(bytes, reader)
       if character < 0x21 or character > 0x7E then
-        reader.failed = 1
+        reader.failed = true
         return
       end
       node.planet_id = node.planet_id .. string.char(character)
@@ -513,90 +500,101 @@ local function read_node(bytes, reader, out, node)
   node.planet_type = read_u8(bytes, reader)
   node.description_type = read_u8(bytes, reader)
   node.project = read_u8(bytes, reader)
-  if bit.band(node.flags, M.SAVE_NODE_HAS_NEEDS) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_NEEDS) ~= 0 then
     node.need_count = read_u8(bytes, reader)
-    if node.need_count > M.SAVE_STATE_NEEDS_CAP then
-      reader.failed = 1
+    if node.need_count > M.NEEDS_CAP then
+      reader.failed = true
       return
     end
-    for i = 0, node.need_count - 1 do
-      node.needs[i].has_resource = read_u8(bytes, reader)
-      if node.needs[i].has_resource ~= 0 then
+    for i = 1, node.need_count do
+      local resource_flag = read_u8(bytes, reader)
+      if resource_flag > 1 then
+        reader.failed = true
+        return
+      end
+      if resource_flag == 1 then
         node.needs[i].resource = read_i32(bytes, reader)
       end
     end
   end
-  if bit.band(node.flags, M.SAVE_NODE_HAS_DEVELOPMENT_TIER) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_DEVELOPMENT_TIER) ~= 0 then
     node.development_tier = read_i32(bytes, reader)
   end
-  if bit.band(node.flags, M.SAVE_NODE_HAS_PRODUCTION_BONUS) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_PRODUCTION_BONUS) ~= 0 then
     node.production_bonus = read_i32(bytes, reader)
   end
-  if bit.band(node.flags, M.SAVE_NODE_PRODUCTION_HAS_RESOURCE) ~= 0 then
+  if bit.band(node.flags, M.NODE_PRODUCTION_HAS_RESOURCE) ~= 0 then
     node.production_resource = read_i32(bytes, reader)
   end
-  if bit.band(node.flags, M.SAVE_NODE_HAS_STATE_TIME) ~= 0 then
+  if bit.band(node.flags, M.NODE_HAS_STATE_TIME) ~= 0 then
     node.state_time = read_i32(bytes, reader)
   end
-  node.first_route = out.route_count
-  if bit.band(node.flags, M.SAVE_NODE_HAS_OUTGOING_ROUTES) ~= 0 then
+  node.first_route = out.route_count + 1
+  if bit.band(node.flags, M.NODE_HAS_OUTGOING_ROUTES) ~= 0 then
     node.route_count = read_u16(bytes, reader)
-    if node.first_route + node.route_count > M.SAVE_STATE_ROUTES_CAP then
-      reader.failed = 1
+    if node.first_route + node.route_count - 1 > M.ROUTES_CAP then
+      reader.failed = true
       return
     end
-    local i = 0
-    while i < node.route_count and reader.failed == 0 do
+    local i = 1
+    while i <= node.route_count and not reader.failed do
       local route = save_route_zero()
-      out.routes[out.route_count] = route
-      out.route_count = out.route_count + 1
+      local n = out.route_count + 1
+      out.routes[n] = route
+      out.route_count = n
       read_route(bytes, reader, out, route)
       i = i + 1
     end
   end
-  node.first_slipway = out.node_slipway_count
+  node.first_slipway = out.node_slipway_count + 1
   node.slipway_count = read_u8(bytes, reader)
-  if node.first_slipway + node.slipway_count > M.SAVE_STATE_NODE_SLIPWAYS_CAP then
-    reader.failed = 1
+  if node.first_slipway + node.slipway_count - 1 > M.NODE_SLIPWAYS_CAP then
+    reader.failed = true
     return
   end
-  for _ = 0, node.slipway_count - 1 do
-    out.node_slipways[out.node_slipway_count] = read_u8(bytes, reader)
-    out.node_slipway_count = out.node_slipway_count + 1
+  for _ = 1, node.slipway_count do
+    local n = out.node_slipway_count + 1
+    out.node_slipways[n] = read_u8(bytes, reader)
+    out.node_slipway_count = n
   end
 end
 
 local function read_payload(bytes, reader, out)
   out.difficulty = read_u8(bytes, reader)
   read_economy(bytes, reader, out.economy)
-  if reader.failed ~= 0 then
+  if reader.failed then
     return
   end
   out.rnd_state = read_u32(bytes, reader)
   out.background_seed = read_u32(bytes, reader)
   read_type_picker(bytes, reader, out.type_picker)
-  if reader.failed ~= 0 then
+  if reader.failed then
     return
   end
   out.vanish_walk.step = read_i32(bytes, reader)
   out.vanish_walk.bias = read_i32(bytes, reader)
   out.structure_id_counter = read_i32(bytes, reader)
-  out.has_probe = read_u8(bytes, reader)
-  if out.has_probe ~= 0 then
+  local probe_flag = read_u8(bytes, reader)
+  if probe_flag > 1 then
+    reader.failed = true
+    return
+  end
+  if probe_flag == 1 then
+    out.probe = {}
     out.probe.pos = read_vec(bytes, reader)
     out.probe.map_pos = read_vec(bytes, reader)
     out.probe.fold_anchor = read_i32(bytes, reader)
   end
   out.camera_map_pos = read_vec(bytes, reader)
   out.node_count = read_u8(bytes, reader)
-  local i = 0
-  while i < out.node_count and reader.failed == 0 do
+  local i = 1
+  while i <= out.node_count and not reader.failed do
     out.nodes[i] = save_node_zero()
     read_node(bytes, reader, out, out.nodes[i])
     i = i + 1
   end
   out.slipway_count = read_u8(bytes, reader)
-  for k = 0, out.slipway_count - 1 do
+  for k = 1, out.slipway_count do
     out.slipways[k] = save_slipway_zero()
     out.slipways[k].start = read_u8(bytes, reader)
     out.slipways[k].end_ = read_u8(bytes, reader)
@@ -605,174 +603,179 @@ local function read_payload(bytes, reader, out)
 end
 
 local function is_flag(value)
-  return (value == 0 or value == 1) and 1 or 0
+  return value == 0 or value == 1
 end
 
 local function economy_is_valid(economy)
-  local seen = zero_array(map_tables.TECHNOLOGIES_COUNT)
-  for i = 0, economy.invented_count - 1 do
+  local seen = {}
+  for i = 1, economy.invented_count do
     local tech = economy.invented[i]
-    if tech >= map_tables.TECHNOLOGIES_COUNT or seen[tech] ~= 0 then
-      return 0
+    if tech >= map_tables.TECHNOLOGIES_COUNT or seen[tech] then
+      return false
     end
-    seen[tech] = 1
+    seen[tech] = true
   end
-  return 1
+  return true
 end
 
 local function type_picker_is_valid(picker)
-  for i = 0, picker.tickets_count - 1 do
+  for i = 1, picker.tickets_count do
     if picker.tickets[i] >= game_data.PLANET_TYPES_COUNT then
-      return 0
+      return false
     end
   end
-  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
-    if is_flag(picker.recent_set[i]) == 0 or (picker.recent_set[i] ~= 0 and picker.recent[i] >= game_data.PLANET_TYPES_COUNT) then
-      return 0
+  for i = 1, M.RECENT_COUNT do
+    if not is_flag(picker.recent_set[i]) or (picker.recent_set[i] ~= 0 and picker.recent[i] >= game_data.PLANET_TYPES_COUNT) then
+      return false
     end
   end
-  return 1
+  return true
 end
 
 local function node_state_is_valid(state)
-  return (state ~= entity_class.ENTITY_STATE_NONE and state ~= entity_class.ENTITY_STATE_PLACING and
-          state ~= entity_class.ENTITY_STATE_UNFOLDING and state < entity_class.STATE_COUNT) and 1 or 0
+  return state ~= entity_class.STATE_NONE and state ~= entity_class.STATE_PLACING and
+         state ~= entity_class.STATE_UNFOLDING and state < entity_class.STATE_COUNT
 end
 
 local function has(node, flag)
-  return (bit.band(node.flags, flag) ~= 0) and 1 or 0
+  return bit.band(node.flags, flag) ~= 0
 end
 
 -- A planet reads its clock only while vanishing; every other kind animates with it.
 local function node_has_state_time(kind, state)
-  return (state == entity_class.ENTITY_STATE_VANISHING or kind ~= M.SAVE_NODE_PLANET) and 1 or 0
+  return state == entity_class.STATE_VANISHING or kind ~= M.NODE_PLANET
 end
 
 local function node_flags_are_valid(node)
-  if bit.band(node.flags, bit.bnot(M.SAVE_NODE_KNOWN_FLAGS)) ~= 0 then
-    return 0
+  if bit.band(node.flags, bit.bnot(M.NODE_KNOWN_FLAGS)) ~= 0 then
+    return false
   end
-  if has(node, M.SAVE_NODE_PRODUCTION_HAS_RESOURCE) ~= 0 and has(node, M.SAVE_NODE_HAS_PRODUCTION) == 0 then
-    return 0
+  if has(node, M.NODE_PRODUCTION_HAS_RESOURCE) and not has(node, M.NODE_HAS_PRODUCTION) then
+    return false
   end
-  if has(node, M.SAVE_NODE_SYNTHESIZER_SPENT) ~= 0 and node.kind ~= M.SAVE_NODE_SYNTHESIZER then
-    return 0
+  if has(node, M.NODE_SYNTHESIZER_SPENT) and node.kind ~= M.NODE_SYNTHESIZER then
+    return false
   end
-  return (has(node, M.SAVE_NODE_HAS_STATE_TIME) == node_has_state_time(node.kind, node.state)) and 1 or 0
+  return has(node, M.NODE_HAS_STATE_TIME) == node_has_state_time(node.kind, node.state)
 end
 
 local function is_resource_code(resource)
-  for i = 0, map_tables.RESOURCE_CODE_COUNT - 1 do
+  for i = 1, map_tables.RESOURCE_CODE_COUNT do
     if resource == bit.lshift(map_tables.resource_codes[i].resource, 16) then
-      return 1
+      return true
     end
   end
-  return 0
+  return false
 end
 
 local function resources_are_valid(node)
-  for i = 0, node.need_count - 1 do
+  for i = 1, node.need_count do
     local need = node.needs[i]
-    if is_flag(need.has_resource) == 0 or (need.has_resource ~= 0 and is_resource_code(need.resource) == 0) then
-      return 0
+    if need.resource ~= nil and not is_resource_code(need.resource) then
+      return false
     end
   end
-  return (has(node, M.SAVE_NODE_PRODUCTION_HAS_RESOURCE) == 0 or is_resource_code(node.production_resource) ~= 0) and 1 or 0
+  return not has(node, M.NODE_PRODUCTION_HAS_RESOURCE) or is_resource_code(node.production_resource)
 end
 
 local function node_is_valid(node)
-  return (node.kind < M.SAVE_NODE_KIND_COUNT and node_state_is_valid(node.state) ~= 0 and node_flags_are_valid(node) ~= 0 and
-          node.planet_type <= game_data.PLANET_TYPES_COUNT and node.description_type <= game_data.PLANET_TYPES_COUNT and
-          node.project <= map_tables.PROJECT_RECORDS_COUNT and resources_are_valid(node) ~= 0) and 1 or 0
+  return node.kind < M.NODE_KIND_COUNT and node_state_is_valid(node.state) and node_flags_are_valid(node) and
+         node.planet_type <= game_data.PLANET_TYPES_COUNT and node.description_type <= game_data.PLANET_TYPES_COUNT and
+         node.project <= map_tables.PROJECT_RECORDS_COUNT and resources_are_valid(node)
 end
 
 local function nodes_are_valid(state)
-  for i = 0, state.node_count - 1 do
-    if node_is_valid(state.nodes[i]) == 0 then
-      return 0
+  for i = 1, state.node_count do
+    if not node_is_valid(state.nodes[i]) then
+      return false
     end
   end
-  return 1
+  return true
 end
 
 local function indices_are_below(state, first, count, limit)
-  for i = 0, count - 1 do
-    if state.route_indices[first + i] >= limit then
-      return 0
+  for i = first, first + count - 1 do
+    if state.route_indices[i] >= limit then
+      return false
     end
   end
-  return 1
+  return true
 end
 
 local function routes_are_valid(state)
-  for i = 0, state.route_count - 1 do
+  for i = 1, state.route_count do
     local route = state.routes[i]
-    if indices_are_below(state, route.first_planet, route.planet_count, state.node_count) == 0 or
-       indices_are_below(state, route.first_slipway, route.slipway_count, state.slipway_count) == 0 then
-      return 0
+    if not indices_are_below(state, route.first_planet, route.planet_count, state.node_count) or
+       not indices_are_below(state, route.first_slipway, route.slipway_count, state.slipway_count) then
+      return false
     end
   end
-  return 1
+  return true
 end
 
 local function slipways_are_valid(state)
-  for i = 0, state.slipway_count - 1 do
+  for i = 1, state.slipway_count do
     local slipway = state.slipways[i]
     if slipway.start >= state.node_count or slipway.end_ >= state.node_count or slipway.start == slipway.end_ then
-      return 0
+      return false
     end
   end
-  return 1
+  return true
 end
 
+-- Compares ranks with ranks: node_slipways and a slipway's start and end_ hold 0-based ranks.
 local function node_slipways_are_valid(state)
-  for i = 0, state.node_count - 1 do
+  for i = 1, state.node_count do
     local node = state.nodes[i]
-    local seen = zero_array(M.SAVE_STATE_SLIPWAYS_CAP)
-    for k = 0, node.slipway_count - 1 do
-      local index = state.node_slipways[node.first_slipway + k]
-      if index >= state.slipway_count or seen[index] ~= 0 or
-         (state.slipways[index].start ~= i and state.slipways[index].end_ ~= i) then
-        return 0
+    local node_rank = i - 1
+    local seen = {}
+    for k = node.first_slipway, node.first_slipway + node.slipway_count - 1 do
+      local rank = state.node_slipways[k]
+      if rank >= state.slipway_count or seen[rank] then
+        return false
       end
-      seen[index] = 1
+      local slipway = state.slipways[rank + 1]
+      if slipway.start ~= node_rank and slipway.end_ ~= node_rank then
+        return false
+      end
+      seen[rank] = true
     end
   end
-  return 1
+  return true
 end
 
 local function state_is_valid(state)
-  return (state.difficulty >= 1 and state.difficulty <= game_data.DIFFICULTY_OPTIONS_COUNT and economy_is_valid(state.economy) ~= 0 and
-          type_picker_is_valid(state.type_picker) ~= 0 and is_flag(state.has_probe) ~= 0 and nodes_are_valid(state) ~= 0 and
-          slipways_are_valid(state) ~= 0 and routes_are_valid(state) ~= 0 and node_slipways_are_valid(state) ~= 0) and 1 or 0
+  return state.difficulty >= 1 and state.difficulty <= game_data.DIFFICULTY_OPTIONS_COUNT and economy_is_valid(state.economy) and
+         type_picker_is_valid(state.type_picker) and nodes_are_valid(state) and
+         slipways_are_valid(state) and routes_are_valid(state) and node_slipways_are_valid(state)
 end
 
--- Returns 1 for a valid record, 0 otherwise, never asserts on the bytes. On 0,
--- out is unspecified.
-function M.save_state_decode(bytes, count, out)
-  local reader = { position = SIZEOF.magic, end_ = count, failed = 0 }
-  local trailer = { position = count - TRAILER_BYTES, end_ = count, failed = 0 }
-  if count < HEADER_BYTES + TRAILER_BYTES or count > M.SAVE_STATE_MAX_BYTES then
-    return 0
+-- Returns true for a valid record, false otherwise, never asserts on the bytes.
+-- On false, out is unspecified.
+function M.decode(bytes, count, out)
+  local reader = { position = MAGIC_LENGTH + 1, end_ = count, failed = false }
+  local trailer = { position = count - TRAILER_BYTES + 1, end_ = count, failed = false }
+  if count < HEADER_BYTES + TRAILER_BYTES or count > M.MAX_BYTES then
+    return false
   end
-  for i = 0, SIZEOF.magic - 1 do
+  for i = 1, MAGIC_LENGTH do
     if bytes[i] ~= magic[i] then
-      return 0
+      return false
     end
   end
-  if read_u16(bytes, reader) ~= M.SAVE_STATE_VERSION then
-    return 0
+  if read_u16(bytes, reader) ~= M.VERSION then
+    return false
   end
   if read_u16(bytes, reader) ~= count - HEADER_BYTES - TRAILER_BYTES then
-    return 0
+    return false
   end
   reader.end_ = count - TRAILER_BYTES
-  if read_u32(bytes, trailer) ~= M.save_state_crc32(bytes, reader.end_) then
-    return 0
+  if read_u32(bytes, trailer) ~= M.crc32(bytes, reader.end_) then
+    return false
   end
   save_state_zero(out)
   read_payload(bytes, reader, out)
-  return (reader.failed == 0 and reader.position == reader.end_ and state_is_valid(out) ~= 0) and 1 or 0
+  return not reader.failed and reader.position == reader.end_ + 1 and state_is_valid(out)
 end
 
 M.crc32_table = {
@@ -823,9 +826,9 @@ M.crc32_table = {
 crc32_table = M.crc32_table
 
 -- CRC-32 IEEE 802.3, reflected: "123456789" gives 0xCBF43926.
-function M.save_state_crc32(bytes, count)
+function M.crc32(bytes, count)
   local crc = 0xFFFFFFFF
-  for i = 0, count - 1 do
+  for i = 1, count do
     crc = bit.bxor(crc32_table[bit.band(bit.bxor(crc, bytes[i]), 0xFF)], bit.rshift(crc, 8))
   end
   crc = bit.bxor(crc, 0xFFFFFFFF)
@@ -844,85 +847,86 @@ local function vec_of(vec)
 end
 
 local function difficulty_index()
-  local difficulty = economy_score.economy_score_difficulty()
-  assert(difficulty ~= nil and difficulty.name ~= nil, "save_state_capture: a running game has a difficulty")
-  for i = 0, game_data.DIFFICULTY_OPTIONS_COUNT - 1 do
+  local difficulty = economy_score.difficulty()
+  assert(difficulty ~= nil and difficulty.name ~= nil, "save_state.capture: a running game has a difficulty")
+  for i = 1, game_data.DIFFICULTY_OPTIONS_COUNT do
     if game_data.difficulty_options_table[i].name == difficulty.name then
-      return i + 1
+      return i
     end
   end
-  assert(false, "save_state_capture: the difficulty is not a difficulty_options_table entry")
+  assert(false, "save_state.capture: the difficulty is not a difficulty_options_table entry")
   return 0
 end
 
+-- Invented tech name -> its technologies_table position; the disk rank is position - 1.
 local function technology_index(name)
-  for i = 0, map_tables.TECHNOLOGIES_COUNT - 1 do
+  for i = 1, map_tables.TECHNOLOGIES_COUNT do
     if map_tables.technologies_table[i].name == name then
       return i
     end
   end
-  assert(false, "save_state_capture: an invented tech is not a technologies_table entry")
+  assert(false, "save_state.capture: an invented tech is not a technologies_table entry")
   return 0
 end
 
--- Lua only: planet_types_table entry -> its C index.
+-- planet_types_table entry -> its position, the 1-based planet_type on disk.
 local planet_type_index_of = {}
-for i = 0, game_data.PLANET_TYPES_COUNT - 1 do
+for i = 1, game_data.PLANET_TYPES_COUNT do
   planet_type_index_of[game_data.planet_types_table[i]] = i
 end
 
 local function planet_type_index(type)
   assert(planet_type_index_of[type] ~= nil,
-    "save_state_capture: a planet type is not a planet_types_table entry")
+    "save_state.capture: a planet type is not a planet_types_table entry")
   return planet_type_index_of[type]
 end
 
--- The 1-based planet_types_table entry that owns the description pointer
--- (the current type first, terraform leaves the old one's); 0 for NULL.
+-- The 1-based planet_types_table entry that owns the planet's description
+-- (the current type first, terraform leaves the old one's); 0 for none.
 local function description_type_index(planet)
   if planet.description == nil then
     return 0
   end
   if planet.planet_type ~= nil and planet.description == planet.planet_type.description then
-    return planet_type_index(planet.planet_type) + 1
+    return planet_type_index(planet.planet_type)
   end
-  for i = 0, game_data.PLANET_TYPES_COUNT - 1 do
+  for i = 1, game_data.PLANET_TYPES_COUNT do
     if planet.description == game_data.planet_types_table[i].description then
-      return i + 1
+      return i
     end
   end
-  assert(false, "save_state_capture: a planet description is not a planet_types_table entry's")
+  assert(false, "save_state.capture: a planet description is not a planet_types_table entry's")
   return 0
 end
 
 local function capture_economy(out)
   local economy = probe.main_economy_typed()
-  assert(economy ~= nil, "save_state_capture: a running game has an economy")
-  assert(economy.invented.count <= map_tables.TECHNOLOGIES_COUNT)
+  assert(economy ~= nil, "save_state.capture: a running game has an economy")
+  assert(#economy.invented <= map_tables.TECHNOLOGIES_COUNT)
   out.credits = economy.credits
   out.research_points = economy.research_points
   out.era = economy.era
   out.year = economy.year
   out.year_ticks = economy.year_ticks
-  out.invented_count = economy.invented.count
-  for i = 0, economy.invented.count - 1 do
-    out.invented[i] = technology_index(economy.invented.items[i])
+  out.invented_count = #economy.invented
+  for i = 1, #economy.invented do
+    out.invented[i] = technology_index(economy.invented[i]) - 1
   end
 end
 
 local function capture_type_picker(out)
-  local picker = planet_module.planet_type_picker()
+  local picker = planet_module.type_picker()
   local walk
-  assert(picker ~= nil, "save_state_capture: a running game has a type picker")
+  assert(picker ~= nil, "save_state.capture: a running game has a type picker")
   walk = gen.weighted_picker_walk(picker)
-  assert(walk ~= nil, "save_state_capture: the type picker draws from a random walk")
+  assert(walk ~= nil, "save_state.capture: the type picker draws from a random walk")
   out.tickets_count = picker.tickets_count
-  for i = 0, picker.tickets_count - 1 do
-    out.tickets[i] = planet_type_index(picker.tickets[i])
+  for i = 1, picker.tickets_count do
+    out.tickets[i] = planet_type_index(picker.tickets[i]) - 1
   end
-  for i = 0, M.SAVE_STATE_RECENT_COUNT - 1 do
-    out.recent_set[i] = (picker.recent_set[i] ~= 0) and 1 or 0
-    out.recent[i] = (picker.recent_set[i] ~= 0) and planet_type_index(picker.recent[i]) or 0
+  for i = 1, M.RECENT_COUNT do
+    out.recent_set[i] = picker.recent_set[i] and 1 or 0
+    out.recent[i] = picker.recent_set[i] and planet_type_index(picker.recent[i]) - 1 or 0
   end
   out.multiplier = picker.multiplier
   out.walk_step = walk.step
@@ -932,224 +936,232 @@ end
 -- The tag's entities in registration order; 0 entities when the tag has no list.
 local function tagged_count(tag)
   local list = entity_registry.entities_by_tag(tag)
-  return (list ~= nil) and list.count or 0
+  return (list ~= nil) and #list or 0
 end
 
 local function tagged_at(tag, index)
-  return entity_registry.entities_by_tag(tag).items[index]
+  return entity_registry.entities_by_tag(tag)[index]
 end
 
 local function capture_probe(out)
-  for i = 0, tagged_count(entity_class.TAG_PROBE) - 1 do
+  for i = 1, tagged_count(entity_class.TAG_PROBE) do
     local e = tagged_at(entity_class.TAG_PROBE, i)
-    if e.class ~= probe.probe_class() or e.is_dead ~= 0 or e.state ~= entity_class.ENTITY_STATE_SETTLED then
+    if e.class ~= probe.class() or e.is_dead or e.state ~= entity_class.STATE_SETTLED then
       goto continue
     end
-    out.has_probe = 1
-    out.probe.pos = vec_of(entity_class.entity_pos(e))
-    out.probe.map_pos = vec_of(entity_class.entity_map_pos(e))
-    out.probe.fold_anchor = e.fold_anchor
+    out.probe = {
+      pos = vec_of(entity_class.pos(e)),
+      map_pos = vec_of(entity_class.map_pos(e)),
+      fold_anchor = e.fold_anchor and 0x10000 or 0,
+    }
     do return end
     ::continue::
   end
 end
 
 local function is_saved(e)
-  return (e.is_dead == 0 and e.state ~= entity_class.ENTITY_STATE_PLACING) and 1 or 0
+  return not e.is_dead and e.state ~= entity_class.STATE_PLACING
 end
 
 local function node_kind(cls)
   local classes = {}
-  classes[M.SAVE_NODE_PLANET] = planet_module.planet_class()
-  classes[M.SAVE_NODE_PROTOSTAR] = planet_family.protostar_class()
-  classes[M.SAVE_NODE_STRUCTURE] = planet_family.structure_class()
-  classes[M.SAVE_NODE_PROCESSOR] = planet_family.processor_class()
-  classes[M.SAVE_NODE_SLIPGATE] = planet_family_trade.slipgate_class()
-  classes[M.SAVE_NODE_INFRASPACE_GATE] = planet_family_trade.infraspace_gate_class()
-  classes[M.SAVE_NODE_TRADING_HUB] = planet_family.trading_hub_class()
-  classes[M.SAVE_NODE_SYNTHESIZER] = planet_family_trade.synthesizer_class()
-  classes[M.SAVE_NODE_ASCENSION] = planet_family.ascension_class()
-  for i = 0, M.SAVE_NODE_KIND_COUNT - 1 do
+  classes[M.NODE_PLANET] = planet_module.class()
+  classes[M.NODE_PROTOSTAR] = planet_family.protostar_class()
+  classes[M.NODE_STRUCTURE] = planet_family.structure_class()
+  classes[M.NODE_PROCESSOR] = planet_family.processor_class()
+  classes[M.NODE_SLIPGATE] = planet_family_trade.slipgate_class()
+  classes[M.NODE_INFRASPACE_GATE] = planet_family_trade.infraspace_gate_class()
+  classes[M.NODE_TRADING_HUB] = planet_family.trading_hub_class()
+  classes[M.NODE_SYNTHESIZER] = planet_family_trade.synthesizer_class()
+  classes[M.NODE_ASCENSION] = planet_family.ascension_class()
+  for i = 0, M.NODE_KIND_COUNT - 1 do
     if cls == classes[i] then
       return i
     end
   end
-  assert(false, "save_state_capture: a TAG_NODE entity is not one of the nine node classes")
+  assert(false, "save_state.capture: a TAG_NODE entity is not one of the nine node classes")
   return 0
 end
 
 local function project_index(id)
-  local project = research.research_project_get(id)
+  local project = research.project_get(id)
   if project == nil then
     return 0
   end
-  for k = 1, research.research_projects_count() do
-    if research.research_projects_at(k) == project then
+  for k = 1, research.projects_count() do
+    if research.projects_at(k) == project then
       return k
     end
   end
-  assert(false, "save_state_capture: a planet's project is not in the research project table")
+  assert(false, "save_state.capture: a planet's project is not in the research project table")
   return 0
 end
 
 -- The ids of the captured nodes and slipways, in save order:
--- { nodes, node_count, slipways, slipway_count }, both id arrays 0-indexed.
+-- { nodes, node_count, slipways, slipway_count }, both id arrays 1-based.
 
+-- Returns id's 0-based rank in ids, the reference the format writes.
 local function index_of(ids, count, id)
-  for i = 0, count - 1 do
-    if entity_id_type.entity_id_equal(ids[i], id) ~= 0 then
-      return i
+  for i = 1, count do
+    if ids[i] == id then
+      return i - 1
     end
   end
-  assert(false, "save_state_capture: a route, slipway or slipway list names an entity the save did not capture")
+  assert(false, "save_state.capture: a route, slipway or slipway list names an entity the save did not capture")
   return 0
 end
 
 local function capture_node_fields(node, planet)
   local header = planet
-  local id = planet_module.planet_id_or_null(planet)
+  local id = planet_module.id_or_null(planet)
 
   node.kind = node_kind(header.class)
   node.state = bit.band(header.state, 0xFF)
-  if entity_class.entity_has_pos(header) ~= 0 then
-    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_POS)
+  if entity_class.has_pos(header) then
+    node.flags = bit.bor(node.flags, M.NODE_HAS_POS)
     node.pos = vec_of(header.pos)
   end
-  if entity_class.entity_has_map_pos(header) ~= 0 then
-    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_MAP_POS)
+  if entity_class.has_map_pos(header) then
+    node.flags = bit.bor(node.flags, M.NODE_HAS_MAP_POS)
     node.map_pos = vec_of(header.map_pos)
   end
   if id ~= nil then
-    assert(#id <= M.SAVE_STATE_PLANET_ID_MAX)
-    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_PLANET_ID)
+    assert(#id <= M.PLANET_ID_MAX)
+    node.flags = bit.bor(node.flags, M.NODE_HAS_PLANET_ID)
     node.planet_id = id
   end
-  node.fold_anchor = header.fold_anchor
-  node.infraspace = header.infraspace
+  -- Saved as the cart's fixed-point 1.0 or 0.
+  node.fold_anchor = header.fold_anchor and 0x10000 or 0
+  node.infraspace = header.infraspace and 0x10000 or 0
   if planet.planet_type ~= nil then
-    node.planet_type = planet_type_index(planet.planet_type) + 1
+    node.planet_type = planet_type_index(planet.planet_type)
   end
   node.description_type = description_type_index(planet)
   node.project = project_index(planet.project)
-  if bit.band(planet.has_, planet_module.PLANET_HAS_NEEDS) ~= 0 then
-    assert(planet.needs.count <= M.SAVE_STATE_NEEDS_CAP)
-    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_NEEDS)
-    node.need_count = planet.needs.count
-    for i = 0, planet.needs.count - 1 do
-      local need = planet.needs.items[i]
+  if planet.needs ~= nil then
+    assert(#planet.needs <= M.NEEDS_CAP)
+    node.flags = bit.bor(node.flags, M.NODE_HAS_NEEDS)
+    node.need_count = #planet.needs
+    for i = 1, #planet.needs do
+      local need = planet.needs[i]
       assert(need ~= nil)
-      node.needs[i].has_resource = (need.row.has_resource ~= 0) and 1 or 0
-      node.needs[i].resource = (need.row.has_resource ~= 0) and need.row.resource or 0
+      node.needs[i].resource = need.row.resource
     end
   end
-  if planet.has_development_tier ~= 0 then
-    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_DEVELOPMENT_TIER)
+  if planet.development_tier ~= nil then
+    node.flags = bit.bor(node.flags, M.NODE_HAS_DEVELOPMENT_TIER)
     node.development_tier = planet.development_tier
   end
-  if planet.has_production_bonus ~= 0 then
-    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_PRODUCTION_BONUS)
+  if planet.production_bonus ~= nil then
+    node.flags = bit.bor(node.flags, M.NODE_HAS_PRODUCTION_BONUS)
     node.production_bonus = planet.production_bonus
   end
-  if bit.band(planet.has_, planet_module.PLANET_HAS_PRODUCTION) ~= 0 then
-    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_PRODUCTION)
-    if planet.production.has_resource ~= 0 then
-      node.flags = bit.bor(node.flags, M.SAVE_NODE_PRODUCTION_HAS_RESOURCE)
+  if planet.production ~= nil then
+    node.flags = bit.bor(node.flags, M.NODE_HAS_PRODUCTION)
+    if planet.production.resource ~= nil then
+      node.flags = bit.bor(node.flags, M.NODE_PRODUCTION_HAS_RESOURCE)
       node.production_resource = planet.production.resource
     end
   end
   if planet.synthesizable_resources ~= planet.archetype.synthesizable_resources then
-    node.flags = bit.bor(node.flags, M.SAVE_NODE_SYNTHESIZER_SPENT)
+    node.flags = bit.bor(node.flags, M.NODE_SYNTHESIZER_SPENT)
   end
-  if node_has_state_time(node.kind, node.state) ~= 0 then
-    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_STATE_TIME)
+  if node_has_state_time(node.kind, node.state) then
+    node.flags = bit.bor(node.flags, M.NODE_HAS_STATE_TIME)
     node.state_time = header.state_time
   end
 end
 
--- Returns first, then the C's *added.
+-- Returns first, then the number of indices added.
 local function add_route_indices(out, list, ids, count)
-  local first = out.route_index_count
-  assert(list.count <= 0xFF and first + list.count <= M.SAVE_STATE_ROUTE_INDICES_CAP)
-  for i = 0, list.count - 1 do
-    out.route_indices[out.route_index_count] = index_of(ids, count, list.items[i])
-    out.route_index_count = out.route_index_count + 1
+  local first = out.route_index_count + 1
+  assert(#list <= 0xFF and out.route_index_count + #list <= M.ROUTE_INDICES_CAP)
+  for i = 1, #list do
+    local n = out.route_index_count + 1
+    out.route_indices[n] = index_of(ids, count, list[i])
+    out.route_index_count = n
   end
-  return first, list.count
+  return first, #list
 end
 
 local function capture_node_links(out, node, planet, ids)
-  node.first_route = out.route_count
-  if bit.band(planet.has_, planet_module.PLANET_HAS_OUTGOING_ROUTES) ~= 0 then
-    local count = trade.trade_route_list_count(planet.outgoing_routes)
-    node.flags = bit.bor(node.flags, M.SAVE_NODE_HAS_OUTGOING_ROUTES)
-    assert(out.route_count + count <= M.SAVE_STATE_ROUTES_CAP)
-    for i = 0, count - 1 do
-      local route = trade.trade_route_list_at(planet.outgoing_routes, i)
+  node.first_route = out.route_count + 1
+  if planet.outgoing_routes ~= nil then
+    local count = #planet.outgoing_routes
+    node.flags = bit.bor(node.flags, M.NODE_HAS_OUTGOING_ROUTES)
+    assert(out.route_count + count <= M.ROUTES_CAP)
+    for i = 1, count do
+      local route = planet.outgoing_routes[i]
       local saved = save_route_zero()
-      out.routes[out.route_count] = saved
-      out.route_count = out.route_count + 1
+      local n = out.route_count + 1
+      out.routes[n] = saved
+      out.route_count = n
       saved.first_planet, saved.planet_count = add_route_indices(out, route.planets, ids.nodes, ids.node_count)
       saved.first_slipway, saved.slipway_count = add_route_indices(out, route.slipways, ids.slipways, ids.slipway_count)
-      saved.has_resource = (route.has_resource ~= 0) and 1 or 0
-      saved.resource_is_bool = (route.resource_is_bool ~= 0) and 1 or 0
-      saved.resource = (route.has_resource ~= 0) and route.resource or 0
+      saved.resource_is_bool = route.resource_is_bool and 1 or 0
+      saved.resource = route.resource
     end
     node.route_count = count
   end
-  node.first_slipway = out.node_slipway_count
-  assert(planet.slipways.count <= 0xFF and out.node_slipway_count + planet.slipways.count <= M.SAVE_STATE_NODE_SLIPWAYS_CAP)
-  for i = 0, planet.slipways.count - 1 do
-    out.node_slipways[out.node_slipway_count] = index_of(ids.slipways, ids.slipway_count, planet.slipways.items[i])
-    out.node_slipway_count = out.node_slipway_count + 1
+  node.first_slipway = out.node_slipway_count + 1
+  assert(#planet.slipways <= 0xFF and out.node_slipway_count + #planet.slipways <= M.NODE_SLIPWAYS_CAP)
+  for i = 1, #planet.slipways do
+    local n = out.node_slipway_count + 1
+    out.node_slipways[n] = index_of(ids.slipways, ids.slipway_count, planet.slipways[i])
+    out.node_slipway_count = n
   end
-  node.slipway_count = planet.slipways.count
+  node.slipway_count = #planet.slipways
 end
 
 local function capture_world(out, ids)
-  for i = 0, tagged_count(entity_class.TAG_NODE) - 1 do
+  for i = 1, tagged_count(entity_class.TAG_NODE) do
     local e = tagged_at(entity_class.TAG_NODE, i)
-    if is_saved(e) ~= 0 then
-      assert(ids.node_count < M.SAVE_STATE_NODES_CAP, "save_state_capture: node indices are one byte")
-      ids.nodes[ids.node_count] = entity_id.entity_id_link(e)
-      ids.node_count = ids.node_count + 1
+    if is_saved(e) then
+      assert(ids.node_count < M.NODES_CAP, "save_state.capture: node indices are one byte")
+      local n = ids.node_count + 1
+      ids.nodes[n] = entity_id.link(e)
+      ids.node_count = n
     end
   end
-  for i = 0, tagged_count(entity_class.TAG_SLIPWAY) - 1 do
+  for i = 1, tagged_count(entity_class.TAG_SLIPWAY) do
     local e = tagged_at(entity_class.TAG_SLIPWAY, i)
     local slipway = e
-    local saved
-    if is_saved(e) == 0 or slipway.end_is_point ~= 0 then
+    local saved, n
+    if not is_saved(e) or slipway.end_is_point then
       goto continue
     end
-    assert(ids.slipway_count < M.SAVE_STATE_SLIPWAYS_CAP, "save_state_capture: slipway indices are one byte")
-    ids.slipways[ids.slipway_count] = entity_id.entity_id_link(e)
-    ids.slipway_count = ids.slipway_count + 1
+    assert(ids.slipway_count < M.SLIPWAYS_CAP, "save_state.capture: slipway indices are one byte")
+    n = ids.slipway_count + 1
+    ids.slipways[n] = entity_id.link(e)
+    ids.slipway_count = n
     saved = save_slipway_zero()
-    out.slipways[out.slipway_count] = saved
-    out.slipway_count = out.slipway_count + 1
+    n = out.slipway_count + 1
+    out.slipways[n] = saved
+    out.slipway_count = n
     saved.start = index_of(ids.nodes, ids.node_count, slipway.start)
     saved.end_ = index_of(ids.nodes, ids.node_count, slipway.end_)
     saved.state_time = e.state_time
     ::continue::
   end
-  for i = 0, ids.node_count - 1 do
-    local planet = entity_id.entity_get(ids.nodes[i])
+  for i = 1, ids.node_count do
+    local planet = entity_id.get(ids.nodes[i])
     local node = save_node_zero()
-    out.nodes[out.node_count] = node
-    out.node_count = out.node_count + 1
+    local n = out.node_count + 1
+    out.nodes[n] = node
+    out.node_count = n
     capture_node_fields(node, planet)
     capture_node_links(out, node, planet, ids)
   end
 end
 
-function M.save_state_capture(out)
+function M.capture(out)
   local ids = {}
-  local vanish_walk = planet_module.planet_vanish_roll()
-  local background = background_module.background_live()
+  local vanish_walk = planet_module.vanish_roll()
+  local background = background_module.live()
   local ok, counter
 
-  assert(vanish_walk ~= nil, "save_state_capture: a running game has a vanish walk")
-  assert(background ~= nil, "save_state_capture: a running game has a background")
+  assert(vanish_walk ~= nil, "save_state.capture: a running game has a vanish walk")
+  assert(background ~= nil, "save_state.capture: a running game has a background")
   save_state_zero(out)
   ids.nodes = {}
   ids.node_count = 0
@@ -1157,19 +1169,18 @@ function M.save_state_capture(out)
   ids.slipway_count = 0
   out.difficulty = difficulty_index()
   capture_economy(out.economy)
-  out.rnd_state = fixed.p8_fixed_rnd_state()
+  out.rnd_state = fixed.rnd_state()
   out.background_seed = background.seed
   capture_type_picker(out.type_picker)
   out.vanish_walk.step = vanish_walk.step
   out.vanish_walk.bias = vanish_walk.bias
-  ok, counter = structure_icon.structure_icon_id_counter(0)
-  out.structure_id_counter = (ok ~= 0) and counter or 0
+  ok, counter = structure_icon.id_counter(0)
+  out.structure_id_counter = ok and counter or 0
   capture_probe(out)
   out.camera_map_pos = vec_of(entity_registry.main_camera().map_pos)
   capture_world(out, ids)
 end
 
--- Lua only: the cart's static save_state_t starts at its C zero through this.
-M.save_state_zero = save_state_zero
+M.zero = save_state_zero
 
 return M

@@ -116,6 +116,12 @@ fake follows these rules, and every step that adds one measures it.
    target outside `make test-all`, and this file then says that `make test`
    no longer runs every capture.
 
+`make lua-names` (`tools/lua_names.lua`, after its fixture self-test) fails
+when a `game/` export repeats its module's prefix, or when a Lua file of
+`game/`, `tests/lua/` or the `love_runtime` fixtures reads a field a
+required module does not have, which a missed rename leaves silent; it
+loads every module, so it stays outside `make test` and `make test-all`.
+
 ### `make e2e`
 
 `make e2e` runs `tmp/fake_love <game dir> <replay> <capture> <state>` on
@@ -518,7 +524,7 @@ non-Canvas first argument, a non-number (no string coercion), a
 non-finite or fractional position and a rotation other than 0. **The rule
 for the game: present canvas 0 once per frame, last in `love.draw`, with
 the screen selected, after `setColor(1, 1, 1)`, outside any `push`, at
-`(0, 0)` and scale `SCREEN_SCALE`** (`screen.screen_present()`). Capture:
+`(0, 0)` and scale `screen.SCALE`** (`screen.present()`). Capture:
 `game_frame`.
 
 **Transforms.** `push()`, `pop()` and `translate(dx, dy)` are the only
@@ -628,9 +634,9 @@ It is an ordinary Lua error, like every refusal of the fake. Both binaries,
 `tmp/fake_love` and `tmp/love_capture_check`, run under this guard.
 
 The game shows its canvas in the window with `draw(canvas, 0, 0, 0,
-SCREEN_SCALE, SCREEN_SCALE)`: **present canvas 0 once per frame, last in
+screen.SCALE, screen.SCALE)`: **present canvas 0 once per frame, last in
 `love.draw`, with the screen selected, after `setColor(1, 1, 1)`, outside
-any `push`, at `(0, 0)` and scale `SCREEN_SCALE`** (see The present). The
+any `push`, at `(0, 0)` and scale `screen.SCALE`** (see The present). The
 fake reads the canvas, and the present changes nothing it models.
 
 The exact pixel conventions (where `points(x, y)` lands, how `rectangle`
@@ -684,11 +690,10 @@ what the player sees:
 - **Colours:** a 16-entry table holding the RGB values of the Capture
   table, passed exactly to `setColor` (byte/255).
 - **Circles and lines:** drawn by the game itself, pixel by pixel (`points`)
-  or in spans (`rectangle`), with the algorithms of the C game the Lua was
-  copied from.
+  or in spans (`rectangle`); the replays fix every pixel they draw.
 - **Fill patterns** (PICO-8 `fillp`): the game builds them as images and draws
   those. The pattern is aligned to the **world** coordinates, the ones before
-  the camera, as the C game aligned it, not to the screen or the shape: each span
+  the camera, not to the screen or the shape: each span
   draws the quad of a screen-sized pattern image (one per pattern, colour
   byte and transparent flag, built once and kept) that starts at the world
   phase of its first pixel. A patterned disk is drawn span by span from that
@@ -743,7 +748,7 @@ sheet changes both.
 
 - **Format:** 8-bit RGB, no alpha, non-interlaced; stored (uncompressed)
   deflate blocks.
-- **Colours:** every pixel is one of the 16 `P8_PALETTE_RGB` triples, byte
+- **Colours:** every pixel is one of the 16 `palette.RGB` triples, byte
   for byte. Colour 0 is opaque black in both files: the game builds its
   see-through copies itself (the recoloured sprite sheets; per-colour letter
   images, background made transparent) and never draws raw `font.png` pieces.
@@ -761,10 +766,9 @@ sheet changes both.
 
 The game computes with PICO-8 16.16 fixed-point numbers and its own random
 generator, both in `game/p8/fixed.lua`, built on LuaJIT's `bit` library and
-bit-exact with the C library it was copied from. `make test` runs
-`lua-test-fixed`, which checks the edge values and a sample against
-`tests/lua/fixed_reference.txt`, frozen from the C library before plan 4
-deleted it.
+checked bit for bit against `tests/lua/fixed_reference.txt`, frozen from the
+C library before plan 4 deleted it. `make test` runs `lua-test-fixed`, which
+checks the edge values and a sample against it.
 
 ## Layout of the fork
 
@@ -779,158 +783,182 @@ deleted it.
   `end_state.sh`, `e2e_limits.sh`, `lua_guard.lua`, `love_install.sh`, …).
 - `tests/`: the C tests of the fake and the tools (`test_<name>.c`, listed
   in the Makefile's `UNIT_TESTS`), with their fixtures in `tests/fixtures/`.
-- `tests/lua/`: the Lua tests of the fixed-point library, the runtime, the
-  module tables and the capture reader, with their frozen references.
+- `tests/lua/`: the Lua tests of the fixed-point library and its frozen
+  reference, the runtime, module loading, the capture reader and the
+  `lua-names` check's fixture self-test.
 - `tests/lua/game/`: the regression tests of `game/` modules
   (`test_<module>.lua`), each run by `make test`.
 - `tests/e2e/`: the 20 replays, their hashes, end states and notes.
 - `worst-case/`: long games checked one at a time with `make end-state
   EVENTS=`.
 
-## Conventions inherited from the C
+## Code conventions
+The rules below hold for every module under `game/`; `lua-guard`,
+`lua-test-modules` and `make lua-names` check the mechanical ones, the
+replays the rest.
 
-`game/p8/`, `game/engine/`, `game/game/` and `game/devtools/` began as a
-faithful copy of the C game: each C file became the Lua file of the same
-name under the same directory, with the same functions in the same order,
-the same names, computations and data tables. The C is deleted; its last
-commit shows any original, e.g. `git show 60e62c1:src/game/planet.c` for
-`game/game/planet.lua`. The Lua still follows the rules below, which say
-how a C construct reads in Lua, until plan 5 replaces them. `game/love/`
-has no C original.
+**Naming.** An exported name, function or constant, does not repeat its
+module's name or first word, which every caller already writes, and
+`game/p8/` has no `p8_` left (`planet.init_instance`, `fixed.add`,
+`vram.SCREEN_WIDTH`, `entity_class.STATE_NORMAL`); `make lua-names` checks it.
+Four exports keep a word of their module's name, the check's listed
+exceptions: `draw_functions.draw_row`, `.draw_row_text_image` and
+`.draw_rows_default`, whose verb is the module's first word, and
+`bindings_default.bindings`, whose stripped name would be empty. A field
+whose name would be a Lua keyword takes a trailing underscore (the
+slipway's `end_`), and an export whose name would be one takes a word that
+says what it returns (`slipway.end_node`). A module alias that would clash
+with a parameter or local takes the `_module` suffix
+(`local planet_module = require("game.planet")` in `save_load.lua`).
 
-**Naming.** Exported functions are `function M.<c name>(` at line start,
-`static` ones `local function <c name>(`; a module's file-level tables are
-`M.NAME = {` or `local NAME = {`, its header constants and enum values
-`M.<MACRO> = value`, computed as the C does; a `.c`-local macro is a module
-local. A C identifier that is a Lua keyword takes a trailing underscore
-(the slipway's `end_`). An entity's own field named like an entity header
-field takes one too: the planet's, economy's, wormhole's and button's own
-`has` bits are `has_`, the header keeps `has`. A module local that would
-clash with a C parameter or local takes the `_module` suffix
-(`local planet_module = require("game.planet")` in `save_load.lua`). A
-function the Lua adds is marked `-- Lua only` and, when another module
-needs it, exported after the C functions as `M.p8_<file>_<what>` in
-`game/p8/` (`p8_gfx_software_slot_pixels`) or with a C-style name
-elsewhere (`planet_keys_zero`). `game/love/` names follow
-`module_verb[_object]`.
+**Modules and loading.** One module per file, required by its path under
+`game/` (`require("p8.gfx")`), returning `M` (the two data modules
+`p8.quarter_wave` and `p8.sprite_sheet_packed` return their table). No
+globals, LuaJIT `bit` only, no FFI. Module state is module-level `local`s,
+or a `g_` field of `M` (`menu.g_pause_menu_open_box`). A local function used
+before its definition is declared `local name` and assigned later with `name
+= function`, never `local function name`, and a table entry naming it is
+stored right after that assignment (`menu.galaxy_menu_on_click_table[4]`).
+Modules that need each other require each other at call time, inside the
+function that needs the partner, and read a partner's constants there, never
+cached at module level. A partner needed at load (a class holding its
+methods by identity, a table built from its value) is required at load in
+one direction per pair only: `planet` requires `planet_display` and
+`planet_trade` at load, they require `game.planet` at call time.
+`love.graphics` and `love.image` appear only in `game/love/`.
 
-**Arrays and integers.** A C array keeps its C index, from 0
-(`{ [0] = 1, 0, 1, 2 }`), 2-D as `t[y][x]`; `#t` and `ipairs` are never used
-on one, and `memcpy`/`memcmp` are loops over the C length. A pointer into an
-array is an integer index, `NULL` is `nil`; a pointer difference into a
-table goes through a Lua-only reverse map built at load
-(`project_index_of` in `research.lua`). Lists handed to LÖVE are plain
-1-based. C `int` `/` is `cint.div` (truncates, never `-0`, raises on 0) and
-`%` is `cint.mod` (the dividend's sign); `math.floor` and Lua `%` appear only
-where the C floors. `(unsigned char)x` is `bit.band(x, 0xFF)`; a `bit`
-result above 2^31 − 1 is brought back to unsigned where it is compared or
-printed. Fixed point goes through `game/p8/fixed.lua`. A `char` is its byte
-value, a `const char *` or `char[]` a Lua string, and a walk to `'\0'` a loop
-over `1 .. #s`. The Lua copies the 64-bit PC build without ASan:
-`SIZEOF["void *"]` is 8, `ZONE_BYTES_BY_WIDTH(b64, b32)` returns `b64` after
-asserting the C condition on `b32`, `BUMP_ZONE_HALVES` is 1,
-`POISON`/`UNPOISON` are dropped.
+**Tables and objects.** An object is a table; an `init` function fills the
+table its caller passes. A re-init of a table another holder may keep resets
+its fields in place and keeps its identity and its sub-tables:
+`pad_nav.init` creates its sub-tables and bindings table only when absent,
+`input_step.init` resets `played` and `played_frame` in place,
+`economy_score.set_difficulty` clears and refills `g_difficulty`. A value
+table (a `vec`, a `box`, a mouse position, a constant) is built by a
+constructor listing every field and never changed by a function that
+receives it: operations return a new one (`engine.vec`). A copy is shallow:
+the tables it refers to are shared, and a nested table the copy must own is
+copied by the copier. A fresh table with every field at its zero value comes
+from the owning module's zero constructor when other modules need it
+(`ui_button.button_zero`, `particle.emitter_zero`, `targeting.zero`), from a
+local one otherwise. An optional value is `nil` when absent, tested with `~=
+nil`; no `has` bit or `has_<x>` number marks it (the mouse position, a value
+table, keeps its `has` bits, `entity_class.MOUSE_POS_HAS_*`). An array field
+has no fixed length: its elements are created as they are written, and every
+read stops below its count. The only fixed lengths are those of data tables
+and the save format's ranges (`docs/save-format.md`). `is_dead` is on every
+entity. A callback that must report to its caller gets a context table
+(`economy_tiers.update_tiers`' `{ value = false }`). A local copy of a few
+graphics-state fields is a `graphics_copy` built field by field
+(`demo_overlay`, `loading_screen`). A function that advances a value it was
+given returns the new value after its own results, several in a fixed order
+(`result, state = fixed.rnd_from_state(state, x)`; `pad_panel.step` returns
+`at, x, y, mouse_buttons`).
 
-**Structs and out-parameters.** A struct is a table with the C field names;
-a pointer to it is that table, and an init on `T *` fills the caller's table.
-A by-value struct (passed, returned, assigned, a constant such as
-`ENTITY_ID_NONE`) is a new table built by a constructor listing every field,
-copied at each use (`entity_id_none()`); a table received by value is never
-mutated. The copy is shallow as in C: pointer members are shared
-(`entity_id_list_copy` shares `items`), inline mutable sub-structs are
-copied by the caller. Entity ids are compared only through
-`entity_id_equal`. A re-init or `memset` of a table that another holder may
-point at zeroes its fields in place and keeps its identity:
-`pad_nav_init` keeps its sub-tables and bindings table,
-`input_step_init` zeroes `played` and `played_frame` in place,
-`economy_score_set_difficulty` clears and refills `g_difficulty`. A
-static struct, or inline array of structs, is a table (or 0-indexed array of
-tables) with every field at its C zero value (0, or `nil` for a pointer). A
-zero constructor other modules use is exported by the module owning the
-struct (`button_zero` in `ui_button`, `emitter_zero` in `particle`,
-`targeting_zero` in `targeting`); a module needing one its owner does not
-export keeps a local one. A struct reached by casting its first member
-(`arena_t`, `flip_zone_allocator_t`, `slot_group_handle_t`) is one table
-holding both structs' fields, the cast the identity. A C `int *` context is
-a `{ value = 0 }` table. A by-value `p8_graphics_t` is a local
-`graphics_copy` of its five fields. An out-parameter is an input argument
-whose new value comes back after the C return value, several in C order, a
-`void` function returning only them (`result, state =
-p8_fixed_rnd_from_state(state, x)`; `pad_panel_step` returns `at, x, y,
-mouse_buttons`).
+**Ids.** An entity id is a number handed out by `entity_id.take` from a
+counter that never resets, so it is never reused; it is resolved by
+`entity_id.get` through the current table, which drops an entity when the
+exit queue flushes it. `nil` is "no link"; ids are compared with `==`. A
+research project id follows the same rule from `research`'s own counter and
+maps, and goes stale when `research.expire_project_ids` runs.
 
-**Memory.** An allocation returns a new, empty table, the block; the caller
-writes into it what the C writes into the bytes, and zones never read a
-block. Byte counts, cell rounding, capacity tests and the `zone %s full`
-message are the C ones; address arithmetic stays as byte offsets nothing
-reads. `BUMP_ZONE_STORAGE` and `FLIP_ZONE_STORAGE` return a table standing
-for the cells; a slot zone adds the Lua-only fields `blocks` and
-`index_of`. A `memcpy` of unknown type is `copy_block` (`allocator.lua`,
-every key) or `copy_value` (`value_list.lua`, one level deep). A zone-built
-`char *` is a Lua string: the function performs the C allocation for
-length + 1 bytes and returns the string; `strcmp(a, b) == 0` is `a == b`. A
-C name compared by address is compared by value (`grab_arena_name`).
+**Lists and sharing.** A new object is a table built where it is needed. The
+plain-array lists are emptied or refilled in place when several owners hold
+them; a list that outlives a copy point is copied, never shared by accident
+(an offer's routes are a copy of the source list, assigned back when the
+offer returns); a route's id arrays are never changed once built, so route
+copies share them. An id list is read through `entity_id.resolve`, which
+asserts the id is alive. A walk whose body may change its list walks a copy
+and says so. Strings are compared with `==`.
 
-**Truth values.** A C int predicate returns 1 or 0, never a Lua boolean;
-`if (x)` on an int is `if x ~= 0`, `!x` is `x == 0` as a test and
-`(x == 0) and 1 or 0` as a value, a comparison used as a value is
-`(c) and 1 or 0`, and a pointer test is `p ~= nil`. `c ? a : b` is
-`(c) and a or b` only when `a` is never `nil` or `false`; a ternary between
-two function pointers is an `if`/`else`.
+**Arrays.** Every array is 1-based: a table whose integer key only
+says "the k-th element" (a list, a sequence, a cache's slots, a ring, a pool, a data
+file's rows read by position, the cart's 1-based index) starts at 1, its loops run
+`for i = 1, count`, and 2-D data is `t[y][x]`. A list without holes (the trade route lists,
+the id lists, needs, particles, the registry's buckets, the exit queue) is a plain Lua
+array, appended with `t[#t + 1] = x`. An array with its own count (`{ items, count }`,
+`tickets_count`, `placed_items_count`, `rows_count`, the save state's pools) keeps it:
+elements past the count may be stale or absent, so `#` and `ipairs` are never used on
+it, reads stop at the count, and an append names its new position
+(`local n = list.count + 1; list.items[n] = x; list.count = n`); an array with holes
+(the type picker's `recent` and `recent_set` until the ring fills, the galaxy menu's
+refresh and on-click tables) is read by position only. A table keyed by a value
+that has its own meaning, 0 included, is a map and keeps its keys: a colour
+(`p8.palette`, `mem.draw_palette`, the CLUT entries, `hud`'s palette blocks), a pixel
+coordinate or offset (`mem.screen[y][x]`, the sprite sheet, the map cells, the glyph
+rows, every pixel loop), an address or angle (`p8.sprite_sheet_packed`,
+`p8.quarter_wave`), an image slot handle (from 0, like a PICO-8 sprite number; the
+game's own caches compute slot `FIRST + i - 1`), a byte (`crc32_table`), a disk code
+(`save_state.NODE_*` in `node_constructors` and `node_kind`), a saved state
+(`entity_class.STATE_*`), a tag's bit position (the registry's tag buckets), a layer
+value (the layer order's `start`, `start[0]` the empty prefix; `ui`'s hover layers),
+a draw-function code, a disk rank (the save validators' `seen` sets) and a demo frame
+(`demo_data.pad_buttons`). An enum that only indexes tables is numbered from 1
+(`entity_registry.MESSAGE_*`, `bindings.MODE_*`, `bindings.ACTION_*`). The save state mirrors the
+bytes: its arrays are 1-based but every reference it holds keeps its on-disk value, a
+0-based rank, converted to a position only where the capture writes it
+(`position - 1`) and where the loader and the decoder's node-slipway check read it
+(`rank + 1`) (`docs/save-format.md`). A copy or comparison of part of an array is a
+loop over its count. A reference to an element is its index; "none" is `nil`; an
+element's index is found through a reverse map built at load (`project_index_of` in
+`research.lua`).
 
-**Control flow and errors.** `assert(c && "msg")` is `assert(c, "msg")`, a
-compile-time check a load-time `assert`; `switch` is an `if` chain or a
-lookup table built once; `continue` is `goto continue`; a C `for` is a
-numeric `for` only when the body changes neither counter nor bound.
-Function pointers are Lua functions, a vtable a table with the C field
-names; an X-macro list is a module function calling its entry function once
-per entry, in order (`P8_IMAGE_SLOTS(SLOT)`). `fatal.p8_fatal(msg)` raises
-`error(msg, 0)`; `snprintf` messages are `string.format` with the C text.
+**Integers, bytes and strings.** A truncating integer division is `cint.div`
+(never `-0`, raises on 0) and its remainder `cint.mod` (the dividend's
+sign). `math.floor` and Lua `%`, which round toward minus infinity, are for
+a magnitude (a value made non-negative first, as `str` and `state_format` do
+with fixed point), a counter wrapping at 2^32 (the registry's, the row
+serial, `row_image`'s products), a pattern phase in 0..3 of any world
+coordinate, a colour byte rounded back from `getPixel`, and `fixed`'s own
+arithmetic. A byte is `bit.band(x, 0xFF)`; a `bit` result above 2^31 − 1 is
+brought back to unsigned where it is compared, stored or printed (the save
+CRC). Fixed point goes through `p8.fixed`. A character is its byte value
+(`string.byte`), text is a Lua string, and a walk over text runs `1 .. #s`.
 
-**Modules and loading.** One module per C pair, required by its path under
-`game/` (`require("p8.gfx")`), returning `M`, headed by a comment naming the
-C files it was copied from, in order; a function declared in a ported
-header but defined elsewhere is named in that comment and called from its
-defining module, never re-exported. No globals,
-LuaJIT `bit` only, no FFI. Statics are module-level `local`s initialised as
-the C does; a forward-declared `static` is a `local name` filled later by
-`name = function`, never `local function name`, and a table entry naming
-one is stored right after its definition
-(`M.galaxy_menu_on_click_table[3]` in `menu.lua`). Modules of a C include
-cycle require each other at call time, inside the function that needs the
-partner, and read a partner's constants there, never cached at module level.
-A partner needed at load (a class holding its methods by identity, a table
-built from its value) is required at load in one direction per pair only:
-`planet` requires `planet_display` and `planet_trade` at load, they require
-`planet` at call time. `love.graphics` and `love.image` appear only in
-`game/love/`.
+**Truth values.** Predicates and truth-valued fields are Lua booleans. A
+predicate returns exactly `true` or `false`, never `nil` or one of its
+operands: a comparison is returned as is, a presence test is `p ~= nil`, and
+a lookup returns its boolean `found` before its value (`found, out`). A
+truth-valued field holds `true`, `false` or `nil`, and `nil` reads as false.
+Tests are `if x then` and `if not x then`, never `x == false` or
+`x == true`; a counter adds one under `if c then`. `0` and `1` stand for a
+truth value only at a format boundary, converted at that site: the save
+record mirrors its bytes, so its flag fields stay `0`/`1` numbers (and
+`fold_anchor`, `infraspace` the cart's `0x10000` or `0`), written by the save
+builder with `(c) and 1 or 0` and read back by the loader with `x ~= 0`; the
+state dump's `visible` column and the draw cost model's `fillp_transparent`
+key bit build their `1`/`0` the same way. Numbers that are data (counts, bit masks, colors, fixed-point
+values, divisors) keep their `== 0` and `~= 0` tests. `(c) and a or b` is
+used only when `a` is never `nil` or `false`; a choice between two
+functions is an `if`/`else`.
+
+**Control flow and errors.** An invariant is `assert(c, "msg")`, a check of
+data an `assert` at load. A dispatch on a value is an `if` chain or a lookup
+table built once; `continue` is `goto continue`; a numeric `for` is used
+only when the body changes neither counter nor bound, a `while` otherwise.
+Behaviour that varies by kind is a class table of functions. A fixed list of
+entries the runtime visits is a module function calling its visitor once per
+entry, in order (`image.SLOTS(SLOT)`, the image slots). `fatal.raise(msg)`
+raises `error(msg, 0)`; messages are built with `string.format`.
 
 **Data tables and checks.** Every table of a data file is a module field
-(LuaJIT allows 200 locals per function); a struct the C partly initializes
-goes through a local constructor, defined before the tables that call it at
-load, that fills each missing field with its C zero and rejects a field the
-struct lacks (`map_tables.map_tables_check_fields`); a positional C
-initializer gets a positional constructor. A pointer in a table is the table
-pointed to. The data modules once generated from the C (`p8.quarter_wave`,
-`p8.sprite_sheet_packed`, `game.demo_data`, `game.bindings_default`) are
-now the source, edited by hand; their `-- Generated by` headers still name
-the deleted generators, and nothing checks `game.bindings_default` against
-`bindings.default.cfg`. Every
-`sizeof` a module uses is an entry of `M.SIZEOF`, keyed by the C type as
-written (`SIZEOF["void *"]`, `SIZEOF.arena_t`) or by `type.field` for a
-field (`SIZEOF["p8_vram_t.draw_palette"]`), read through `local SIZEOF =
-M.SIZEOF`, never a bare number. `make test` runs two checks over the whole
-tree: `lua-guard` (every file compiles, no undeclared global, only this
-file's `love.` names) and `lua-test-modules`, which requires every module
-under plain LuaJIT and compares every ported table, constant and `SIZEOF`
-entry with `tests/lua/table_reference.txt`, a reference frozen from the C
-before plan 4 deleted it; the once-generated data modules have no entry
-there and are only loaded. A module listed in `LUA_DEFERRED_MODULES` (passed as `--defer`,
-now empty) is skipped with its tables only when it fails on a module not yet
-in `game/`, and fails the check once it loads; the check clears the
-sentinels a failed `require` leaves in `package.loaded`, so each failing
-module reports its own missing module.
-
+(LuaJIT allows 200 locals per function). A data item or row is built by a
+constructor defined before the tables that call it at load
+(`map_tables.make_data_item`, `map_tables.make_data_row`, aliased as locals
+by `game_data`), which gives each missing field its default and raises on a
+field the record lacks (`map_tables.check_fields`); a record written
+positionally gets a positional constructor (`game_data`'s `vec`, `box`,
+`kind_record`). A table that refers to another holds that table. Four data
+modules are edited by hand (`p8.quarter_wave`, `p8.sprite_sheet_packed`,
+`game.demo_data`, `game.bindings_default`); `p8.sprite_sheet_packed` and
+`game.bindings_default` open with a line naming the file each is kept in
+step with (`game/sprites.png`, `bindings.default.cfg`), and nothing checks
+either pair agrees. `make test` runs two checks over the whole tree:
+`lua-guard` (every file compiles, no undeclared global, only this file's
+`love.` names) and `lua-test-modules`, which requires every module except
+`main` and `conf` under plain LuaJIT and reports each one that fails to
+load; it clears the sentinels a failed `require` leaves in `package.loaded`,
+so each failing module reports its own missing module; `make lua-names`
+(outside `make test`) checks the naming rule.
 ## Rules for the fork
 
 - The e2e replays are the source of truth; no C unit test was ported to

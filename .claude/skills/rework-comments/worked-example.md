@@ -43,7 +43,7 @@ findings came up at that point, none of which would have survived phase 2:
   "this will be a real gap the day `spr` is registered as a constructor", and
   initialization does register it;
 - **A recorded divergence contradicted a decision** of the plan ("no native floating
-  point") while `p8_fixed_cos/_sin` go through the host's `cos()`.
+  point") while `fixed.cos` and `fixed.sin` go through the host's `cos()`.
 
 Rewiring the process, in the same commit: the rule in `CLAUDE.md`, and the "Log
 the finding" step removed from the `fix-bug` skill, which wrote a log paragraph
@@ -66,7 +66,7 @@ each rule:
   tickets for 90 possible planets — and gave up. On checking, it was worse than
   its conclusion: with an empty pool, the index falls to 0, and the code reads
   `items[0]` on a list whose array can be NULL. Recorded at the time as a divergence, since fixed: the pool now refills.
-- **The asserts rejected by the plumbing**: `i >= 1` in `p8_sub` while
+- **The asserts rejected by the plumbing**: `i >= 1` in `str.sub` while
   `unstash()` calls it with 0 at the end of every string; `frames != NULL` in
   `p8_input_save` while a test passes NULL on purpose. Both would have broken
   the suite. The "considered and then rejected" section surfaced them.

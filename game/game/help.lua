@@ -1,45 +1,32 @@
--- Copy of src/game/help.h then src/game/help.c.
---
--- The help screen is a probe_t: one table with its entity header. button_fn_t is a Lua function, NULL is nil.
---
--- game.probe is required at load: help_screen_class_def holds its targeting and particle methods by identity.
-local bit = require("bit")
-local allocator = require("engine.allocator")
+-- game.probe is required at load: help.screen_class_def holds its targeting and particle methods by identity.
 local dispatch_context = require("engine.dispatch_context")
 local entity = require("engine.entity")
 local entity_class = require("engine.entity_class")
 local entity_geom = require("engine.entity_geom")
-local game_zone = require("engine.game_zone")
 local vec = require("engine.vec")
 local draw_functions = require("game.draw_functions")
 local game_data = require("game.game_data")
 local layout = require("game.layout")
 local message_box = require("game.message_box")
 local particle = require("game.particle")
-local particle_zone = require("game.particle_zone")
 local probe = require("game.probe")
 local ui_button = require("game.ui_button")
 local fixed = require("p8.fixed")
 
 local M = {}
 
-M.SIZEOF = {
-  probe_t = 200,
-}
-local SIZEOF = M.SIZEOF
-
-local g_help_screen_up = 0
+local g_help_screen_up = false
 
 local function screen_start_game_placeholder(self)
 end
 
 local g_start_game_method = screen_start_game_placeholder
 
-function M.help_start_game_field_value()
+function M.start_game_field_value()
   return g_start_game_method
 end
 
-function M.help_set_start_game(fn)
+function M.set_start_game(fn)
   if fn ~= nil then
     g_start_game_method = fn
   else
@@ -49,148 +36,133 @@ end
 
 local g_resume_game_method = nil
 
--- nil (the value after help_init and help_shutdown) means the title has no resume row.
-function M.help_resume_game_field_value()
+-- nil (the value after help.init and help.shutdown) means the title has no resume row.
+function M.resume_game_field_value()
   return g_resume_game_method
 end
 
-function M.help_set_resume_game(fn)
+function M.set_resume_game(fn)
   g_resume_game_method = fn
 end
 
 local function help_screen_hit_test_method(self, mouse)
-  return entity_geom.entity_geom_contains_cursor(self, mouse)
+  return entity_geom.contains_cursor(self, mouse)
 end
 
-function M.help_screen_construct(self)
+function M.screen_construct(self)
   local bs = {}
   local frame = message_box.open_box_frame_zero()
 
   if self == nil then
     return
   end
-  for i = 0, game_data.DIFFICULTY_OPTIONS_COUNT - 1 do
+  for i = 1, game_data.DIFFICULTY_OPTIONS_COUNT do
     local e = game_data.difficulty_options_table[i]
 
     bs[i] = ui_button.button_keys_zero({})
-    bs[i].layout_row_keys = layout.layout_row_keys_of_row(e.layout_row)
+    bs[i].layout_row_keys = layout.row_keys_of_row(e.layout_row)
     bs[i].name = e.name
-    bs[i].has_trade = 1
-    bs[i].trade = fixed.p8_fixed_from_int(e.trade)
-    bs[i].has_type_bias = 1
+    bs[i].trade = fixed.from_int(e.trade)
     bs[i].type_bias = e.type_bias
-    bs[i].has_on_click = 1
-    bs[i].on_click = M.help_start_game_field_value()
+    bs[i].on_click = M.start_game_field_value()
   end
-  frame.has_fixed_pos = 1
-  frame.fixed_pos = vec.vec_make(self.archetype.fixed_pos.x, self.archetype.fixed_pos.y)
-  frame.clear_ephemerals_after = 1
-  frame.has_back_color = 1
+  frame.fixed_pos = vec.make(self.archetype.fixed_pos.x, self.archetype.fixed_pos.y)
+  frame.clear_ephemerals_after = true
   frame.back_color = self.archetype.back_color
-  frame.has_row_step = 1
-  frame.row_step = vec.vec_make(self.archetype.row_step.x, self.archetype.row_step.y)
-  frame.has_pos = entity_class.entity_has_pos(self)
-  frame.pos = vec.vec_make(self.pos.x, self.pos.y)
-  message_box.message_box_open_box(frame, bs, game_data.DIFFICULTY_OPTIONS_COUNT)
+  frame.row_step = vec.make(self.archetype.row_step.x, self.archetype.row_step.y)
+  frame.pos = entity_class.pos(self)
+  message_box.open_box(frame, bs, game_data.DIFFICULTY_OPTIONS_COUNT)
 
   -- After the difficulty rows: the pad focus opens on the first button registered, forgiving.
-  if M.help_resume_game_field_value() ~= nil then
+  if M.resume_game_field_value() ~= nil then
     local resume = ui_button.button_keys_zero({})
 
-    resume.layout_row_keys = layout.layout_row_keys_of_row(game_data.resume_layout_row)
+    resume.layout_row_keys = layout.row_keys_of_row(game_data.resume_layout_row)
     resume.name = "resume"
-    resume.has_on_click = 1
-    resume.on_click = M.help_resume_game_field_value()
-    frame.fixed_pos = vec.vec_sub(frame.fixed_pos, frame.row_step)
-    message_box.message_box_open_box(frame, { [0] = resume }, 1)
+    resume.on_click = M.resume_game_field_value()
+    frame.fixed_pos = vec.sub(frame.fixed_pos, frame.row_step)
+    message_box.open_box(frame, { resume }, 1)
   end
 end
 
-local HELP_SCREEN_ROWS_CAP = 4
-
-function M.help_screen_draw(gfx, mem, self, p)
+function M.screen_draw(gfx, mem, self, p)
   -- The seed tick, result unused: without it every game started from boot gets the same galaxy.
-  fixed.p8_fixed_rnd_default()
+  fixed.rnd_default()
   particle.emitter_update(gfx, mem, self)
 
   if gfx ~= nil and mem ~= nil then
+    local rows = (self ~= nil) and self.archetype.rows or nil
+    local n = (rows ~= nil) and rows.count or 0
     local items = {}
-    local n = 0
-    local i = 0
 
-    while self ~= nil and self.archetype.rows ~= nil and i < self.archetype.rows.count do
-      assert(n < HELP_SCREEN_ROWS_CAP, "help_screen_draw: the help screen's rows hold four articles at most")
-      items[n] = self.archetype.rows.items[i].row
-      n = n + 1
-      i = i + 1
+    for i = 1, n do
+      items[i] = rows.items[i].row
     end
-    draw_functions.draw_functions_draw_rows_default(gfx, mem, items, n)
+    draw_functions.draw_rows_default(gfx, mem, items, n)
   end
 end
 
-function M.help_screen_draw_method(self, screen_pos)
-  M.help_screen_draw(dispatch_context.dispatch_context_gfx(), dispatch_context.dispatch_context_mem(), self,
+function M.screen_draw_method(self, screen_pos)
+  M.screen_draw(dispatch_context.gfx(), dispatch_context.mem(), self,
     screen_pos)
 end
 
-M.help_screen_class_def = {
-  draw = M.help_screen_draw_method,
+M.screen_class_def = {
+  draw = M.screen_draw_method,
   draw_overlay = probe.targeting_tooltip_method,
   hit_test = help_screen_hit_test_method,
   drag = probe.targeting_track_method,
   drop = probe.targeting_confirm_method,
-  spawn_particle = probe.probe_spawn_particle,
-  release = probe.probe_release_method,
+  spawn_particle = probe.spawn_particle,
+  release = probe.release_method,
   states = {},
   tags = entity_class.TAG(entity_class.TAG_PROBE),
   lineage = entity_class.LINEAGE(entity_class.LINEAGE_PROBE),
-  skip_draw_off_screen = 0,
+  skip_draw_off_screen = false,
 }
 
 local function screen_create()
   local self
   local hit_box
 
-  assert(g_help_screen_up ~= 0, "help_init() must run first")
-  self = allocator.allocator_alloc(game_zone.game_zone(), SIZEOF.probe_t)
-  probe.probe_init_instance(self, M.help_screen_class_def, game_data.help_screen_archetype)
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_HIT_BOX)
+  assert(g_help_screen_up, "help.init() must run first")
+  self = {}
+  probe.init_instance(self, M.screen_class_def, game_data.help_screen_archetype)
   hit_box = self.archetype.hit_box
   self.hit_box = { left = hit_box.left, top = hit_box.top, right = hit_box.right, bottom = hit_box.bottom }
-  self.has = bit.bor(self.has, entity_class.ENTITY_HAS_IS_HOVERED)
-  self.is_hovered = 0
-  M.help_screen_construct(self)
-  particle.emitter_init_in(self, particle_zone.PARTICLE_SLOT_HELP_LIST)
-  entity.entity_construct(self)
+  self.is_hovered = false
+  M.screen_construct(self)
+  particle.emitter_init(self)
+  entity.construct(self)
   return self
 end
 
-function M.help_init()
-  assert(probe.probe_ready() ~= 0, "help_init() runs after probe_init()")
+function M.init()
+  assert(probe.ready(), "help.init() runs after probe.init()")
 
-  M.help_shutdown()
+  M.shutdown()
 
-  g_help_screen_up = 1
+  g_help_screen_up = true
 
-  M.help_set_start_game(nil)
-  M.help_set_resume_game(nil)
+  M.set_start_game(nil)
+  M.set_resume_game(nil)
 end
 
-function M.help_shutdown()
-  g_help_screen_up = 0
-  M.help_set_start_game(nil)
-  M.help_set_resume_game(nil)
+function M.shutdown()
+  g_help_screen_up = false
+  M.set_start_game(nil)
+  M.set_resume_game(nil)
 end
 
-function M.help_screen_ready()
+function M.screen_ready()
   return g_help_screen_up
 end
 
-function M.help_screen_class()
-  return M.help_screen_class_def
+function M.screen_class()
+  return M.screen_class_def
 end
 
-function M.help_screen_new()
+function M.screen_new()
   return screen_create()
 end
 

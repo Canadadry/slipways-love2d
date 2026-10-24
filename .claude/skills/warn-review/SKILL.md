@@ -43,13 +43,17 @@ The rules are the means, not the goal. If code breaks one in a case nobody antic
 Allowed table references: `self` and other tables as parameters (borrowed for the call only), an entity's own components (tables no one else holds), static data never changed after load (archetypes, data tables, strings), functions, runtime handles (the allocator table a module receives, the graphics backend, the vram), and the engine registry's internal lists. Anything else is a violation. Rule 11 (`const` pointer fields) has no Lua meaning and is dropped; the numbers of the others are kept so that warnings stay comparable across runs:
 
 12. A field holding another field of the same table (`self.x = self.x_own`): the component is a value.
-13. Presence or absence encoded by a `nil` field instead of a bit in the table's `has`.
+13. Presence or absence encoded by a bit or a `has_<x>` 0/1 number instead of a field that is `nil` when absent.
 14. A link to another entity held as the entity's table, alone or in a list, instead of its id.
 15. A dead entity's id left in a list instead of removed at its death, or a list walk that tolerates a dead id instead of asserting.
 16. A by-value table (a `vec`, a `box`) changed by a function that receives it.
 17. A function keeping a table it received as a parameter beyond the call.
 18. A game concept (`targeting`, `emitter`, or any new one) named in `game/engine/`.
 19. A regenerated e2e `*.sha256` or `*.end-state`, or a relaxed `assert`, in a change that removes references.
+20. A truth value held as a `0`/`1` number, or a predicate tested against `0` or `1`.
+21. An array indexed from 0, or a `[0]` key that is a position rather than a value (a colour, a pixel coordinate, an address, a byte, a disk code or rank, a layer, a bit position, an image slot handle).
+22. A comment that describes the Lua through the C — a C type, file, construct or behaviour, a port status, a `-- Lua only` marker — rather than stating a trap or a contract in Lua terms.
+23. An exported name that repeats its module's name or first word, or starts with `p8_` in `game/p8/` (`planet.planet_draw`).
 
 ## Output format
 
