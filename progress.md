@@ -1,4 +1,4 @@
-- [ ] Phase 1 — The fake LÖVE learns windows, touches and the screen
+- [x] Phase 1 — The fake LÖVE learns windows, touches and the screen
   - [x] Step 1.1 — setColor accepts any colour and alpha
     - [x] PRD phase1-step1-set-color-any-colour
   - [x] Step 1.2 — window, resize, getDimensions, love.resize
@@ -16,7 +16,7 @@
     - [x] Chunk 3 — present widened and wired
     - [x] Chunk 4 — screens and the PNGs
     - [x] Chunk 5 — contract and measurements
-  - [ ] Step 1.5 — scaled quads, alpha blending, pad_sheet
+  - [x] Step 1.5 — scaled quads, alpha blending, pad_sheet
     - [x] Chunk 1 — screen module generalised
     - [x] Chunk 2 — images on the screen
     - [x] Chunk 3 — pad_sheet

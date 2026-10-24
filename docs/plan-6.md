@@ -257,7 +257,14 @@ to the fake's contract.
 ### Phase 2 — Fractional, centred present and resizable window
 
 6. A layout module computes, from a window size, the mode (tall / overlay),
-   the game rectangle and the pad rectangle. Verified: Lua tests for
+   the game rectangle and the pad rectangle. First, the step plans the rest
+   of the `make test` budget: it measures at `-O2` one Lua game-test process
+   and one short fake run that boots the game with `screens`, lists every
+   check steps 6–16 will add with its estimated cost against the headroom
+   left versus 8c830c6, decides their grouping (e.g. step 9's sheet test as
+   a `screens` frame of a screen replay, steps 10–13 in as few processes as
+   fit, step 16's cases inside step 7's replays), and records the list in
+   §6; each later step's note updates the remaining headroom. Verified: Lua tests for
    390×844 (tall, the exact values of §2), 640×480, 844×390, 820×1180, and
    the boundary `height == 2 * width` (overlay).
 7. `screen.present` draws the canvas into the game rectangle; `conf.lua`
@@ -308,7 +315,8 @@ to the fake's contract.
 
 18. A final read of design.md's fake contract against the fake's function
     list and replay fields, fixing any drift. Verified: every function and
-    field the fake accepts is named in design.md, and the reverse; and
+    field the fake accepts is named in design.md and in
+    `tools/lua_guard.lua`, and the reverse; and
     the `make test` timing gate against the plan's start commit 8c830c6
     passes (§4).
 19. skill: rework-comments — the files this plan created or changed under
@@ -403,3 +411,37 @@ pass. `make e2e`: median 6.756 s (1a7033b: 6.630 s); per-frame cost
 1.542 ms (user + sys / 4 072 frames / 4 cores). **Touch-replay cap for
 step 15: 720 frames, twins included.** Projection 6.756 + 720 × 1.542 ms
 = 7.87 s, under 8 s by 0.13 s: little margin. `make e2e`: 20/20.
+
+### Step 1.5
+
+The screen draw takes a quad, two scales and a tint, and blends in
+LÖVE's "alpha" mode with llvmpipe's `mul` (`min(255, mul(s,a) +
+mul(d,255−a))`), the screen's alpha staying `FF`; the present goes
+through it. The PRD lifted `newImage`'s refusal of translucent ImageData
+(not "sprites proven opaque"): an Image remembers its first translucent
+texel and is refused only when drawn onto a canvas; so step 9 needs no
+opacity test. The 4-argument quad draw reaches the screen;
+`draw(image, quad, x, y, 0, sx, sy)` draws onto the screen only. Replay
+member `"pad_sheet"` (a `.png` next to the replay, ≤ 1 MiB) is served as
+`pad.png`, shadowing the game's. No new `make test` process: the screen
+cases (390×844, `pad_sheet`, two `screens`, exact frames) and the
+missing-sheet refusal run inside `test_fake_love_image_draw` (~25 → ~55
+ms); expected-frame helpers shared in `tests/expected_screen.{c,h}`.
+**Gate against the plan's start failed**: +5.63 % vs 8c830c6 (22 rounds,
+accumulated over steps 1.2–1.4; this step +0.02 % vs 8f4c7f6). Guideline
+decision: default `CFLAGS` gain `-O2` for the fake and every check (no
+`-ffast-math`). Then, 11 rounds: −1.55 % vs 8f4c7f6, +1.29 % vs 8c830c6,
+−87.03 % vs 8dff812: pass; **headroom left vs 8c830c6: ~1.7 points.**
+`make e2e`: 5.202 s (8f4c7f6: 6.007 s), projection 5.202 + 720 × 1.542
+ms = 6.31 s (the 1.542 ms per-frame cost predates `-O2`, so it is
+cautious; step 7 re-measures it). `make e2e` and `make end-state` 20/20.
+
+End of phase 1 — warn-review flagged 23 design smells in the fake
+(duplicated limits and constants, `replay.c`'s size and JSON parser,
+twin touch types, `touch.h` ↔ `host.h`, `lua_guard.lua` a second copy of
+the function list, `graphics.c` without a unit test, hand-listed Makefile
+checks, `test_fake_love_screen` vs `_screens`). plan-review accepted two
+method changes (step 6 plans the remaining `make test` budget; step 18
+also compares `tools/lua_guard.lua`); the other warnings are left open,
+the fake's format being frozen after phase 1.
+
