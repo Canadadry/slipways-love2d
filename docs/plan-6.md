@@ -670,3 +670,23 @@ touch (the hold stays under 30 frames either way); the step 3.13 Lua
 tests cover it. `make e2e`: 28/28 and `make end-state` 28/28; median
 5.60 s vs 4.99 s at 2466b82, 1.148 ms per frame per core, ≤ 8 s with
 3.4 s left for step 16.
+
+### Step 3.16
+
+`virtual_pad` keeps the touches' own mask in `virtual_mask` (7bf4c97).
+New `love.pad_view`: `init(view)` loads `pad.png` in `love.load`;
+`draw(view, virtual_pad)`, called right after `screen.present`, draws
+nothing while hidden, else the 8 buttons (pressed sprite per bit of
+`virtual_mask`), then the stick's base and knob, unrounded, straight on
+the screen. `test_game_screens`: 8 frames, `pad_sheet` `pad_flat.png`,
+6 screens — 390×844 and 640×480 hidden, 160×322 tall shown, Y pressed,
+stick pushed up-right (knob 54.4, 220.8), 160×120 overlay — exact
+compare against the test's own copies of design.md's tables. Deviations
+for the 100 ms budget: the PRD's fallback windows (200×420 / 320×240
+measured 117 ms) and Y pressed instead of A (A on the title starts a
+game, ~35 ms); 89–94 ms, about 6–10 ms left. At scale 1, floor on the
+buttons alone or round on the knob alone survives; floor or round on
+every sprite is caught. design.md: the present rule is now "after every
+draw onto canvas 0; only the pad's screen draws follow", plus a Pad
+drawing paragraph. Gate: −3.10 % vs d1036e5, −10.68 % vs 8c830c6; `make
+e2e` 28/28, median 5.84 s vs 6.11 s, about 1.20 ms per frame per core.

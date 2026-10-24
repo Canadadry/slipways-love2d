@@ -61,7 +61,7 @@
     - [x] Chunk 1 — pairing rule in e2e_limits.sh
     - [x] Chunk 2 — the four pad twins
     - [x] Chunk 3 — the four touch replays
-  - [ ] Step 3.16 — draw the pad
+  - [x] Step 3.16 — draw the pad
     - [x] Chunk 1 — virtual_pad.virtual_mask
     - [x] Chunks 2-3 — the screen test, love.pad_view and its wiring
   - [ ] Step 3.17 — check-e2e
