@@ -2,9 +2,11 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "../tools/fake_love/canvas.h"
 #include "../tools/fake_love/png_file.h"
+#include "expected_screen.h"
 #include "fake_love_cli.h"
 
 #define FIXTURES FAKE_LOVE_CLI_FIXTURES
@@ -15,6 +17,9 @@
 #define PROGRAMS FAKE_LOVE_CLI_FIXTURES "capture/"
 #define IMAGE_WIDTH 4
 #define IMAGE_HEIGHT 3
+#define SCREENS_GAME FIXTURES "image_draw_screens "
+#define WINDOW_WIDTH 390
+#define WINDOW_HEIGHT 844
 
 static void test_image_misuse_is_refused_with_a_message_and_valid_calls_succeed(void) {
     int status = fake_love_cli_run("", FIXTURES "image_draw_log " FIXTURES "three_frames.json " CAPTURE " " STATE,
@@ -234,11 +239,103 @@ static void test_refused_draws_a_draw_on_the_screen_and_a_later_image_data_chang
     free(pixels);
 }
 
+static char *screen_path(int frame) {
+    static char path[128];
+    snprintf(path, sizeof path, CAPTURE ".screen-f%d.png", frame);
+    return path;
+}
+
+/* image_draw_screens's generated 6x4 image. */
+static void generated_texel(int i, int j, unsigned char rgba[4]) {
+    const unsigned char texel[4] = {(unsigned char)(i * 40 + 10), (unsigned char)(j * 50 + 20),
+                                    (unsigned char)(i * 7 + j * 30 + 3), 0xFF};
+    memcpy(rgba, texel, 4);
+}
+
+/* image_draw_sheet.png, 8x2: row 0 holds the alphas below, row 1 is opaque.
+ * The game directory's pad.png is 770077FF throughout. */
+static void sheet_texel(int i, int j, unsigned char rgba[4]) {
+    static const unsigned char ALPHAS[8] = {0x01, 0x40, 0x7F, 0x80, 0xC0, 0xFE, 0x00, 0xFF};
+    const unsigned char row0[4] = {(unsigned char)(0xE0 - 0x10 * i), (unsigned char)(0x30 + 0x18 * i), 0xA5, ALPHAS[i]};
+    const unsigned char row1[4] = {(unsigned char)(0x20 + 0x14 * i), 0xC8, (unsigned char)(0x40 + 0x11 * i), 0xFF};
+    memcpy(rgba, j == 0 ? row0 : row1, 4);
+}
+
+static void backdrop_texel(int i, int j, unsigned char rgba[4]) {
+    (void)i;
+    (void)j;
+    static const unsigned char NAVY[4] = {0x1D, 0x2B, 0x53, 0xFF};
+    memcpy(rgba, NAVY, 4);
+}
+
+static void test_scaled_tinted_and_blended_draws_reach_the_screen_with_the_replay_s_pad_sheet(void) {
+    static const unsigned char white[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+    static const unsigned char tint[4] = {0x7F, 0xFF, 0x3F, 0x7F};
+    static const int generated_part[4] = {1, 1, 3, 2};
+    static const int generated_whole[4] = {0, 0, 6, 4};
+    static const int canvas_whole[4] = {0, 0, CANVAS_WIDTH, CANVAS_HEIGHT};
+    static const int sheet_whole[4] = {0, 0, 8, 2};
+    static const int sheet_row[4] = {0, 1, 4, 1};
+    int status = fake_love_cli_run("", SCREENS_GAME FIXTURES "image_draw_screens.json " CAPTURE " " STATE, CAPTURE,
+                                   STATE, STDERR_LOG);
+    assert(status == 0 && "the screen draw game must run");
+
+    expected_screen_t frame = expected_screen_black(WINDOW_WIDTH, WINDOW_HEIGHT);
+    expected_screen_draw(&frame, generated_texel, generated_part, 10.25, 7.6, 2.4375, 1.7, white);
+    expected_screen_draw(&frame, generated_texel, generated_whole, -3.5, 20.5, 0.75, 3, white);
+    expected_screen_assert_pixel(&frame, 9, 8, 0, 0, 0);
+    expected_screen_assert_pixel(&frame, 10, 8, 50, 70, 40);
+    expected_screen_assert_pixel(&frame, 17, 10, 130, 120, 84);
+    expected_screen_assert_pixel(&frame, 18, 10, 0, 0, 0);
+    expected_screen_assert_pixel(&frame, 17, 11, 0, 0, 0);
+    expected_screen_assert_pixel(&frame, 0, 19, 0, 0, 0);
+    expected_screen_assert_pixel(&frame, 0, 20, 210, 20, 38);
+    expected_screen_assert_pixel(&frame, 1, 20, 0, 0, 0);
+    expected_screen_assert_pixel(&frame, 0, 31, 210, 170, 128);
+    expected_screen_assert_pixel(&frame, 0, 32, 0, 0, 0);
+    expected_screen_assert_file(screen_path(0), &frame);
+    expected_screen_free(&frame);
+
+    frame = expected_screen_black(WINDOW_WIDTH, WINDOW_HEIGHT);
+    expected_screen_draw(&frame, backdrop_texel, canvas_whole, 0, 64.75, 2.4375, 2.4375, white);
+    expected_screen_draw(&frame, sheet_texel, sheet_whole, 5.5, 70.5, 10, 10, white);
+    expected_screen_draw(&frame, sheet_texel, sheet_row, 100.25, 70.5, 10, 10, tint);
+    expected_screen_draw(&frame, sheet_texel, sheet_whole, 203, 104, 1, 1, tint);
+    expected_screen_assert_pixel(&frame, 4, 75, 0x1D, 0x2B, 0x53);
+    expected_screen_assert_pixel(&frame, 5, 75, 0x1E, 0x2B, 0x54);
+    expected_screen_assert_pixel(&frame, 25, 75, 0x6F, 0x46, 0x7C);
+    expected_screen_assert_pixel(&frame, 55, 75, 0x8F, 0xA7, 0xA4);
+    expected_screen_assert_pixel(&frame, 65, 75, 0x1D, 0x2B, 0x53);
+    expected_screen_assert_pixel(&frame, 75, 75, 0x70, 0xD8, 0xA5);
+    expected_screen_assert_pixel(&frame, 85, 75, 0x1D, 0x2B, 0x53);
+    expected_screen_assert_pixel(&frame, 5, 85, 0x20, 0xC8, 0x40);
+    expected_screen_assert_pixel(&frame, 100, 75, 0x17, 0x7A, 0x32);
+    expected_screen_assert_pixel(&frame, 203, 104, 0x1D, 0x2B, 0x53);
+    expected_screen_assert_pixel(&frame, 210, 104, 0x2B, 0x82, 0x3E);
+    expected_screen_assert_pixel(&frame, 211, 104, 0x1D, 0x2B, 0x53);
+    expected_screen_assert_file(screen_path(1), &frame);
+    expected_screen_free(&frame);
+    remove(screen_path(0));
+    remove(screen_path(1));
+}
+
+static void test_a_missing_pad_sheet_is_refused_before_the_game_runs(void) {
+    const char *const needles[] = {"fake_love: " FIXTURES "image_draw_missing_sheet.json: \"pad_sheet\": " FIXTURES
+                                   "image_draw_absent.png cannot be read",
+                                   NULL};
+    fake_love_cli_assert_failure("", SCREENS_GAME FIXTURES "image_draw_missing_sheet.json " CAPTURE " " STATE,
+                                 CAPTURE, STATE, STDERR_LOG, needles);
+    assert(!fake_love_cli_file_exists(screen_path(0)) && !fake_love_cli_file_exists(screen_path(1)) &&
+           "a refused replay writes no screen PNG");
+}
+
 int main(void) {
     test_image_misuse_is_refused_with_a_message_and_valid_calls_succeed();
     test_an_uncaught_fractional_position_is_fatal_and_names_draw_and_the_frame();
     test_a_draw_copies_opaque_texels_clipped_and_tinted_and_skips_transparent_ones();
     test_refused_draws_a_draw_on_the_screen_and_a_later_image_data_change_leave_the_canvas();
+    test_scaled_tinted_and_blended_draws_reach_the_screen_with_the_replay_s_pad_sheet();
+    test_a_missing_pad_sheet_is_refused_before_the_game_runs();
     remove(PNG);
     remove(CAPTURE);
     remove(STATE);

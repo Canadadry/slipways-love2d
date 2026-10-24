@@ -1,11 +1,10 @@
 #include <assert.h>
-#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "../tools/fake_love/png_file.h"
+#include "expected_screen.h"
 #include "fake_love_cli.h"
 
 #define FIXTURES FAKE_LOVE_CLI_FIXTURES
@@ -18,12 +17,6 @@
 
 #define SOURCE_WIDTH 160
 #define SOURCE_HEIGHT 120
-
-typedef struct {
-    unsigned char *pixels;
-    int width;
-    int height;
-} frame_t;
 
 static char *screen_path(int frame) {
     static char path[128];
@@ -65,66 +58,15 @@ static void sparse_texel(int i, int j, unsigned char rgba[4]) {
     memcpy(rgba, texel, 4);
 }
 
-static frame_t black_frame(int width, int height) {
-    frame_t frame = {malloc((size_t)width * (size_t)height * 4), width, height};
-    assert(frame.pixels != NULL);
-    memset(frame.pixels, 0, (size_t)width * (size_t)height * 4);
-    for (int k = 0; k < width * height; k++)
-        frame.pixels[4 * k + 3] = 0xFF;
-    return frame;
-}
-
-static void expect_present(frame_t *frame, void (*texel_of)(int, int, unsigned char[4]), double x, double y,
+static void expect_present(expected_screen_t *frame, expected_screen_texel_t texel_of, double x, double y,
                            double scale) {
-    double x1 = x + SOURCE_WIDTH * scale;
-    double y1 = y + SOURCE_HEIGHT * scale;
-    for (int j = 0; j < frame->height; j++) {
-        double cy = j + 0.5;
-        if (!(y <= cy && cy < y1))
-            continue;
-        int row = (int)floor((cy - y) / scale);
-        row = row < 0 ? 0 : row > SOURCE_HEIGHT - 1 ? SOURCE_HEIGHT - 1 : row;
-        for (int i = 0; i < frame->width; i++) {
-            double cx = i + 0.5;
-            if (!(x <= cx && cx < x1))
-                continue;
-            int column = (int)floor((cx - x) / scale);
-            column = column < 0 ? 0 : column > SOURCE_WIDTH - 1 ? SOURCE_WIDTH - 1 : column;
-            unsigned char rgba[4];
-            texel_of(column, row, rgba);
-            if (rgba[3] == 0xFF)
-                memcpy(frame->pixels + 4 * ((size_t)j * (size_t)frame->width + (size_t)i), rgba, 4);
-        }
-    }
+    static const int whole[4] = {0, 0, SOURCE_WIDTH, SOURCE_HEIGHT};
+    static const unsigned char white[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+    expected_screen_draw(frame, texel_of, whole, x, y, scale, scale, white);
 }
 
-static frame_t load_screen(int frame) {
-    frame_t loaded = {0};
-    const char *reason = png_file_load(screen_path(frame), &loaded.pixels, &loaded.width, &loaded.height);
-    if (reason != NULL)
-        fprintf(stderr, "%s: %s\n", screen_path(frame), reason);
-    assert(reason == NULL && "the listed frame's screen PNG must load");
-    return loaded;
-}
-
-static void assert_frame(int frame, const frame_t *expected) {
-    frame_t actual = load_screen(frame);
-    assert(actual.width == expected->width && actual.height == expected->height);
-    size_t size = (size_t)expected->width * (size_t)expected->height * 4;
-    if (memcmp(actual.pixels, expected->pixels, size) != 0) {
-        size_t k = 0;
-        while (actual.pixels[k] == expected->pixels[k])
-            k++;
-        fprintf(stderr, "f%d: pixel (%zu, %zu) differs\n", frame, k / 4 % (size_t)expected->width,
-                k / 4 / (size_t)expected->width);
-        assert(!"the screen must match the expected frame");
-    }
-    free(actual.pixels);
-}
-
-static void assert_pixel(const frame_t *frame, int i, int j, unsigned r, unsigned g, unsigned b) {
-    const unsigned char *pixel = frame->pixels + 4 * ((size_t)j * (size_t)frame->width + (size_t)i);
-    assert(pixel[0] == r && pixel[1] == g && pixel[2] == b && pixel[3] == 0xFF);
+static void assert_frame(int frame, const expected_screen_t *expected) {
+    expected_screen_assert_file(screen_path(frame), expected);
 }
 
 static void assert_runs(const char *environment, const char *args) {
@@ -142,32 +84,32 @@ static void test_each_listed_frame_writes_its_whole_screen(void) {
     assert_runs("", RUN);
     assert(!fake_love_cli_file_exists(screen_path(1)) && "an unlisted frame writes no PNG");
 
-    frame_t tall = black_frame(390, 844);
+    expected_screen_t tall = expected_screen_black(390, 844);
     expect_present(&tall, gradient_texel, 0, 64.75, 2.4375);
-    assert_pixel(&tall, 18, 100, 7, 14, 0x80);
-    assert_pixel(&tall, 19, 100, 8, 14, 0x80);
-    assert_pixel(&tall, 0, 64, 0, 0, 0);
-    assert_pixel(&tall, 0, 65, 0, 0, 0x80);
-    assert_pixel(&tall, 0, 74, 0, 4, 0x80);
-    assert_pixel(&tall, 389, 356, 159, 119, 0x80);
-    assert_pixel(&tall, 389, 357, 0, 0, 0);
+    expected_screen_assert_pixel(&tall, 18, 100, 7, 14, 0x80);
+    expected_screen_assert_pixel(&tall, 19, 100, 8, 14, 0x80);
+    expected_screen_assert_pixel(&tall, 0, 64, 0, 0, 0);
+    expected_screen_assert_pixel(&tall, 0, 65, 0, 0, 0x80);
+    expected_screen_assert_pixel(&tall, 0, 74, 0, 4, 0x80);
+    expected_screen_assert_pixel(&tall, 389, 356, 159, 119, 0x80);
+    expected_screen_assert_pixel(&tall, 389, 357, 0, 0, 0);
     assert_frame(0, &tall);
-    free(tall.pixels);
+    expected_screen_free(&tall);
 
-    frame_t resized = black_frame(640, 480);
+    expected_screen_t resized = expected_screen_black(640, 480);
     expect_present(&resized, gradient_texel, -10.5, 7.25, 3.1);
     assert_frame(2, &resized);
-    free(resized.pixels);
+    expected_screen_free(&resized);
 
-    frame_t empty = black_frame(640, 480);
+    expected_screen_t empty = expected_screen_black(640, 480);
     assert_frame(3, &empty);
 
     expect_present(&empty, gradient_texel, 0, 0, 1);
     expect_present(&empty, sparse_texel, 100.5, 50.5, 0.75);
-    assert_pixel(&empty, 100, 50, 0xFF, 0, 0);
-    assert_pixel(&empty, 101, 50, 101, 50, 0x80);
+    expected_screen_assert_pixel(&empty, 100, 50, 0xFF, 0, 0);
+    expected_screen_assert_pixel(&empty, 101, 50, 101, 50, 0x80);
     assert_frame(4, &empty);
-    free(empty.pixels);
+    expected_screen_free(&empty);
     remove_screens();
 }
 
