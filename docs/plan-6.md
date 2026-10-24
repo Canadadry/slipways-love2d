@@ -634,3 +634,21 @@ Once shown it stays shown. Call order for step 14: `read_pad_buttons` →
 them through `pad_touch` at 390×844 and `game.attract` (the revealing
 touch keeps the demo playing, the next touch leaves it). `lua-test-game`
 89 → 95 ms (under the ~10 ms threshold), no full gate. `make e2e` 20/20.
+
+### Step 3.14
+
+`love.virtual_pad` (`game/love/`, pure): `init`, `update(virtual_pad,
+gamepad_mask, touches, mouse, width, height)` → `pad_buttons`, `shown`;
+it recomputes the layout each frame and runs `pad_visibility.filter` →
+`pad_touch.update` → `pad_touch.combine`, keeping `placed` and
+`touch_state.stick` for step 16. With no touch and no button the gamepad
+mask passes unchanged (its test samples masks: all 4096 would cost ~80 ms
+of `make test`). `main.lua` polls the touches and the mouse every frame
+and feeds `virtual_pad.update` before `input_step.run`; the size comes
+from a new `screen.get_dimensions()`, shared with the present (deviation
+from the PRD: `love.graphics` is only allowed in `game/love/`). Nothing
+drawn. Scratch replays (not committed): an A+B touch chord after a
+revealing touch triggers the cheat; a touch or click on Start at 390×844
+gives the same capture as a gamepad Start. `lua-test-game` +6.5 ms, no
+full gate. `make e2e`: median 4.76 s vs 4.56 s at 87e8fdb, per frame
+1.089 ms, projection 5.57 s ≤ 8 s. `make e2e` and `make end-state` 20/20.

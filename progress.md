@@ -54,7 +54,7 @@
   - [x] Step 3.13 — show / hide
     - [x] Chunk 1 — love.pad_visibility alone
     - [x] Chunk 2 — tests through pad_touch and attract
-  - [ ] Step 3.14 — wire into main.lua, no drawing
+  - [x] Step 3.14 — wire into main.lua, no drawing
     - [x] Chunk 1 — love.virtual_pad and its tests
     - [x] Chunk 2 — main.lua's readers, replays, timings
   - [ ] Step 3.15 — touch e2e replays
