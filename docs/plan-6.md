@@ -571,3 +571,18 @@ the module, compared exactly with the generator's frame, plus
 translucent-image refusal, so no opacity test. Gate, 11 rounds: −1.27 %
 vs 102b0ab, −11.38 % vs 8c830c6, −88.64 % vs 8dff812. `make love-file`
 ships `pad.png`. `make e2e` and `make end-state` 20/20.
+
+### Step 3.10
+
+`love.pad_layout` (`game/love/`, pure) holds the reference table:
+`STICK_ZONE` (0, 0, 80, 120), `STICK_BASE_SIZE` 48, `STICK_KNOB_SIZE` 24,
+`BUTTONS` keyed by gamepad name, each 24×24 — Y (108, 36), X (84, 60),
+B (132, 60), A (108, 84) (diamond centred at (120, 72)), L (4, 4),
+R (132, 4), Back (54, 94), Start (82, 94). Rectangles half-open; a touch
+that starts on a button belongs to it, never to the stick zone (L and
+Back lie inside it: rule for step 12). `place(pad)` gives exact
+unrounded screen rectangles: 58.5 points per button at 390×844 (≥ 44).
+Back and Start are "small" by their drawn pill, not by a smaller touch
+area. 16 tests in `tests/lua/game/test_pad_layout.lua` (390×844, 640×480,
+844×390, 820×1180, 200×420). `lua-test-game` own time: no measurable
+growth, so no full gate (§2). `make e2e` 20/20.
