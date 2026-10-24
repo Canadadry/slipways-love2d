@@ -40,7 +40,7 @@ void canvas_clear(canvas_store_t *store, const unsigned char rgba[4]);
 
 /* The current colour of canvas_plot and canvas_fill_range until the next
  * call, whatever is selected or cleared meanwhile; opaque white in a new
- * store. Asserts rgba[3] is 0xFF. */
+ * store. */
 void canvas_set_color(canvas_store_t *store, const unsigned char rgba[4]);
 
 void canvas_get_color(const canvas_store_t *store, unsigned char rgba[4]);

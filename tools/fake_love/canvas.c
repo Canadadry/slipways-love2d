@@ -59,7 +59,6 @@ void canvas_clear(canvas_store_t *store, const unsigned char rgba[4]) {
 }
 
 void canvas_set_color(canvas_store_t *store, const unsigned char rgba[4]) {
-    assert(rgba[3] == 0xFF && "canvas_set_color: setColor refuses translucent colours, blending is not modelled");
     memcpy(store->color, rgba, sizeof store->color);
 }
 
@@ -69,20 +68,20 @@ void canvas_get_color(const canvas_store_t *store, unsigned char rgba[4]) {
 
 void canvas_plot(canvas_store_t *store, int x, int y) {
     assert(x >= 0 && x < CANVAS_WIDTH && y >= 0 && y < CANVAS_HEIGHT && "canvas_plot: pixel off the canvas");
-    assert(store->color[3] == 0xFF && "canvas_plot: a translucent colour needs blending, which step 9 decides");
     if (store->target == CANVAS_NONE) {
         return;
     }
+    assert(store->color[3] == 0xFF && "canvas_plot: points refuses a translucent colour on a canvas, blending is not modelled");
     memcpy(store->pixels[store->target] + 4 * (y * CANVAS_WIDTH + x), store->color, 4);
 }
 
 void canvas_fill_range(canvas_store_t *store, int left, int top, int right, int bottom) {
     assert(left >= 0 && left <= right && right < CANVAS_WIDTH && "canvas_fill_range: columns off the canvas or empty");
     assert(top >= 0 && top <= bottom && bottom < CANVAS_HEIGHT && "canvas_fill_range: rows off the canvas or empty");
-    assert(store->color[3] == 0xFF && "canvas_fill_range: a translucent colour needs blending, which step 9 decides");
     if (store->target == CANVAS_NONE) {
         return;
     }
+    assert(store->color[3] == 0xFF && "canvas_fill_range: rectangle refuses a translucent colour on a canvas, blending is not modelled");
     for (int row = top; row <= bottom; row++) {
         unsigned char *pixel = store->pixels[store->target] + 4 * (row * CANVAS_WIDTH + left);
         for (int column = left; column <= right; column++, pixel += 4) {
@@ -103,6 +102,7 @@ void canvas_draw_texels(canvas_store_t *store, const canvas_source_t *source, co
     if (store->target == CANVAS_NONE) {
         return;
     }
+    assert(store->color[3] == 0xFF && "canvas_draw_texels: draw refuses a translucent colour on a canvas, blending is not modelled");
     int first_i = (int)clamp_long(-(long long)x, 0, area->width);
     int end_i = (int)clamp_long((long long)CANVAS_WIDTH - x, first_i, area->width);
     int first_j = (int)clamp_long(-(long long)y, 0, area->height);

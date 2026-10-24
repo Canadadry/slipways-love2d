@@ -50,24 +50,21 @@ For one replay it:
    compared with the replay's `.end-state`.
 
 **Fatal errors.** Anything outside the contract below is fatal, with one
-of three errors, each naming its cause:
+of two errors, each naming its cause:
 
 1. a LÖVE function not on the list (see The LÖVE functions the game may
    use), checked when the game reads or creates the field, in both
    binaries: `love.timer is not in the function list of docs/love-port/design.md`;
-2. a colour that is neither one of the 16 nor white, checked by `setColor`
-   on the bytes it would draw, in `tmp/fake_love` only (see Colour):
-   `love.graphics.setColor: 4C0000 is not one of the 16 palette colours nor white FFFFFF (pass each palette byte as byte / 255)`;
-3. a pixel of another colour on canvas 0, or no canvas, checked at the end
+2. a pixel of another colour on canvas 0, or no canvas, checked at the end
    of each frame, in `tmp/fake_love` only (see Capture):
    `fake_love: frame f3: pixel (0, 0) of canvas 0 is FF0000FF, not one of the 16 palette colours (1 such pixels in the frame)`.
 
-The first two are ordinary Lua errors, carrying the game's `file:line:`
+The first is an ordinary Lua error, carrying the game's `file:line:`
 like every refusal of the fake: uncaught, the run fails (exit 1, no
 capture nor state file); caught by `pcall`, the game goes on. No game code
-can catch the third. `love_capture_check` keeps the function list but
-allows any colour in `setColor` and never checks frames: its programs
-measure real LÖVE, the palette is the game's contract.
+can catch the second. `love_capture_check` keeps the function list and
+never checks frames: its programs measure real LÖVE, the palette is the
+game's contract.
 
 ### `make test` and the fake's checks
 
@@ -366,36 +363,37 @@ it keeps every snapped value in a `long` and both edges far inside the
 `rectangle_integers`, `rectangle_subpixel`, `rectangle_columns`,
 `rectangle_rows`, `rectangle_offcanvas`, `rectangle_forms`.
 
-**Colour.** `setColor(r, g, b)` and `setColor(r, g, b, 1)` are the only
-forms: three Lua numbers, or four whose fourth equals 1. The current colour
+**Colour.** `setColor(r, g, b)` and `setColor(r, g, b, a)` are the only
+forms: three or four finite Lua numbers. The current colour
 is opaque white (`FFFFFFFF`) until the first `setColor`, then the last one
 set, for the whole run: from `love.load` on (before any canvas exists),
 across frames, canvas switches, `setCanvas()` and `clear`, which ignores
-it and leaves it unchanged. Each component becomes a byte as real LÖVE
-11.5 does: to single precision, clamped to [0, 1], times 255 in single
-precision, **truncated**, unlike `clear`, which rounds: a component 0.5
-gives 127 with `setColor` and 128 with `clear`, 0.3 gives 76, and
-`128/255 × (1 − 2^-30)`, one float step below `128/255`, gives 127. A
-point or rectangle drawn takes the colour's four bytes, alpha `FF`, over
-any pixel, transparent included. Every refusal is an error starting
-`love.graphics.setColor: ` and leaves the current colour unchanged: another
-argument count (a fifth argument too), a non-number (no string coercion,
-no table form), a non-finite component, and an alpha other than 1, because
-real LÖVE blends a translucent colour with the pixels under it and the fake
-does not model the blender. In `tmp/fake_love`, the three bytes the
-conversion gives must then be one of the 16 triples of the Capture table
-or white `FFFFFF`, whatever numbers gave them (`2, -1, 77/255` is colour
-8); anything else is refused naming those bytes:
-`love.graphics.setColor: 4C0000 is not one of the 16 palette colours nor white FFFFFF (pass each palette byte as byte / 255)`.
-White is accepted because it tints texels to themselves (see Images).
-`clear`, `setPixel` and texels are not checked at the call: on a
-scratch canvas any bytes are legal, and what reaches canvas 0 is judged at
-the end of the frame (see Capture). `love_capture_check` accepts any
-opaque colour. **The rule for the game: set only palette colours and
-white; pass each palette byte as the Lua expression `byte / 255`**, which
-always gives that byte; a component computed any other way can lose a
-whole byte. Never pass an alpha: translucent colours blend in real LÖVE
-and are refused by the fake. Captures: `color_bytes`, `color_precision`,
+it and leaves it unchanged. Each component, alpha included, becomes a byte
+as real LÖVE 11.5 does: to single precision, clamped to [0, 1], times 255
+in single precision, **truncated**, unlike `clear`, which rounds: a
+component 0.5 gives 127 with `setColor` and 128 with `clear`, 0.3 gives 76,
+`128/255 × (1 − 2^-30)`, one float step below `128/255`, gives 127, and an
+alpha 2 gives `FF`. Any four bytes are a legal colour. Every refusal is an
+error starting `love.graphics.setColor: ` and leaves the current colour
+unchanged: another argument count (`takes 3 or 4 numbers, not 5
+arguments`), a non-number (no string coercion, no table form) and a
+non-finite component. A point, rectangle or texel drawn onto a canvas
+takes an opaque colour's bytes over any pixel, transparent included; with
+a translucent colour (alpha not `FF`, `00` included) `points`, `rectangle`
+and `draw(image, quad, x, y)` refuse, once their own arguments are
+checked, whether or not a pixel would land, and change no pixel, because
+real LÖVE blends a translucent colour with the pixels under it and the
+fake does not model the blender on a canvas:
+`love.graphics.points: the colour's alpha is 7F, not FF (a translucent colour is drawn only onto the screen: blending on a canvas is not modelled)`.
+Onto the screen, any colour is accepted and the draw models nothing.
+`setColor`, `clear`, `setPixel` and texels are not checked against the
+palette: on a scratch canvas any opaque bytes are legal, and what reaches
+canvas 0 is judged at the end of the frame (see Capture). **The rule for
+the game: on a canvas, set only palette colours and white, with no alpha;
+pass each palette byte as the Lua expression `byte / 255`**, which always
+gives that byte; a component computed any other way can lose a whole byte.
+White is the colour that tints texels to themselves (see Images). **On the
+screen, any colour.** Captures: `color_bytes`, `color_precision`,
 `color_state`.
 
 **Image data.** `love.image` is nil while `conf.lua` runs, then holds
@@ -604,14 +602,15 @@ fractional draws stay refused.** Capture: `filter_nearest`.
 ### The LÖVE functions the game may use
 
 The fake implements exactly this list; extending it is a decision recorded
-here, with its real-LÖVE capture.
+here, verified by its real-LÖVE capture, or, for plan 6's extensions
+(screen, window, touches), by fake C tests and screen tests.
 
 - Loop: `love.conf(t)`, `love.load(arg)`, `love.update(dt)`, `love.draw()`.
   The fake calls `love.conf` with empty `window`, `modules` and `audio`
   tables and reads nothing back. The game ignores `dt`: one `update` is one
   game frame (60 per second).
 - Drawing: `love.graphics.newCanvas(160, 120)`, `setCanvas`, `clear`,
-  `setColor(r, g, b)` or `setColor(r, g, b, 1)`, `points(x1, y1, …)` or
+  `setColor(r, g, b[, a])`, `points(x1, y1, …)` or
   `points({x1, y1, …})`,
   `rectangle("fill", x, y, w, h)`, `newImage(imagedata)`,
   `newQuad(x, y, w, h, sw, sh)`, `draw(image, quad, x, y)`,
@@ -649,8 +648,8 @@ Small LÖVE programs, each exercising some functions of the list, and the PNG
 real LÖVE 11.5 draws for each, read from the canvas
 (`Canvas:newImageData():encode("png")`, never a window screenshot).
 In the fake, `tmp/love_capture_check` runs them under the function-list
-guard, so their drawing part uses listed functions only, but with any
-opaque colour allowed in `setColor` and no frame check: they measure
+guard, so their drawing part uses listed functions only, with opaque
+colours on the harness canvas and no frame check: they measure
 LÖVE's conversions and transparent pixels. `make love-capture` runs them in real LÖVE under Xvfb with Mesa software
 rendering and rewrites the PNGs; it is the **only** place a virtual screen is
 allowed (see `CLAUDE.md`), agents and CI may run it, and it is outside

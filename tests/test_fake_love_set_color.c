@@ -13,7 +13,7 @@
 #define PNG "tmp/test_fake_love_set_color.png"
 #define PROGRAMS FAKE_LOVE_CLI_FIXTURES "capture/"
 
-static void test_set_color_misuse_is_refused_with_a_message_and_opaque_colours_succeed(void) {
+static void test_set_color_misuse_is_refused_with_a_message_and_any_finite_colour_succeeds(void) {
     int status = fake_love_cli_run("", FIXTURES "set_color_log " FIXTURES "three_frames.json " CAPTURE " " STATE,
                                    CAPTURE, STATE, STDERR_LOG);
     assert(status == 0 && "the setColor log game must run");
@@ -21,28 +21,44 @@ static void test_set_color_misuse_is_refused_with_a_message_and_opaque_colours_s
         STATE,
         "graphics clear draw newCanvas newImage newQuad points pop push rectangle setCanvas setColor setDefaultFilter "
         "translate\n"
-        "none: love.graphics.setColor: takes 3 numbers or 4 with alpha 1, not 0 arguments\n"
-        "two: love.graphics.setColor: takes 3 numbers or 4 with alpha 1, not 2 arguments\n"
-        "five: love.graphics.setColor: takes 3 numbers or 4 with alpha 1, not 5 arguments\n"
+        "none: love.graphics.setColor: takes 3 or 4 numbers, not 0 arguments\n"
+        "two: love.graphics.setColor: takes 3 or 4 numbers, not 2 arguments\n"
+        "five: love.graphics.setColor: takes 3 or 4 numbers, not 5 arguments\n"
         "table: love.graphics.setColor: argument 1 is a table, not a number (the table form is not supported)\n"
         "string: love.graphics.setColor: argument 1 is a string, not a number\n"
         "nil: love.graphics.setColor: argument 2 is a nil, not a number\n"
         "boolean: love.graphics.setColor: argument 3 is a boolean, not a number\n"
         "nan: love.graphics.setColor: argument 1 is not finite\n"
         "infinity: love.graphics.setColor: argument 2 is not finite\n"
-        "alpha 0: love.graphics.setColor: alpha is 0, only 1 is supported (translucent colours are not modelled)\n"
-        "alpha half: love.graphics.setColor: alpha is 0.5, only 1 is supported (translucent colours are not "
-        "modelled)\n"
-        "alpha 2: love.graphics.setColor: alpha is 2, only 1 is supported (translucent colours are not modelled)\n"
+        "alpha infinity: love.graphics.setColor: argument 4 is not finite\n"
+        "alpha 0: ok\n"
+        "alpha half: ok\n"
+        "alpha 2: ok\n"
         "alpha nil: love.graphics.setColor: argument 4 is a nil, not a number\n"
         "clamped: ok\n"
         "alpha 1: ok\n"
         "white: ok\n"
         "palette: ok\n"
-        "outside: love.graphics.setColor: 4C0000 is not one of the 16 palette colours nor white FFFFFF (pass each "
-        "palette byte as byte / 255)\n"
-        "one byte off: love.graphics.setColor: FF004C is not one of the 16 palette colours nor white FFFFFF (pass "
-        "each palette byte as byte / 255)\n");
+        "outside: ok\n"
+        "one byte off: ok\n"
+        "canvas half points: love.graphics.points: the colour's alpha is 7F, not FF"
+        " (a translucent colour is drawn only onto the screen: blending on a canvas is not modelled)\n"
+        "canvas half rectangle: love.graphics.rectangle: the colour's alpha is 7F, not FF"
+        " (a translucent colour is drawn only onto the screen: blending on a canvas is not modelled)\n"
+        "canvas half draw: love.graphics.draw: the colour's alpha is 7F, not FF"
+        " (a translucent colour is drawn only onto the screen: blending on a canvas is not modelled)\n"
+        "canvas bad argument: love.graphics.points: argument 1 is a string, not a number\n"
+        "canvas alpha 0 off the canvas: love.graphics.points: the colour's alpha is 00, not FF"
+        " (a translucent colour is drawn only onto the screen: blending on a canvas is not modelled)\n"
+        "screen alpha 0 points: ok\n"
+        "screen alpha 0 rectangle: ok\n"
+        "screen alpha 0 draw: ok\n"
+        "screen half points: ok\n"
+        "screen half rectangle: ok\n"
+        "screen half draw: ok\n"
+        "scratch outside points: ok\n"
+        "scratch outside rectangle: ok\n"
+        "scratch outside draw: ok\n");
 }
 
 static void test_transform_misuse_is_refused_with_a_message_and_the_offset_resets_before_each_draw(void) {
@@ -98,16 +114,17 @@ static void test_transform_misuse_is_refused_with_a_message_and_the_offset_reset
         "f2 draw offset: 0 0, free depth: 125\n");
 }
 
-static void test_an_uncaught_translucent_colour_is_fatal_and_names_set_color_and_the_frame(void) {
-    const char *const needles[] = {"love.draw f0: ", "main.lua:2: love.graphics.setColor: ", "alpha is 0.5", NULL};
-    fake_love_cli_assert_failure("", FIXTURES "set_color_uncaught " FIXTURES "three_frames.json " CAPTURE " " STATE,
-                                 CAPTURE, STATE, STDERR_LOG, needles);
+static void test_a_translucent_colour_outside_the_palette_drawn_on_the_screen_passes_the_frame(void) {
+    int status = fake_love_cli_run("", FIXTURES "set_color_screen " FIXTURES "three_frames.json " CAPTURE " " STATE,
+                                   CAPTURE, STATE, STDERR_LOG);
+    assert(status == 0 && "the screen draws must pass every frame");
+    fake_love_cli_assert_text(STATE, "ran\n");
 }
 
-static void test_an_uncaught_colour_outside_the_palette_is_fatal_and_names_its_bytes(void) {
-    const char *const needles[] = {"love.draw f0: ", "main.lua:2: love.graphics.setColor: ",
-                                   "4C0000 is not one of the 16 palette colours nor white FFFFFF", NULL};
-    fake_love_cli_assert_failure("", FIXTURES "set_color_outside " FIXTURES "three_frames.json " CAPTURE " " STATE,
+static void test_a_colour_outside_the_palette_drawn_on_canvas_zero_fails_the_frame_and_names_its_bytes(void) {
+    const char *const needles[] = {"fake_love: frame f0: pixel (",
+                                   "of canvas 0 is 4C0000FF, not one of the 16 palette colours", NULL};
+    fake_love_cli_assert_failure("", FIXTURES "set_color_canvas_zero " FIXTURES "three_frames.json " CAPTURE " " STATE,
                                  CAPTURE, STATE, STDERR_LOG, needles);
 }
 
@@ -131,10 +148,10 @@ static void test_refused_calls_keep_the_colour_set_at_load_time_without_a_canvas
 }
 
 int main(void) {
-    test_set_color_misuse_is_refused_with_a_message_and_opaque_colours_succeed();
+    test_set_color_misuse_is_refused_with_a_message_and_any_finite_colour_succeeds();
     test_transform_misuse_is_refused_with_a_message_and_the_offset_resets_before_each_draw();
-    test_an_uncaught_translucent_colour_is_fatal_and_names_set_color_and_the_frame();
-    test_an_uncaught_colour_outside_the_palette_is_fatal_and_names_its_bytes();
+    test_a_translucent_colour_outside_the_palette_drawn_on_the_screen_passes_the_frame();
+    test_a_colour_outside_the_palette_drawn_on_canvas_zero_fails_the_frame_and_names_its_bytes();
     test_refused_calls_keep_the_colour_set_at_load_time_without_a_canvas();
     remove(PNG);
     remove(CAPTURE);
