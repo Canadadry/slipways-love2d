@@ -102,6 +102,7 @@ static void test_every_listed_use_passes(void) {
                                  "function love.draw()\nend\n"
                                  "function love.gamepadpressed(j, b)\nend\n"
                                  "love .gamepadreleased=function(j, b)\nend\n"
+                                 "function love.resize(w, h)\nend\n"
                                  "local pads = love.joystick.getJoysticks()\n"
                                  "local data = love.filesystem.read('a')\n"
                                  "love.filesystem.write('a', data)\n"
@@ -119,6 +120,7 @@ static void test_every_listed_use_passes(void) {
                "  love.graphics.push()\n"
                "  love.graphics.translate(1, 1)\n"
                "  love.graphics.pop()\n"
+               "  local w, h = love.graphics.getDimensions()\n"
                "  local data = love.image.newImageData(1, 1)\n"
                "  local img = love.graphics.newImage(data)\n"
                "  local q = love.graphics.newQuad(0, 0, 1, 1, 1, 1)\n"
@@ -170,13 +172,15 @@ static void test_graphics_and_image_outside_the_glue_directory_fail(void) {
     write_file(ROOT "/p8/gfx.lua", "love.graphics.points({})\nlocal d = love.image.newImageData(1, 1)\n"
                                    "love.filesystem.read('a')\n");
     write_file(ROOT "/game/lovers/x.lua", "love.graphics.clear()\n");
+    write_file(ROOT "/game/lovers/y.lua", "local w, h = love.graphics.getDimensions()\n");
     write_file(ROOT "/main.lua", "function love.draw()\n  love.graphics.clear()\nend\n");
-    assert(run_guard("p8/gfx.lua game/lovers/x.lua main.lua") == 1);
+    assert(run_guard("p8/gfx.lua game/lovers/x.lua game/lovers/y.lua main.lua") == 1);
     assert(out_has(ROOT "/p8/gfx.lua:1: love.graphics is only allowed in game/love/\n"));
     assert(out_has(ROOT "/p8/gfx.lua:2: love.image is only allowed in game/love/\n"));
     assert(out_has(ROOT "/game/lovers/x.lua:1: love.graphics is only allowed in game/love/\n"));
+    assert(out_has(ROOT "/game/lovers/y.lua:1: love.graphics is only allowed in game/love/\n"));
     assert(out_has(ROOT "/main.lua:2: love.graphics is only allowed in game/love/\n"));
-    assert(out_lines() == 4);
+    assert(out_lines() == 5);
 }
 
 static void test_an_undeclared_global_read_fails_with_file_line_and_name(void) {

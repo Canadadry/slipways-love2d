@@ -1,11 +1,13 @@
 local CALLBACKS = {
     conf = true, load = true, update = true, draw = true, gamepadpressed = true, gamepadreleased = true,
+    resize = true,
 }
 
 local FUNCTIONS = {
     graphics = {
-        clear = true, draw = true, newCanvas = true, newImage = true, newQuad = true, points = true, pop = true,
-        push = true, rectangle = true, setCanvas = true, setColor = true, setDefaultFilter = true, translate = true,
+        clear = true, draw = true, getDimensions = true, newCanvas = true, newImage = true, newQuad = true,
+        points = true, pop = true, push = true, rectangle = true, setCanvas = true, setColor = true,
+        setDefaultFilter = true, translate = true,
     },
     image = { newImageData = true },
     joystick = { getJoysticks = true },

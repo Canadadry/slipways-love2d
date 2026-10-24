@@ -34,8 +34,9 @@ For one replay it:
    in memory; the real disk is never written by the game;
 3. calls `love.load(arg)`, `arg` being `{"--attract-after", "N"}` when the
    replay has `"attract_after": N` (plain decimal), `{}` otherwise;
-4. for each frame of `frames`: compares the held buttons with the previous
-   frame's, calls `love.gamepadreleased` then `love.gamepadpressed` for those
+4. for each frame of `frames`: on a frame carrying `resize`, makes the new
+   window size current and calls `love.resize(w, h)`; then compares the held
+   buttons with the previous frame's, calls `love.gamepadreleased` then `love.gamepadpressed` for those
    that changed, each in ascending button number, answers
    `Joystick:isGamepadDown` from the current list, calls `love.update(1/60)`
    then `love.draw()`;
@@ -190,7 +191,11 @@ PSX game's pad mapping:
 | LÖVE | `dpup` | `dpdown` | `dpleft` | `dpright` | `a` | `b` | `x` | `y` | `leftshoulder` | `rightshoulder` | `start` | `back` |
 
 **Pad semantics.** Nothing is held before frame 0, so frame 0 presses
-every button its list holds. Each frame, the fake first makes the frame's
+every button its list holds. Each frame, the fake first handles the frame's
+`resize` when it carries one: it makes the new size the one
+`love.graphics.getDimensions()` answers, then calls `love.resize(w, h)`
+(two numbers) when the game defines it; `love.resize` is never called for
+the start size. It then makes the frame's
 list current, then calls `love.gamepadreleased` for each button that went
 up, then `love.gamepadpressed` for each that went down, each group in
 ascending button number, then `love.update(1/60)` and `love.draw()`. A
@@ -204,16 +209,23 @@ answers from the current frame, from the start of its callbacks to the
 start of the next frame: false for everything during `love.load`, the last
 frame during `debug_state()`. With several names it is true when any is
 held; `guide`, `leftstick` and `rightstick` are never held; any other name
-fails with `Invalid gamepad button: <name>`. The ascending order is the
-fake's convention, not LÖVE's: the game must not depend on the order within
-a frame.
+fails with `Invalid gamepad button: <name>`. The ascending order and
+resize before the pad callbacks are the fake's convention, not LÖVE's (which
+delivers events as they arrive): the game must not depend on the order of
+the resize and pad callbacks within a frame.
 
 **Fake disk and arguments.** The replay members the fake reads are
-`input`, `frames`, `initial_save`, `bindings` and `attract_after`, each at
-most once: `initial_save` a non-empty string of an even number of hex
-digits, `bindings` the name of a `.cfg` file next to the replay,
-`attract_after` a positive integer; `start` is refused, other members are
-ignored. A refusal exits 1 before `love.load` and leaves no output.
+`input`, `frames`, `initial_save`, `bindings`, `attract_after` and
+`window`, each at most once: `initial_save` a non-empty string of an even
+number of hex digits, `bindings` the name of a `.cfg` file next to the
+replay, `attract_after` a positive integer, `window` the window size
+`[w, h]` for the run until a resize (640×480 when absent); `start` is
+refused, other members are ignored. A frame holds `pad` (required) and
+optionally `resize: [w, h]`, the window size from the start of that frame
+on, which must differ from the size in force (LÖVE calls `love.resize` only
+on a change); any other frame key is refused. `window` and `resize` are
+each two integers from 1 to 4096, in LÖVE units, one unit one fake pixel
+(`highdpi` is not modelled; `t.window` set by `love.conf` is ignored). A refusal exits 1 before `love.load` and leaves no output.
 `love.filesystem` is nil in `conf.lua` and holds exactly `read`, `write`
 and `getInfo` from `main.lua` on. In-memory files lie over the game
 directory, visible read-only, and shadow its files of the same name; the
@@ -605,7 +617,8 @@ The fake implements exactly this list; extending it is a decision recorded
 here, verified by its real-LÖVE capture, or, for plan 6's extensions
 (screen, window, touches), by fake C tests and screen tests.
 
-- Loop: `love.conf(t)`, `love.load(arg)`, `love.update(dt)`, `love.draw()`.
+- Loop: `love.conf(t)`, `love.load(arg)`, `love.update(dt)`, `love.draw()`,
+  `love.resize(w, h)` (see Pad semantics).
   The fake calls `love.conf` with empty `window`, `modules` and `audio`
   tables and reads nothing back. The game ignores `dt`: one `update` is one
   game frame (60 per second).
@@ -616,7 +629,9 @@ here, verified by its real-LÖVE capture, or, for plan 6's extensions
   `newQuad(x, y, w, h, sw, sh)`, `draw(image, quad, x, y)`,
   `draw(canvas, x, y, 0, s, s)` onto the screen only (see The present),
   `setDefaultFilter("nearest", "nearest")`,
-  `push()`, `pop()`, `translate(dx, dy)` with integer offsets.
+  `push()`, `pop()`, `translate(dx, dy)` with integer offsets,
+  `getDimensions()` with no argument: the window width and height in LÖVE
+  units, whatever canvas is selected, from `main.lua` on.
 - Images: `love.image.newImageData(w, h)`, `love.image.newImageData(name)`,
   `ImageData:setPixel(x, y, r, g, b[, a])`, `ImageData:getPixel(x, y)`.
 - Pad: `love.joystick.getJoysticks`, `Joystick:isGamepadDown`, the callbacks
@@ -627,7 +642,7 @@ Reading anything else from `love`, a module table or an object, or creating
 a field in `love` or a module table, fails at that line with
 `love.timer is not in the function list of docs/love-port/design.md`
 (`love.graphics.getWidth`, `ImageData:mapPixel`, `love[1]` for other keys).
-The six callbacks are the only fields the game may set on `love`; before it
+The seven callbacks are the only fields the game may set on `love`; before it
 sets them, and for the four modules while `conf.lua` runs, they read `nil`.
 It is an ordinary Lua error, like every refusal of the fake. Both binaries,
 `tmp/fake_love` and `tmp/love_capture_check`, run under this guard.
