@@ -57,7 +57,7 @@
   - [x] Step 3.14 — wire into main.lua, no drawing
     - [x] Chunk 1 — love.virtual_pad and its tests
     - [x] Chunk 2 — main.lua's readers, replays, timings
-  - [ ] Step 3.15 — touch e2e replays
+  - [x] Step 3.15 — touch e2e replays
     - [x] Chunk 1 — pairing rule in e2e_limits.sh
     - [x] Chunk 2 — the four pad twins
     - [x] Chunk 3 — the four touch replays

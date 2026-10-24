@@ -652,3 +652,21 @@ revealing touch triggers the cheat; a touch or click on Start at 390×844
 gives the same capture as a gamepad Start. `lua-test-game` +6.5 ms, no
 full gate. `make e2e`: median 4.76 s vs 4.56 s at 87e8fdb, per frame
 1.089 ms, projection 5.57 s ≤ 8 s. `make e2e` and `make end-state` 20/20.
+
+### Step 3.15
+
+Four touch replays in `tests/e2e/` — `touch_first_slipway` (36 frames,
+pad_bankrupt's save), `touch_aim_diagonal` (65), `touch_year_hold` (54),
+`touch_show_hide` (121, a gamepad Up hides the pad, a mouse click held on
+Back) — at `window` 390×844 with touches at exact pad coordinates, each
+with its `pad_twin_<s>` (same frames by gamepad at 640×480); 552 frames.
+The twins' `.sha256`/`.end-state` come from `make replay` and
+`make end-state-baseline` (new files only); each touch replay's are byte
+copies. `tools/e2e_limits.sh` (one awk) fails `make e2e` on a touch
+replay without a twin, a twin without a touch replay, or different
+hashes. Every touch capture equals its twin's; moving a touch off its
+button changes it. Not proven by e2e: that a gamepad press drops a held
+touch (the hold stays under 30 frames either way); the step 3.13 Lua
+tests cover it. `make e2e`: 28/28 and `make end-state` 28/28; median
+5.60 s vs 4.99 s at 2466b82, 1.148 ms per frame per core, ≤ 8 s with
+3.4 s left for step 16.
