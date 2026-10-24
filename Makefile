@@ -28,7 +28,7 @@ ifneq ($(filter output-sync,$(.FEATURES)),)
 endif
 
 CC ?= cc
-CFLAGS ?= -std=c99 -Wall -Wextra -Werror -g
+CFLAGS ?= -std=c99 -Wall -Wextra -Werror -g -O2
 
 TMP_DIR := tmp
 
@@ -196,9 +196,7 @@ $(TMP_DIR)/test_fake_love_function_list: $(test_fake_love_function_list_objs) | 
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^) $(LUAJIT_LIBS) -lm
 
 # The one translation unit compiling the vendored stb_image.h.
-$(call objs,tools/fake_love/png_file.c): override CFLAGS += -Wno-unused-function -O2
-
-$(call objs,tests/expected_screen.c): override CFLAGS += -O2
+$(call objs,tools/fake_love/png_file.c): override CFLAGS += -Wno-unused-function
 
 test_fake_love_capture_objs := $(call objs,tests/test_fake_love_capture.c tests/fake_love_cli.c tools/fake_love/png_file.c)
 $(TMP_DIR)/test_fake_love_capture: $(test_fake_love_capture_objs) $(TMP_DIR)/love_capture_check $(FAKE_LOVE_HARNESS) $(FAKE_LOVE_FIXTURES) | $(TMP_DIR)

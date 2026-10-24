@@ -21,7 +21,7 @@
     - [x] Chunk 2 — images on the screen
     - [x] Chunk 3 — pad_sheet
     - [x] Chunk 4 — screen draw cases in test_fake_love_image_draw
-    - [ ] Chunk 5 — contract and measurements
+    - [x] Chunk 5 — contract and measurements
 - [ ] Phase 2 — Fractional, centred present and resizable window
   - [ ] Step 2.6 — layout module
   - [ ] Step 2.7 — present into the game rectangle, conf.lua

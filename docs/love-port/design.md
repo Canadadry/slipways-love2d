@@ -31,7 +31,14 @@ For one replay it:
 2. builds the fake disk before `love.load`: `save.bin` holds the bytes of
    the replay's `initial_save` (hex string) when present, `bindings.cfg` the
    content of the file named by `bindings` (resolved next to the replay, at
-   most 65 536 bytes); no other file is in memory. Writes from the game stay
+   most 65 536 bytes), `pad.png` the content of the file named by
+   `pad_sheet` (resolved next to the replay, at most 1 048 576 bytes, not
+   decoded here), which shadows the game directory's `pad.png`; no other
+   file is in memory. A `bindings` or `pad_sheet` file that is missing,
+   unreadable or over its limit fails the run before `love.load`, exit 1,
+   with no capture, state or PNG
+   (`fake_love: <replay>: "pad_sheet": <path> cannot be read`,
+   `… is over 1048576 bytes`). Writes from the game stay
    in memory; the real disk is never written by the game;
 3. calls `love.load(arg)`, `arg` being `{"--attract-after", "N"}` when the
    replay has `"attract_after": N` (plain decimal), `{}` otherwise;
@@ -137,7 +144,7 @@ file (the most frames) first, every replay rerun on every invocation (make
 does not see a Lua edit). It builds `tmp/fake_love` when missing. The game
 directory is `LOVE_E2E_GAME`, default `game`; a `%` in it becomes the
 replay's file name (`pad_title.json`), so a verification can give each
-replay its own stub. The replay's `initial_save`, `bindings` and
+replay its own stub. The replay's `initial_save`, `bindings`, `pad_sheet` and
 `attract_after` reach the game as the fake gives them; the game must define
 `debug_state`.
 
@@ -246,10 +253,14 @@ argument to `mouse.getPosition`) raises an error naming the function;
 `love.mouse.isDown: only isDown(1), the left button, is in the function list`.
 
 **Fake disk and arguments.** The replay members the fake reads are
-`input`, `frames`, `initial_save`, `bindings`, `attract_after`, `window`
-and `screens`, each at most once: `initial_save` a non-empty string of an even
-number of hex digits, `bindings` the name of a `.cfg` file next to the
-replay, `attract_after` a positive integer, `window` the window size
+`input`, `frames`, `initial_save`, `bindings`, `pad_sheet`, `attract_after`,
+`window` and `screens`, each at most once: `initial_save` a non-empty string
+of an even number of hex digits, `bindings` the name of a `.cfg` file next to
+the replay, `pad_sheet` the name of a `.png` file next to the replay, served
+as `pad.png` (5 to 64 characters `A-Za-z0-9_.-`, not starting with `.`;
+otherwise `"pad_sheet" <value> is not a .png file name of 5-64 characters
+A-Za-z0-9_.- next to the replay`; a bad PNG fails where the game loads it),
+`attract_after` a positive integer, `window` the window size
 `[w, h]` for the run until a resize (640×480 when absent), `screens` the
 frames whose screen is written as a PNG (see The screen): an array,
 possibly empty, of at most 16 integers, each a frame of the replay
@@ -259,7 +270,8 @@ file, the byte offset and the problem (`"screens" is <kind>, not an array
 of frame numbers`, `"screens" entry <v> is not an integer`, `"screens"
 entry <n> is not a frame of this replay (0-<last>)`, `"screens" entry <n>
 is not after <previous>`, `"screens" lists <n> frames, more than 16`,
-`"screens" given twice`); no replay of `tests/e2e/` carries it; `start` is
+`"screens" given twice`); no replay of `tests/e2e/` carries `screens` or
+`pad_sheet`; `start` is
 refused, other members are ignored. A frame holds `pad`, `resize`,
 `touches` and `mouse`, each optional and at most once; any other frame key
 is refused. `pad` lists the held buttons; a frame without it holds none.
@@ -445,7 +457,8 @@ checked, whether or not a pixel would land, and change no pixel, because
 real LÖVE blends a translucent colour with the pixels under it and the
 fake does not model the blender on a canvas:
 `love.graphics.points: the colour's alpha is 7F, not FF (a translucent colour is drawn only onto the screen: blending on a canvas is not modelled)`.
-Onto the screen, any colour is accepted and the draw models nothing.
+Onto the screen, any colour is accepted and the draw is tinted and blended
+(see The screen); points and rectangles onto the screen model nothing.
 `setColor`, `clear`, `setPixel` and texels are not checked against the
 palette: on a scratch canvas any opaque bytes are legal, and what reaches
 canvas 0 is judged at the end of the frame (see Capture). **The rule for
@@ -512,11 +525,13 @@ is an error starting `love.image.newImageData: `: the argument count or
 type, `invalid path "<name>": <reason>` as `love.filesystem` gives it,
 `Could not open file <name>. Does not exist.` (LÖVE's wording, a directory
 included), or `"<name>" is not a PNG the fake decodes as LÖVE 11.5 does:
-<reason>`. A translucent alpha loads and `getPixel` reads it, but
-`newImage` refuses it. **The rule for the game: load each asset once, in
+<reason>`. A translucent alpha loads, `getPixel` reads it and `newImage`
+takes it; an Image holding a translucent texel is drawn only onto the
+screen (see Images). **The rule for the game: load each asset once, in
 `love.load`, by its bare name in the game directory; keep the assets 8-bit
-RGB or RGBA (both assets are RGB); make no Image from an
-ImageData holding a translucent alpha.** Capture: `imagedata_files`.
+RGB or RGBA; an asset drawn onto a canvas (`sprites.png`, `font.png`, both
+RGB) has alpha exactly 0 or 1; an asset drawn only onto the screen (the pad
+sheets) may be RGBA with any alpha.** Capture: `imagedata_files`.
 
 **Images.** `love.graphics` holds exactly `clear`, `draw`, `newCanvas`,
 `newImage`, `newQuad`, `points`, `pop`, `push`, `rectangle`, `setCanvas`,
@@ -533,18 +548,35 @@ transparent pixels included; an alpha-`FF` texel writes, per channel,
 `round(c × t / 255)` (c the current colour's byte, t the texel's: a fourth
 colour rule, neither the floor nor llvmpipe's 8-bit blender multiply) and
 alpha `FF`. With white, the default colour, that is the texel itself. With
-the screen selected, a draw changes nothing the fake models. Images and
+the screen selected, the same checks hold, any colour is accepted, and the
+quad is drawn onto the screen at the translated integer position with
+scales 1 and 1 (see The screen). `newImage` remembers the Image's first
+texel in row order whose alpha is neither `00` nor `FF`, found once at the
+call; such an Image drawn onto a canvas is refused, after the translucent
+colour, with
+`love.graphics.draw: the image's texel (<x>, <y>) is <RRGGBBAA>, translucent (an Image with translucent texels is drawn only onto the screen: blending on a canvas is not modelled)`.
+**The scaled draw.** `draw(image, quad, x, y, 0, sx, sy)`, exactly seven
+arguments, draws onto the screen only: an Image (a Canvas is refused as
+`argument 1 is a Canvas, not an Image`), a Quad of the image's own size, a
+position `x`, `y` of two finite numbers of magnitude below 2^20 (fractions
+accepted), a rotation equal to 0, and two scales, each finite, greater than
+0 and at most 1024, equal or not, with the present's messages (see The
+present); arguments are checked in this order, then the state: a canvas
+selected (`a canvas is selected, a scaled Image is drawn only onto the
+screen (scaled draws onto a canvas are not modelled)`), a non-zero offset
+(`the offset is (<dx>, <dy>), not (0, 0) (a scaled draw onto the screen is
+not translated)`). Any colour is accepted. Images and
 Quads have no methods and are freed by the garbage collector. Every
 refusal is an error starting `love.graphics.newImage: `,
 `love.graphics.newQuad: ` or `love.graphics.draw: ` and changes nothing:
 another argument count (a trailing nil and the quad-less
 `draw(image, x, y)`; six arguments are taken as the present below, which
-refuses an Image), a file name, a table or a Canvas where an
+refuses an Image, seven as the scaled draw; the message is `takes 4
+arguments, an Image, a Quad, x and y, 6, a Canvas, x, y, 0, s and s, or 7,
+an Image, a Quad, x, y, 0, sx and sy, not <n>`), a file name, a table or a Canvas where an
 ImageData or Image belongs, a non-number (no string coercion), a
-non-finite or fractional value, a value out of range, a quad whose
-reference size differs from the image's (it would scale), and an
-ImageData holding an alpha byte other than `00` and `FF`, named by its
-pixel. Real LÖVE accepts most of these; the fake refuses them because
+non-finite or fractional value, a value out of range, and a quad whose
+reference size differs from the image's (it would scale). Real LÖVE accepts most of these; the fake refuses them because
 each one either draws texels LÖVE would blend or hides a bug. **The
 filter.** LÖVE's default filter is `linear` (`getDefaultFilter()` gives
 `linear linear 1`, a new Image is `linear`, wrap `clamp`). Integer draws
@@ -558,12 +590,15 @@ half a pixel: hence the refusals. `setDefaultFilter`: see Default
 filter. A translucent texel blends with llvmpipe's 8-bit
 arithmetic (`min(255, mul(s, a) + mul(d, 255 − a))`,
 `mul(p, q) = (p·q + (p·q >> 8) + 128) >> 8`), never into a palette byte,
-hence its refusal. **The rule for the game: build
-images with alpha exactly 0 or 1; call `setColor(1, 1, 1)` before drawing
+hence its refusal on a canvas; on the screen it is modelled (see The
+screen). **The rule for the game: build images drawn onto a canvas with
+alpha exactly 0 or 1 (images drawn only onto the screen may hold any
+alpha); call `setColor(1, 1, 1)` before drawing
 an image's own colours (a palette colour tinting an `FF` texel gives
 exactly that colour, any other tint gives non-palette bytes); pass
-integer positions, flooring fixed-point coordinates first; build each
-quad with integers, inside the image, on the image's own size.**
+integer positions onto a canvas, flooring fixed-point coordinates first;
+scale and place fractionally only onto the screen; build each quad with
+integers, inside the image, on the image's own size.**
 Captures: `draw_quads`, `draw_tint`.
 
 **The present.** `draw(canvas, x, y, 0, s, s)` is the only other draw
@@ -588,7 +623,7 @@ is zero, negative, above 1024 or non-finite
 argument count, a non-Canvas first argument, a non-number (no string
 coercion), a rotation other than 0, and a canvas holding a pixel whose
 alpha is neither `00` nor `FF`, the first in row order:
-`love.graphics.draw: the canvas's pixel (<x>, <y>) is <RRGGBBAA>, translucent (blending onto the screen is not modelled before plan 6 step 5)`.
+`love.graphics.draw: the canvas's pixel (<x>, <y>) is <RRGGBBAA>, translucent (a translucent canvas is not modelled on the screen)`.
 The canvas's 19 200 alpha bytes are scanned at every present. **The rule
 for the game: present canvas 0 once per frame, last in `love.draw`, with
 the screen selected, after `setColor(1, 1, 1)`, outside any `push`, at
@@ -597,34 +632,50 @@ rewrites this rule). Capture: `game_frame`.
 
 **The screen.** The fake keeps an RGBA8 screen framebuffer of the window
 size, opaque black `000000FF` at the start of every frame, after that
-frame's resize and `love.resize`. Only the present reaches it (points,
-rectangles, `clear` and quad draws with the screen selected change
+frame's resize and `love.resize`. Every screen draw reaches it: the
+present, the 4-argument quad draw with the screen selected and the scaled
+draw (points, rectangles and `clear` with the screen selected change
 nothing the fake models). The rasterisation rule, in double precision, for
-a source canvas `W`×`H` presented at `x`, `y` with scale `s`:
-`x1 = x + W * s`, `y1 = y + H * s`; screen pixel `(i, j)` has centre
-`cx = i + 0.5`, `cy = j + 0.5` and belongs to the draw when `x <= cx < x1`
-and `y <= cy < y1` (half-open: a centre on the left or top edge is in, on
-the right or bottom edge out, so two abutting draws neither overlap nor
-leave a gap); its texel is column `floor((cx - x) / s)` and row
-`floor((cy - y) / s)`, each clamped to `0 … W-1` / `0 … H-1` (the clamp
-only guards rounding), so a centre on the edge between two texels takes
-the right or lower one. An alpha-`FF` texel writes its four bytes; an
-alpha-`00` texel leaves the pixel. A later present lies over an earlier
-one; pixels off the window do not exist (clipping). On a 390×844 window at
+a source rectangle `qx`, `qy`, `qw`×`qh` (the quad, or the whole canvas for
+the present) drawn at `x`, `y` with scales `sx`, `sy` (`s`, `s` for the
+present, 1, 1 for the 4-argument draw): `x1 = x + qw * sx`,
+`y1 = y + qh * sy`; screen pixel `(i, j)` has centre `cx = i + 0.5`,
+`cy = j + 0.5` and belongs to the draw when `x <= cx < x1` and
+`y <= cy < y1` (half-open: a centre on the left or top edge is in, on the
+right or bottom edge out, so two abutting draws neither overlap nor leave
+a gap); its texel is column `qx + floor((cx - x) / sx)` and row
+`qy + floor((cy - y) / sy)`, each offset clamped to `0 … qw-1` /
+`0 … qh-1` (the clamp only guards rounding), so only the quad's own texels
+are sampled, nearest, and a centre on the edge between two texels takes
+the right or lower one. Each texel `c` is tinted by the current colour `t`
+on all four channels, `s_k = round(c_k × t_k / 255)` (the rule of Images),
+then blended in LÖVE's default `"alpha"` mode with llvmpipe's 8-bit
+arithmetic: each colour channel of the pixel `d` becomes
+`min(255, mul(s_k, s_a) + mul(d_k, 255 − s_a))`,
+`mul(p, q) = (p·q + (p·q >> 8) + 128) >> 8`, and its alpha stays `FF`
+(LÖVE's alpha `s_a + mul(d_a, 255 − s_a)` with `d_a = FF` is 255). So an
+alpha-`FF` source writes its bytes and an alpha-`00` source leaves the
+pixel: the present (white, opaque or transparent texels) needs no blend.
+**Translucent sprites are modelled on the screen, not proven opaque**: a
+sprite stretched onto a phone looks better with antialiased edges. A later
+draw lies over an earlier one; pixels off the window do not exist
+(clipping). On a 390×844 window at
 `(0, 64.75)` and scale 2.4375 = 39/16 every quantity is exact: column 18 is
 texel column 7 and column 19 texel column 8 (centre 19.5 on the edge);
 row 64 is black, row 65 texel row 0, row 74 texel row 4 (centre 74.5 on
 the edge), row 356 texel row 119, row 357 black. Real LÖVE rasterises in
 single precision on the GPU with a top-left rule that is also half-open;
 this double rule is the fake's contract, verified by fake tests only, not
-by a real-LÖVE capture. The screen is rasterised only on the frames the
+by a real-LÖVE capture, and so are the tint and blend on the screen. The
+screen is rasterised only on the frames the
 replay's `screens` lists, and no framebuffer exists in a run that lists
 none; every check of every screen draw runs on every frame, listed or not,
 and since the screen is black at each frame start and only `screens`
 reads it, nothing else can observe the difference. A listed frame's
 screen is written after its capture as an 8-bit RGBA PNG of the window
 size, row 0 at the top, named `<capture>.screen-f<N>.png`. Checks:
-`test_fake_love_screen`, `test_fake_love_screens`.
+`test_fake_love_screen`, `test_fake_love_screens`,
+`test_fake_love_image_draw`.
 
 **Transforms.** `push()`, `pop()` and `translate(dx, dy)` are the only
 forms. The fake keeps a current offset, integer on each axis, and a stack
@@ -718,6 +769,9 @@ here, verified by its real-LÖVE capture, or, for plan 6's extensions
   `newQuad(x, y, w, h, sw, sh)`, `draw(image, quad, x, y)`,
   `draw(canvas, x, y, 0, s, s)` onto the screen only, at any finite
   position below 2^20 and an equal scale in (0, 1024] (see The present),
+  `draw(image, quad, x, y, 0, sx, sy)` onto the screen only, at any finite
+  position below 2^20 and two scales, equal or not, in (0, 1024] (see
+  Images),
   `setDefaultFilter("nearest", "nearest")`,
   `push()`, `pop()`, `translate(dx, dy)` with integer offsets,
   `getDimensions()` with no argument: the window width and height in LÖVE
