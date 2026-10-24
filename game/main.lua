@@ -1,4 +1,3 @@
--- One love.update is one game frame.
 local bit = require("bit")
 local draw_meter = require("p8.draw_meter")
 local fatal = require("p8.fatal")
@@ -17,7 +16,7 @@ local cart = require("game.cart")
 local input_step = require("game.input_step")
 local state_format = require("devtools.state_format")
 
--- Button n is bit n - 1 of pad_buttons, as p8.input's P8_PAD_BUTTON_n.
+-- Button n is bit n - 1 of pad_buttons, as p8.input's PAD_BUTTON_n.
 local PAD_BUTTON_NAMES = {
   "dpup", "dpdown", "dpleft", "dpright", "a", "b", "x", "y", "leftshoulder", "rightshoulder", "start", "back",
 }
@@ -44,7 +43,6 @@ local function read_bindings()
   return parsed
 end
 
--- Returns attract.AFTER_DEFAULT when args hold no --attract-after; ignores every other argument.
 local function read_attract_after(args)
   local frames = nil
   local i = 1
@@ -136,7 +134,6 @@ function love.draw()
   pad_view.draw(view, virtual_pad)
 end
 
--- Called by tmp/fake_love after the last frame, never by real LÖVE.
 function debug_state()
   local lines = {}
   local sink = {
