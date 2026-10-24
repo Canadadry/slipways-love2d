@@ -186,8 +186,6 @@ static bool run_game(host_t *host, const arguments_t *arguments, const replay_t 
     return arguments->state_path == NULL || write_state(host, arguments->state_path);
 }
 
-/* The bytes of the fixture `name` next to the replay, in a buffer the caller
- * frees; NULL after printing the refusal, which names `member`. */
 static unsigned char *read_fixture(const char *replay_path, const char *member, const char *name, size_t max_bytes,
                                    size_t *length) {
     const char *slash = strrchr(replay_path, '/');
@@ -212,8 +210,6 @@ static unsigned char *read_fixture(const char *replay_path, const char *member, 
     return bytes;
 }
 
-/* False after printing the refusal; true, with nothing put, for a NULL
- * `name`. */
 static bool put_fixture(disk_t *disk, const char *replay_path, const char *member, const char *name,
                         size_t max_bytes, const char *disk_name) {
     if (name == NULL)
@@ -227,7 +223,6 @@ static bool put_fixture(disk_t *disk, const char *replay_path, const char *membe
     return true;
 }
 
-/* NULL after printing the refusal; else a disk the caller frees. */
 static disk_t *build_disk(const arguments_t *arguments, const replay_t *replay) {
     disk_t *disk = disk_create(arguments->game_dir);
     size_t count;
