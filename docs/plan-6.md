@@ -601,3 +601,20 @@ straight), otherwise a 30° diagonal with two bits. `UP`, `DOWN`, `LEFT`,
 15 tests, both sides of every edge in all quadrants, exact double ties,
 the dead-zone edge; six mutations each caught. `lua-test-game` 74 →
 79 ms (noise), no full gate. `make e2e` 20/20.
+
+### Step 3.12
+
+`love.pad_touch` (`game/love/`, pure, requires `bit`, `p8.input`,
+`love.pad_stick`): `BUTTON_MASKS` (a = 16 … back = 2048, from
+`p8.input`), `init(touch_state)`, `update(touch_state, touches, mouse,
+placed)` → virtual mask, `combine(gamepad, virtual)` = OR. Touches are
+`{id, x, y}`; the mouse is nil or `{x, y, down}`, counted as one more
+touch while down. Per frame: lift (the stick's touch gone → no stick),
+follow (the stick follows its touch anywhere, base fixed), claim (with
+no stick, the first touch new this frame, in the stick zone, on no
+button), buttons (every other touch at its current position,
+half-open), result = stick mask | button bits. A touch missing from a
+call counts as lifted (step 13 relies on it). 24 tests (slide A → B, two
+fingers = the 5+6 chord, stick leaving its zone, L/Back win, same-frame
+hand-over, resize); four mutations caught. `lua-test-game` 92 → 86 ms
+(noise), no full gate. `make e2e` 20/20.

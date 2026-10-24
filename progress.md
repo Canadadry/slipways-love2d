@@ -48,7 +48,7 @@
   - [x] Step 3.11 — stick
     - [x] Chunk 1 — start, refusals, knob cap
     - [x] Chunk 2 — direction mask: dead zone and 8 sectors
-  - [ ] Step 3.12 — touch to mask
+  - [x] Step 3.12 — touch to mask
     - [x] Chunk 1 — buttons, mouse, combine
     - [x] Chunk 2 — the stick in update
   - [ ] Step 3.13 — show / hide
