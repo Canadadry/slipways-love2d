@@ -310,8 +310,17 @@ static void test_every_required_module_and_named_png_must_be_under_the_root(void
     assert(out_lines() == 5);
 }
 
+static void test_a_missing_function_list_fails_with_exit_2_naming_it(void) {
+    assert(system("luajit " DIR "/alone/lua_guard.lua " ROOT " " ROOT "/main.lua > " OUT " 2>&1; echo $? > " DIR
+                  "/code") == 0);
+    assert(atoi(read_file(DIR "/code")) == 2);
+    assert(strncmp(read_file(OUT), "lua-guard: ", 11) == 0);
+    assert(out_has(DIR "/alone/love_function_list.lua"));
+    assert(out_lines() == 1);
+}
+
 int main(void) {
-    assert(system("mkdir -p " DIR) == 0);
+    assert(system("rm -rf " DIR "/alone && mkdir -p " DIR "/alone && cp tools/lua_guard.lua " DIR "/alone/") == 0);
     test_a_file_that_does_not_compile_fails_with_its_line();
     test_a_love_name_off_the_list_fails_but_not_in_strings_or_comments();
     test_every_listed_use_passes();
@@ -325,6 +334,7 @@ int main(void) {
     test_touch_and_mouse_polling_passes_outside_the_glue_directory();
     test_another_touch_or_mouse_name_fails();
     test_every_required_module_and_named_png_must_be_under_the_root();
+    test_a_missing_function_list_fails_with_exit_2_naming_it();
     puts("test_lua_guard: ok");
     return 0;
 }

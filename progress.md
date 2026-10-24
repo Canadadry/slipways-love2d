@@ -67,4 +67,7 @@
   - [x] Step 3.17 — check-e2e
 - [ ] Phase 4 — Clean-up
   - [ ] Step 4.18 — design.md contract read
+    - [x] Chunk 1 — tools/love_function_list.lua and lua-guard on it
+    - [ ] Chunk 2 — the fake ↔ list check
+    - [ ] Chunk 3 — the by-hand read, design.md and the closing gate
   - [ ] Step 4.19 — rework-comments

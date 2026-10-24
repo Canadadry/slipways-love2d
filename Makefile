@@ -232,7 +232,7 @@ $(TMP_DIR)/test_e2e_limits: $(call objs,tests/test_e2e_limits.c) tools/e2e_limit
 $(TMP_DIR)/test_end_state: $(call objs,tests/test_end_state.c) tools/end_state.sh | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
-$(TMP_DIR)/test_lua_guard: $(call objs,tests/test_lua_guard.c) tools/lua_guard.lua | $(TMP_DIR)
+$(TMP_DIR)/test_lua_guard: $(call objs,tests/test_lua_guard.c) tools/lua_guard.lua tools/love_function_list.lua | $(TMP_DIR)
 	$(CC) $(CFLAGS) -o $@ $(filter %.o,$^)
 
 $(TMP_DIR)/test_lua_modules: $(call objs,tests/test_lua_modules.c) tests/lua/test_modules.lua | $(TMP_DIR)
@@ -494,7 +494,7 @@ lua-test-capture-read: tests/lua/test_capture_read.lua tools/capture_read.lua ##
 # wildcard, not find: the guard stays a single process.
 LUA_GUARD_FILES := $(wildcard game/*.lua game/*/*.lua game/*/*/*.lua)
 
-lua-guard: tools/lua_guard.lua ## game/ Lua files: fails on a compile error, undeclared global, unlisted LÖVE name, missing required module or missing PNG
+lua-guard: tools/lua_guard.lua tools/love_function_list.lua ## game/ Lua files: fails on a compile error, undeclared global, unlisted LÖVE name, missing required module or missing PNG
 	@luajit tools/lua_guard.lua game $(LUA_GUARD_FILES)
 
 .PHONY: lua-guard

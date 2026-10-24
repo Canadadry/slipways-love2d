@@ -1,21 +1,3 @@
-local CALLBACKS = {
-    conf = true, load = true, update = true, draw = true, gamepadpressed = true, gamepadreleased = true,
-    resize = true,
-}
-
-local FUNCTIONS = {
-    graphics = {
-        clear = true, draw = true, getDimensions = true, newCanvas = true, newImage = true, newQuad = true,
-        points = true, pop = true, push = true, rectangle = true, setCanvas = true, setColor = true,
-        setDefaultFilter = true, translate = true,
-    },
-    image = { newImageData = true },
-    joystick = { getJoysticks = true },
-    touch = { getTouches = true, getPosition = true },
-    mouse = { getPosition = true, isDown = true },
-    filesystem = { read = true, write = true, getInfo = true },
-}
-
 local GLUE_ONLY = { graphics = true, image = true }
 
 local READABLE_GLOBALS = {
@@ -38,6 +20,31 @@ local function usage_failure(message)
     io.stderr:write("lua-guard: " .. message .. "\n")
     io.stderr:write("usage: luajit tools/lua_guard.lua <game dir> <file.lua>...\n")
     os.exit(2)
+end
+
+local function set_of(names)
+    local set = {}
+    for _, name in ipairs(names) do
+        set[name] = true
+    end
+    return set
+end
+
+local LIST_PATH = (arg[0]:match("^(.*)/[^/]*$") or ".") .. "/love_function_list.lua"
+local list_chunk, list_error = loadfile(LIST_PATH)
+local list
+if list_chunk ~= nil then
+    local loaded, result = pcall(setfenv(list_chunk, {}))
+    list, list_error = loaded and result, not loaded and result or nil
+end
+if type(list) ~= "table" or type(list.callbacks) ~= "table" or type(list.modules) ~= "table" then
+    io.stderr:write("lua-guard: ", list_error or LIST_PATH .. " does not return callbacks and modules", "\n")
+    os.exit(2)
+end
+local CALLBACKS = set_of(list.callbacks)
+local FUNCTIONS = {}
+for module, names in pairs(list.modules) do
+    FUNCTIONS[module] = set_of(names)
 end
 
 local function blank(text)
