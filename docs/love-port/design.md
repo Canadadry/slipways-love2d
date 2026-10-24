@@ -180,6 +180,15 @@ Both take `tmp/make.lock` and have no timeout. `make e2e` is part of
 `make test-all` and CI, and runs under 9 seconds (median 5.9 s over 6 cold
 runs on 4 cores, measured once the C was deleted).
 
+**Touch replays.** `touch_<s>.json` plays a pad scenario with touches (and
+the mouse) on the virtual pad, in a 390×844 window; `pad_twin_<s>.json`
+holds, frame for frame, the gamepad buttons those touches yield, in the
+default window. The pad is never drawn on canvas 0, so both give the same
+capture and end state: the touch replay's `.json.sha256` and
+`.json.end-state` are byte copies of the twin's, never a baseline of the
+touch run. After an intended change, `make e2e-baseline` rewrites both
+`.sha256`, and the pairing rule fails if they differ.
+
 ### `make end-state`
 
 `make end-state` checks the Lua end states of `make e2e`'s runs against
@@ -198,8 +207,8 @@ the exit status is 0 only when every replay matches.
 `make end-state EVENTS=<events> [REFERENCE=<file>]` runs the fake once on
 that file under `tmp/end-state/` and checks its state against `REFERENCE`,
 default `<events>.end-state`: the only way to check a `worst-case/` game.
-`make end-state-baseline` writes each missing `.end-state` of the 20
-replays from the Lua state, never overwrites one, and fails naming a
+`make end-state-baseline` writes each missing `.end-state` of
+`tests/e2e/` from the Lua state, never overwrites one, and fails naming a
 replay the fake failed on. All take `tmp/make.lock`, have no timeout, and
 are outside `make test-all` and CI.
 
@@ -1206,7 +1215,8 @@ checks the edge values and a sample against it.
 - `tests/lua/game/`: the regression tests of `game/` modules
   (`test_<module>.lua`, each ending in `return check.run({...})`), all run
   by `make test` in one process through `runner.lua`.
-- `tests/e2e/`: the 20 replays, their hashes, end states and notes.
+- `tests/e2e/`: the 20 replays of the C set, plus four touch replays and
+  their four pad twins, with their hashes, end states and notes.
 - `worst-case/`: long games checked one at a time with `make end-state
   EVENTS=`.
 

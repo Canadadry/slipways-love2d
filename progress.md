@@ -60,7 +60,7 @@
   - [ ] Step 3.15 — touch e2e replays
     - [x] Chunk 1 — pairing rule in e2e_limits.sh
     - [x] Chunk 2 — the four pad twins
-    - [ ] Chunk 3 — the four touch replays
+    - [x] Chunk 3 — the four touch replays
   - [ ] Step 3.16 — draw the pad
   - [ ] Step 3.17 — check-e2e
 - [ ] Phase 4 — Clean-up

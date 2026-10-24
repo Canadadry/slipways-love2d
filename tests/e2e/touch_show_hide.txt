@@ -1,0 +1,60 @@
+Touch version of pad_twin_show_hide, in a 390x844 window: a finger on
+Back, then a gamepad press that hides the pad and drops the finger, a new
+revealing touch that presses nothing, and the mouse held 30 frames on
+Back, which ends the first year. 121 frames.
+
+Twin: pad_twin_show_hide.
+
+Layout at 390x844 (`love.window_layout` tall mode: pad rectangle at
+(0, 486.75), scale 2.4375; `love.pad_layout.place`, half-open screen
+rectangles), re-derived with LuaJIT over the two modules:
+
+- A (292, 720): A is x 263.25-321.75, y 691.5-750.
+- Back (160, 745): Back is x 131.625-190.125, y 715.875-774.375, inside
+  the stick zone (x 0-195, y 486.75-779.25).
+- Stick base (90, 640): in the stick zone, on no button; base 117
+  (radius 58.5, dead zone 14.625). Pushed from it: (90, 580) Up (1),
+  (90, 700) Down (2), (30, 640) Left (4), (130, 600) Up+Right (9), mask
+  bits as `love.pad_stick` gives them.
+
+Each finger has its own id, never reused here. Every frame starts with
+`"pad"`, so the help-me-debug cut works as for the pad replays.
+
+- f0-3: touch 1 on A, the revealing touch on the hidden pad: it presses
+  nothing (twin idle); f4 lifted. On the title A chooses the focused row,
+  "forgiving": a leaked press would start a forgiving game.
+- f9: touch 2 on the stick base, its first frame: mask 0 (twin idle).
+  f10: touch 2 at (90, 700), Down (twin Down). f11 lifted.
+- f12-14: touch 3 on A (twin A x3): a new game on "reasonable". f15
+  lifted; aim mode from f15.
+- f18-32: touch 4 on Back (twin Back x15).
+- f33: the gamepad's Up (`"pad": [1]`) with touch 4 still on Back: the pad
+  hides and drops touch 4 (twin Up alone).
+- f34-40: touch 4 still held, pressing nothing (twin idle); f41 lifted.
+- f50-84: touch 5 on Back, the revealing touch of the hidden pad, held 35
+  frames, pressing nothing (twin idle); f85 lifted.
+- f86: mouse `[160, 745, 1]`, a click on Back of the shown pad; no later
+  frame carries `mouse` until f116, so it stays down (twin Back x30): year
+  3402 after f115.
+- f116: mouse `[160, 745, 0]`; idle to f120.
+
+Rules exercised: a gamepad press hides the pad and drops the held
+touches; the reveal presses nothing, also on the second showing; a held
+click is a held button, kept between frames.
+
+Negative scratch runs: the twin with Back on f50-84 (a leaked reveal)
+ends in year 3403, not 3402; the twin with Back on f86 only (a mouse not
+kept) ends in year 3401. The twin with Back also held f33-40 (no drop)
+gives the same hash and end state: Back is then held 23 frames, under
+the 30 of a year, so this pair does not prove the drop.
+
+Its `.json.sha256` and `.json.end-state` are byte copies of
+pad_twin_show_hide's, never a baseline of this run: `make e2e` and `make
+end-state` thus prove this touch run equal to the gamepad run, frame by
+frame and in the end state, and `tools/e2e_limits.sh` fails if the two
+`.sha256` drift apart (after a `make e2e-baseline`, for example).
+
+Not proven here: the drawing of the pad (step 16); a resize; overlay
+mode; the 5 + 6 chord (covered by the Lua tests). The drop of a
+held touch by a gamepad press is not proven by its result either (see the
+negative runs).

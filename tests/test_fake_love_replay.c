@@ -8,38 +8,47 @@
 
 #include "../tools/fake_love/replay.h"
 
+#define DEFAULT_WINDOW 640, 480
+#define PHONE_WINDOW 390, 844
+
 /* Counted with `jq '.frames | length'`, not by the reader under test. */
 static const struct {
     const char *path;
     size_t frames;
+    int width;
+    int height;
 } E2E_REPLAYS[] = {
-    {"tests/e2e/attract.json", 176},
-    {"tests/e2e/pad_bankrupt.json", 95},
-    {"tests/e2e/pad_build.json", 86},
-    {"tests/e2e/pad_colonise.json", 447},
-    {"tests/e2e/pad_empty_planet.json", 150},
-    {"tests/e2e/pad_end_turn.json", 156},
-    {"tests/e2e/pad_game_end.json", 114},
-    {"tests/e2e/pad_message_box.json", 225},
-    {"tests/e2e/pad_pause_restart.json", 80},
-    {"tests/e2e/pad_planet_projects.json", 524},
-    {"tests/e2e/pad_probe.json", 79},
-    {"tests/e2e/pad_research.json", 502},
-    {"tests/e2e/pad_restart_resume.json", 157},
-    {"tests/e2e/pad_resume_at_start.json", 48},
-    {"tests/e2e/pad_score.json", 98},
-    {"tests/e2e/pad_slipway.json", 320},
-    {"tests/e2e/pad_swap_aim_menu.json", 177},
-    {"tests/e2e/pad_tech_costs.json", 558},
-    {"tests/e2e/pad_title.json", 32},
-    {"tests/e2e/pad_twin_aim_diagonal.json", 65},
-    {"tests/e2e/pad_twin_first_slipway.json", 36},
-    {"tests/e2e/pad_twin_show_hide.json", 121},
-    {"tests/e2e/pad_twin_year_hold.json", 54},
-    {"tests/e2e/pad_unbound_enter_aim.json", 48},
+    {"tests/e2e/attract.json", 176, DEFAULT_WINDOW},
+    {"tests/e2e/pad_bankrupt.json", 95, DEFAULT_WINDOW},
+    {"tests/e2e/pad_build.json", 86, DEFAULT_WINDOW},
+    {"tests/e2e/pad_colonise.json", 447, DEFAULT_WINDOW},
+    {"tests/e2e/pad_empty_planet.json", 150, DEFAULT_WINDOW},
+    {"tests/e2e/pad_end_turn.json", 156, DEFAULT_WINDOW},
+    {"tests/e2e/pad_game_end.json", 114, DEFAULT_WINDOW},
+    {"tests/e2e/pad_message_box.json", 225, DEFAULT_WINDOW},
+    {"tests/e2e/pad_pause_restart.json", 80, DEFAULT_WINDOW},
+    {"tests/e2e/pad_planet_projects.json", 524, DEFAULT_WINDOW},
+    {"tests/e2e/pad_probe.json", 79, DEFAULT_WINDOW},
+    {"tests/e2e/pad_research.json", 502, DEFAULT_WINDOW},
+    {"tests/e2e/pad_restart_resume.json", 157, DEFAULT_WINDOW},
+    {"tests/e2e/pad_resume_at_start.json", 48, DEFAULT_WINDOW},
+    {"tests/e2e/pad_score.json", 98, DEFAULT_WINDOW},
+    {"tests/e2e/pad_slipway.json", 320, DEFAULT_WINDOW},
+    {"tests/e2e/pad_swap_aim_menu.json", 177, DEFAULT_WINDOW},
+    {"tests/e2e/pad_tech_costs.json", 558, DEFAULT_WINDOW},
+    {"tests/e2e/pad_title.json", 32, DEFAULT_WINDOW},
+    {"tests/e2e/pad_twin_aim_diagonal.json", 65, DEFAULT_WINDOW},
+    {"tests/e2e/pad_twin_first_slipway.json", 36, DEFAULT_WINDOW},
+    {"tests/e2e/pad_twin_show_hide.json", 121, DEFAULT_WINDOW},
+    {"tests/e2e/pad_twin_year_hold.json", 54, DEFAULT_WINDOW},
+    {"tests/e2e/pad_unbound_enter_aim.json", 48, DEFAULT_WINDOW},
+    {"tests/e2e/touch_aim_diagonal.json", 65, PHONE_WINDOW},
+    {"tests/e2e/touch_first_slipway.json", 36, PHONE_WINDOW},
+    {"tests/e2e/touch_show_hide.json", 121, PHONE_WINDOW},
+    {"tests/e2e/touch_year_hold.json", 54, PHONE_WINDOW},
 };
 
-static void test_reads_every_e2e_replay_with_its_frame_count_and_no_window_change(void) {
+static void test_reads_every_e2e_replay_with_its_frame_count_window_and_no_resize(void) {
     for (size_t i = 0; i < sizeof(E2E_REPLAYS) / sizeof(E2E_REPLAYS[0]); i++) {
         char error[256] = "";
         replay_t *replay = replay_read(E2E_REPLAYS[i].path, error, sizeof(error));
@@ -51,7 +60,7 @@ static void test_reads_every_e2e_replay_with_its_frame_count_and_no_window_chang
         int width = 0;
         int height = 0;
         replay_window(replay, &width, &height);
-        assert(width == 640 && height == 480);
+        assert(width == E2E_REPLAYS[i].width && height == E2E_REPLAYS[i].height);
         for (size_t frame = 0; frame < E2E_REPLAYS[i].frames; frame++) {
             assert(!replay_frame_resize(replay, frame, &width, &height));
         }
@@ -645,7 +654,7 @@ static void test_a_missing_file_is_refused_with_its_path(void) {
 }
 
 int main(void) {
-    test_reads_every_e2e_replay_with_its_frame_count_and_no_window_change();
+    test_reads_every_e2e_replay_with_its_frame_count_window_and_no_resize();
     test_every_e2e_replay_is_listed();
     test_reads_the_held_buttons_of_pad_title();
     test_reads_the_start_state_members_of_e2e_replays();

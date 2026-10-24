@@ -1,0 +1,47 @@
+Touch version of pad_twin_year_hold, in a 390x844 window: a new game,
+then a finger held 30 frames on Back ends the first year. 54 frames.
+
+Twin: pad_twin_year_hold.
+
+Layout at 390x844 (`love.window_layout` tall mode: pad rectangle at
+(0, 486.75), scale 2.4375; `love.pad_layout.place`, half-open screen
+rectangles), re-derived with LuaJIT over the two modules:
+
+- A (292, 720): A is x 263.25-321.75, y 691.5-750.
+- Back (160, 745): Back is x 131.625-190.125, y 715.875-774.375, inside
+  the stick zone (x 0-195, y 486.75-779.25).
+- Stick base (90, 640): in the stick zone, on no button; base 117
+  (radius 58.5, dead zone 14.625). Pushed from it: (90, 580) Up (1),
+  (90, 700) Down (2), (30, 640) Left (4), (130, 600) Up+Right (9), mask
+  bits as `love.pad_stick` gives them.
+
+Each finger has its own id, never reused here. Every frame starts with
+`"pad"`, so the help-me-debug cut works as for the pad replays.
+
+- f0-3: touch 1 on A, the revealing touch on the hidden pad: it presses
+  nothing (twin idle); f4 lifted. On the title A chooses the focused row,
+  "forgiving": a leaked press would start a forgiving game.
+- f9: touch 2 on the stick base, its first frame: mask 0 (twin idle).
+  f10: touch 2 at (90, 700), Down (twin Down). f11 lifted.
+- f12-14: touch 3 on A (twin A x3): a new game on "reasonable". f15
+  lifted; aim mode from f15.
+- f18-47: touch 4 on Back (twin Back x30): year 3402 after f47. Back lies
+  in the stick zone: the year ending proves the touch was the button's,
+  not the stick's.
+- f48: lifted; idle to f53.
+
+Rules exercised: the reveal presses nothing; a touch that starts on a
+button inside the stick zone is the button's; a held touch is a held
+button.
+
+Negative scratch run: this file with touch 4 lifted on f47 (Back held 29
+frames) ends in year 3401, not 3402.
+
+Its `.json.sha256` and `.json.end-state` are byte copies of
+pad_twin_year_hold's, never a baseline of this run: `make e2e` and `make
+end-state` thus prove this touch run equal to the gamepad run, frame by
+frame and in the end state, and `tools/e2e_limits.sh` fails if the two
+`.sha256` drift apart (after a `make e2e-baseline`, for example).
+
+Not proven here: the drawing of the pad (step 16); a resize; overlay
+mode; the 5 + 6 chord (covered by the Lua tests).
