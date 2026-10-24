@@ -41,6 +41,8 @@ replay_mouse_t replay_frame_mouse(const replay_t *replay, size_t frame);
 const unsigned char *replay_initial_save(const replay_t *replay, size_t *count);
 /* The "bindings" fixture name, owned by the replay; NULL when absent. */
 const char *replay_bindings(const replay_t *replay);
+/* The "pad_sheet" file name, owned by the replay; NULL when absent. */
+const char *replay_pad_sheet(const replay_t *replay);
 /* 0 when the replay has no "attract_after". */
 int replay_attract_after(const replay_t *replay);
 /* The "window" size; 640 and 480 when the replay has none. */

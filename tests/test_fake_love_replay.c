@@ -109,6 +109,7 @@ static void test_reads_the_start_state_members_of_e2e_replays(void) {
         } else {
             assert(bindings != NULL && strcmp(bindings, EXPECTED[i].bindings) == 0);
         }
+        assert(replay_pad_sheet(replay) == NULL);
         replay_free(replay);
     }
 }
@@ -273,6 +274,47 @@ static void test_a_fixture_name_of_64_characters_is_accepted(void) {
     replay_t *replay = replay_parse("memory.json", text, strlen(text), error, sizeof(error));
     assert(replay != NULL && strcmp(replay_bindings(replay), name) == 0);
     replay_free(replay);
+}
+
+static replay_t *parsed(const char *text);
+
+static void test_pad_sheet_names_a_png_next_to_the_replay(void) {
+    char text[256];
+    char name[65];
+    memset(name, 'a', 60);
+    memcpy(name + 60, ".png", 5);
+    static const char *const GOOD[] = {"a.png", "pad.png", "pad_flat-2.x.png"};
+    for (size_t i = 0; i < sizeof(GOOD) / sizeof(GOOD[0]) + 1; i++) {
+        const char *sheet = i < sizeof(GOOD) / sizeof(GOOD[0]) ? GOOD[i] : name;
+        snprintf(text, sizeof(text), "{\"input\": \"pad\", \"pad_sheet\": \"%s\", \"frames\": []}", sheet);
+        replay_t *replay = parsed(text);
+        assert(strcmp(replay_pad_sheet(replay), sheet) == 0);
+        replay_free(replay);
+    }
+    replay_t *replay = parsed("{\"input\": \"pad\", \"frames\": []}");
+    assert(replay_pad_sheet(replay) == NULL);
+    replay_free(replay);
+}
+
+static void test_a_bad_pad_sheet_is_refused(void) {
+    static const char *const BAD[] = {"../x.png", ".x.png", "x.cfg", "a b.png", ".png", "x.PNG", "x.png/"};
+    for (size_t i = 0; i < sizeof(BAD) / sizeof(BAD[0]); i++) {
+        char member[128];
+        char problem[160];
+        snprintf(member, sizeof(member), "\"pad_sheet\": \"%s\"", BAD[i]);
+        snprintf(problem, sizeof(problem),
+                 "\"pad_sheet\" \"%s\" is not a .png file name of 5-64 characters A-Za-z0-9_.- next to the replay", BAD[i]);
+        assert_member_refused(member, problem);
+    }
+    char long_name[66];
+    memset(long_name, 'a', 61);
+    memcpy(long_name + 61, ".png", 5);
+    char member[128];
+    snprintf(member, sizeof(member), "\"pad_sheet\": \"%s\"", long_name);
+    assert_member_refused(member, "\"pad_sheet\" \"aaaa");
+    assert_member_refused("\"pad_sheet\": 3", "\"pad_sheet\" 3 is not a .png file name");
+    assert_member_refused("\"pad_sheet\": null", "\"pad_sheet\" null is not a .png file name");
+    assert_member_refused("\"pad_sheet\": \"a.png\", \"pad_sheet\": \"b.png\"", "\"pad_sheet\" given twice");
 }
 
 static void test_attract_after_is_read_up_to_the_largest_int(void) {
@@ -611,6 +653,8 @@ int main(void) {
     test_a_bad_initial_save_is_refused();
     test_a_bad_bindings_name_is_refused();
     test_a_fixture_name_of_64_characters_is_accepted();
+    test_pad_sheet_names_a_png_next_to_the_replay();
+    test_a_bad_pad_sheet_is_refused();
     test_attract_after_is_read_up_to_the_largest_int();
     test_a_bad_attract_after_is_refused();
     test_a_replay_with_start_is_refused();

@@ -14,6 +14,7 @@
 
 #define EXPECTED_VERSION_PREFIX "LuaJIT 2.1"
 #define BINDINGS_MAX_BYTES 65536
+#define PAD_SHEET_MAX_BYTES 1048576
 
 typedef struct {
     const char *game_dir;
@@ -185,29 +186,45 @@ static bool run_game(host_t *host, const arguments_t *arguments, const replay_t 
     return arguments->state_path == NULL || write_state(host, arguments->state_path);
 }
 
-/* The fixture's bytes in a buffer the caller frees; NULL after printing the
- * refusal. */
-static unsigned char *read_bindings(const char *replay_path, const char *name, size_t *length) {
+/* The bytes of the fixture `name` next to the replay, in a buffer the caller
+ * frees; NULL after printing the refusal, which names `member`. */
+static unsigned char *read_fixture(const char *replay_path, const char *member, const char *name, size_t max_bytes,
+                                   size_t *length) {
     const char *slash = strrchr(replay_path, '/');
     int directory_length = slash != NULL ? (int)(slash - replay_path) : 1;
     const char *directory = slash != NULL ? replay_path : ".";
     char path[4096];
     snprintf(path, sizeof path, "%.*s/%s", directory_length, directory, name);
     FILE *file = fopen(path, "rb");
-    unsigned char *bytes = malloc(BINDINGS_MAX_BYTES + 1);
-    *length = file != NULL && bytes != NULL ? fread(bytes, 1, BINDINGS_MAX_BYTES + 1, file) : 0;
+    unsigned char *bytes = malloc(max_bytes + 1);
+    *length = file != NULL && bytes != NULL ? fread(bytes, 1, max_bytes + 1, file) : 0;
     bool readable = file != NULL && bytes != NULL && !ferror(file);
     if (file != NULL)
         fclose(file);
-    if (!readable || *length > BINDINGS_MAX_BYTES) {
+    if (!readable || *length > max_bytes) {
         if (readable)
-            fprintf(stderr, "fake_love: %s: \"bindings\": %s is over %d bytes\n", replay_path, path, BINDINGS_MAX_BYTES);
+            fprintf(stderr, "fake_love: %s: \"%s\": %s is over %zu bytes\n", replay_path, member, path, max_bytes);
         else
-            fprintf(stderr, "fake_love: %s: \"bindings\": %s cannot be read\n", replay_path, path);
+            fprintf(stderr, "fake_love: %s: \"%s\": %s cannot be read\n", replay_path, member, path);
         free(bytes);
         return NULL;
     }
     return bytes;
+}
+
+/* False after printing the refusal; true, with nothing put, for a NULL
+ * `name`. */
+static bool put_fixture(disk_t *disk, const char *replay_path, const char *member, const char *name,
+                        size_t max_bytes, const char *disk_name) {
+    if (name == NULL)
+        return true;
+    size_t length;
+    unsigned char *bytes = read_fixture(replay_path, member, name, max_bytes, &length);
+    if (bytes == NULL)
+        return false;
+    disk_put(disk, disk_name, bytes, length);
+    free(bytes);
+    return true;
 }
 
 /* NULL after printing the refusal; else a disk the caller frees. */
@@ -217,17 +234,13 @@ static disk_t *build_disk(const arguments_t *arguments, const replay_t *replay) 
     const unsigned char *save = replay_initial_save(replay, &count);
     if (save != NULL)
         disk_put(disk, "save.bin", save, count);
-    const char *bindings = replay_bindings(replay);
-    if (bindings == NULL)
-        return disk;
-    size_t length;
-    unsigned char *bytes = read_bindings(arguments->replay_path, bindings, &length);
-    if (bytes == NULL) {
+    if (!put_fixture(disk, arguments->replay_path, "bindings", replay_bindings(replay), BINDINGS_MAX_BYTES,
+                     "bindings.cfg")
+        || !put_fixture(disk, arguments->replay_path, "pad_sheet", replay_pad_sheet(replay), PAD_SHEET_MAX_BYTES,
+                        "pad.png")) {
         disk_free(disk);
         return NULL;
     }
-    disk_put(disk, "bindings.cfg", bytes, length);
-    free(bytes);
     return disk;
 }
 

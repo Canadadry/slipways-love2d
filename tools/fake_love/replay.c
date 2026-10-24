@@ -53,6 +53,7 @@ struct replay {
     unsigned char *initial_save;
     size_t initial_save_count;
     const char *bindings;
+    const char *pad_sheet;
     int attract_after;
     int window_width;
     int window_height;
@@ -597,8 +598,8 @@ static int read_initial_save(replay_t *replay, parser_t *parser, const node_t *m
 
 #define FIXTURE_NAME_MAX_LENGTH 64
 
-static int is_fixture_name(const char *name, size_t length) {
-    if (length < 5 || length > FIXTURE_NAME_MAX_LENGTH || name[0] == '.' || strcmp(name + length - 4, ".cfg") != 0
+static int is_fixture_name(const char *name, size_t length, const char *extension) {
+    if (length < 5 || length > FIXTURE_NAME_MAX_LENGTH || name[0] == '.' || strcmp(name + length - 4, extension) != 0
         || strcmp(name, "bindings.cfg") == 0) {
         return 0;
     }
@@ -621,13 +622,25 @@ static int read_bindings(replay_t *replay, parser_t *parser, const node_t *membe
                 "\"bindings\" %s: recorded with a personal bindings.cfg; only a fixture next to the replay runs", value);
         return 0;
     }
-    if (member->kind != NODE_STRING || !is_fixture_name(member->string, member->string_length)) {
+    if (member->kind != NODE_STRING || !is_fixture_name(member->string, member->string_length, ".cfg")) {
         fail_at(parser, member->offset,
                 "\"bindings\" %s is not a .cfg file name of 5-%d characters A-Za-z0-9_.- next to the replay", value,
                 FIXTURE_NAME_MAX_LENGTH);
         return 0;
     }
     replay->bindings = member->string;
+    return 1;
+}
+
+static int read_pad_sheet(replay_t *replay, parser_t *parser, const node_t *member) {
+    if (member->kind != NODE_STRING || !is_fixture_name(member->string, member->string_length, ".png")) {
+        char value[64];
+        fail_at(parser, member->offset,
+                "\"pad_sheet\" %s is not a .png file name of 5-%d characters A-Za-z0-9_.- next to the replay",
+                describe_value(member, value, sizeof(value)), FIXTURE_NAME_MAX_LENGTH);
+        return 0;
+    }
+    replay->pad_sheet = member->string;
     return 1;
 }
 
@@ -743,6 +756,7 @@ static int read_start_state(replay_t *replay, parser_t *parser) {
     } MEMBERS[] = {
         {"initial_save", read_initial_save},
         {"bindings", read_bindings},
+        {"pad_sheet", read_pad_sheet},
         {"attract_after", read_attract_after},
         {"window", read_window},
         {"screens", read_screens},
@@ -996,6 +1010,7 @@ replay_t *replay_parse(const char *name, const char *text, size_t length, char *
     replay->initial_save = NULL;
     replay->initial_save_count = 0;
     replay->bindings = NULL;
+    replay->pad_sheet = NULL;
     replay->attract_after = 0;
     replay->window_width = 640;
     replay->window_height = 480;
@@ -1087,6 +1102,11 @@ const unsigned char *replay_initial_save(const replay_t *replay, size_t *count) 
 const char *replay_bindings(const replay_t *replay) {
     assert(replay != NULL);
     return replay->bindings;
+}
+
+const char *replay_pad_sheet(const replay_t *replay) {
+    assert(replay != NULL);
+    return replay->pad_sheet;
 }
 
 int replay_attract_after(const replay_t *replay) {
